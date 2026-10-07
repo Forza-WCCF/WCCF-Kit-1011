@@ -1,0 +1,1131 @@
+key	english
+CLM_MNAME_keyboard_0005	OK
+CLM_MNAME_keyboard_0006	Inappropriate word entered.
+CLM_MNAME_omakase_0000	Abel
+CLM_MNAME_omakase_0002	Adams
+CLM_MNAME_omakase_0003	Andersson
+CLM_MNAME_omakase_0004	Correl
+CLM_MNAME_omakase_0005	Ancic
+CLM_MNAME_omakase_0006	Max
+CLM_MNAME_omakase_0007	Mehri
+CLM_MNAME_omakase_0008	Ruben
+CLM_MNAME_omakase_0009	Baker
+CLM_MNAME_omakase_0011	Chongming Che 
+CLM_MNAME_omakase_0012	Michell
+CLM_MNAME_omakase_0013	Tangsheng Lee
+CLM_MNAME_omakase_0014	Moore
+CLM_MNAME_omakase_0015	Kamara
+CLM_MNAME_omakase_0016	Enriquez
+CLM_MNAME_omakase_0017	Marcio
+CLM_MNAME_omakase_0018	Gangabo
+CLM_MNAME_omakase_0019	Gomez
+CLM_MNAME_omakase_0020	Beck
+CLM_MNAME_omakase_0021	Krechenko
+CLM_MNAME_omakase_0022	Toricci
+CLM_MNAME_omakase_0023	Alonso
+CLM_MNAME_omakase_0024	Hakan
+CLM_MNAME_omakase_0025	Bertollini
+CLM_MNAME_omakase_0026	Sandro
+CLM_MNAME_omakase_0027	Bjorkman
+CLM_MNAME_omakase_0028	Blanco
+CLM_MNAME_omakase_0029	Sarakov
+CLM_MNAME_omakase_0030	Carlsen
+CLM_MNAME_omakase_0031	Thomas
+CLM_MNAME_omakase_0032	Souza
+CLM_MNAME_omakase_0033	Chiles
+CLM_MNAME_omakase_0034	Costa
+CLM_MNAME_omakase_0035	Marcos
+CLM_MNAME_omakase_0036	Delgado
+CLM_MNAME_omakase_0037	Eagle
+CLM_MNAME_omakase_0038	Ferreira
+CLM_MNAME_omakase_0039	Fukarek
+CLM_MNAME_omakase_0040	Valez
+CLM_MNAME_omakase_0041	Garcia
+CLM_MNAME_omakase_0042	Huss
+CLM_MNAME_omakase_0043	Johansson
+CLM_MNAME_omakase_0044	Carlovich
+CLM_MNAME_omakase_0045	Coleman
+CLM_MNAME_omakase_0046	Kutchera
+CLM_MNAME_omakase_0047	Novak
+CLM_MNAME_omakase_0048	Perez
+CLM_MNAME_omakase_0049	Rios
+CLM_MNAME_caution_0001	Yes
+CLM_MNAME_caution_0002	No
+CLM_MREAD_keyboard_0002	OK
+CLM_MREAD_keyboard_0003	Inappropriate word entered.
+CLM_MACCENT_keyboard_0003	OK
+CLM_MBIRTH_keyboard_0001	OK
+CLM_CLUBTEAM_result_0001	Select Home Town
+CLM_CHOME_keyboard_0005	Yes
+CLM_CHOME_keyboard_0006	No
+CLM_CNAME_keyboard_0004	OK
+CLM_CNAME_keyboard_0005	Inappropriate word entered.
+CLM_CREAD_keyboard_0002	OK
+CLM_CREAD_keyboard_0003	Inappropriate word entered.
+CLM_CACCENT_keybord_0003	OK
+CLM_CUNIFORM1_keyboard_0007	OK
+CLM_CUNIFORM2_keyboard_0007	OK
+CLM_CEMBLEM_keyboard_0003	OK
+CLM_PLAYER_header_0000	Registered Players
+CLM_INAUGRATION_manager_0001	$%d00
+INF_INFO_button_0000	OK
+INF_RESULT_message_0011	Quarterfinals Lost
+INF_RESULT_message_0012	Semifinals Lost
+INF_RESULT_message_0014	Champions
+INF_RESULT_message_0020	Quarterfinals
+INF_RESULT_message_0021	Semifinals
+INF_RESULT_message_0022	The Final
+INF_TITLE_message_0001	A star has been placed on your club's badge to\ncommemorate the championship win.
+INF_TITLE_message_0002	The fans are ecstatic about your victory.\nThe players' morale should improve as well.
+INF_GOLDEN_contents_0000	Prize Money:
+INF_GOLDEN_contents_0002	$%d00
+INF_DEFENDING_contents_0005	$%d00
+INF_DEFENDING_contents_0008	$%d00
+INF_LEAGUE_ranking_0000	Champions
+INF_LEAGUE_ranking_0001	Semifinals
+INF_ENTRY_title_0000	Pre-Season Cup
+INF_ENTRY_title_0001	Enterprise Cup
+INF_ENTRY_title_0002	King's Club Cup
+INF_ENTRY_title_0003	National Super Cup
+INF_ENTRY_title_0005	Continental Cup
+INF_ENTRY_title_0006	Continental Super Cup
+INF_ENTRY_title_0007	Champions Trophy
+INF_ENTRY_title_0008	International Club Championship
+INF_ENTRY_title_0009	%s Championship
+INF_ENTRY_title_0022	Japan Trophy
+INF_ENTRY_result_0000	Champions
+INF_ENTRY_result_0001	Semifinals
+INF_SPONSOR_choices_0003	Yes
+INF_SPONSOR_choices_0004	No
+INF_SPO_rank_0003	worldwide 
+INF_SPO_rank_0004	No.1 national 
+INF_SPO_category_0000	Electronics Company
+INF_SPO_category_0001	Drinks Manufacturer
+INF_SPO_category_0002	Food Manufacturer
+INF_SPO_category_0003	Motor Car Manufacturer
+INF_SPO_category_0004	Communications Company
+INF_SPO_category_0005	Finance Company
+INF_SPO_category_0006	Broadcasting Network
+INF_SPO_category_0007	Airline Company
+INF_SPO_category_0008	Game Manufacturer
+INF_SPO_name_0014	New Century Oil
+INF_CONTRACT_message_0000	The club, having recognized your achievements,\nwishes to extend your contract.
+INF_OFFER_message_0004	It seems there are loose ends you have yet to tie up.\nIt's good to hear you are staying at the club.
+INF_OFFER_contents_0002	Hometown:
+INF_OFFER_choices_0004	Yes
+INF_OFFER_choices_0005	No
+INF_STADIUMR_message_0007	Select a turf type.
+INF_STADIUMR_message_0008	Select a floodlighting system.
+INF_STADIUMR_message_0010	Select roof type.
+INF_STADIUMR_message_0013	Select dome type.
+INF_STADIUMR_message_0014	Renovation will commence after the next match.
+INF_STADIUMR_contents_0027	Curved
+INF_STADIUMF_message_0000	The stadium has been renovated.
+INF_STADIUMF_message_0008	The fans are looking forward to the next home game.
+INF_BIRTHDAY_message_0000	Happy Birthday, \n%s!
+INF_BIRTHDAY_message_0001	All the players want to win\nas a birthday present to you.
+INF_SCOUT_message_0002	This player could be indispensable to your club.
+INF_CRISIS_message_0001	The players are concerned about the club's finances.
+INF_CRISIS_contents_0002	$%d00
+INF_BONUS_message_0000	Our club's finances have been increasing as of late.\nGive the hard-working players a cash bonus.
+INF_INJURY_message_0002	Some information has come in regarding\nthe players' injuries.
+INF_COACH_country_0000	England
+INF_COACH_country_0001	Spain
+INF_COACH_country_0002	Italy
+INF_COACH_country_0003	Germany
+INF_COACH_country_0004	France
+INF_COACH_country_0005	Holland
+INF_COACH_country_0006	Brazil
+INF_COACH_country_0007	Argentina
+INF_COACH_country_0011	Japan
+INF_SUPPORTER_message_0000	It seems the fans have thought\nup a nickname for the club.
+INF_SUPPORTER_adj_0000	None
+INF_SUPPORTER_adj_0001	The Pink
+INF_SUPPORTER_adj_0002	The Purple
+INF_SUPPORTER_adj_0003	The Blue
+INF_SUPPORTER_adj_0004	The Yellow
+INF_SUPPORTER_adj_0005	The Green
+INF_SUPPORTER_adj_0006	The Red
+INF_SUPPORTER_adj_0007	The Orange
+INF_SUPPORTER_adj_0008	The Black
+INF_SUPPORTER_adj_0009	The White
+INF_SUPPORTER_adj_0010	The Aqua
+INF_SUPPORTER_adj_0011	The Grey
+INF_SUPPORTER_adj_0012	The African
+INF_SUPPORTER_adj_0013	The Asian
+INF_SUPPORTER_adj_0014	The North European
+INF_SUPPORTER_adj_0015	The West European
+INF_SUPPORTER_adj_0016	The East European
+INF_SUPPORTER_adj_0017	The North American
+INF_SUPPORTER_adj_0018	The Caribbean
+INF_SUPPORTER_adj_0019	The Southern Hemisphere
+INF_SUPPORTER_adj_0020	The Latin
+INF_SUPPORTER_adj_0021	The Rising Sun
+INF_SUPPORTER_adj_0022	The East Asian
+INF_SUPPORTER_adj_0023	The Far Eastern
+INF_SUPPORTER_adj_0024	The Japanese
+INF_SUPPORTER_adj_0025	The Japanese
+INF_SUPPORTER_adj_0026	The Iranian
+INF_SUPPORTER_adj_0027	The Korean
+INF_SUPPORTER_adj_0028	The Saudi Arabian
+INF_SUPPORTER_adj_0029	The Chinese
+INF_SUPPORTER_adj_0030	The Irish
+INF_SUPPORTER_adj_0031	The Italian
+INF_SUPPORTER_adj_0032	The English
+INF_SUPPORTER_adj_0033	The Ukranian
+INF_SUPPORTER_adj_0034	The Dutch
+INF_SUPPORTER_adj_0035	The Croatian
+INF_SUPPORTER_adj_0036	The Swedish
+INF_SUPPORTER_adj_0037	The Scottish
+INF_SUPPORTER_adj_0038	The Spanish
+INF_SUPPORTER_adj_0039	The Slovene
+INF_SUPPORTER_adj_0040	The Czech
+INF_SUPPORTER_adj_0041	The Danish
+INF_SUPPORTER_adj_0042	The German
+INF_SUPPORTER_adj_0043	The Turkish
+INF_SUPPORTER_adj_0044	The Norwegian
+INF_SUPPORTER_adj_0045	The French
+INF_SUPPORTER_adj_0046	The Bulgarian
+INF_SUPPORTER_adj_0047	The Belgian
+INF_SUPPORTER_adj_0048	The Polish
+INF_SUPPORTER_adj_0049	The Portugese
+INF_SUPPORTER_adj_0050	The Serbian
+INF_SUPPORTER_adj_0051	The Romanian
+INF_SUPPORTER_adj_0052	The Russian
+INF_SUPPORTER_adj_0053	The Cameroonian
+INF_SUPPORTER_adj_0054	The Senegali
+INF_SUPPORTER_adj_0055	The Tunisian
+INF_SUPPORTER_adj_0056	The Nigerian
+INF_SUPPORTER_adj_0057	The South African
+INF_SUPPORTER_adj_0058	The Moroccan
+INF_SUPPORTER_adj_0059	The American
+INF_SUPPORTER_adj_0060	The Canadian
+INF_SUPPORTER_adj_0061	The Costa Rican
+INF_SUPPORTER_adj_0062	The Jamaican
+INF_SUPPORTER_adj_0063	The Mexican
+INF_SUPPORTER_adj_0064	The Argentinian
+INF_SUPPORTER_adj_0065	The Uruguayan
+INF_SUPPORTER_adj_0066	The Ecuadorian
+INF_SUPPORTER_adj_0067	The Colombian
+INF_SUPPORTER_adj_0068	The Chilean
+INF_SUPPORTER_adj_0069	The Paraguayan
+INF_SUPPORTER_adj_0070	The Brazilian
+INF_SUPPORTER_adj_0071	The Australian
+INF_SUPPORTER_adj_0072	The Desert
+INF_SUPPORTER_adj_0073	The Jungle
+INF_SUPPORTER_adj_0074	The Savanna
+INF_SUPPORTER_adj_0075	The Tropical
+INF_SUPPORTER_adj_0076	The Snowfield
+INF_SUPPORTER_adj_0077	The Tundra
+INF_SUPPORTER_adj_0078	The Island
+INF_SUPPORTER_adj_0079	The European
+INF_SUPPORTER_adj_0080	The Northern
+INF_SUPPORTER_adj_0081	The North Eastern
+INF_SUPPORTER_adj_0082	The North Kanto
+INF_SUPPORTER_adj_0083	The Kanto
+INF_SUPPORTER_adj_0084	The Greater Kanto
+INF_SUPPORTER_adj_0085	The Koshientsu
+INF_SUPPORTER_adj_0086	The Hokuriku
+INF_SUPPORTER_adj_0087	The Tokai
+INF_SUPPORTER_adj_0088	The Kinki
+INF_SUPPORTER_adj_0089	The Kansai
+INF_SUPPORTER_adj_0090	The Sanin
+INF_SUPPORTER_adj_0091	The Sanyo
+INF_SUPPORTER_adj_0092	The Shikoku
+INF_SUPPORTER_adj_0093	The Kyushu
+INF_SUPPORTER_adj_0094	The Southern Hemisphere
+INF_SUPPORTER_adj_0095	The Cherry
+INF_SUPPORTER_adj_0096	The Pink
+INF_SUPPORTER_adj_0097	The Deep Sea
+INF_SUPPORTER_adj_0098	The Sea
+INF_SUPPORTER_adj_0099	The Wind
+INF_SUPPORTER_adj_0100	The Heavenly
+INF_SUPPORTER_adj_0101	The Aquatic
+INF_SUPPORTER_adj_0102	The Fountain
+INF_SUPPORTER_adj_0103	The Sand
+INF_SUPPORTER_adj_0104	The Light
+INF_SUPPORTER_adj_0105	The Moonlight
+INF_SUPPORTER_adj_0106	The Brilliant
+INF_SUPPORTER_adj_0107	The Deep Green
+INF_SUPPORTER_adj_0108	The Forest
+INF_SUPPORTER_adj_0109	The Pitching
+INF_SUPPORTER_adj_0110	The Twilight
+INF_SUPPORTER_adj_0111	The Dusk
+INF_SUPPORTER_adj_0112	The Flaming
+INF_SUPPORTER_adj_0113	The Fiery
+INF_SUPPORTER_adj_0114	The Crimson
+INF_SUPPORTER_adj_0115	The Dark
+INF_SUPPORTER_adj_0116	The Jet-black
+INF_SUPPORTER_adj_0117	The Shady
+INF_SUPPORTER_adj_0118	The Mist
+INF_SUPPORTER_adj_0119	The Snow White
+INF_SUPPORTER_adj_0120	The White
+INF_SUPPORTER_adj_0121	The Camouflage
+INF_SUPPORTER_adj_0122	The Polka-dot
+INF_SUPPORTER_adj_0123	The Zebra-striped
+INF_SUPPORTER_adj_0124	The Leopard-skin
+INF_SUPPORTER_adj_0125	The Shining
+INF_SUPPORTER_adj_0126	The Glowing
+INF_SUPPORTER_adj_0127	The Middle Eastern
+INF_SUPPORTER_adj_0128	The South American
+INF_SUPPORTER_adj_0129	The Oceanian
+INF_SUPPORTER_adj_0139	The Wind
+INF_SUPPORTER_noun_0000	None
+INF_SUPPORTER_noun_0001	Grandes
+INF_SUPPORTER_noun_0002	Triple Crowns
+INF_SUPPORTER_noun_0003	Armada
+INF_SUPPORTER_noun_0004	Valiants
+INF_SUPPORTER_noun_0005	Treasure
+INF_SUPPORTER_noun_0006	Champions
+INF_SUPPORTER_noun_0007	Kings
+INF_SUPPORTER_noun_0008	Emperors
+INF_SUPPORTER_noun_0009	Legends
+INF_SUPPORTER_noun_0010	Bluebloods
+INF_SUPPORTER_noun_0011	Invincibles
+INF_SUPPORTER_noun_0019	Hitmakers
+INF_SUPPORTER_noun_0021	Strongmen
+INF_SUPPORTER_noun_0023	Elites
+INF_SUPPORTER_noun_0034	Wonders
+INF_SUPPORTER_noun_0035	Phenomenons
+INF_SUPPORTER_noun_0036	Miracles
+INF_SUPPORTER_noun_0037	Miracles
+INF_SUPPORTER_noun_0038	Chicks
+INF_SUPPORTER_noun_0039	Niceguys
+INF_SUPPORTER_noun_0040	Circles
+INF_SUPPORTER_noun_0041	Friendlies
+INF_SUPPORTER_noun_0042	Spiceboys
+INF_SUPPORTER_noun_0049	Underdogs
+INF_SUPPORTER_noun_0050	Rejects
+INF_SUPPORTER_noun_0051	Comedians
+INF_SUPPORTER_noun_0052	Gibbets
+INF_SUPPORTER_noun_0054	Tragedians
+INF_SUPPORTER_noun_0055	Sidetrackers
+INF_SUPPORTER_noun_0056	Oberjeans
+INF_SUPPORTER_noun_0064	Badboys
+INF_SUPPORTER_noun_0066	Lightnings
+INF_SUPPORTER_noun_0067	Menaces
+INF_SUPPORTER_noun_0068	Warheads
+INF_SUPPORTER_noun_0069	Bombs
+INF_SUPPORTER_noun_0070	Thunder
+INF_SUPPORTER_noun_0072	Goalhunters
+INF_SUPPORTER_noun_0073	Goalmachines
+INF_SUPPORTER_noun_0074	Snipers
+INF_SUPPORTER_noun_0076	Final Weapons
+INF_SUPPORTER_noun_0083	Catenaccios
+INF_SUPPORTER_noun_0084	Giants
+INF_SUPPORTER_noun_0085	Demons
+INF_SUPPORTER_noun_0087	Shields
+INF_SUPPORTER_noun_0089	Barriers
+INF_SUPPORTER_noun_0097	Fantasies
+INF_SUPPORTER_noun_0098	Secrets
+INF_SUPPORTER_noun_0099	Fairies
+INF_SUPPORTER_noun_0100	Multitaskers
+INF_SUPPORTER_noun_0101	Conquerors
+INF_SUPPORTER_noun_0102	Workmen
+INF_SUPPORTER_noun_0103	Artists
+INF_SUPPORTER_noun_0104	Spectacles
+INF_SUPPORTER_noun_0109	Magicians
+INF_SUPPORTER_noun_0110	Precisions
+INF_SUPPORTER_noun_0111	Mysteries
+INF_SUPPORTER_noun_0112	Devils
+INF_SUPPORTER_noun_0114	Sorcerers
+INF_SUPPORTER_noun_0115	Blackholes
+INF_SUPPORTER_noun_0116	Supercomputers
+INF_SUPPORTER_noun_0117	Brains
+INF_SUPPORTER_noun_0118	Mystery Circle
+INF_SUPPORTER_noun_0120	Mystery Circle
+INF_SUPPORTER_noun_0125	Wildhawks
+INF_SUPPORTER_noun_0126	Gales
+INF_SUPPORTER_noun_0127	Comets
+INF_SUPPORTER_noun_0128	Flashes
+INF_SUPPORTER_noun_0131	Supernovas
+INF_SUPPORTER_noun_0132	Speedsters
+INF_SUPPORTER_noun_0133	Super Eagles
+INF_SUPPORTER_noun_0137	Lightnings
+INF_SUPPORTER_noun_0150	Monsters
+INF_SUPPORTER_noun_0151	Tanks
+INF_SUPPORTER_noun_0152	Fury
+INF_SUPPORTER_noun_0153	Wild Boars
+INF_SUPPORTER_noun_0154	Tigers
+INF_SUPPORTER_noun_0155	Monster Squad
+INF_SUPPORTER_noun_0156	Veterans
+INF_SUPPORTER_noun_0157	Kick & Rush
+INF_SUPPORTER_noun_0158	Newly Riches
+INF_SUPPORTER_noun_0159	Millionaires
+INF_SUPPORTER_noun_0160	Billionaires
+INF_SUPPORTER_noun_0161	Banks
+INF_SUPPORTER_noun_0162	Noblemen
+INF_SUPPORTER_noun_0168	Star Squad
+INF_SUPPORTER_noun_0169	Dream Team
+INF_SUPPORTER_noun_0170	Heroes
+INF_SUPPORTER_noun_0171	Boy Squad
+INF_SUPPORTER_noun_0172	Allstars
+INF_SUPPORTER_noun_0173	Superstars
+INF_SUPPORTER_noun_0174	Elite Squad
+INF_SUPPORTER_noun_0175	Galactic Squad
+INF_SUPPORTER_noun_0179	Griffins
+INF_SUPPORTER_noun_0180	Phoenixes
+INF_SUPPORTER_noun_0181	Phoenixes
+INF_SUPPORTER_noun_0182	Triple Scorers
+INF_SUPPORTER_noun_0183	Devils
+INF_SUPPORTER_noun_0184	Tridents
+INF_SUPPORTER_noun_0185	6th formers
+INF_SUPPORTER_noun_0186	6th form footballers
+INF_SUPPORTER_noun_0187	Lions
+INF_SUPPORTER_noun_0188	Lions
+INF_SUPPORTER_noun_0189	Lightning Giocatore
+INF_SUPPORTER_noun_0193	Suns
+INF_SUPPORTER_noun_0201	Entertainers
+INF_SUPPORTER_noun_0202	Pimp Squad
+INF_SUPPORTER_noun_0203	Symbols
+INF_SUPPORTER_noun_0204	Ambassadors
+INF_SUPPORTER_noun_0205	Born & Breds
+INF_SUPPORTER_noun_0206	Eleven
+INF_SUPPORTER_noun_0211	WCCF Cup Winner's Cup Champions
+INF_SUPPORTER_noun_0212	1st WCCF Cup Winner's Cup Champions
+INF_SUPPORTER_noun_0213	2nd WCCF Cup Winner's Cup Champions
+INF_SUPPORTER_noun_0214	3rd WCCF Cup Winner's Cup Champions
+INF_SUPPORTER_noun_0215	4th WCCF Cup Winner's Cup Champions
+INF_SUPPORTER_noun_0216	5th WCCF Cup Winner's Cup Champions
+INF_SUPPORTER_noun_0217	6th WCCF Cup Winner's Cup Champions
+INF_SUPPORTER_noun_0218	7th WCCF Cup Winner's Cup Champions
+INF_SUPPORTER_noun_0219	8th WCCF Cup Winner's Cup Champions
+INF_SUPPORTER_noun_0220	9th WCCF Cup Winner's Cup Champions
+INF_SUPPORTER_noun_0221	10th WCCF Cup Winner's Cup Champions
+INF_SUPPORTER_noun_0222	1st COPA VECEDORES WCCF Champions
+INF_SUPPORTER_noun_0223	2nd COPA VECEDORES WCCF Champions
+INF_SUPPORTER_noun_0224	3rd COPA VECEDORES WCCF Champions
+INF_SUPPORTER_noun_0225	4th COPA VECEDORES WCCF Champions
+INF_SUPPORTER_noun_0226	5th COPA VECEDORES WCCF Champions
+INF_SUPPORTER_noun_0227	6th COPA VECEDORES WCCF Champions
+INF_SUPPORTER_noun_0228	7th COPA VECEDORES WCCF Champions
+INF_SUPPORTER_noun_0229	8th COPA VECEDORES WCCF Champions
+INF_SUPPORTER_noun_0230	9th COPA VECEDORES WCCF Champions
+INF_SUPPORTER_noun_0231	10th COPA VECEDORES WCCF Champions
+INF_SUPPORTER_noun_0232	Japan Winner's Championship Champions
+INF_SUPPORTER_noun_0233	Japan Winner's Championship Champions
+INF_SUPPORTER_noun_0234	Hokkaido / Touhoku Regional Championship Champions
+INF_SUPPORTER_noun_0235	Hokkaido / Touhoku Regional Championship Champions
+INF_SUPPORTER_noun_0236	Kanto Regional Championship Champions
+INF_SUPPORTER_noun_0237	Kanto Regional Championship Champions
+INF_SUPPORTER_noun_0238	Tokyo / Kanagawa Regional Championship Champions
+INF_SUPPORTER_noun_0239	Tokyo / Kanagawa Regional Championship Champions
+INF_SUPPORTER_noun_0240	Chubu Regional Championship Champions
+INF_SUPPORTER_noun_0241	Chubu Regional Championship Champions
+INF_SUPPORTER_noun_0242	Tokai Regional Championship Champions
+INF_SUPPORTER_noun_0243	Tokai Regional Championship Champions
+INF_SUPPORTER_noun_0244	Kinki Regional Championship Champions
+INF_SUPPORTER_noun_0245	Kinki Regional Championship Champions
+INF_SUPPORTER_noun_0246	Chushikoku Regional Championship Champions
+INF_SUPPORTER_noun_0247	Chushikoku Regional Championship Champions
+INF_SUPPORTER_noun_0248	Kyushu Regional Championship Champions
+INF_SUPPORTER_noun_0249	Kyushu Regional Championship Champions
+INF_SUPPORTER_noun_0250	Top Team
+INF_SUPPORTER_noun_0251	Previous Champions
+INF_SUPPORTER_noun_0252	Defending Champions
+INF_SUPPORTER_noun_0253	Previous Champions
+INF_SUPPORTER_noun_0254	Champions
+INF_SUPPORTER_noun_0255	Champions
+INF_SUPPORTER_noun_0270	Hope
+INF_SUPPORTER_noun_0272	Masters
+INF_SUPPORTER_noun_0273	Pride
+INF_SUPPORTER_noun_0274	Screams
+INF_SUPPORTER_noun_0275	Multinational Squad
+INF_SUPPORTER_noun_0276	Suns
+INF_SUPPORTER_noun_0277	Jewels
+INF_SUPPORTER_noun_0278	Dictators
+INF_CLUBHOUSER_contents_0000	On the pitch
+INF_CLUBHOUSER_message_0015	Renovation will commence after the next match.
+INF_WEEKLYCHAMPION_area_0001	KANTO
+INF_WEEKLYCHAMPION_area_0003	CHUBU
+INF_WEEKLYCHAMPION_area_0004	TOKAI
+INF_WEEKLYCHAMPION_area_0005	KINKI
+INF_WEEKLYCHAMPION_area_0006	CHU-SHIKOKU
+INF_WEEKLYCHAMPION_area_0007	KYUSHU
+INF_FANEVENT_contents_0000	Prize Money:
+INF_FANEVENT_contents_0002	$%d00
+INF_LASTWEEKLY_contents_0002	%d th Place
+INF_LASTWEEKLY_contents_0004	%d th Place
+INF_057_contents_0002	1st Round Lost
+INF_057_contents_0003	2nd Round Lost
+INF_057_contents_0004	3rd Round Lost
+INF_057_contents_0008	Semifinals
+INF_059_contents_0006	Semifinals
+INF_070_contents_0005	Semifinals
+INF_072_contents_0005	Semifinals
+MAN_MENU_button_0000	OK
+MAN_MENU_time_0001	Match begins in
+MAN_TICKER_message_0004	Opponent Selected
+MAN_TICKER_contents_0000	The Final
+MAN_TICKER_contents_0001	Semifinals
+MAN_TICKER_contents_0002	Quarterfinals
+MAN_MAP_header_0001	On the pitch
+MAN_MAP_explain_0004	Arrange Fixture
+MAN_MAP_explain_0005	Player Evaluation
+MAN_MAP_explain_0006	Team Data
+MAN_MAP_explain_0007	Player Data
+MAN_MAP_explain_0008	Manager Data
+MAN_MAP_explain_0009	Resign
+MAN_MENU_header_0002	On the pitch
+MAN_MENU_header_0009	Training
+MAN_MENU_header_0012	Player Evaluation
+MAN_MENU_facilities_0000	On the pitch
+MAN_MENU_facilities_0005	Training
+MAN_MENU_facilities_0008	Player Evaluation
+MAN_FACILITIES_message_0003	We will now proceed to the match.
+MAN_MENU_action_0001	Arrange Fixture
+MAN_MENU_action_0002	Team Data
+MAN_MENU_action_0003	Player Data
+MAN_MENU_action_0004	Manager Data
+MAN_MENU_action_0005	Resign
+MAN_ACTION_message_0016	Challenge a selected opponent to a match.
+MAN_ENTRY_contents_0002	Possession
+MAN_ENTRY_contents_0007	Possession
+MAN_ENTRY_message_0000	Lay out Player Cards.
+MAN_ENTRY_message_0002	Even with star players, your finances should be\nstable. It looks like smooth sailing from here on.
+MAN_ENTRY_message_0003	You have some top players in your club.\nRaise enough money to keep it afloat.
+MAN_ENTRY_message_0004	You have many star players in your club.\nRaise income from prize money to keep it afloat.
+MAN_APPLICATION_seat_0004	Not available
+MAN_APPLICATION_seat_0005	Not available
+MAN_APPLICATION_seat_0006	Not available
+MAN_APPLICATION_seat_0012	Opponent Selected
+MAN_APPLICATION_action_0000	Cancel Selection
+MAN_APPLICATION_message_0000	Opponent challenge cancelled.
+MAN_APPLICATION_message_0001	Opponent challenge issued.
+MAN_APPLICATION_message_0002	Select an opponent.\nFriendly Matches will be given top priority.
+MAN_APPLICATION_message_0003	Challenge a selected opponent to a match. As soon\nas the opponent registers, the match will begin.
+MAN_APPLICATION_message_0004	Challenge a selected opponent to a match. Select\nan already-registered opponent to begin the match.
+MAN_TEAM_header_0001	Prize Money:
+MAN_TEAM_header_0002	Record:
+MAN_TEAM_header_0003	Record Winning Streak:
+MAN_TEAM_header_0012	Position
+MAN_TEAM_contents_0004	%d 
+MAN_TEAM_contents_0005	0
+MAN_TEAM_contents_0028	%d times
+MAN_TEAM_contents_0033	%d th Place
+MAN_TEAM_contents_0039	Champions
+MAN_TEAM_contents_0040	Semifinals
+MAN_TEAM_contents_0043	(Complete)
+MAN_TEAM_contents_0044	%d Matches
+MAN_TEAM_contents_0048	Goals Scored 
+MAN_TEAM_contents_0055	%d/%d
+MAN_TEAM_contents_0056	0
+MAN_TEAM_contents_0057	%d 
+MAN_TEAM_contents_0058	Advance to the Final
+MAN_TEAM_contents_0059	Advance to Semifinals
+MAN_PLAYER_header_0000	Registered Players
+MAN_PLAYER_header_0004	Competitive Matches Played
+MAN_MANAGER_header_0001	National Manager Ranking:
+MAN_MANAGER_header_0002	Annual Salary:
+MAN_MANAGER_header_0003	Career Record:
+MAN_MANAGER_header_0004	Record Winning Streak:
+MAN_MANAGER_header_0007	Regular League History
+MAN_MANAGER_header_0013	Season
+MAN_MANAGER_contents_0006	%d 
+MAN_MANAGER_contents_0008	%d th Place
+MAN_0506LICENSE_header_0003	Record Winning Streak:
+MAN_0506LICENSE_contents_0005	%d 
+MAN_RETIRE_choices_0000	Yes
+MAN_RETIRE_choices_0001	No
+MAN_COOPERATION_header_0000	Team Partnerships
+MAN_CONT_message_0000	Please wait for all matches to end.
+MAN_CONT_message_0001	Remove Player Card.
+MAN_CONT_message_0002	Continue?
+MAN_CONT_message_0003	Yes
+MAN_CONT_message_0004	No
+MAN_END_header_0000	Record
+MAN_END_header_0001	Previous
+MAN_END_header_0002	Salary
+MAN_DATA_header_0014	National Manager Ranking:
+MAN_DATA_header_0015	Annual Salary:
+MAN_DATA_header_0017	Record:
+MAN_DATA_header_0018	Registered Players
+MAN_DATA_contents_0009	W%d L%d D%d
+MAN_DATA_wtdata_0005	Advance to Semifinals
+MAN_DATA_wtdata_0006	Advance to the Final
+MAN_DATA_wtdata_0012	2nd Round Lost
+MAN_DATA_wtdata_0013	Quarterfinals Lost
+MAN_DATA_wtdata_0015	Champions
+MAN_DATA_wtdata_0022	Semifinals Lost
+MAN_TOP_menu_0002	Communication
+MAN_COM_menu_0000	On the pitch
+MAN_DATA_menu_0000	Team Data
+MAN_DATA_menu_0001	Player Data
+MAN_DATA_menu_0002	Manager Data
+MAN_Regist_menu_0001	Arrange Fixture
+MAN_Regist_menu_0004	Resign
+MAN_TOP_message_0001	We will now proceed to the match.
+MAN_TRADE_window_0011	Yes
+MAN_TRADE_window_0012	No
+TRA_MENU_menu_0000	Day Off
+TRA_MENU_menu_0005	Special
+TRA_THEME_menu_0001	Attack
+TRA_THEME_menu_0002	Defence
+TRA_THEME_menu_0003	Passing
+TRA_THEME_menu_0004	Possession
+TRA_THEME_menu_0005	Speed
+TRA_THEME_menu_0006	Power
+TRA_THEME_menu_0016	Training Match
+TRA_THEME_menu_0037	Catenaccios
+TRA_THEME_menu_0038	Kick & Rush
+TRA_THEME_Raremenu_0001	Coach
+TRA_SCENE_state_0001	Very impressive.\nThey seem to have mastered this skill completely.
+TRA_SCENE_state_0002	They're giving their all out there.\nThey're playing with everything they've got.
+TRA_SCENE_state_0003	They're knocking it around well.\nThey're really getting down to business out there.
+TRA_SCENE_state_0004	They're putting in a decent effort.
+TRA_SCENE_state_0005	They're just not playing well.\nThey don't seem to know what's expected from them.
+TRA_SCENE_state_0006	The players go home smiling.
+TRA_RESULT_message_0106	The players' mood has changed abruptly.\nThe losing streak should end now.
+TRA_RESULT_message_0107	The players are eager to break the losing streak.\nThe next match should be quite interesting.
+TRA_RESULT_message_0023	Their attack rating is now at the lowest level.\nYou must try to improve their skills.
+TRA_TOP_menu_0001	Special
+TRA_TOP_menu_0002	Day Off
+INF_COACHTRAINING_choices_0004	Yes
+INF_COACHTRAINING_choices_0005	No
+COM_ROLE_answer_0002	He should pull things together well.\nYour club will be whipped into shape in no time.
+COM_ROLE_answer_0003	He seems very confident about being captain.\nHe should handle everything competently.
+COM_ROLE_answer_0004	It seems like he's always wanted to be captain.\nHe is more determined than ever.
+COM_ROLE_answer_0006	He's happy to have earned your trust.\nHe should score a goal anytime he gets the chance.
+COM_ROLE_answer_0007	He seems happy to be given such an important role.\nHe should come through when needed.
+COM_ROLE_answer_0008	It's not a good idea to simply change captains.\nYou seem to have lost his trust.
+COM_ROLE_answer_0009	It doesn't seem like he wanted to be captain.\nHe's already feeling the pressure.
+COM_ROLE_answer_0011	He isn't really the right choice for captain.\nWill he be able to whip the team into shape?
+COM_ROLE_answer_0014	He doesn't seem to understand why he was selected.\nHe seems disappointed by your decision.
+COM_ROLE_answer_0015	He's nervous about being the penalty taker.\nIt seems like it is too much for him.
+COM_ROLE_answer_0016	He's already the captain.\nHe seems quite shocked that you forgot.
+COM_ROLE_answer_0017	It was risky to make the Goalie CK Taker.\nHe's refused to take the responsibility.
+COM_ROLE_answer_0019	It seems he was unhappy anyway.\nIt's a good thing you replaced him.
+COM_ROLE_answer_0020	It seems like he was under considerable pressure.\nHe is happy you got this off his back.
+COM_ROLE_answer_0021	He seems disappointed that you didn't think\ntoo highly of his ability.
+COM_ROLE_answer_0022	He doesn't understand why you replaced him.\nHe seems quite upset by your decision.
+COM_ROLE_answer_0024	%s's morale has been dampened upon\nfinding out he is no longer team captain.
+COM_ROLE_answer_0026	The players morale has taken a dip as they are\nnot confident in their new team captain.
+COM_ROLE_answer_0038	It's not a good idea to simply change captains.\nYou seem to have lost his trust.
+COM_ROLE_answer_0039	It doesn't seem like he wanted to be captain.\nHe's already feeling the pressure.
+COM_ROLE_answer_0041	He isn't really the right choice for captain.\nWill he be able to whip the team into shape?
+COM_ROLE_answer_0044	He doesn't seem to understand why he was selected.\nHe seems disappointed by your decision.
+COM_ROLE_answer_0045	He's nervous about being the penalty taker.\nIt seems like it is too much for him.
+COM_ROLE_answer_0046	He's already the captain.\nHe seems quite shocked that you forgot.
+COM_ROLE_answer_0047	It was risky to make the Goalie CK Taker.\nHe's refused to take the responsibility.
+COM_ROLE_answer_0048	%s's morale has been dampened upon\nfinding out he is no longer team captain.
+COM_ROLE_answer_0050	The players morale has taken a dip as they are\nnot confident in their new team captain.
+COM_TRAINING_choices_0001	Defence
+COM_TRAINING_choices_0003	Power
+COM_TRAINING_choices_0007	Defence
+COM_TRAINING_choices_0009	Power
+COM_TRAINING_choices_0015	Give Football Lessons
+COM_TRAINING_choices_0016	Give Interviews
+COM_TRAINING_choices_0017	Appear on TV
+COM_TRAINING_choices_0038	Apologize
+COM_TRAINING_choices_0039	Flatter him
+COM_TRAINING_choices_0040	Share your dreams
+COM_TRAINING_answer_0046	Your apology seems to have made him feel better.
+COM_TRAINING_answer_0047	It doesn't seem like your apology worked.
+COM_TRAINING_answer_0048	You were right in flattering him.\nHe seems to be in a good mood now.
+COM_TRAINING_answer_0049	Flattery didn't seem to work this time around.
+COM_TRAINING_answer_0050	He seems impressed with your dreams.\nYou've made him feel better.
+COM_MEETING_choices_0008	Give Football Lessons
+COM_MEETING_choices_0009	Give Interviews
+COM_MEETING_choices_0010	Appear on TV
+COM_MEETING_choices_0019	Explain it to him
+COM_MEETING_choices_0020	Have him think more
+COM_MEETING_choices_0021	Give him a book
+COM_MEETING_answer_0027	It seems like he understood you very well.
+COM_MEETING_answer_0028	It doesn't seem like he understood you.
+COM_MEETING_answer_0029	He seems to have found the answer by himself.\nThere's nothing to worry about now.
+COM_MEETING_answer_0030	It's no use if he didn't understand it to begin with.\nHe seems more confused than ever.
+COM_MEETING_answer_0031	It seems like he's wanted this book for a while.\nHe should be able to understand your tactics now.
+COM_MEETING_answer_0032	He seems to think you depend too much on books.\nHe's lost some respect for you.
+COM_DISCONTENT_choices_0012	What number will you give him?
+COM_DISCONTENT_choices_0018	Ignore him
+COM_DISCONTENT_choices_0025	Listen to him
+COM_DISCONTENT_choices_0027	Ask him what to do
+COM_DISCONTENT_choices_0028	Use him
+COM_DISCONTENT_choices_0029	Don't use him
+COM_DISCONTENT_choices_0030	Pat him on the head
+COM_DISCONTENT_choices_0031	Encourage him
+COM_DISCONTENT_choices_0032	Shout at him
+COM_DISCONTENT_choices_0033	Ask what's wrong
+COM_DISCONTENT_choices_0034	Think about it
+COM_DISCONTENT_choices_0035	Decline
+COM_DISCONTENT_choices_0036	Invite him out
+COM_DISCONTENT_choices_0037	Think about it
+COM_DISCONTENT_choices_0038	Decline
+COM_DISCONTENT_choices_0039	Invite him out
+COM_DISCONTENT_choices_0040	Think about it
+COM_DISCONTENT_choices_0041	Decline
+COM_DISCONTENT_choices_0042	Drop him
+COM_DISCONTENT_choices_0043	Refuse
+COM_DISCONTENT_choices_0044	Accept
+COM_DISCONTENT_choices_0045	Insult him
+COM_DISCONTENT_choices_0046	Go with him
+COM_DISCONTENT_choices_0047	Don't go
+COM_DISCONTENT_choices_0048	Join him later
+COM_DISCONTENT_choices_0049	Yes, I think so
+COM_DISCONTENT_choices_0050	No, it isn't
+COM_DISCONTENT_choices_0051	I'll think about it
+COM_DISCONTENT_choices_0052	Think about it
+COM_DISCONTENT_choices_0053	Decline
+COM_DISCONTENT_choices_0054	Drop him
+COM_DISCONTENT_choices_0055	Think about it
+COM_DISCONTENT_choices_0056	Refuse
+COM_DISCONTENT_choices_0057	Make him wait
+COM_DISCONTENT_answer_0009	It seems he likes his new number.\nHe has left the room with a big grin.
+COM_DISCONTENT_answer_0010	It's the right number for him.\nHe should play well for you now.
+COM_DISCONTENT_answer_0011	He feels you have a lot of faith in him.\nExpect some great performances from him.
+COM_DISCONTENT_answer_0012	He seems happy, it was a shirt number he wanted.\nHe seems more ready than ever for the next match.
+COM_DISCONTENT_answer_0013	He seems happy to have received a new shirt number.\nHis morale should be refreshed as well.
+COM_DISCONTENT_answer_0014	%s seems to like his new shirt number.
+COM_DISCONTENT_answer_0015	His present shirt number seems to mean something.\nHe seems sad that you've changed it.
+COM_DISCONTENT_answer_0016	He doesn't seem to care for his new shirt number.\nYou should have thought more about what he wanted.
+COM_DISCONTENT_answer_0017	He doesn't seem too keen on his new shirt number.\nHe seems uneasy that you've changed it.
+COM_DISCONTENT_answer_0018	He seems happy enough with his present shirt number.\nHe seems sad you've changed it.
+COM_DISCONTENT_answer_0019	He doesn't get why you changed his shirt number.\nHe seems quite disappointed.
+COM_DISCONTENT_answer_0020	Having his shirt number changed seems to have\ndisappointed %s somewhat.
+COM_DISCONTENT_answer_0021	He seems quite shocked that you don't\nremember his shirt number.
+COM_DISCONTENT_answer_0022	Anyone will feel bad if you keep changing\ntheir shirt number.
+COM_DISCONTENT_answer_0023	Unable to receive any advice,\n%s has left the room dejected.
+COM_DISCONTENT_answer_0049	He seems happy that you listen to your players.\nHe also seems to have understood your tactics.
+COM_DISCONTENT_answer_0053	He seems happy with your confidence in his opinion.\nYou've succeeded in bonding with him.
+COM_DISCONTENT_answer_0055	He seems quite happy that you\nwill be using him in the match.
+COM_DISCONTENT_answer_0057	A newfound determination seems to have lit up in him.\nHe will be sure to practice harder from here on.
+COM_DISCONTENT_answer_0059	He seems a little embarrassed, but happy.
+COM_DISCONTENT_answer_0061	Your encouragement seems to have worked.
+COM_DISCONTENT_answer_0063	It seems like you reached out to him successfully.\nHe seems like a changed man now.
+COM_DISCONTENT_answer_0065	He seems quite happy that you were worried about him.
+COM_DISCONTENT_answer_0067	He seems happy you're considering him.\nIt might be a good idea to just give him the job.
+COM_DISCONTENT_answer_0069	Your clear response has registered strongly.\nHe should practice harder than ever now.
+COM_DISCONTENT_answer_0071	It looks like you succesfully diverted him.\nWhen you can't give a direct response, bluff.
+COM_DISCONTENT_answer_0073	He seems happy you're considering him.\nIt might be a good idea to just give him the job.
+COM_DISCONTENT_answer_0075	Your clear response has registered strongly.\nHe should practice harder than ever now.
+COM_DISCONTENT_answer_0077	It looks like you succesfully diverted him.\nWhen you can't give a direct response, bluff.
+COM_DISCONTENT_answer_0079	He seems happy you took the time to listen.\nIt's a good thing you decided to chat.
+COM_DISCONTENT_answer_0081	It seems like he understands.\nFootball is, after all, a team sport.
+COM_DISCONTENT_answer_0083	It seems he wanted his ideal position, even as a sub.\nIt was a good thing you paid attention to this.
+COM_DISCONTENT_answer_0085	He seems to understand how much he means to the team.\nNow would not be a good time for him to leave.
+COM_DISCONTENT_answer_0087	He seems happy that you care about him.\nHe might change his mind.
+COM_DISCONTENT_answer_0089	He seems to understand that you share his unease.\nHe might stay and help rebuild your finances.
+COM_DISCONTENT_answer_0091	He seems happy that you have agreed to go with him.
+COM_DISCONTENT_answer_0093	It doesn't seem like he really meant it.\nYour were right in turning him down.
+COM_DISCONTENT_answer_0097	He seems happy that you agree with him.
+COM_DISCONTENT_answer_0101	He seems relieved that you are\ngiving it serious thought.
+COM_DISCONTENT_answer_0103	He seems happy you took the time to listen.\nIt's a good thing you decided to chat.
+COM_DISCONTENT_answer_0109	He seems happy that you agreed. Everyone wants to\nplay with their favourite shirt number.
+COM_DISCONTENT_answer_0111	He seems to understand what his shirt number means.\nYou were able to show you really thought about this.
+COM_DISCONTENT_answer_0113	He seems happy that you are willing to listen.\nHe's looking forward to receiving his new number.
+COM_COOPERATION_question_0003	Losing this pair would be a big blow to your team.\nWhat will you tell them?
+COM_COOPERATION_question_0004	They are having trouble working as a partnership.\nWhat will you do?
+COM_COOPERATION_choices_0008	Give Football Lessons
+COM_COOPERATION_choices_0009	Give Interviews
+COM_COOPERATION_choices_0010	Appear on TV
+COM_COOPERATION_choices_0017	Talk to them
+COM_COOPERATION_choices_0019	Talk to them
+COM_COOPERATION_choices_0022	Introduce them
+COM_COOPERATION_choices_0023	Let them do it
+COM_COOPERATION_choices_0024	Introduce yourself
+COM_COOPERATION_choices_0026	Distance them
+COM_COOPERATION_choices_0027	Start Crying
+COM_COOPERATION_choices_0028	Their strengths
+COM_COOPERATION_choices_0029	Their weaknesses
+COM_COOPERATION_choices_0030	Their hobbies
+COM_COOPERATION_choices_0031	Partnership
+COM_COOPERATION_choices_0032	Individual play
+COM_COOPERATION_choices_0033	Current trends
+COM_COOPERATION_choices_0034	Review tactics
+COM_COOPERATION_choices_0035	Watch the match tape
+COM_COOPERATION_choices_0036	Go driving
+COM_COOPERATION_choices_0037	On the pitch
+COM_COOPERATION_choices_0038	At a restaurant
+COM_COOPERATION_choices_0039	At a pub
+COM_COOPERATION_choices_0040	Talk passionately
+COM_COOPERATION_choices_0041	Talk calmly
+COM_COOPERATION_choices_0042	Talk jokingly
+COM_COOPERATION_choices_0043	Very good
+COM_COOPERATION_choices_0044	Not good enough
+COM_COOPERATION_choices_0045	Ignore them
+COM_COOPERATION_choices_0049	Chinese Food
+COM_COOPERATION_choices_0050	Pub Food
+COM_COOPERATION_choices_0051	Indian Food
+COM_COOPERATION_answer_0021	The additional practice didn't seem to do much.\nPractice probably won't bring them any closer.
+COM_COOPERATION_answer_0023	They don't seem to know what to talk about.\nThere seems to be a limit to their communication.
+COM_COOPERATION_answer_0025	They seem worried that you want to go with them.\nThey only want to know you on a professional basis.
+COM_COOPERATION_answer_0035	It doesn't seem like they knew each other well.\nThis should begin to strengthen their relationship.
+COM_COOPERATION_answer_0036	They can't talk about themselves out of the blue.\nThey seem even more uneasy with each other now.
+COM_COOPERATION_answer_0037	They seem to share a mutual respect for you.\nTheir relationship should get better from here on.
+COM_COOPERATION_answer_0038	Introducing yourself doesn't seem to have worked.\nYou should have just introduced them to each other.
+COM_COOPERATION_answer_0039	It's always better to talk about what's on your mind.\nIt seems to have made everyone feel better.
+COM_COOPERATION_answer_0041	It's good to split players apart once in a while.\nThis should help calm them down.
+COM_COOPERATION_answer_0042	It doesn't look like that is what they wanted.\nDistancing them won't help the situation.
+COM_COOPERATION_answer_0043	They seem to understand that you care about them.\nIt's important to show your emotions at times.
+COM_COOPERATION_answer_0044	You shouldn't show your soft side so easily.\nThey seem to be in disbelief over your crying.
+COM_COOPERATION_answer_0045	He seems to have realized his partner is a nice guy.\nHe should be more willing to get to know him.
+COM_COOPERATION_answer_0046	It seemed like an obvious manoeuvre on your part.\nIntroducing their strengths won't bring them closer.
+COM_COOPERATION_answer_0047	They seem relieved that you spoke on their behalf.\nNow they can start over with each other.
+COM_COOPERATION_answer_0048	Doesn't seem like it was a good idea.\nThey seem to be quite embarrassed by it.
+COM_COOPERATION_answer_0049	It's good to get to know your players personally.\nYou should all be able to understand each other.
+COM_COOPERATION_answer_0050	You shouldn't disclose information that personal.\nFocus on mutually beneficial information next time.
+COM_COOPERATION_answer_0051	They've grasped the importance of a good partnership.\nThis should allow them to mature as players.
+COM_COOPERATION_answer_0052	It doesn't seem like they were ready to discuss it.\nYou should start with more general things first.
+COM_COOPERATION_answer_0053	They understand playing alone doesn't win matches.\nThey should improve on their partnership now.
+COM_COOPERATION_answer_0056	You shouldn't have bothered them at such a busy time.\nThink of something more important to say next time.
+COM_COOPERATION_answer_0058	They seem to understand your tactics well enough.\nThere was no need to labour the point.
+COM_COOPERATION_answer_0059	They now know what they did wrong in the last match.\nExpect a stronger partnership from now.
+COM_COOPERATION_answer_0060	They didn't find anything that needed improvement.\nIt doesn't look like it did much for them.
+COM_COOPERATION_answer_0062	It's not something they are interested in.\nShouldn't you focus on football?
+COM_COOPERATION_answer_0063	Improving their partnership does require practice.\nThis proved to be an effective strategy.
+COM_COOPERATION_answer_0065	Can't play on an empty stomach.\nYou three should also get to know each other better.
+COM_COOPERATION_answer_0066	They didn't seem particularly hungry.\nLooks like you were the only one who wanted to eat.
+COM_COOPERATION_answer_0068	This is no time for recreation.\nYou have to improve their partnership first.
+COM_COOPERATION_answer_0070	It doesn't look like they got your point.\nThink things over before talking the next time.
+COM_COOPERATION_answer_0071	It's good to be calm before a big game.\nThey've learned something valuable.
+COM_COOPERATION_answer_0072	It looks to have gone in one ear and out the other.\nThey leave scratching their heads.
+COM_COOPERATION_answer_0075	They seem very happy.\nThis should encourage them to try even harder.
+COM_COOPERATION_answer_0078	They seemed to be confident of their partnership.\nThey seem somewhat disappointed now.
+COM_COOPERATION_answer_0079	They understand you have other priorities.\nThey should focus strictly on practicing now.
+COM_COOPERATION_answer_0080	They seem shocked they couldn't get a response.\nBe sure to get your answers out sooner.
+COM_COOPERATION_answer_0087	Looks like they were in the mood for Chinese.\nYou should all have a good time tonight.
+COM_COOPERATION_answer_0088	It doesn't look like they were up for Chinese.\nThey seem disappointed.
+COM_COOPERATION_answer_0089	Looks like they were in the mood for pub food.\nThis should give them the strength to practice hard.
+COM_COOPERATION_answer_0090	It doesn't look like they were up for pub food.\nThey seem disappointed.
+COM_COOPERATION_answer_0092	Eating prior to a match isn't the best idea.\nMake sure their stomachs don't suffer.
+COM_COOPERATION_answer_0107	It doesn't seem like they knew each other well.\nThis should begin to strengthen their relationship.
+COM_COOPERATION_answer_0108	They can't talk about themselves out of the blue.\nThey seem even more uneasy with each other now.
+COM_COOPERATION_answer_0109	They seem to share a mutual respect for you.\nTheir relationship should get better from here on.
+COM_COOPERATION_answer_0110	Introducing yourself doesn't seem to have worked.\nYou should have just introduced them to each other.
+COM_COOPERATION_answer_0111	It's always better to talk about what's on your mind.\nIt seems to have made everyone feel better.
+COM_COOPERATION_answer_0113	It's good to split players apart once in a while.\nThis should help calm them down.
+COM_COOPERATION_answer_0114	It doesn't look like that is what they wanted.\nDistancing them won't help the situation.
+COM_COOPERATION_answer_0115	They seem to understand that you care about them.\nIt's important to show your emotions at times.
+COM_COOPERATION_answer_0116	You shouldn't show your soft side so easily.\nThey seem to be in disbelief over your crying.
+COM_COOPERATION_answer_0117	He seems to have realized his partner is a nice guy.\nHe should be more willing to get to know him.
+COM_COOPERATION_answer_0118	It seemed like an obvious manoeuvre on your part.\nIntroducing their strengths won't bring them closer.
+COM_COOPERATION_answer_0119	They seem relieved that you spoke on their behalf.\nNow they can start over with each other.
+COM_COOPERATION_answer_0120	Doesn't seem like it was a good idea.\nThey seem to be quite embarrassed by it.
+COM_COOPERATION_answer_0121	It's good to get to know your players personally.\nYou should all be able to understand each other.
+COM_COOPERATION_answer_0122	You shouldn't disclose information that personal.\nFocus on mutually beneficial information next time.
+COM_COOPERATION_answer_0123	They've grasped the importance of a good partnership.\nThis should allow them to mature as players.
+COM_COOPERATION_answer_0124	It doesn't seem like they were ready to discuss it.\nYou should start with more general things first.
+COM_COOPERATION_answer_0125	They understand playing alone doesn't win matches.\nThey should improve on their partnership now.
+COM_COOPERATION_answer_0128	You shouldn't have bothered them at such a busy time.\nThink of something more important to say next time.
+COM_COOPERATION_answer_0130	They seem to understand your tactics well enough.\nThere was no need to labour the point.
+COM_COOPERATION_answer_0131	They now know what they did wrong in the last match.\nExpect a stronger partnership from now.
+COM_COOPERATION_answer_0132	They didn't find anything that needed improvement.\nIt doesn't look like it did much for them.
+COM_COOPERATION_answer_0134	It's not something they are interested in.\nShouldn't you focus on football?
+COM_COOPERATION_answer_0135	Improving their partnership does require practice.\nThis proved to be an effective strategy.
+COM_COOPERATION_answer_0137	Can't play on an empty stomach.\nYou three should also get to know each other better.
+COM_COOPERATION_answer_0138	They didn't seem particularly hungry.\nLooks like you were the only one who wanted to eat.
+COM_COOPERATION_answer_0140	This is no time for recreation.\nYou have to improve their partnership first.
+COM_COOPERATION_answer_0142	It doesn't look like they got your point.\nThink things over before talking the next time.
+COM_COOPERATION_answer_0143	It's good to be calm before a big game.\nThey've learned something valuable.
+COM_COOPERATION_answer_0144	It looks to have gone in one ear and out the other.\nThey leave scratching their heads.
+COM_COOPERATION_answer_0147	They seem very happy.\nThis should encourage them to try even harder.
+COM_COOPERATION_answer_0150	They seemed to be confident of their partnership.\nThey seem somewhat disappointed now.
+COM_COOPERATION_answer_0151	They understand you have other priorities.\nThey should focus strictly on practicing now.
+COM_COOPERATION_answer_0152	They seem shocked they couldn't get a response.\nBe sure to get your answers out sooner.
+COM_COOPERATION_answer_0164	Eating prior to a match isn't the best idea.\nMake sure their stomachs don't suffer.
+COM_STAMINA_question_0005	Everything seem to be OK.\nWhat will you talk about?
+COM_STAMINA_choices_0000	Encourage him
+COM_STAMINA_choices_0001	Shout at him
+COM_STAMINA_choices_0002	Ask what's wrong
+COM_STAMINA_choices_0003	Rest him
+COM_STAMINA_choices_0015	His life
+COM_STAMINA_choices_0016	The match
+COM_STAMINA_choices_0017	The past
+COM_STAMINA_answer_0001	Your encouragement seems to have worked.
+COM_STAMINA_answer_0002	It doesn't look like your encouragement worked.
+COM_STAMINA_answer_0003	It seems like you reached out to him successfully.\nHe seems like a changed man now.
+COM_STAMINA_answer_0005	He seems quite happy that you were worried about him.
+COM_STAMINA_answer_0008	Finding out he will be resting\nonly seems to have made it worse.
+COM_STAMINA_answer_0009	This should make him feel better.
+COM_STAMINA_answer_0012	It doesn't seem like it worked.\nHe's left the room feeling even worse.
+COM_STAMINA_answer_0031	Your casual chatter seems to have loosened him up.
+COM_STAMINA_answer_0033	He seems more ready than ever for the next match.
+COM_STAMINA_answer_0034	Talking about the match seems to have annoyed him.\nYou should let your players relax once in a while.
+COM_STAMINA_answer_0035	He seems quite touched by your story.\nHe should continue to respect you from here on.
+COM_STAMINA_answer_0036	You've brought up a bad memory from his past.\nIt seems like you made him upset.
+COM_INJURY_choices_0000	Calm him down
+COM_INJURY_choices_0001	Treat his injury
+COM_INJURY_choices_0002	Touch his injury
+COM_INJURY_answer_0000	He will rest in the clinic.
+COM_INJURY_answer_0002	He will be taken care of at the clinic.
+COM_INJURY_answer_0003	It will be a while before he recovers.
+COM_INJURY_answer_0005	It didn't help. He's still in considerable pain.
+COM_MEETINGBAD_choices_0002	. . .
+COM_NEW_GROUND_choice_0001_00	Apologize
+COM_NEW_GROUND_choice_0001_02	Give him a hug
+COM_NEW_GROUND_choice_0006_01	Defence
+COM_NEW_GROUND_choice_0006_03	Power
+COM_NEW_GROUND_choice_0008_00	Apologize
+COM_NEW_GROUND_choice_0008_02	Give him a hug
+COM_NEW_GROUND_choice_0012_01	Defence
+COM_NEW_GROUND_choice_0012_03	Power
+COM_NEW_GROUND_choice_0013_01	Defence
+COM_NEW_GROUND_choice_0013_03	Power
+COM_NEW_GROUND_choice_0028_01	Defence
+COM_NEW_GROUND_choice_0028_03	Power
+COM_NEW_GROUND_choice_0029_01	Defence
+COM_NEW_GROUND_choice_0029_03	Power
+COM_NEW_LOUNGE_choices_0002_00	Encourage him
+COM_NEW_LOUNGE_choices_0002_01	Calm him down
+COM_NEW_LOUNGE_choices_0002_02	Say nothing
+COM_NEW_LOUNGE_choices_0006_00	Have them practice 
+COM_NEW_LOUNGE_choices_0007_00	Have them practice 
+COM_NEW_LOUNGE_choices_0010_00	Individual play
+COM_NEW_LOUNGE_choices_0010_01	Partnership
+COM_NEW_LOUNGE_choices_0011_00	Individual play
+COM_NEW_LOUNGE_choices_0011_01	Partnership
+COM_NEW_LOUNGE_choices_0012_00	Their strengths
+COM_NEW_LOUNGE_choices_0012_01	Their weaknesses
+COM_NEW_LOUNGE_choices_0013_00	Their strengths
+COM_NEW_LOUNGE_choices_0013_01	Their weaknesses
+COM_MAX_MTG_choices_0001_01	Calm him down
+COM_MAX_MTG_choices_0001_02	Say nothing
+GAM_OROGINAL_stadium_0000	Stadio Roma
+GAM_OROGINAL_stadium_0001	Stadio Grands Montes
+GAM_OROGINAL_stadium_0002	Stadio Napoli
+GAM_OROGINAL_stadium_0003	Stadio Firenze
+GAM_OROGINAL_stadium_0004	Estadio El Salvatore
+GAM_OROGINAL_stadium_0005	Estadio Valencia
+GAM_OROGINAL_stadium_0006	Estadio la Coruna
+GAM_OROGINAL_stadium_0007	Estadio Valladolid
+GAM_OROGINAL_stadium_0008	London Stadium
+GAM_OROGINAL_stadium_0009	Manchester Stadium
+GAM_OROGINAL_stadium_0010	Liverpool Stadium
+GAM_OROGINAL_stadium_0011	Leeds Stadium
+GAM_OROGINAL_stadium_0012	Berlin Stadion
+GAM_OROGINAL_stadium_0013	Bremen Stadion
+GAM_OROGINAL_stadium_0014	Hamburg Stadion
+GAM_OROGINAL_stadium_0015	Dortmund Stadion
+GAM_OROGINAL_stadium_0016	Stade du Monaco
+GAM_OROGINAL_stadium_0017	Stade du Triomphe
+GAM_OROGINAL_stadium_0018	Parc Marseilles
+GAM_OROGINAL_stadium_0019	Parc de Lyon
+GAM_OROGINAL_stadium_0020	Stade du Bordeaux
+GAM_OROGINAL_stadium_0021	Diamant Arena
+GAM_OROGINAL_stadium_0022	Amsterdam Stadion
+GAM_OROGINAL_stadium_0023	Eindhoven Arena
+GAM_OROGINAL_stadium_0024	Rotterdam Stadion
+GAM_OROGINAL_stadium_0025	Utrecht Stadion
+GAM_OROGINAL_stadium_0026	Estadio Rio de Janeiro
+GAM_OROGINAL_stadium_0028	Estadio Santos
+GAM_OROGINAL_stadium_0029	Estadio San Paolo
+GAM_OROGINAL_stadium_0030	Estadio Bel Horizonte
+GAM_OROGINAL_stadium_0031	Estadio El Armando
+GAM_OROGINAL_stadium_0032	Estadio Buenos Aires
+GAM_OROGINAL_stadium_0033	Estadio Santa Fe
+GAM_OROGINAL_stadium_0034	Estadio Cordoba
+GAM_OROGINAL_stadium_0035	Estadio Rosario
+GAM_OROGINAL_stadium_0036	Blossom Bowl
+GAM_OROGINAL_stadium_0037	Chicago Lane
+GAM_OROGINAL_stadium_0038	Bartholdy Stadium
+GAM_OROGINAL_stadium_0039	Angel Field
+GAM_OROGINAL_stadium_0040	President Memorial Park
+GAM_OROGINAL_stadium_0056	Snow White 2002
+GAM_OROGINAL_stadium_0061	Rose Park Stadium
+GAM_OROGINAL_stadium_0063	Coimbra Memorial Stadium
+GAM_OROGINAL_stadium_0065	Gunma Field
+GAM_OROGINAL_stadium_0066	Diamond Stadium 2005
+GAM_OROGINAL_stadium_0068	Emperor's Stadium
+GAM_OROGINAL_stadium_0069	SSS Football Park
+GAM_OROGINAL_stadium_0070	Infinity Stadium
+GAM_OROGINAL_stadium_0071	Mountainstreet Field
+GAM_OROGINAL_stadium_0072	White Lake Dome
+GAM_OROGINAL_stadium_0076	Volcano Stadium
+GAM_OROGINAL_stadium_0077	Nagano Stadium
+GAM_OROGINAL_stadium_0079	Shizuoka Green Park
+GAM_OROGINAL_stadium_0080	Iwata Joy Stadium
+GAM_OROGINAL_stadium_0084	Phoenix Park Stadium
+GAM_OROGINAL_stadium_0085	Big Octopus
+GAM_OROGINAL_stadium_0091	Okayama Wing Arch
+GAM_OROGINAL_stadium_0098	Kyushu Stadium
+GAM_OROGINAL_stadium_0099	Saga Flower Circle
+GAM_OROGINAL_stadium_0101	Frame Stadium 
+GAM_OROGINAL_stadium_0102	Ooita Tripleta
+GAM_OROGINAL_stadium_0106	National Rainbow Stadium
+GAM_OROGINAL_stadium_0107	Northwhite Stadium
+GAM_OROGINAL_stadium_0108	Southyellow Stadium
+GAM_OROGINAL_stadium_0109	Eastred Stadium
+GAM_OROGINAL_stadium_0110	Westblue Stadium
+GAM_OROGINAL_stadium_0111	Galactic Stadium
+GAM_OROGINAL_stadium_0112	Saint Springs Stadium
+GAM_OROGINAL_stadium_0113	Moon Summer Stadium
+GAM_OROGINAL_stadium_0114	Autumn Star Stadium
+GAM_OROGINAL_stadium_0115	Winter Earth Stadium
+GAM_REAL_stadium_0003	Allianz Arena
+GAM_OPENING_status_0003	Prize Money
+GAM_OPENING_status_0005	$%d00
+GAM_OPENING_status_0007	Strength
+GAM_OPENING_status_0010	%d th Place
+GAM_OPENING_announce_0000	Commentary: Michael Rhys
+GAM_HALF_timer_0000	Till 2nd half
+GAM_HALF_message_0017	The 2nd half will now begin.
+GAM_RESULT_score_0001	Pen
+GAM_RESULT_states_0007	Goals Scored 
+GAM_RESULT_states_0014	WIN
+GAM_RESULT_states_0015	LOSE
+GAM_PRIZE_states_0003	$%d00
+GAM_PRIZE_states_0004	Championship Bonus
+GAM_PRIZE_states_0006	$%d00
+GAM_PRIZE_states_0007	Total Prize Money
+GAM_PRIZE_states_0009	$%d00
+GAM_PRIZE_states_0010	Matches Left:
+GAM_PRIZE_states_0011	%d matches left
+GAM_PRIZE_states_0014	$%d00
+GAM_SALARY_states_0003	$%d00
+GAM_SALARY_states_0006	$%d00
+GAM_SALARY_states_0007	Annual Salary
+GAM_SALARY_states_0009	$%d00
+GAM_SALARY_states_0010	Matches Left:
+GAM_SALARY_states_0011	%d matches left
+GAM_CONTINUE_states_0000	Goals Scored 
+GAM_CONTINUE_states_0001	1st
+GAM_CONTINUE_states_0002	2nd
+GAM_CONTINUE_states_0003	Attack
+GAM_CONTINUE_states_0005	Possession
+GAM_CONTINUE_states_0006	Offsides
+GAM_CONTINUE_states_0007	Fouls
+GAM_CONTINUE_states_0008	Corner Kick Taker
+GAM_CONTINUE_states_0009	Pen
+GAM_CONTINUE_states_0010	Warning
+GAM_CONTINUE_states_0011	Red Cards
+GAM_COMMON_result_0000	WIN
+GAM_COMMON_result_0001	LOSE
+GAM_COMMON_result_0002	DRAW
+GAM_COMMON_result_0003	1st
+GAM_COMMON_result_0004	2nd
+GAM_COMMON_result_0005	3rd
+GAM_COMMON_result_0006	4th
+GAM_COMMON_result_0007	5th
+GAM_COMMON_result_0008	6th
+GAM_COMMON_result_0009	7th
+GAM_COMMON_result_0010	8th
+GAM_COMMON_result_0029	1st Round Lost
+GAM_COMMON_result_0031	2nd Round Lost
+GAM_COMMON_result_0033	Quarterfinals Lost
+GAM_COMMON_result_0034	Advance to Semifinals
+GAM_COMMON_result_0035	Semifinals Lost
+GAM_COMMON_result_0036	Advance to the Final
+GAM_COMMON_result_0038	Champions
+GAM_FINR_title_001	Prize Money
+GAM_FINR_title_002	Previous
+GAM_HALF_button_0000	OK
+GAM_HALF_order_0007	???
+GAM_HALF_order_0008	???
+GAM_HALF_order_0009	???
+SYS_SYS_warning_0005	Remove Player Card.
+SYS_SYS_warning_0006	Time's up.\nClub Card discharged.
+SYS_SYS_warning_0007	Contract expired. \nInsert old and new cards together to trans-\nfer manager data from one to the other.
+SYS_SYS_warning_0009	Club Card has expired.\n\nYou cannot use an expired\nClub Card at this time.
+SYS_SYS_warning_0011	Your manager data has been\ntransferred from this Club Card.\n\nYou cannot use an expired\nClub Card at this time.
+SYS_SYS_warning_0016	Club Card might be damaged.\nClub Card discharged.
+SYS_ADV_compe_0006	Expired Club Card Usable
+SYS_ADV_compe_0007	Expired Club Card Unusable
+SYS_ADV_compe_0009	Withdraw
+SYS_ADV_compe_0010	Return to the Opening Screen
+SYS_ADV_normal_0000	INSERT COIN(S)\n
+SYS_ADV_normal_0001	PRESS START BUTTON\n
+SYS_ADV_normal_0002	INSERT CLUB CARD\n
+SYS_CARD_warning_0000	Previously unregistered players present. Proceed?
+SYS_CARD_warning_0001	Delete transferred player data?
+SYS_CARD_warning_0016	Players Out
+SYS_CARD_warning_0017	Players In
+SYS_TEAM_style_0167	Tanks
+SYS_TEAM_style_0271	Catenaccios
+SYS_TEAM_style_0275	Armada
+SYS_COACH_title_0001	Treasure
+SYS_COACH_title_0002	S+
+SYS_COACH_title_0003	S+
+SYS_COACH_title_0004	S+
+SYS_COACH_title_0005	S+
+SYS_COACH_title_0006	S+
+SYS_COACH_title_0007	S+
+SYS_COACH_title_0008	S+
+SYS_COACH_title_0009	Miracles
+SYS_COACH_title_0010	S+
+SYS_COACH_title_0011	S+
+SYS_COACH_title_0012	Masters
+SYS_COACH_title_0013	S+
+SYS_COACH_title_0016	S+
+SYS_COACH_title_0017	S+
+SYS_COACH_title_0018	S+
+SYS_COACH_title_0019	Valiants
+SYS_COACH_title_0020	S+
+SYS_COACH_title_0021	S+
+SYS_COACH_title_0032	Born & Breds
+SYS_COACH_title_0037	Champions
+SYS_COACH_title_0040	Kings
+SYS_COACH_title_0047	Conquerors
+SYS_DEBUG_timegame_0000	1st Round
+SYS_DEBUG_timegame_0001	2nd Round
+SYS_DEBUG_timegame_0002	3rd Round
+SYS_DEBUG_timegame_0003	4th Round
+SYS_DEBUG_timegame_0004	5th Round
+SYS_DEBUG_timegame_0005	Quarterfinals
+SYS_DEBUG_timegame_0006	Semifinals
+SYS_DEBUG_timegame_0007	The Final
+SYS_DEBUG_timegame_0017	Title Match
+SYS_DEBUG_timegame_0019	None
+SYS_DEBUG_timegame_0020	Friendly Match
+SYS_DEBUG_result_0000	None
+SYS_DEBUG_jwcresult_0006	Semifinals
+SYS_DEBUG_jwcresult_0007	Champions
+SYS_DEBUG_acresult_0008	Semifinals
+SYS_DEBUG_acresult_0009	Champions
+SYS_DEBUG_wwcresult_0005	Semifinals
+SYS_DEBUG_wwcresult_0006	Champions
+SYS_COMP_competitiontype_0008	Title Match
+SYS_COMP_continue_0002	Yes
+SYS_COMP_continue_0003	No
+PRO_PRO_title_0000	Friendly Match
+PRO_PRO_title_0002	Regular League
+PRO_PRO_title_0004	Pre-Season Cup
+PRO_PRO_title_0006	Enterprise Cup
+PRO_PRO_title_0008	King's Club Cup
+PRO_PRO_title_0010	National Super Cup
+PRO_PRO_title_0014	Continental Cup
+PRO_PRO_title_0016	Continental Super Cup
+PRO_PRO_title_0018	Champions Trophy
+PRO_PRO_title_0020	International Club Championship
+PRO_PRO_title_0024	Club Championship
+PRO_PRO_title_0026	%s Championship
+PRO_PRO_title_0032	Japan Trophy
+PRO_PRO_title_0042	Japan Winner's Championship
+PRO_PRO_title_0050	KANTO
+PRO_PRO_title_0054	CHUBU
+PRO_PRO_title_0056	TOKAI
+PRO_PRO_title_0058	KINKI
+PRO_PRO_title_0060	CHU-SHIKOKU
+PRO_PRO_title_0062	KYUSHU
+PRO_PRO_explanation_0002	The next match is the %s
+PRO_PRO_explanation_0005	Commentary: Michael Rhys
+PRO_PRO_explanation_0007	$%d00
+PRO_PRO_explanation_0010	$%d%04d00
+PRO_PRO_form_0007	Title Match
+PRO_PRO_condition_0006	None
+PRO_PRO_condition_0007	None
+PRO_PRO_condition_0011	$10,000,000 or more earned
+PRO_PRO_condition_0017	Entry Rules
+PRO_PRO_seat_0000	Not available
+PRO_PRO_seat_0002	Not available
+PRO_PRO_seat_0004	Advance
+PRO_PRO_seat_0005	Lost
+PRO_PRO_round_0010	Quarterfinals
+PRO_PRO_round_0012	Semifinals
+PRO_PRO_round_0014	The Final
+PRO_PRO_round_0023	%d th Place
+PRO_PRO_round_0052	Friendly Match
+PRO_PRO_round_0066	Quarterfinals Lost
+PRO_PRO_round_0067	Advance to Semifinals
+PRO_PRO_round_0068	Semifinals Lost
+PRO_PRO_round_0069	Advance to the Final
+PRO_PRO_game_0010	1st
+PRO_PRO_game_0012	HT
+PRO_PRO_game_0015	2nd
+PRO_PRO_game_0017	FT
+PRO_PRO_ranking_0003	Manager
+PRO_PRO_ranking_0004	Club
+PRO_PRO_ranking_0005	Annual Salary
+PRO_PRO_ranking_0009	Champions
+PRO_PRO_ranking_0010	Semifinals
+PRO_PRO_ranking_0011	%d th Place
+PRO_PRO_ranking_0018	Position

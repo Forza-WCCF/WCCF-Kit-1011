@@ -1,0 +1,7 @@
+python313.zip
+.
+Lib\site-packages
+..\scripts
+
+# the kit's own code: ..\scripts (the embeddable Python does not add a script's folder by itself)
+import site
