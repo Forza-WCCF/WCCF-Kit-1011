@@ -182,7 +182,7 @@ def patched_client(game):
 
 def check_game(game):
     if K.game_processes(game):
-        raise Failed("the game is running - close it first (STOP.exe), then run setup again")
+        raise Failed("the game is running - close its window first, then run setup again")
     h = K.sha256(sega_client(game))
     if sega_client(game) != os.path.join(game, "client_Release.exe"):
         ok("English is on (ENGLISH.exe): Sega's client_Release.exe is checked in data\\english_backup")
@@ -296,7 +296,7 @@ def setup_cards(game, force=False):
 
 def undo(game):
     if K.game_processes(game):
-        raise Failed("the game is running - close it first (STOP.exe), then undo")
+        raise Failed("the game is running - close its window first, then undo")
     if os.path.isfile(os.path.join(ENGLISH_BACKUP, "manifest.json")):
         raise Failed("English is on - run \"ENGLISH.exe off\" first, so Sega's files go back before the undo")
     seat = K.seat_dir(game)

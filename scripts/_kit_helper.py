@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 r"""_kit_helper.py - does what the in-game panels ask for and cannot do from inside the game.  play.py starts it
-(hidden) with the cabinets; STOP ends it with everything else.
+(hidden) with the cabinets; the end of the run ends it with everything else.
     python _kit_helper.py SECONDS [DATA PLAY_EXE [hidden]]        (DATA, PLAY_EXE, hidden: tests only)
 
 RESTART NOW (the SETTINGS panel, 2026-10-06): the panel writes data\restart.request; this helper takes the file away
-and opens "PLAY.exe restart" in a window of its own: a stop by STOP's own rules (during a card session it explains
+and opens "PLAY.exe restart" in a window of its own: a stop by the card rule (during a card session it explains
 and asks), then a plain start with the NEXT START settings.  It has to come from out here: seat 1 runs under a
 debugger that follows the programs it starts, so a restart started by the game itself would be killed half way.
 A request that is already there when the helper starts (left by a run that ended) is removed, never carried out.

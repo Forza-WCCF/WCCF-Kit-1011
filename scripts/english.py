@@ -457,7 +457,7 @@ def main(argv):
     try:
         if K.game_processes(game):
             if mode != "check":
-                raise Failed("the game is running - close it first (STOP.exe), then run this again")
+                raise Failed("the game is running - close its window first, then run this again")
             print("  NOTE  the game is running: \"on\" and \"off\" will refuse until it is closed")
         if mode == "off":
             if not load_manifest():

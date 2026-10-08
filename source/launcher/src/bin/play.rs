@@ -1,7 +1,8 @@
 //! PLAY.exe - starts the game: scripts\play.py with this exe's arguments ("debug", "local", "server", "remote ...",
 //! "status", "show", "restart"; play.py's own help lists them).  After a good start the window closes in 30 seconds;
-//! after a problem, or with "debug", it stays until a key.  The run's watcher stays behind (closing every game window
-//! stops the rest); "status" and "show" only look, so they leave the watch alone.
+//! after a problem, or with "debug", it stays until a key.  The run's watcher stays behind (closing a game window
+//! quits the game: the rest stops too); "status" and "show" only look, so they leave the watch alone.  "stop" (a
+//! game that is stuck) and "stop force" go to play.py like the rest.
 
 use std::ffi::OsString;
 use std::process::ExitCode;

@@ -1,7 +1,7 @@
-//! The kit's launchers, PLAY, STOP, SETUP and ENGLISH.exe (in place of the .bat files, 2026-10-08).  Each runs one
+//! The kit's launchers, PLAY, SETUP and ENGLISH.exe (in place of the .bat files, 2026-10-08).  Each runs one
 //! kit script with the kit's own Python (python\python.exe) in its window, passes its arguments on as they are and
 //! keeps the window as the .bat did: after a problem until a key is pressed, after a good PLAY for 30 seconds.
-//! PLAY and STOP also leave the run's watcher behind (watch.rs): once every game window is closed, it stops the rest.
+//! PLAY also leaves the run's watcher behind (watch.rs): once a game window is closed, it stops the rest.
 
 mod watch;
 

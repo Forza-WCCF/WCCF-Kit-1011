@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 r"""play.py - start (and stop) WCCF 2010-11 on this PC: Sega's server, the projector (the shared big screen) and the
-player cabinet (seat 1) with the overlay and your keyboard.  PLAY.exe and STOP.exe run it; run SETUP.exe first.
+player cabinet (seat 1) with the overlay and your keyboard.  PLAY.exe runs it; run SETUP.exe first.
 
     python play.py            start everything on this PC - or, when the SETTINGS panel chose ONLINE, the cabinets
                               on its server (as "remote ADDRESS"), and this PC if that server does not answer; it
-                              runs up to 12 hours, STOP.exe ends it sooner
+                              runs up to 12 hours; closing a game window ends it sooner
     python play.py local      everything on this PC, whatever the SETTINGS panel chose
     python play.py server     only the server side (scene service, server, its 4 match engines): for the PC or
                               cloud machine that hosts the game for others - its TCP port 20002 must be open to them;
@@ -23,7 +23,7 @@ player cabinet (seat 1) with the overlay and your keyboard.  PLAY.exe and STOP.e
     python play.py stop       stop everything - refused while your club card is in the reader (the game may be
                               saving it: press I in the game first); "stop force" stops anyway;
                               "stop check" only says what stop would do, and stops nothing
-    python play.py ended      what PLAY.exe's watcher runs once every game window is closed: stop the rest (a
+    python play.py ended      what PLAY.exe's watcher runs once a game window is closed: stop the rest (a
                               server started on this PC with "server" stays, for the other players)
     python play.py status     what is running
     python play.py show       show the server's hidden windows again: its console (the round-by-round log) and its
@@ -31,7 +31,7 @@ player cabinet (seat 1) with the overlay and your keyboard.  PLAY.exe and STOP.e
     python play.py restart    what the panels' RESTART NOW runs, through _kit_helper.py, in a window of its own: when a
                               plain start would play the same way (same THIS PC / ONLINE server, no English switch) -
                               a club card switch, say - only the cabinet restarts and the projector keeps running;
-                              otherwise stop (STOP's own rules), then a plain start
+                              otherwise stop (the card rule), then a plain start
 
 Order, each step waiting for the one before: scene service -> server (and its 4 match engines) -> projector ->
 the cabinet's stand-ins (keychip and network, card reader, I/O board) -> seat 1 -> the overlay -> the key driver ->
@@ -486,7 +486,8 @@ def play(debug, mode="local", ip=None, seat_no=None):
     known = running_roles()
     busy = not_server_side(running, known) if mode == "remote" else running
     if busy:
-        say("Already running (%s) - use STOP.exe first." % ", ".join(sorted({p[2] for p in busy})))
+        say("Already running (%s) - close the game's window first (a game that is stuck: PLAY.exe stop)." %
+            ", ".join(sorted({p[2] for p in busy})))
         return 3
     beside_server = bool(running)            # only "remote" gets here with something running: a server on this PC
     if beside_server:
@@ -583,7 +584,7 @@ def play(debug, mode="local", ip=None, seat_no=None):
         write_running(roles, mode, None)
         say("")
         say("Server running. On each player's PC: PLAY.exe remote, then this machine's address - the one their PC")
-        say("can reach. This machine must let in TCP ports %d and 20030, and UDP %d. STOP.exe ends it." % (
+        say("can reach. This machine must let in TCP ports %d and 20030, and UDP %d. PLAY.exe stop ends it." % (
             CONTROL_PORT, RELAY_PORT))
         return 0
 
@@ -622,7 +623,7 @@ def play(debug, mode="local", ip=None, seat_no=None):
     say("  Enter START (free play: it puts a coin in for you)   X decide   C shoot   arrows: tactics")
     say("  I club card in / out   5 coin   F1 test menu   F11 window size   - or click the buttons around the picture")
     say("First time: put the card in with I, and the game makes your club. It is saved in data\\save\\seat1_club.bin.")
-    say("To finish: let the card come out after a match, then STOP.exe. %s" % (
+    say("To finish: let the card come out after a match, then close the game's window - the rest stops with it. %s" % (
         "(The key driver's window is minimized.)" if debug else
         "(The key driver runs in the background: its log is data\\logs\\run_keys.txt.)"))
     return 0
@@ -654,7 +655,7 @@ def console_in():
 
 
 def ask_yes(question):
-    """True only if someone at the STOP window types Y - never a dead end for a person, and never a wait when
+    """True only if someone at the stop's window types Y - never a dead end for a person, and never a wait when
     nobody can answer (no console: a tool, a test) - then it is a plain no"""
     try:
         if not sys.stdin or not console_in():
@@ -665,7 +666,7 @@ def ask_yes(question):
 
 
 def stop_guard(force, check, game, seat):
-    """STOP's card rule (below), for a stop and for a cabinet restart (2026-10-07): (3, ...) refused - said why - or
+    """The card rule (below), for a stop and for a cabinet restart (2026-10-07): (3, ...) refused - said why - or
     (0, card in?, session state) to go on"""
     seat_up = any(os.path.normcase(os.path.dirname(p[3])) == os.path.normcase(seat)
                   for p in K.game_processes(game) if p[2].lower() == "client_release.exe")
@@ -741,10 +742,12 @@ def stop(force, check=False, keep_server=False):
 
 
 def ended():
-    """every game window closed (2026-10-08): PLAY.exe's watcher saw the run's cabinet and projector launchers end -
-    each ends with its game window - and asks for the rest to stop, as STOP does: the server, its match engines, the
-    stand-ins, the key driver, the panel helper.  Before, they ran on hidden for up to 12 hours.  A cabinet that
-    played on a server started on this PC with "server" leaves that server running for the other players."""
+    """a game window closed (2026-10-08; there is no STOP now): PLAY.exe's watcher saw one of the run's cabinet and
+    projector launchers end - _debug_launch.py ends the game, and itself, when the game's window is closed - and asks
+    for the rest to stop: the server, its match engines, the stand-ins, the key driver, the panel helper.  Before, they
+    ran on hidden for up to 12 hours.  The card rule still holds for a cabinet that still runs (the projector closed
+    during a match: refused, exit 3, and the watcher goes on watching).  A cabinet that played on a server started on
+    this PC with "server" leaves that server running for the other players."""
     game, _seat = setup_state()
     if not game:
         return 2
@@ -776,7 +779,7 @@ def cabinet_restart_fits():
 
 def restart_cabinet():
     """RESTART NOW for the cabinet only (2026-10-07; the player: "no one cabinet can restart or stop the projector,
-    that has to keep running"): seat N's side is stopped by STOP's card rule, the CLUB CARD panel's switch is done, and
+    that has to keep running"): seat N's side is stopped by the card rule, the CLUB CARD panel's switch is done, and
     that side starts again.  The projector, the scene service, the seat lease and the panel helper are never touched,
     so the projector stays in step with the server (one that rejoins mid-round waits up to a whole round)."""
     game, seat = setup_state()
@@ -814,7 +817,7 @@ def restart_cabinet():
     left = seat_side() + [p for p in kit_pythons() if p[0] in doomed]
     if left:
         write_running(roles, mode, ip, seat_no)
-        say("Still running: %s - the cabinet was not started again (STOP.exe, then PLAY.exe)." % ", ".join(
+        say("Still running: %s - the cabinet was not started again (PLAY.exe stop, then PLAY.exe)." % ", ".join(
             "%s %d" % (p[2], p[0]) for p in left))
         return 1
     apply_card_request()                     # the card reader is stopped: the CLUB CARD panel's switch goes in now
@@ -888,7 +891,7 @@ def main(argv):
             return status()
         if a == ["show"]:
             return show()
-        if a[:1] == ["restart"]:              # RESTART NOW: stop by STOP's rules (asked during a session), then start
+        if a[:1] == ["restart"]:              # RESTART NOW: stop by the card rule (asked during a session), then start
             if a == ["restart"] and cabinet_restart_fits():   # the projector would come back the same: it is kept
                 return restart_cabinet()
             say("Restarting WCCF 2010-11, as the SETTINGS panel asked.")

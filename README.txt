@@ -11,10 +11,11 @@ WHAT IT IS
   The kit holds none of Sega's files. Everything that comes from the game is made by setup from YOUR copy.
 
 NEW IN THE NEXT KIT
-  - Closing the game's windows ends the game: once the projector's and seat 1's windows are both closed, the kit
-    stops the rest by itself - the server, its match engines and the kit's helpers. Before, they ran on hidden
-    for up to 12 hours. STOP.exe still works as before (and still asks during a match).
-  - PLAY, STOP, SETUP and ENGLISH are programs (.exe) instead of .bat files; they are used the same way.
+  - Closing the game's window quits the game, cleanly, every time: the game and everything the kit started with it
+    (the server, its match engines, the kit's helpers) stop by themselves. Before, the game and its helpers ran on
+    hidden in the background. There is no STOP any more. During a match the first close only warns you (it would
+    cost your card a bad ending); close again within 8 seconds to quit anyway.
+  - PLAY, SETUP and ENGLISH are programs (.exe) instead of .bat files; they are used the same way.
     Updating: delete the old PLAY.bat, STOP.bat, SETUP.bat and ENGLISH.bat.
 
 NEW IN KIT 5.3
@@ -48,7 +49,7 @@ NEW IN KIT 4
   - SETTINGS: this PC or online, English or Japanese, restart; VIEW: the CABINET layout or COMPACT (the game larger,
     no cabinet buttons). CLUB CARD: your club as the game reads it, and more than one club (YOUR CARDS).
   - Only two windows (projector and seat 1); the projector starts muted and seat 1 quiet.
-  - Your card is saved safely, with backups; STOP asks before cutting a match.
+  - Your card is saved safely, with backups; closing the game during a match asks first.
   - Each button's whole picture is clickable, rim and shadow too.
   - English: money in dollars, with commas on seat 1 and the projector ($3,982,700); the result screen's stats and
     goal minutes; the projector's "League"; "Contract: 88"; the shop's name.
@@ -71,7 +72,7 @@ SETUP (once)
   2. Drag the "extracted" folder onto SETUP.exe (or double-click SETUP.exe and drag the folder into its window).
   3. Setup checks that your copy is Rev D, makes the changes listed under WHAT SETUP CHANGES, then makes the card
      catalogue and the card pictures from your files (about a minute). Running it again checks and repairs.
-  Updating from an earlier kit: STOP.exe, unzip the new kit over the old folder (data\ keeps your club, your other
+  Updating from an earlier kit: close the game, unzip the new kit over the old folder (data\ keeps your club, your other
   clubs, settings, keys and catalogue), then SETUP.exe again, and ENGLISH.exe again if you use English (it then also
   does this kit's newer English: money, the result screen, the shop's name). A server settings file you edited by
   hand is kept as .before-kit. From a kit with .bat files: delete the old PLAY.bat, STOP.bat, SETUP.bat and
@@ -125,14 +126,17 @@ CLUB CARD (left side, under SETTINGS)
   deleted. The clubs put aside are in
   data\save\cards.
 
-STOP
-  After a match the card comes out by itself (or press I). Then STOP.exe.
-  During a match (the game marks a card session open from START to the locker-room save) STOP says what stopping
-  would cost - that match, and a "bad ending" on the card (trade rights are lost at 2) - and asks: type Y to stop
-  anyway, just Enter leaves the game running. "STOP.exe force" stops without asking - only for a stuck game.
-  Closing the game's windows does the same as STOP once they are all closed: the server and the kit's helpers stop
-  too (data\logs\run_ended.txt says what was stopped). A server started with "PLAY.exe server" on this PC keeps
-  running for the other players when your own cabinet's windows close; STOP.exe ends it.
+QUIT
+  After a match the card comes out by itself (or press I). Then close the game's window (its X, or Alt+F4): the game
+  ends, and everything the kit started with it stops too - the projector, the server, its match engines and the
+  kit's helpers (data\logs\run_ended.txt says what was stopped). Closing the projector's window does the same.
+  During a match (the game marks a card session open from START to the locker-room save) closing seat 1's window
+  would end that match without its save, and the card gets a "bad ending" (trade rights are lost at 2). So the first
+  close only shows a warning over the game; close again within 8 seconds to quit anyway. (Closing the projector's
+  window during a match leaves seat 1 playing; close seat 1 after the match.)
+  A server started with "PLAY.exe server" has no window: "PLAY.exe stop" ends it. A cabinet that played on it from
+  this same PC leaves it running for the other players when its window closes.
+  A game that is stuck (no window to close, or it will not close): "PLAY.exe stop force".
 
 ENGLISH (optional)
   ENGLISH.exe puts the game into English: about 7,200 lines of screen text, the players' names (Sega's own Latin
@@ -164,7 +168,7 @@ WHAT SETUP CHANGES   ("SETUP.exe undo" takes all of it back out)
 GOOD TO KNOW
   - Your club card is saved safely: each save goes to a temporary file first and replaces the card in one step, so
     a crash or a power cut cannot leave a broken card. Before the first save of each session the card is copied to
-    data\save\backup (the newest 20 are kept; CLUB CARD lists them). To go back to one: STOP.exe, then copy it
+    data\save\backup (the newest 20 are kept; CLUB CARD lists them). To go back to one: close the game, then copy it
     over data\save\seat1_club.bin.
   - Windows may ask whether control_Release.exe may use the network: either answer works, everything stays on
     this PC.
@@ -173,7 +177,7 @@ GOOD TO KNOW
   - One copy at a time on a PC.
   - If both pictures freeze while the sound goes on, Windows took the graphics device away from the game
     (a display change, Ctrl+Alt+Del, an administrator prompt ...). The game cannot recover from that:
-    STOP.exe force, then PLAY.exe.
+    close its window (or PLAY.exe stop force), then PLAY.exe.
   - Logs are in data\logs ("PLAY.exe debug" keeps more; the card reader's full log grows about 60 MB an hour).
     If a game window closes by itself, its log (run_seat1.txt, run_projector.txt or run_server.txt) says how,
     and for the game's own "invalid parameter" stop it names the function that caused it - share that log.
@@ -201,7 +205,7 @@ FOLDERS
   english\   the kit's English: screen_text.tsv (the translation), sega_rstring.tsv (Sega's European English),
              cpu_names.tsv (team names), exe_text.tsv (the ticker, the dates, money, the shop's name) - text and
              fingerprints only
-  source\    the source of every program in bin\ and overlay\ (C) and of PLAY, STOP, SETUP and ENGLISH.exe (Rust,
+  source\    the source of every program in bin\ and overlay\ (C) and of PLAY, SETUP and ENGLISH.exe (Rust,
              source\launcher) - source\README.txt: how they were built
   python\    Python 3.13 (python.org's embeddable build) with Pillow
   data\      made on your PC: settings (panel.txt), your club card (save\, with backup\ and your other clubs in

@@ -69,6 +69,35 @@ PROGRAMS = {"client": "client_Release.exe", "control": "control_Release.exe", "m
 INDEXED = {"client_release.exe": "client", "control_release.exe": "control", "match_release.exe": "match",
            "launcher1011.exe": "launcher"}
 
+# ---- the game's window: closing it ends the game (2026-10-08) ------------------------------------------------------
+# The arcade program never quits when its window is closed: the window goes, the program runs on without it (seen
+# 2026-10-08: seat 4's client_Release.exe ran on windowless, so its launcher - this - and the whole run with it
+# stayed).  So for a client (a cabinet or the projector) this launcher ends the program once its window, up for
+# WINDOW_SETTLE s, has been gone for two looks in a row; PLAY.exe's watcher then stops the rest of the run.  The
+# panel (wccfpanel.dll) asks once before a close during a card session.  Never for control: its windows are hidden.
+WINDOW_SETTLE = 5.0
+_u = ctypes.windll.user32
+_ENUM_PROC = ctypes.WINFUNCTYPE(w.BOOL, w.HWND, w.LPARAM)
+_u.EnumWindows.argtypes = [_ENUM_PROC, w.LPARAM]
+_u.GetWindowThreadProcessId.argtypes = [w.HWND, ctypes.POINTER(w.DWORD)]
+_u.IsWindowVisible.argtypes = [w.HWND]
+
+
+def has_window(pid):
+    """True if the process has a visible top-level window"""
+    found = []
+
+    def cb(h, _lp):
+        owner = w.DWORD()
+        _u.GetWindowThreadProcessId(h, ctypes.byref(owner))
+        if owner.value == pid and _u.IsWindowVisible(h):
+            found.append(h)
+            return False                        # one is enough
+        return True
+    _u.EnumWindows(_ENUM_PROC(cb), 0)
+    return bool(found)
+
+
 # ---- shared-memory setup (same as _shm_provider.py) ----------------------
 INVALID = w.HANDLE(-1).value
 PAGE_READWRITE = 0x04
@@ -684,8 +713,23 @@ def main(argv):
     stops = 0              # invalid-parameter stops caught
     guarded = 0           # control message-reassembly OOB reads caught and recovered (MSGPARSE guard)
     ev_time = {}           # event kind -> [count, total ms, max ms]: how long each kind held the game
+    watch_window = prog == "client"
+    next_win_check, win_since, win_gone = 0.0, None, 0
     while time.time() - t0 < timeout_s:
         now = time.time() - t0
+        if watch_window and now >= next_win_check:       # its window closed: the game ends (see has_window)
+            next_win_check = now + 1.0
+            if has_window(p.pid):
+                win_since = now if win_since is None else win_since
+                win_gone = 0
+            elif win_since is not None and now - win_since >= WINDOW_SETTLE:
+                win_gone += 1
+                if win_gone >= 2:
+                    print("  t+%5.1fs its window was closed - ending %s (the program never quits by itself)" % (
+                        now, exe), flush=True)
+                    break
+            else:
+                win_since = None                        # a window replaced while it starts: not a close
         if not follow and now >= next_kid_check:
             next_kid_check = now + 1.0
             cur = children_of(p.pid)
