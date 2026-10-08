@@ -3271,10 +3271,13 @@ static int  g_ncl = 0, g_ncsq = 0, g_ncbak = 0, g_club = 0;
 // "wallet|FILE|CLUB|SUMMARY" lines; a choice writes card=FILE (or card=new) into data\panel.txt and asks for
 // RESTART NOW; play.py switches the files while nothing runs (club_wallet.py).  Not during a card session.
 struct CWal { char file[64], club[40], summary[48]; };
-static struct CWal g_wal[8];              // (g_cw is the canvas width: these are g_wal)
+#define MAXWAL  16                        // other clubs read from the view (2026-10-08: was 8)
+#define WAL_NEW 99                        // g_wal_armed / a pick: NEW CLUB CARD (was 8 - a 9th card would have been it)
+static struct CWal g_wal[MAXWAL];         // (g_cw is the canvas width: these are g_wal)
 static int  g_nwal = 0;
+static int  g_wal_top = 0;                // the first card shown when they do not all fit (the page buttons move it)
 static char g_csession[16] = "";         // the slot's card session, from the view's "session|..." line
-static int  g_wal_armed = -1;             // the choice armed by a first click: 0..7 a card, 8 = NEW (-1 none)
+static int  g_wal_armed = -1;             // the choice armed by a first click: a card's index, or WAL_NEW (-1 none)
 static DWORD g_wal_until = 0;
 static ULONGLONG g_cview_at = 0;         // the view file's write time as last read (0 = none read)
 static DWORD g_cview_check = 0;
@@ -3285,7 +3288,7 @@ static volatile LONG g_club_dirty = 1;
 static void club_read(void)
 {
     char p[MAX_PATH], *buf, *line, *next; HANDLE h; DWORD got = 0, size; BY_HANDLE_FILE_INFORMATION fi;
-    struct CLine cl[48]; struct CSq sq[16]; struct CWal cw[8]; char bak[8][24], state[16], reason[128], sess[16] = "";
+    struct CLine cl[48]; struct CSq sq[16]; struct CWal cw[MAXWAL]; char bak[8][24], state[16], reason[128], sess[16] = "";
     int ncl = 0, nsq = 0, nbak = 0, ncw = 0;
     _snprintf(p, MAX_PATH, "%s\\club_view.txt", g_data_dir); p[MAX_PATH - 1] = 0;
     h = CreateFileA(p, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING,
@@ -3331,7 +3334,7 @@ static void club_read(void)
             lstrcpynA(bak[nbak++], f[1], sizeof bak[0]);
         } else if (!strcmp(f[0], "session") && nf >= 2) {
             lstrcpynA(sess, f[1], sizeof sess);
-        } else if (!strcmp(f[0], "wallet") && nf >= 4 && ncw < 8) {
+        } else if (!strcmp(f[0], "wallet") && nf >= 4 && ncw < MAXWAL) {
             lstrcpynA(cw[ncw].file, f[1], sizeof cw[0].file); lstrcpynA(cw[ncw].club, f[2], sizeof cw[0].club);
             lstrcpynA(cw[ncw].summary, f[3], sizeof cw[0].summary); ncw++;
         }
@@ -3342,7 +3345,8 @@ static void club_read(void)
     memcpy(g_csq, sq, sizeof sq[0] * (size_t)nsq); g_ncsq = nsq;
     memcpy(g_cbak, bak, sizeof bak[0] * (size_t)nbak); g_ncbak = nbak;
     memcpy(g_wal, cw, sizeof cw[0] * (size_t)ncw); g_nwal = ncw;
-    if (g_wal_armed >= ncw && g_wal_armed != 8) g_wal_armed = -1;              // the list changed under an armed choice
+    if (g_wal_armed >= ncw && g_wal_armed != WAL_NEW) g_wal_armed = -1;        // the list changed under an armed choice
+    if (g_wal_top >= ncw) g_wal_top = 0;                                       // fewer cards now: back to the first
     lstrcpynA(g_csession, sess, sizeof g_csession);
     lstrcpynA(g_cstate, state, sizeof g_cstate); lstrcpynA(g_creason, reason, sizeof g_creason);
     g_cview_at = ft_q(fi.ftLastWriteTime);
@@ -3387,7 +3391,10 @@ static void club_open(HWND h, int open);
 
 // YOUR CARDS, in the right column: under the SQUAD when a club is in the slot, else from the top.  A heading, one
 // two-line row per card that fits (club, summary, PLAY THIS CLUB), then NEW CLUB CARD.  Drawing and clicks share it.
-struct CGeo { float x, w, ywal; int n; RECT row[8], use[8], newc; };
+// When they do not all fit (the player, 2026-10-08: "i have other clubs but i cant click on them or choose them" - only the
+// first 3 showed, then "+ 2 more"), a page line in that text's place: < PREV, "cards 1-3 of 5", NEXT > - pages of
+// what fits, wrapping round; the mouse wheel pages too.
+struct CGeo { float x, w, ywal; int first, n, fit, paged; RECT row[MAXWAL], use[MAXWAL], prev, next, newc; };
 
 static void club_geo(struct CGeo *g)     // g_board_cs held
 {
@@ -3397,14 +3404,42 @@ static void club_geo(struct CGeo *g)     // g_board_cs held
     // club_draw's SQUAD: heading 110 + 32, column names 22, a row 24 each, the injury note 18; then 14 apart
     g->ywal = strcmp(g_cstate, "ok") ? 110.0f * s : (110.0f + 32.0f + 22.0f + 24.0f * (float)g_ncsq + 18.0f + 14.0f) * s;
     fit = (int)((g_ch - 80.0f * s - (g->ywal + 32.0f * s) - 70.0f * s) / (44.0f * s));   // room above the notes
-    g->n = g_nwal < fit ? g_nwal : (fit > 0 ? fit : 0);
+    if (fit < 1) fit = 1;                                            // at least one row: every card stays reachable
+    if (fit > MAXWAL) fit = MAXWAL;
+    g->fit = fit;
+    g->paged = g_nwal > fit;
+    if (g_wal_top < 0 || g_wal_top >= g_nwal) g_wal_top = 0;
+    g->first = g->paged ? g_wal_top : 0;
+    g->n = g_nwal - g->first < fit ? g_nwal - g->first : fit;
     for (i = 0; i < g->n; i++) {
         y = g->ywal + 32.0f * s + (float)i * 44.0f * s;
         g->row[i] = RC(g->x, y, g->x + g->w, y + 40.0f * s);
         g->use[i] = RC(g->x + g->w - 156.0f * s, y + 6.0f * s, g->x + g->w - 6.0f * s, y + 34.0f * s);
     }
-    y = g->ywal + 32.0f * s + (float)g->n * 44.0f * s + (g_nwal > g->n || !g_nwal ? 24.0f : 4.0f) * s;
+    // with pages the page line stays put under a FULL page, so NEXT / PREV never move under the pointer when the last
+    // page is shorter (the first build moved them up a row there - fstest_clubcard caught it, 2026-10-08)
+    y = g->ywal + 32.0f * s + (float)(g->paged ? g->fit : g->n) * 44.0f * s;
+    if (g->paged) {                                                  // in the 24 the "+ N more" text had, a little more
+        g->prev = RC(g->x, y + 1.0f * s, g->x + 104.0f * s, y + 25.0f * s);
+        g->next = RC(g->x + g->w - 104.0f * s, y + 1.0f * s, g->x + g->w, y + 25.0f * s);
+        y += 30.0f * s;
+    } else {
+        g->prev = g->next = RC(0.0f, 0.0f, 0.0f, 0.0f);
+        y += (g_nwal ? 4.0f : 24.0f) * s;
+    }
     g->newc = RC(g->x, y, g->x + 250.0f * s, y + 30.0f * s);
+}
+
+// the next / previous page of YOUR CARDS, wrapping round (an armed choice on the old page is dropped).  g_board_cs held
+static void club_page_locked(const struct CGeo *g, int dir)
+{
+    int top = g->first + (dir > 0 ? g->fit : -g->fit), last = ((g_nwal - 1) / g->fit) * g->fit;
+    if (!g->paged) return;
+    if (top >= g_nwal) top = 0;
+    else if (top < 0) top = last;
+    g_wal_top = top;
+    g_wal_armed = -1;
+    logline("club: YOUR CARDS page: cards %d-%d of %d", top + 1, g_nwal - top < g->fit ? g_nwal : top + g->fit, g_nwal);
 }
 
 static RECT club_button(void)            // "CLUB CARD" on the canvas (the left strip; COMPACT: under KEYS)
@@ -3527,8 +3562,19 @@ static void club_draw(IDirect3DDevice9 *dev)
     }
     {                                                                   // YOUR CARDS (right, under the SQUAD)
         struct CGeo g; DWORD now = GetTickCount(); int armed;
+        static int said_first = -1, said_n = -1, said_nwal = -1, said_top = -1;
         club_geo(&g);
         armed = g_wal_armed >= 0 && (LONG)(g_wal_until - now) > 0 ? g_wal_armed : -1;
+        if (g.first != said_first || g.n != said_n || g_nwal != said_nwal || (int)g.ywal != said_top) {
+            said_first = g.first; said_n = g.n; said_nwal = g_nwal; said_top = (int)g.ywal;   // once per change: where
+            logline("club: YOUR CARDS shows cards %d-%d of %d%s; play %d,%d step %d", g.n ? g.first + 1 : 0,
+                    g.first + g.n, g_nwal, g.paged ? " (pages)" : "", g.n ? (int)(g.use[0].left + g.use[0].right) / 2 : 0,
+                    g.n ? (int)(g.use[0].top + g.use[0].bottom) / 2 : 0, (int)(44.0f * s));
+            if (g.paged)
+                logline("club: page buttons: prev %d,%d next %d,%d", (int)(g.prev.left + g.prev.right) / 2,
+                        (int)(g.prev.top + g.prev.bottom) / 2, (int)(g.next.left + g.next.right) / 2,
+                        (int)(g.next.top + g.next.bottom) / 2);
+        }
         set_flat(dev);
         fill_rect(dev, g.x, g.ywal + 22.0f * s, g.w, 2.0f * s, rule);
         for (i = 0; i < g.n; i++)
@@ -3538,20 +3584,27 @@ static void club_draw(IDirect3DDevice9 *dev)
             set_picture(dev, g_font_tex, 1);
             put_str(dev, g.x, g.ywal, 0.46f * s, orange, "YOUR CARDS");
             for (i = 0; i < g.n; i++) {
+                const struct CWal *c = &g_wal[g.first + i];
                 float tw = (float)g.use[i].left - g.x - 18.0f * s;
-                put_fit(dev, g.x + 10.0f * s, (float)g.row[i].top + 4.0f * s, 0.46f * s, white, g_wal[i].club, tw);
-                put_fit(dev, g.x + 10.0f * s, (float)g.row[i].top + 22.0f * s, 0.38f * s, grey, g_wal[i].summary, tw);
+                put_fit(dev, g.x + 10.0f * s, (float)g.row[i].top + 4.0f * s, 0.46f * s, white, c->club, tw);
+                put_fit(dev, g.x + 10.0f * s, (float)g.row[i].top + 22.0f * s, 0.38f * s, grey, c->summary, tw);
             }
             if (!g_nwal)
                 put_str(dev, g.x, g.ywal + 34.0f * s, 0.38f * s, grey, "no other cards yet - NEW CLUB CARD keeps this one safe here");
-            else if (g_nwal > g.n) {
-                char more[64];
-                _snprintf(more, sizeof more, "+ %d more in data\\save\\cards", g_nwal - g.n); more[63] = 0;
-                put_str(dev, g.x, (float)g.newc.top - 20.0f * s, 0.38f * s, grey, more);
+            else if (g.paged) {
+                char pg[48];
+                _snprintf(pg, sizeof pg, "cards %d-%d of %d", g.first + 1, g.first + g.n, g_nwal); pg[47] = 0;
+                put_in_rect(dev, RC((float)g.prev.right, (float)g.prev.top, (float)g.next.left, (float)g.prev.bottom),
+                            0.40f * s, grey, pg);
             }
         }
-        for (i = 0; i < g.n; i++) set_chip(dev, g.use[i], armed == i ? "CLICK AGAIN" : "PLAY THIS CLUB", armed == i, s);
-        set_chip(dev, g.newc, armed == 8 ? "CLICK AGAIN FOR A NEW CARD" : "NEW CLUB CARD", armed == 8, s);
+        for (i = 0; i < g.n; i++)
+            set_chip(dev, g.use[i], armed == g.first + i ? "CLICK AGAIN" : "PLAY THIS CLUB", armed == g.first + i, s);
+        if (g.paged) {
+            set_chip(dev, g.prev, "< PREV", 0, s);
+            set_chip(dev, g.next, "NEXT >", 0, s);
+        }
+        set_chip(dev, g.newc, armed == WAL_NEW ? "CLICK AGAIN FOR A NEW CARD" : "NEW CLUB CARD", armed == WAL_NEW, s);
         if (g_font_tex) {
             set_picture(dev, g_font_tex, 1);
             put_fit(dev, g.x, (float)g.newc.bottom + 8.0f * s, 0.36f * s,
@@ -3582,25 +3635,30 @@ static void club_click(HWND h, int x, int y)
     if (in_rect(&xr, x, y)) { club_open(h, 0); return; }
     EnterCriticalSection(&g_board_cs);
     club_geo(&g);
-    for (i = 0; i < g.n; i++) if (in_rect(&g.use[i], x, y)) pick = i;
-    if (in_rect(&g.newc, x, y)) pick = 8;
+    if (g.paged && (in_rect(&g.prev, x, y) || in_rect(&g.next, x, y))) {    // a page, not a choice
+        club_page_locked(&g, in_rect(&g.next, x, y) ? 1 : -1);
+        LeaveCriticalSection(&g_board_cs);
+        return;
+    }
+    for (i = 0; i < g.n; i++) if (in_rect(&g.use[i], x, y)) pick = g.first + i;
+    if (in_rect(&g.newc, x, y)) pick = WAL_NEW;
     if (pick < 0) { LeaveCriticalSection(&g_board_cs); return; }
     if (g_rs_sent) {
         note_locked(yellow, "already asked - the game closes and opens again");
     } else if (!strcmp(g_csession, "open")) {                       // STOP's rule, said before anything moves
         note_locked(red, "not during a card session - after the locker-room save");
         logline("club: switch refused - a card session is open");
-    } else if (pick == 8 && !strcmp(g_cstate, "none")) {
+    } else if (pick == WAL_NEW && !strcmp(g_cstate, "none")) {
         note_locked(yellow, "the slot already holds a blank card - put it in (CARD) and the game makes a club");
     } else if (g_wal_armed != pick || (LONG)(g_wal_until - now) <= 0) {
         g_wal_armed = pick; g_wal_until = now + 8000;                  // 4 s ran out once for the player: 8
-        if (pick == 8) note_locked(yellow, "click again: this club goes to YOUR CARDS, a new card into the slot");
+        if (pick == WAL_NEW) note_locked(yellow, "click again: this club goes to YOUR CARDS, a new card into the slot");
         else note_locked(yellow, "click again to play %s - the game restarts with it", g_wal[pick].club);
-        logline("club: %s armed", pick == 8 ? "new card" : g_wal[pick].file);
+        logline("club: %s armed", pick == WAL_NEW ? "new card" : g_wal[pick].file);
     } else {
         g_wal_armed = -1;
         set_load_locked();                                          // the settings file as it is now, plus this
-        lstrcpynA(g_card_req, pick == 8 ? "new" : g_wal[pick].file, sizeof g_card_req);
+        lstrcpynA(g_card_req, pick == WAL_NEW ? "new" : g_wal[pick].file, sizeof g_card_req);
         if (!set_save_locked()) note_locked(red, "could not save data\\panel.txt - try again");
         else if (!restart_request())
             note_locked(red, "could not ask for the restart - STOP.bat then PLAY.bat does the switch");
@@ -3610,6 +3668,15 @@ static void club_click(HWND h, int x, int y)
             logline("club: switch to %s requested", g_card_req);
         }
     }
+    LeaveCriticalSection(&g_board_cs);
+}
+
+static void club_wheel(int delta)        // the mouse wheel over the open panel: YOUR CARDS a page on (down) or back (up)
+{
+    struct CGeo g;
+    EnterCriticalSection(&g_board_cs);
+    club_geo(&g);
+    if (g.paged && delta) club_page_locked(&g, delta < 0 ? 1 : -1);
     LeaveCriticalSection(&g_board_cs);
 }
 
@@ -4010,7 +4077,8 @@ static LRESULT CALLBACK wndproc(HWND h, UINT m, WPARAM wp, LPARAM lp)
         return 0;
     }
     if (g_club && (m == WM_KEYDOWN || m == WM_SYSKEYDOWN)) { if (wp == VK_ESCAPE) club_open(h, 0); return 0; }
-    if (g_club && (m == WM_KEYUP || m == WM_SYSKEYUP || m == WM_CHAR || m == WM_SYSCHAR || m == WM_MOUSEWHEEL)) return 0;
+    if (g_club && m == WM_MOUSEWHEEL) { club_wheel(GET_WHEEL_DELTA_WPARAM(wp)); return 0; }     // YOUR CARDS' pages
+    if (g_club && (m == WM_KEYUP || m == WM_SYSKEYUP || m == WM_CHAR || m == WM_SYSCHAR)) return 0;
     if (g_set && (m == WM_KEYDOWN || m == WM_SYSKEYDOWN)) { set_key(h, wp, lp); return 0; }     // SETTINGS: its typing
     if (g_set && (m == WM_KEYUP || m == WM_SYSKEYUP || m == WM_CHAR || m == WM_SYSCHAR || m == WM_MOUSEWHEEL)) return 0;
     if (g_keys && (m == WM_KEYDOWN || m == WM_SYSKEYDOWN)) { keys_key(h, wp, lp); return 0; }   // KEYS: the new key

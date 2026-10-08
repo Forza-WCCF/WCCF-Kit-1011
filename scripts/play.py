@@ -360,6 +360,18 @@ def apply_card_request():
     drop_panel_line("card")
 
 
+def apply_board(seat):
+    """the cards on the table follow the club card in the slot (boards.py, 2026-10-08: the player saw another club's
+    formation on the board) - done while nothing reads the table: the card reader, FPR_Emu and the overlay start after
+    this.  Anything wrong: said, and the table stays as it is (never a reason not to start)."""
+    try:
+        import boards
+        for what in boards.sync(seat):
+            say("  table: %s" % what)
+    except Exception as ex:
+        say("  table: left as it is (%s)" % ex)
+
+
 def take_seat(ip, seat_no, env, roles):
     """remote mode (2026-10-06): this PC's seat on the server at ip, from the server's seat desk (_seat_broker.py,
     TCP 20030) through _seat_lease.py, which keeps holding it while the game runs; seat_no None = the next free seat.
@@ -483,6 +495,8 @@ def play(debug, mode="local", ip=None, seat_no=None):
         rotate_logs()
         apply_english_request()
     apply_card_request()                       # the card reader is not running yet, in every mode that gets here
+    if mode != "server":
+        apply_board(seat)                      # ... nor FPR_Emu or the overlay: the slot club's cards on the table
     env = kit_env(game)
     roles = {p[0]: known[p[0]] for p in running if p[0] in known}
     steps = 2 if mode == "server" else 6
@@ -708,6 +722,11 @@ def stop(force, check=False):
         say("Still running: %s" % ", ".join("%s %d" % (p[2], p[0]) for p in still))
         return 1
     say("Stopped (%d kit processes, %d game processes)." % (len(ours), len(left)))
+    try:                         # the cards on the table kept with their club (boards.py): data\save holds the latest
+        import boards
+        boards.keep(seat)
+    except Exception as ex:
+        say("  (the cards on the table were not copied to their club: %s)" % ex)
     return 0
 
 
@@ -774,6 +793,7 @@ def restart_cabinet():
             "%s %d" % (p[2], p[0]) for p in left))
         return 1
     apply_card_request()                     # the card reader is stopped: the CLUB CARD panel's switch goes in now
+    apply_board(seat)                        # and the new club's cards onto the table, before FPR_Emu and the overlay
     time.sleep(1.0)                          # Windows frees the cabinet's ports and pipes
     start_cabinet(False, kit_env(game), mode, ip, seat_no, seat, roles)
     write_running(roles, mode, ip, seat_no)

@@ -3,6 +3,17 @@
 The WCCF 2010-11 (Rev D) kit: Sega's server, the projector and a player cabinet on one Windows PC, with an
 on-screen panel - and online play on a shared server. Newest first; each date is the day that kit was built.
 
+## Kit 5.1 - 2026-10-08
+
+### Fixed
+- The formation board could hold another club's cards after you switched clubs. Each club card now keeps its own
+  board: the table you set up moves with the card (a `.board` folder beside the card file). Switch clubs in CLUB
+  CARD and the table you left for that club comes back; a club played for the first time gets its squad laid out
+  in a 4-4-2 with the substitutes on the bench. A table that belongs to no card is kept in
+  `data\save\boards_unknown`, never thrown away.
+- YOUR CARDS: with more clubs than fit, the rest could not be chosen. They are now in pages (`< PREV`, `NEXT >`, or
+  the mouse wheel).
+
 ## Kit 5 - 2026-10-07
 
 ### Added

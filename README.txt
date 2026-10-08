@@ -10,6 +10,14 @@ WHAT IT IS
   a game controller's buttons, SETTINGS, and CLUB CARD, your club card and your other clubs.
   The kit holds none of Sega's files. Everything that comes from the game is made by setup from YOUR copy.
 
+NEW IN KIT 5.1
+  - Each club card keeps its own formation board: the table you set up moves with the card. Switch clubs in CLUB
+    CARD and the table you left for that club comes back; a club played for the first time gets its squad laid out
+    in a 4-4-2 with the substitutes on the bench. The board lives beside the card file (a .board folder) and moves
+    with it. A table that belongs to no card is kept in data\save\boards_unknown, never thrown away.
+  - YOUR CARDS shows every club you have: when they do not all fit, they are in pages (< PREV, NEXT >, or the
+    mouse wheel).
+
 NEW IN KIT 5
   - A ping meter when you play online: bars and "80 ms" at the top right, above the game - green under 100 ms,
     yellow under 200, red above. It is your trip to the server; against another player, theirs adds to it.

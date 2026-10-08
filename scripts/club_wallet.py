@@ -72,6 +72,21 @@ def wallet(folder=None):
     return [(f,) + club_label(os.path.join(folder, f)) for f in files]
 
 
+def move_board(card_from, card_to):
+    """a card's own table (boards.py, 2026-10-08) goes with it: NAME.board beside NAME.bin.  Moved BEFORE its card, so
+    a switch stopped half way finishes the same at the next start; a folder already under the new name (a leftover)
+    is kept aside as " (2)" ..., never written over"""
+    src, dst = os.path.splitext(card_from)[0] + ".board", os.path.splitext(card_to)[0] + ".board"
+    if not os.path.isdir(src):
+        return
+    if os.path.exists(dst):
+        n = 2
+        while os.path.exists("%s (%d)" % (dst, n)):
+            n += 1
+        os.rename(dst, "%s (%d)" % (dst, n))
+    os.rename(src, dst)
+
+
 def switch(request, slot=None, folder=None):
     """carry out "card=FILE" or "card=new" (nothing of the game may run: play.py calls it before the card reader
     starts) -> (done, what to say).  Never raises for a bad request: the slot is then left as it is."""
@@ -92,11 +107,13 @@ def switch(request, slot=None, folder=None):
     if os.path.isfile(slot):                             # 1: the card in the slot goes to your cards, by club name
         name, _summary = club_label(slot)
         dst = free_path(safe(name or "club card"), folder)
+        move_board(slot, dst)                            # its cards on the table go with it (boards.py)
         os.rename(slot, dst)                             # rename: never over an existing file
         put_away = "%s went to your cards (%s)" % (name or "the old card", os.path.basename(dst))
     if target is None:
         return True, (put_away + "; " if put_away else "") + "a NEW card is in the slot - put it in, and the game " \
                                                               "makes a club"
+    move_board(target, slot)
     os.rename(target, slot)                              # 2: the chosen card into the slot
     name, _summary = club_label(slot)
     return True, (put_away + "; " if put_away else "") + "%s is in the slot" % (name or req)
