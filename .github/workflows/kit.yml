@@ -65,6 +65,10 @@ jobs:
             dist/*.zip
             dist/*.zip.sha256
           if-no-files-found: error
+          # the org's artifact storage is 500 MB on GitHub Free (shared by its repos): a 20 MB kit ZIP kept the
+          # default 90 days fills it in about nine runs a month; 7 days leaves room for about a hundred
+          retention-days: 7
+          compression-level: 0  # already a ZIP
 
   release:
     name: Draft release (tag kit-*)
