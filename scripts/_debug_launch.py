@@ -235,41 +235,51 @@ DEBUG_PROCESS, DEBUG_ONLY_THIS_PROCESS = 0x00000001, 0x00000002
 WOW64_CONTEXT_FULL = 0x00010007
 
 # ---- control's message-reassembly crash guard (2026-10-08) --------------------------------------------------------
-# control_Release crashes with an access violation at control_Release.exe+0x129C2 (FUN_00412860, the per-connection
-# message reassembler): it copies 16 bytes from buffer+offset where the offset/length came from the wire and was not
-# bounds-checked, so a malformed / awkwardly-split message reads far outside the recv buffer and the one-thread server
-# dies, taking every cabinet and the projector with it (Error 3000).  Seen twice on 2026-10-08 (02:08, 03:17), same
-# instruction, same connection slot (EDI=2), both during match setup.  This debugger already catches that fault
-# first-chance; instead of letting it go fatal, we make FUN_00412860 RETURN CLEANLY as if it had consumed the message:
-# zero the remaining length (*param_1) and offset (*param_3) so control abandons the bad chunk, restore the four
-# callee-saved registers from the stack, and resume at the caller with eax=1 (the value the normal "message consumed"
-# path returns).  ASLR is off in control (ImageBase 0x400000), so the fault VA is fixed; we still verify the exact
-# instruction bytes before touching anything, and only ever act on THIS fault in control - every other fault is left
-# exactly as before.  Off with WCCF_MSGGUARD=0.  Analysis: .work\research\control_crash\ANALYSIS.md.
-MSGPARSE_GUARD_OFF = 0x129C2
-MSGPARSE_GUARD_BYTES = b"\xF3\x0F\x7E\x04\x31"      # movq xmm0, qword ptr [ecx+esi]
+# control_Release crashes while reassembling a per-connection message in FUN_00412860: it trusts a length/offset that
+# came from the wire and was not bounds-checked, so a malformed / awkwardly-split message makes that function touch
+# memory far outside its buffer and the one-thread server dies, taking every cabinet and the projector with it
+# (Error 3000).  Seen four times on 2026-10-08: twice the READ `movq xmm0,[ecx+esi]` at control+0x129C2 (02:08, 03:17),
+# and once a WRITE inside msvcr90 memcpy (~1 GB count) called from control+0x12A3D (14:30) - SAME root bug, different
+# instruction.  So we do NOT guard one instruction (that was the 05:04 fix and it missed the memcpy path).  Instead,
+# on ANY first-chance access violation we look for FUN_00412860's own return-into-its-caller on the stack
+# (control+0x1226A, the instruction after the one call to FUN_00412860 in FUN_00412140) - if it is there, the fault
+# happened while FUN_00412860 was running (directly or in a memcpy/CRT call it made), so we UNWIND the whole function:
+# restore the four callee-saved regs it pushed, zero the remaining length (*param_1) and offset (*param_3) so control
+# abandons the bad chunk, and resume at the caller with eax=1 (the "message consumed" return).  ASLR is off in control
+# (ImageBase 0x400000).  Only this signature in control is ever touched; every other fault is left exactly as before.
+# Off with WCCF_MSGGUARD=0.  Analysis: .work\research\control_crash\ANALYSIS.md.
+MSGPARSE_RET_OFF = 0x1226A          # control+0x1226A: FUN_00412140's instruction right after it calls FUN_00412860
 MSGPARSE_GUARD_ON = os.environ.get("WCCF_MSGGUARD", "1") != "0"
+MSGPARSE_STACK_SCAN = 0x120         # bytes of stack to scan up from ESP for the return address
+MSGPARSE_FRAME_SPAN = 0x90000       # FUN_00412140's frame holds a ~512 KB (0x80000) recv buffer: its &len/&off live here
 
 
-def plan_412860_recovery(eip, esp, read_fn, mod_base, mod_end, guard_off=MSGPARSE_GUARD_OFF):
-    """Pure (no side effects): is the fault at EIP/ESP the known control message-reassembly OOB read, and if so how do
-    we make FUN_00412860 return cleanly?  read_fn(addr, n) -> bytes|None reads the faulting process's memory.  Returns
-    {regs: {...}, zero: [addr, addr], retaddr, p_len, p_off} or None.  The frame at ESP on that path (4 pushed regs, no
-    locals reserved): [esp]=edi [+4]=esi [+8]=ebp [+0xc]=ebx [+0x10]=retaddr [+0x14]=&len [+0x18]=buf [+0x1c]=&off; the
-    function ends with `ret 0xc`, so a clean return restores those regs, pops to retaddr and drops the 3 args (esp+0x20)."""
-    if eip != (mod_base + guard_off) & 0xFFFFFFFF:
+def plan_412860_recovery(esp, read_fn, mod_base, mod_end, ret_off=MSGPARSE_RET_OFF):
+    """Pure (no side effects): did this access violation happen while control's FUN_00412860 was on the stack, and if so
+    how do we make that function return cleanly (drop the bad message)?  read_fn(addr, n) -> bytes|None reads the
+    faulting process's memory.  Returns {regs, zero, retaddr, p_len, p_off, at} or None.  We scan the stack up from ESP
+    for FUN_00412860's return-into-caller (mod_base+ret_off, default 0x1226A); at the slot A that holds it, FUN_00412860's
+    prologue (push ebx/ebp/esi/edi) put the caller's saved regs just below - ebx=[A-4] ebp=[A-8] esi=[A-12] edi=[A-16] -
+    and its 3 args just above - &len=[A+4] buf=[A+8] &off=[A+0xc].  A clean `ret 0xc` restores those regs, pops to the
+    return address and drops the 3 args (esp -> A+0x10).  The arg pointers must point into the caller's frame (above A)
+    or it is a stale value, not the live frame.  (ret_off is overridable only so the off-line test can point it at its
+    own victim's return address.)"""
+    ret140 = (mod_base + ret_off) & 0xFFFFFFFF
+    stack = read_fn(esp, MSGPARSE_STACK_SCAN)
+    if not stack or len(stack) < MSGPARSE_STACK_SCAN:
         return None
-    if read_fn(eip, len(MSGPARSE_GUARD_BYTES)) != MSGPARSE_GUARD_BYTES:   # a different build/offset: never touch it
-        return None
-    frame = read_fn(esp, 0x20)
-    if not frame or len(frame) < 0x20:
-        return None
-    edi, esi, ebp, ebx, retaddr, p_len, _buf, p_off = struct.unpack("<8I", frame)
-    if not (mod_base <= retaddr < mod_end):          # the return address must land back inside control
-        return None
-    return {"regs": {"Edi": edi, "Esi": esi, "Ebp": ebp, "Ebx": ebx, "Eip": retaddr,
-                     "Esp": (esp + 0x20) & 0xFFFFFFFF, "Eax": 1},
-            "zero": [p_len, p_off], "retaddr": retaddr, "p_len": p_len, "p_off": p_off}
+    for off in range(0x10, len(stack) - 0x10, 4):          # >=0x10: room for the 4 saved regs below the return slot
+        if struct.unpack_from("<I", stack, off)[0] != ret140:
+            continue
+        a = (esp + off) & 0xFFFFFFFF                        # absolute address of the return-address slot
+        edi, esi, ebp, ebx = struct.unpack_from("<4I", stack, off - 0x10)
+        p_len, _buf, p_off = struct.unpack_from("<3I", stack, off + 4)
+        if not (a < p_len <= a + MSGPARSE_FRAME_SPAN and a < p_off <= a + MSGPARSE_FRAME_SPAN):
+            continue                                        # not the live frame's args - keep scanning
+        return {"regs": {"Edi": edi, "Esi": esi, "Ebp": ebp, "Ebx": ebx, "Eip": ret140,
+                         "Esp": (a + 0x10) & 0xFFFFFFFF, "Eax": 1},
+                "zero": [p_len, p_off], "retaddr": ret140, "p_len": p_len, "p_off": p_off, "at": off}
+    return None
 
 k.WaitForDebugEvent.argtypes = [ctypes.c_void_p, DWORD]
 k.WaitForDebugEvent.restype = w.BOOL
@@ -403,8 +413,9 @@ class Proc:
         return bool(ok) and got.value == len(data)
 
     def try_recover_412860(self, tid):
-        """If thread tid faulted on control's message-reassembly OOB read, make FUN_00412860 return cleanly (drop the
-        bad message) and return a short note; else None.  Only for control_Release, and only when WCCF_MSGGUARD is on."""
+        """If thread tid faulted while control's FUN_00412860 was on the stack (the message reassembler - read OR a
+        memcpy it makes), make that function return cleanly (drop the bad message) and return a short note; else None.
+        Only for control_Release, and only when WCCF_MSGGUARD is on."""
         if not MSGPARSE_GUARD_ON or self.name.lower() != "control_release.exe":
             return None
         h = self.threads.get(tid, (None, 0))[0]
@@ -414,7 +425,8 @@ class Proc:
         ctx.ContextFlags = WOW64_CONTEXT_FULL
         if not k.Wow64GetThreadContext(h, ctypes.byref(ctx)):
             return None
-        plan = plan_412860_recovery(ctx.Eip, ctx.Esp, self.rd, self.base, self.end)
+        fault_eip = ctx.Eip
+        plan = plan_412860_recovery(ctx.Esp, self.rd, self.base, self.end)
         if not plan:
             return None
         for addr in plan["zero"]:                    # remaining length and offset -> 0: abandon the bad chunk
@@ -424,7 +436,8 @@ class Proc:
             setattr(ctx, field, val)
         if not k.Wow64SetThreadContext(h, ctypes.byref(ctx)):
             return None
-        return "len@0x%08X=0 off@0x%08X=0 -> return 1 to 0x%08X" % (plan["p_len"], plan["p_off"], plan["retaddr"])
+        return "fault at 0x%08X (%s, frame +0x%X); len@0x%08X=0 off@0x%08X=0 -> return 1 to 0x%08X" % (
+            fault_eip, self.name_of(fault_eip), plan["at"], plan["p_len"], plan["p_off"], plan["retaddr"])
 
     def export_va(self, base, want):
         """Address of the export called want in the 32-bit DLL at base, read from its memory (names are sorted, so a
@@ -707,11 +720,12 @@ def main(argv):
             if pid == p.pid:
                 print("  image base = 0x%08X (to 0x%08X)" % (pr.base, pr.end))
                 if pr.name.lower() == "control_release.exe":
-                    ok = pr.rd((pr.base + MSGPARSE_GUARD_OFF) & 0xFFFFFFFF, len(MSGPARSE_GUARD_BYTES)) == MSGPARSE_GUARD_BYTES
-                    print("  MSGPARSE guard: %s (control OOB message read at 0x%08X; off with WCCF_MSGGUARD=0)" % (
-                        ("ON" if MSGPARSE_GUARD_ON else "off (WCCF_MSGGUARD=0)") if ok else
-                        "NOT armed - instruction at +0x%X is not the expected movq (different build?)" % MSGPARSE_GUARD_OFF,
-                        (pr.base + MSGPARSE_GUARD_OFF) & 0xFFFFFFFF))
+                    mapped = pr.rd((pr.base + MSGPARSE_RET_OFF) & 0xFFFFFFFF, 1) is not None
+                    print("  MSGPARSE guard: %s (any fault while FUN_00412860 is on the stack -> drop the message; "
+                          "caller return 0x%08X; off with WCCF_MSGGUARD=0)" % (
+                              ("ON" if MSGPARSE_GUARD_ON else "off (WCCF_MSGGUARD=0)") if mapped else
+                              "NOT armed - control+0x%X is not mapped (different build?)" % MSGPARSE_RET_OFF,
+                              (pr.base + MSGPARSE_RET_OFF) & 0xFFFFFFFF))
             else:
                 print("  t+%5.1fs process started: %s pid %d (debugged)  command line: %s" % (
                     now, name, pid, pr.command_line()))

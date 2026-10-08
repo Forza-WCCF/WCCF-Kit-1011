@@ -3,6 +3,16 @@
 The WCCF 2010-11 (Rev D) kit: Sega's server, the projector and a player cabinet on one Windows PC, with an
 on-screen panel - and online play on a shared server. Newest first; each date is the day that kit was built.
 
+## Kit 5.3 - 2026-10-08
+
+### Fixed
+- Hosting a server: the crash guard added in 5.2 only caught one form of the "WCCF CONTROL NOT FOUND" (Error 3000)
+  message-handling crash (an out-of-bounds read). A live crash showed the same bad message can also blow up in a
+  memcpy (an out-of-bounds write) a bit deeper in the same code. The guard now catches **any** fault that happens
+  while that message-reassembly function is running and drops the one bad message, so the server keeps going. For
+  hosts only; players who just join need nothing. (Sega's server can crash in other, unrelated ways too - this
+  covers the common message-handling one; keep a way to restart the server if it ever stops.)
+
 ## Kit 5.2 - 2026-10-08
 
 ### Fixed
