@@ -5,6 +5,10 @@ on-screen panel - and online play on a shared server. Newest first; each date is
 
 ## Unreleased
 
+### Added
+- CLUB CARD: CLEAR BAD ENDINGS (click twice) sets the card's bad endings back to 0 at a restart, after a backup.
+  Trade rights or money the game already took stay as they are. `scripts\edit_club_card.py` changes any other field.
+
 ### Changed
 - `PLAY`, `SETUP` and `ENGLISH` are programs (`.exe`, written in Rust: `source\launcher`) instead of `.bat` files,
   used the same way. Updating from an earlier kit: delete the old `.bat` files.

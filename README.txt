@@ -15,6 +15,7 @@ NEW IN THE NEXT KIT
     (the server, its match engines, the kit's helpers) stop by themselves. Before, the game and its helpers ran on
     hidden in the background. There is no STOP any more. During a match the first close only warns you (it would
     cost your card a bad ending); close again within 8 seconds to quit anyway.
+  - CLUB CARD: CLEAR BAD ENDINGS (click twice) sets the card's bad endings back to 0 at a restart.
   - PLAY, SETUP and ENGLISH are programs (.exe) instead of .bat files; they are used the same way.
     Updating: delete the old PLAY.bat, STOP.bat, SETUP.bat and ENGLISH.bat.
 
@@ -125,6 +126,11 @@ CLUB CARD (left side, under SETTINGS)
   your cabinet (about a minute) while the projector keeps running, never during a match, and no card is ever
   deleted. The clubs put aside are in
   data\save\cards.
+  CLEAR BAD ENDINGS (under CARD HEALTH, while the card has a bad ending or its last session was cut): click twice,
+  and the game restarts with the card's bad endings back to 0 (the old card goes to data\save\backup first). Not
+  during a match. Trade rights or money the game already took for them stay as they are.
+  Any other field of the card: python\python.exe scripts\edit_club_card.py data\save\seat1_club.bin --help
+  (close the game first; it shows what it would change and writes only with --write).
 
 QUIT
   After a match the card comes out by itself (or press I). Then close the game's window (its X, or Alt+F4): the game
