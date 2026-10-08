@@ -105,7 +105,8 @@ int main(int argc, char **argv)
     pp.BackBufferWidth = GAME_W; pp.BackBufferHeight = GAME_H; pp.BackBufferCount = 1; pp.hDeviceWindow = g_win;
     if (FAILED(IDirect3D9_CreateDevice(d3d, D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, g_win,
                                        D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_FPU_PRESERVE, &pp, &dev))) {
-        printf("no device\n"); return 1;
+        dev = NULL;                              // a machine without a graphics device (CI): the panel still loads and
+        printf("no Direct3D 9 device - the panel loads, nothing is drawn\n");   // its self-tests run (WCCFPANEL_*TEST)
     }
     if (!LoadLibraryA(argv[1])) { printf("could not load %s (%lu)\n", argv[1], GetLastError()); return 1; }
 
@@ -121,7 +122,7 @@ int main(int argc, char **argv)
             if (next >= argc) break;
             due = GetTickCount() + (DWORD)step(argv[next++], dir);
         }
-        {                                        // "the game": a green pitch with a lighter band
+        if (dev) {                               // "the game": a green pitch with a lighter band
             D3DRECT band = { 0, GAME_H / 3, GAME_W, GAME_H * 2 / 3 };
             IDirect3DDevice9_Clear(dev, 0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(20, 92, 40), 1.0f, 0);
             IDirect3DDevice9_Clear(dev, 1, &band, D3DCLEAR_TARGET, D3DCOLOR_XRGB(34, 120, 58), 1.0f, 0);
@@ -131,7 +132,7 @@ int main(int argc, char **argv)
         }
         Sleep(15);
     }
-    IDirect3DDevice9_Release(dev);
+    if (dev) IDirect3DDevice9_Release(dev);
     IDirect3D9_Release(d3d);
     return 0;
 }
