@@ -1,0 +1,46 @@
+[package]
+name = "wccf-kit-launcher"
+version = "5.2.0"
+edition = "2024"
+rust-version = "1.99"
+description = "PLAY, STOP, SETUP and ENGLISH.exe: the WCCF 2010-11 kit's launchers"
+publish = false
+
+[lib]
+name = "launcher"
+path = "src/lib.rs"
+
+[[bin]]
+name = "PLAY"
+path = "src/bin/play.rs"
+
+[[bin]]
+name = "STOP"
+path = "src/bin/stop.rs"
+
+[[bin]]
+name = "SETUP"
+path = "src/bin/setup.rs"
+
+[[bin]]
+name = "ENGLISH"
+path = "src/bin/english.rs"
+
+[dependencies]
+serde_json = "1.0.151"
+windows-sys = { version = "0.61.2", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_System_Console",
+    "Win32_System_Threading",
+] }
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

@@ -64,7 +64,7 @@ def misc_dir(game):
 
 
 def english_on():
-    """True if ENGLISH.bat (english.py) has English in place: its list of Sega's backed-up files is not empty"""
+    """True if ENGLISH.exe (english.py) has English in place: its list of Sega's backed-up files is not empty"""
     try:
         with open(os.path.join(DATA, "english_backup", "manifest.json"), encoding="utf-8") as f:
             return bool(json.load(f))

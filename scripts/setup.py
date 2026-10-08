@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 r"""setup.py - make your copy of WCCF 2010-11 (Rev D: the community's "sbwg" download) run on this PC with the kit.
-Run it once (SETUP.bat); running it again checks everything and repairs what is missing.
+Run it once (SETUP.exe); running it again checks everything and repairs what is missing.
 
     python setup.py [GAME]     GAME = the sbwg download's "extracted" folder (or the folder above it); asked for if
                                not given, then remembered in data\settings.json
@@ -150,7 +150,7 @@ def make_junction(link, target):
 
 
 def sega_client(game):
-    """path of Sega's client exe: extracted\\'s own, or - while English is on (ENGLISH.bat) - the copy in the backup"""
+    """path of Sega's client exe: extracted\\'s own, or - while English is on (ENGLISH.exe) - the copy in the backup"""
     p = os.path.join(game, "client_Release.exe")
     b = os.path.join(ENGLISH_BACKUP, "client_Release.exe")
     if K.sha256(p) != SEGA_CLIENT and os.path.isfile(b) and K.sha256(b) == SEGA_CLIENT:
@@ -182,10 +182,10 @@ def patched_client(game):
 
 def check_game(game):
     if K.game_processes(game):
-        raise Failed("the game is running - close it first (STOP.bat), then run setup again")
+        raise Failed("the game is running - close it first (STOP.exe), then run setup again")
     h = K.sha256(sega_client(game))
     if sega_client(game) != os.path.join(game, "client_Release.exe"):
-        ok("English is on (ENGLISH.bat): Sega's client_Release.exe is checked in data\\english_backup")
+        ok("English is on (ENGLISH.exe): Sega's client_Release.exe is checked in data\\english_backup")
     if h == PATCHED_CLIENT:
         raise Failed("extracted\\client_Release.exe is already PATCHED - setup needs Sega's unchanged exe there "
                      "(only seat1\\ gets the patched copy). Unzip client_Release.exe from the download again.")
@@ -265,7 +265,7 @@ def setup_seat(game):
     if have == PATCHED_CLIENT:
         ok("client_Release.exe: seat 1's patched copy already in place")
     elif have and have == english_copy(os.path.join("seat1", "client_Release.exe")):
-        ok("client_Release.exe: seat 1's patched copy with the kit's English text (ENGLISH.bat) already in place")
+        ok("client_Release.exe: seat 1's patched copy with the kit's English text (ENGLISH.exe) already in place")
     else:
         put_file(patched_client(game), exe)
         if K.sha256(exe) != PATCHED_CLIENT:
@@ -296,9 +296,9 @@ def setup_cards(game, force=False):
 
 def undo(game):
     if K.game_processes(game):
-        raise Failed("the game is running - close it first (STOP.bat), then undo")
+        raise Failed("the game is running - close it first (STOP.exe), then undo")
     if os.path.isfile(os.path.join(ENGLISH_BACKUP, "manifest.json")):
-        raise Failed("English is on - run \"ENGLISH.bat off\" first, so Sega's files go back before the undo")
+        raise Failed("English is on - run \"ENGLISH.exe off\" first, so Sega's files go back before the undo")
     seat = K.seat_dir(game)
     if os.path.isdir(seat):
         if not os.path.isfile(os.path.join(seat, MARKER)):
@@ -406,7 +406,7 @@ def main(argv):
     except OSError as ex:
         print("  FAIL  %s" % ex)
         return 1
-    print("Setup done. Start the game with PLAY.bat.")
+    print("Setup done. Start the game with PLAY.exe.")
     return 0
 
 

@@ -10,8 +10,15 @@ WHAT IT IS
   a game controller's buttons, SETTINGS, and CLUB CARD, your club card and your other clubs.
   The kit holds none of Sega's files. Everything that comes from the game is made by setup from YOUR copy.
 
+NEW IN THE NEXT KIT
+  - Closing the game's windows ends the game: once the projector's and seat 1's windows are both closed, the kit
+    stops the rest by itself - the server, its match engines and the kit's helpers. Before, they ran on hidden
+    for up to 12 hours. STOP.exe still works as before (and still asks during a match).
+  - PLAY, STOP, SETUP and ENGLISH are programs (.exe) instead of .bat files; they are used the same way.
+    Updating: delete the old PLAY.bat, STOP.bat, SETUP.bat and ENGLISH.bat.
+
 NEW IN KIT 5.3
-  - Hosting a server (PLAY.bat server) is sturdier against a crash. The server could drop with "WCCF CONTROL NOT
+  - Hosting a server (PLAY.exe server) is sturdier against a crash. The server could drop with "WCCF CONTROL NOT
     FOUND" (Error 3000) on every cabinet at once while players were setting up a match - a bad message from a
     connection. A guard now catches that message-handling crash (in its two forms) and drops the one bad message so
     the server keeps running. On by default when you host. This is ONLY for people who HOST a server; if you just
@@ -32,8 +39,8 @@ NEW IN KIT 5
   - Switching club cards restarts only your cabinet: the projector keeps running and never has to sync again.
   - English: Prize Money on the fan event and golden age (all titles won) screens is one amount with commas
     ($5,431,900 - it read "$5 million$431900"); Team Training's "They're giving their all out there" (it showed a
-    junk number). Run ENGLISH.bat again after updating.
-  - Hosting a server (PLAY.bat server): it runs for 32 days instead of 12 hours, and waits for a projector to join
+    junk number). Run ENGLISH.exe again after updating.
+  - Hosting a server (PLAY.exe server): it runs for 32 days instead of 12 hours, and waits for a projector to join
     before its first round.
 
 NEW IN KIT 4
@@ -61,18 +68,19 @@ YOU NEED
 SETUP (once)
   1. Unzip this kit into a folder of its own. Unzip the sbwg zip into a folder of its own too (e.g. D:\Games\WCCF).
      Plain paths are safest: the game has trouble with non-English letters in folder names.
-  2. Drag the "extracted" folder onto SETUP.bat (or double-click SETUP.bat and drag the folder into its window).
+  2. Drag the "extracted" folder onto SETUP.exe (or double-click SETUP.exe and drag the folder into its window).
   3. Setup checks that your copy is Rev D, makes the changes listed under WHAT SETUP CHANGES, then makes the card
      catalogue and the card pictures from your files (about a minute). Running it again checks and repairs.
-  Updating from an earlier kit: STOP.bat, unzip the new kit over the old folder (data\ keeps your club, your other
-  clubs, settings, keys and catalogue), then SETUP.bat again, and ENGLISH.bat again if you use English (it then also
+  Updating from an earlier kit: STOP.exe, unzip the new kit over the old folder (data\ keeps your club, your other
+  clubs, settings, keys and catalogue), then SETUP.exe again, and ENGLISH.exe again if you use English (it then also
   does this kit's newer English: money, the result screen, the shop's name). A server settings file you edited by
-  hand is kept as .before-kit.
+  hand is kept as .before-kit. From a kit with .bat files: delete the old PLAY.bat, STOP.bat, SETUP.bat and
+  ENGLISH.bat (the .exe files of the same names replace them).
 
 PLAY
-  PLAY.bat starts everything in about 30 seconds: the server, the projector's window, seat 1's window with the
+  PLAY.exe starts everything in about 30 seconds: the server, the projector's window, seat 1's window with the
   panel, and the key driver. Only two windows open, the projector's and seat 1's: the server and the kit's helpers
-  run in the background ("PLAY.bat show" shows the server's console and settings window; "PLAY.bat debug" opens
+  run in the background ("PLAY.exe show" shows the server's console and settings window; "PLAY.exe debug" opens
   every window and keeps full logs).
   Sound: the projector starts muted and seat 1 at 4% of the PC's volume, so the same sounds do not play twice and
   nothing is loud at the start. Windows' Volume Mixer changes either while you play; the next start sets them again.
@@ -101,7 +109,7 @@ PLAY
 SETTINGS (left side, under CARD and COIN)
   NOW: the link to the server, your card's session, its bad endings, its last save and backup, the game's text.
   NEXT START: THIS PC (everything on this PC) or ONLINE with a server's address (the cabinets on this PC play on
-  that server), and ENGLISH or JAPANESE (does what ENGLISH.bat does, at the next start). They are kept in
+  that server), and ENGLISH or JAPANESE (does what ENGLISH.exe does, at the next start). They are kept in
   data\panel.txt. RESTART NOW (click it twice) starts the game again with them - not during a match. When the
   server and the language stay the same, only your cabinet restarts and the projector keeps running.
   VIEW, changes at once: LAYOUT CABINET (the cabinet's buttons around the game) or COMPACT (the game larger,
@@ -118,13 +126,16 @@ CLUB CARD (left side, under SETTINGS)
   data\save\cards.
 
 STOP
-  After a match the card comes out by itself (or press I). Then STOP.bat.
+  After a match the card comes out by itself (or press I). Then STOP.exe.
   During a match (the game marks a card session open from START to the locker-room save) STOP says what stopping
   would cost - that match, and a "bad ending" on the card (trade rights are lost at 2) - and asks: type Y to stop
-  anyway, just Enter leaves the game running. "STOP.bat force" stops without asking - only for a stuck game.
+  anyway, just Enter leaves the game running. "STOP.exe force" stops without asking - only for a stuck game.
+  Closing the game's windows does the same as STOP once they are all closed: the server and the kit's helpers stop
+  too (data\logs\run_ended.txt says what was stopped). A server started with "PLAY.exe server" on this PC keeps
+  running for the other players when your own cabinet's windows close; STOP.exe ends it.
 
 ENGLISH (optional)
-  ENGLISH.bat puts the game into English: about 7,200 lines of screen text, the players' names (Sega's own Latin
+  ENGLISH.exe puts the game into English: about 7,200 lines of screen text, the players' names (Sega's own Latin
   spelling, e.g. M.DIARRA) and skill names, the CPU teams' names, the projector's "Next match" ticker, the
   dates on seat 1 (e.g. 2026/10/5 on the manager license), money in dollars, and the shop's name on the projector's
   awards ("Local Shop" - also inside the server program, the only change ENGLISH makes to it).
@@ -134,13 +145,13 @@ ENGLISH (optional)
   Four rare screens still show it in two pieces ("$2 million$299000"): a fan event, a golden age, a financial
   crisis and the end of a contract.
   It is built on your PC from your own game files and every line is checked; the kit holds only the English text.
-  Sega's files are kept in data\english_backup, and "ENGLISH.bat off" puts them back. Close the game first.
+  Sega's files are kept in data\english_backup, and "ENGLISH.exe off" puts them back. Close the game first.
   Still Japanese: country and prefecture names (the game finds its weather table by them, and English ones crash
   the server), the network-ranking areas, and writing that is part of a picture (logos, some titles and buttons).
   The English comes from this kit's translation, from Sega's own English that the game files already hold, and
   from Sega's European English of the older WCCF (lines with the same Japanese).
 
-WHAT SETUP CHANGES   ("SETUP.bat undo" takes all of it back out)
+WHAT SETUP CHANGES   ("SETUP.exe undo" takes all of it back out)
   in extracted\   adds winmm.dll (the kit's hook) and winmm_orig.dll (a copy of your Windows' own winmm.dll)
                   renames logowin.exe to logowin_sega.exe and puts a quiet stand-in in its place
                   (Sega's opens a white window over the whole screen)
@@ -153,7 +164,7 @@ WHAT SETUP CHANGES   ("SETUP.bat undo" takes all of it back out)
 GOOD TO KNOW
   - Your club card is saved safely: each save goes to a temporary file first and replaces the card in one step, so
     a crash or a power cut cannot leave a broken card. Before the first save of each session the card is copied to
-    data\save\backup (the newest 20 are kept; CLUB CARD lists them). To go back to one: STOP.bat, then copy it
+    data\save\backup (the newest 20 are kept; CLUB CARD lists them). To go back to one: STOP.exe, then copy it
     over data\save\seat1_club.bin.
   - Windows may ask whether control_Release.exe may use the network: either answer works, everything stays on
     this PC.
@@ -162,8 +173,8 @@ GOOD TO KNOW
   - One copy at a time on a PC.
   - If both pictures freeze while the sound goes on, Windows took the graphics device away from the game
     (a display change, Ctrl+Alt+Del, an administrator prompt ...). The game cannot recover from that:
-    STOP.bat force, then PLAY.bat.
-  - Logs are in data\logs ("PLAY.bat debug" keeps more; the card reader's full log grows about 60 MB an hour).
+    STOP.exe force, then PLAY.exe.
+  - Logs are in data\logs ("PLAY.exe debug" keeps more; the card reader's full log grows about 60 MB an hour).
     If a game window closes by itself, its log (run_seat1.txt, run_projector.txt or run_server.txt) says how,
     and for the game's own "invalid parameter" stop it names the function that caused it - share that log.
     The previous run's logs are in data\logs\previous.
@@ -172,7 +183,7 @@ GOOD TO KNOW
     seat1\wccfpanel.log (beside extracted) as a "badfmt:" line - please share that line.
   - The arcade printed the player cards you earn from a dispenser. There is none here, so the game counted every
     card as owed ("You are owed N Player Card(s)"). The panel now tells the game nothing is owed.
-  - The game is in Japanese; ENGLISH.bat translates most of it (see ENGLISH).
+  - The game is in Japanese; ENGLISH.exe translates most of it (see ENGLISH).
   - Windows 11 slows the timers of a program whose window is minimized or covered, and the server's window starts
     minimized: its loop then ran too slowly for the projector's live matches, which stuttered. The kit tells
     Windows not to slow any of the game's programs (data\logs\run_server.txt: "Windows' throttling off").
@@ -190,7 +201,8 @@ FOLDERS
   english\   the kit's English: screen_text.tsv (the translation), sega_rstring.tsv (Sega's European English),
              cpu_names.tsv (team names), exe_text.tsv (the ticker, the dates, money, the shop's name) - text and
              fingerprints only
-  source\    the C source of every program in bin\ and overlay\ (source\README.txt: how they were built)
+  source\    the source of every program in bin\ and overlay\ (C) and of PLAY, STOP, SETUP and ENGLISH.exe (Rust,
+             source\launcher) - source\README.txt: how they were built
   python\    Python 3.13 (python.org's embeddable build) with Pillow
   data\      made on your PC: settings (panel.txt), your club card (save\, with backup\ and your other clubs in
              cards\), your keys (keys.txt), logs

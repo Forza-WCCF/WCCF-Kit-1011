@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 r"""_seat_lease.py - this PC's seat on a server (2026-10-06): asks the server's _seat_broker.py (TCP 20030) for a seat,
-writes the answer for play.py, then HOLDS the seat by pinging every 20 s for as long as it runs - STOP.bat ends it and
+writes the answer for play.py, then HOLDS the seat by pinging every 20 s for as long as it runs - STOP.exe ends it and
 the seat is free again at once.
 
     python _seat_lease.py ADDRESS OUT_FILE LIFE_SECONDS [SEAT]
