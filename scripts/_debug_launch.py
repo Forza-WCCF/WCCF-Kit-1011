@@ -234,6 +234,43 @@ QUIET_CODES = (0x406D1388,)                      # MSVC thread naming
 DEBUG_PROCESS, DEBUG_ONLY_THIS_PROCESS = 0x00000001, 0x00000002
 WOW64_CONTEXT_FULL = 0x00010007
 
+# ---- control's message-reassembly crash guard (2026-10-08) --------------------------------------------------------
+# control_Release crashes with an access violation at control_Release.exe+0x129C2 (FUN_00412860, the per-connection
+# message reassembler): it copies 16 bytes from buffer+offset where the offset/length came from the wire and was not
+# bounds-checked, so a malformed / awkwardly-split message reads far outside the recv buffer and the one-thread server
+# dies, taking every cabinet and the projector with it (Error 3000).  Seen twice on 2026-10-08 (02:08, 03:17), same
+# instruction, same connection slot (EDI=2), both during match setup.  This debugger already catches that fault
+# first-chance; instead of letting it go fatal, we make FUN_00412860 RETURN CLEANLY as if it had consumed the message:
+# zero the remaining length (*param_1) and offset (*param_3) so control abandons the bad chunk, restore the four
+# callee-saved registers from the stack, and resume at the caller with eax=1 (the value the normal "message consumed"
+# path returns).  ASLR is off in control (ImageBase 0x400000), so the fault VA is fixed; we still verify the exact
+# instruction bytes before touching anything, and only ever act on THIS fault in control - every other fault is left
+# exactly as before.  Off with WCCF_MSGGUARD=0.  Analysis: .work\research\control_crash\ANALYSIS.md.
+MSGPARSE_GUARD_OFF = 0x129C2
+MSGPARSE_GUARD_BYTES = b"\xF3\x0F\x7E\x04\x31"      # movq xmm0, qword ptr [ecx+esi]
+MSGPARSE_GUARD_ON = os.environ.get("WCCF_MSGGUARD", "1") != "0"
+
+
+def plan_412860_recovery(eip, esp, read_fn, mod_base, mod_end, guard_off=MSGPARSE_GUARD_OFF):
+    """Pure (no side effects): is the fault at EIP/ESP the known control message-reassembly OOB read, and if so how do
+    we make FUN_00412860 return cleanly?  read_fn(addr, n) -> bytes|None reads the faulting process's memory.  Returns
+    {regs: {...}, zero: [addr, addr], retaddr, p_len, p_off} or None.  The frame at ESP on that path (4 pushed regs, no
+    locals reserved): [esp]=edi [+4]=esi [+8]=ebp [+0xc]=ebx [+0x10]=retaddr [+0x14]=&len [+0x18]=buf [+0x1c]=&off; the
+    function ends with `ret 0xc`, so a clean return restores those regs, pops to retaddr and drops the 3 args (esp+0x20)."""
+    if eip != (mod_base + guard_off) & 0xFFFFFFFF:
+        return None
+    if read_fn(eip, len(MSGPARSE_GUARD_BYTES)) != MSGPARSE_GUARD_BYTES:   # a different build/offset: never touch it
+        return None
+    frame = read_fn(esp, 0x20)
+    if not frame or len(frame) < 0x20:
+        return None
+    edi, esi, ebp, ebx, retaddr, p_len, _buf, p_off = struct.unpack("<8I", frame)
+    if not (mod_base <= retaddr < mod_end):          # the return address must land back inside control
+        return None
+    return {"regs": {"Edi": edi, "Esi": esi, "Ebp": ebp, "Ebx": ebx, "Eip": retaddr,
+                     "Esp": (esp + 0x20) & 0xFFFFFFFF, "Eax": 1},
+            "zero": [p_len, p_off], "retaddr": retaddr, "p_len": p_len, "p_off": p_off}
+
 k.WaitForDebugEvent.argtypes = [ctypes.c_void_p, DWORD]
 k.WaitForDebugEvent.restype = w.BOOL
 k.ContinueDebugEvent.argtypes = [DWORD, DWORD, DWORD]
@@ -364,6 +401,30 @@ class Proc:
         ok = k.WriteProcessMemory(self.hproc, ctypes.c_void_p(addr), data, len(data), ctypes.byref(got))
         k.FlushInstructionCache(self.hproc, ctypes.c_void_p(addr), len(data))
         return bool(ok) and got.value == len(data)
+
+    def try_recover_412860(self, tid):
+        """If thread tid faulted on control's message-reassembly OOB read, make FUN_00412860 return cleanly (drop the
+        bad message) and return a short note; else None.  Only for control_Release, and only when WCCF_MSGGUARD is on."""
+        if not MSGPARSE_GUARD_ON or self.name.lower() != "control_release.exe":
+            return None
+        h = self.threads.get(tid, (None, 0))[0]
+        if not h:
+            return None
+        ctx = WOW64_CONTEXT()
+        ctx.ContextFlags = WOW64_CONTEXT_FULL
+        if not k.Wow64GetThreadContext(h, ctypes.byref(ctx)):
+            return None
+        plan = plan_412860_recovery(ctx.Eip, ctx.Esp, self.rd, self.base, self.end)
+        if not plan:
+            return None
+        for addr in plan["zero"]:                    # remaining length and offset -> 0: abandon the bad chunk
+            if not self.wr(addr, b"\x00\x00\x00\x00"):
+                return None
+        for field, val in plan["regs"].items():
+            setattr(ctx, field, val)
+        if not k.Wow64SetThreadContext(h, ctypes.byref(ctx)):
+            return None
+        return "len@0x%08X=0 off@0x%08X=0 -> return 1 to 0x%08X" % (plan["p_len"], plan["p_off"], plan["retaddr"])
 
     def export_va(self, base, want):
         """Address of the export called want in the 32-bit DLL at base, read from its memory (names are sorted, so a
@@ -608,6 +669,7 @@ def main(argv):
     next_kid_check = 0.0
     fatal = False
     stops = 0              # invalid-parameter stops caught
+    guarded = 0           # control message-reassembly OOB reads caught and recovered (MSGPARSE guard)
     ev_time = {}           # event kind -> [count, total ms, max ms]: how long each kind held the game
     while time.time() - t0 < timeout_s:
         now = time.time() - t0
@@ -644,6 +706,12 @@ def main(argv):
                     ctypes.GetLastError()))
             if pid == p.pid:
                 print("  image base = 0x%08X (to 0x%08X)" % (pr.base, pr.end))
+                if pr.name.lower() == "control_release.exe":
+                    ok = pr.rd((pr.base + MSGPARSE_GUARD_OFF) & 0xFFFFFFFF, len(MSGPARSE_GUARD_BYTES)) == MSGPARSE_GUARD_BYTES
+                    print("  MSGPARSE guard: %s (control OOB message read at 0x%08X; off with WCCF_MSGGUARD=0)" % (
+                        ("ON" if MSGPARSE_GUARD_ON else "off (WCCF_MSGGUARD=0)") if ok else
+                        "NOT armed - instruction at +0x%X is not the expected movq (different build?)" % MSGPARSE_GUARD_OFF,
+                        (pr.base + MSGPARSE_GUARD_OFF) & 0xFFFFFFFF))
             else:
                 print("  t+%5.1fs process started: %s pid %d (debugged)  command line: %s" % (
                     now, name, pid, pr.command_line()))
@@ -692,6 +760,15 @@ def main(argv):
                 status = DBG_CONTINUE
             elif ec in QUIET_CODES:
                 status = DBG_EXCEPTION_NOT_HANDLED
+            elif ec == EXCEPTION_ACCESS_VIOLATION and first and pr.try_recover_412860(tid):
+                # the known control message-reassembly OOB read: recovered (bad message dropped), control lives on
+                guarded += 1
+                status = DBG_CONTINUE
+                note = "len/off zeroed, FUN_00412860 returns 1"
+                if guarded <= 5 or guarded % 50 == 0:
+                    print("  t+%5.1fs GUARD: control OOB message read at 0x%08X caught & dropped (#%d)  [thread %d]" % (
+                        now, addr, guarded, tid))
+                dbg_file.write("t+%6.2fs GUARD #%d recovered 0x%08X: %s\n" % (now, guarded, addr, note))
             else:
                 status = DBG_EXCEPTION_NOT_HANDLED
                 n = seen_codes.get(ec, 0) + 1
@@ -737,6 +814,8 @@ def main(argv):
     print("  debug channel: %d lines, all in %s" % (dbg_lines, dbg_path))
     if stops:
         print("  invalid-parameter stops caught: %d (callers printed above)" % stops)
+    if guarded:
+        print("  MSGPARSE guard: %d control OOB message read(s) caught & dropped - control kept running" % guarded)
     if ev_time:
         print("  time the game was held per debug event: " + ", ".join(
             "%s %d x mean %.2f ms max %.1f ms" % (EVENT_NAMES.get(c, str(c)), n, tot / n, mx)

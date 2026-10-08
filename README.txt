@@ -10,6 +10,12 @@ WHAT IT IS
   a game controller's buttons, SETTINGS, and CLUB CARD, your club card and your other clubs.
   The kit holds none of Sega's files. Everything that comes from the game is made by setup from YOUR copy.
 
+NEW IN KIT 5.2
+  - Hosting a server (PLAY.bat server) survives a rare crash. The server could sometimes drop with "WCCF CONTROL
+    NOT FOUND" (Error 3000) on every cabinet at once while players were setting up a match; a guard now catches that
+    exact fault, drops the one bad message, and the server keeps running. Nothing to do - it is on by default when
+    you host. (Players who only join a server never saw this and need nothing.)
+
 NEW IN KIT 5.1
   - Each club card keeps its own formation board: the table you set up moves with the card. Switch clubs in CLUB
     CARD and the table you left for that club comes back; a club played for the first time gets its squad laid out

@@ -3,6 +3,14 @@
 The WCCF 2010-11 (Rev D) kit: Sega's server, the projector and a player cabinet on one Windows PC, with an
 on-screen panel - and online play on a shared server. Newest first; each date is the day that kit was built.
 
+## Kit 5.2 - 2026-10-08
+
+### Fixed
+- Hosting a server (`PLAY.bat server`) survives a rare crash. The server could drop with "WCCF CONTROL NOT FOUND"
+  (Error 3000) on every cabinet at once while players were setting up a match - an out-of-bounds read in its
+  message handling. A guard now catches that exact fault, drops the one bad message, and the server keeps running.
+  On by default when hosting; players who only join a server never saw this and need nothing.
+
 ## Kit 5.1 - 2026-10-08
 
 ### Fixed
