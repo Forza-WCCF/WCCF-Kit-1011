@@ -19,7 +19,7 @@
 |---|---|
 | **The whole arcade on one PC** | PLAY starts the server, the projector and seat 1 together; only two windows open |
 | **Formation board** | your cards on the table: drag to move, drop on another card to swap, right-click to take one off |
-| **Catalogue** | all 3,909 player cards: search, position and rarity filters, sorting, a slider per stat |
+| **Catalogue** | all 3,909 player cards: search, position, rarity, country and club filters, sorting, a slider per stat |
 | **Keys** | choose your own keys, or a game controller's buttons |
 | **Club card** | your club as the game reads it, more than one club, safe saves with backups, CLEAR BAD ENDINGS |
 | **English** | about 7,200 lines of screen text, the players' names, money in dollars, built from your own game files |

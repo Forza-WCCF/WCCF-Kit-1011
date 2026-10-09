@@ -9,6 +9,9 @@ on-screen panel - and online play on a shared server. Newest first; each date is
 - CLUB CARD: CLEAR BAD ENDINGS (click twice) sets the card's bad endings back to 0 at a restart, after a backup.
   Trade rights or money the game already took stay as they are. If it cannot be done, the kit says so and the game
   starts anyway. `scripts\edit_club_card.py` changes any other field.
+- CATALOGUE: COUNTRY and CLUB filters (top right of the catalogue): a list of every country or club, A to Z, with
+  its number of cards; typing narrows it, ANY clears it. On the card under the mouse, SAME CLUB and SAME COUNTRY
+  show its clubmates or countrymen (a second click clears). The stats pane now shows the card's country too.
 - Hosting a server: when the crash guard cannot catch a crash, `data\logs\run_server.txt` now says why
   (`MSGPARSE guard stepped aside: ...`, with what it found) - please share that line.
 
