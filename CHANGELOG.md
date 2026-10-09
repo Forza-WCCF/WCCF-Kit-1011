@@ -7,7 +7,10 @@ on-screen panel - and online play on a shared server. Newest first; each date is
 
 ### Added
 - CLUB CARD: CLEAR BAD ENDINGS (click twice) sets the card's bad endings back to 0 at a restart, after a backup.
-  Trade rights or money the game already took stay as they are. `scripts\edit_club_card.py` changes any other field.
+  Trade rights or money the game already took stay as they are. If it cannot be done, the kit says so and the game
+  starts anyway. `scripts\edit_club_card.py` changes any other field.
+- Hosting a server: when the crash guard cannot catch a crash, `data\logs\run_server.txt` now says why
+  (`MSGPARSE guard stepped aside: ...`, with what it found) - please share that line.
 
 ### Changed
 - `PLAY`, `SETUP` and `ENGLISH` are programs (`.exe`, written in Rust: `source\launcher`) instead of `.bat` files,
@@ -22,6 +25,12 @@ on-screen panel - and online play on a shared server. Newest first; each date is
 - Closing the game's window left the game itself running without a window, and with it the server, its match
   engines and the kit's helpers, hidden, for up to 12 hours. Now everything stops (`data\logs\run_ended.txt`). A
   server started on the same PC with `PLAY.exe server` keeps running for the other players.
+
+### For developers
+- The kit is built from this repository's source by GitHub Actions (`.github\workflows\kit.yml`): every push and pull
+  request builds every program (`source\build.ps1`), runs the checks that need no game (`source\check.ps1`) and packs
+  the kit zip (`source\package.ps1`); a `kit-*` tag drafts a release with it. Git holds the source, not the built
+  programs.
 
 ## Kit 5.3 - 2026-10-08
 

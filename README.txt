@@ -17,6 +17,8 @@ NEW IN THE NEXT KIT
     cost your card a bad ending); close again within 8 seconds to quit anyway. A game that crashes stops nothing
     else: the projector keeps running.
   - CLUB CARD: CLEAR BAD ENDINGS (click twice) sets the card's bad endings back to 0 at a restart.
+  - Hosting a server: when the crash guard cannot catch a crash, data\logs\run_server.txt now says why
+    ("MSGPARSE guard stepped aside: ...") - please share that line.
   - PLAY, SETUP and ENGLISH are programs (.exe) instead of .bat files; they are used the same way.
     Updating: delete the old PLAY.bat, STOP.bat, SETUP.bat and ENGLISH.bat.
 
@@ -146,6 +148,14 @@ QUIT
   A game window that goes by itself (a crash, not a close) stops nothing else: the projector keeps running. Its log
   says what happened (data\logs\run_seat1.txt or run_projector.txt); "PLAY.exe stop" ends the rest.
   A game that is stuck (no window to close, or it will not close): "PLAY.exe stop force".
+
+ONLINE (play with others on one server)
+  One PC hosts: "PLAY.exe server" starts only the server, in the background - no game window opens, and the
+  window that started it closes by itself after 30 seconds while the server keeps running ("PLAY.exe stop" ends
+  it). That PC must let in TCP ports 20002 and 20030 and UDP 20040; at home behind a router, forward those ports
+  to it. Each player: "PLAY.exe remote" and the server's address (e.g. PLAY.exe remote 192.168.1.20), or ONLINE
+  in SETTINGS. The first PC to join also shows the projector. The PC that hosts can play too: "PLAY.exe remote"
+  with its own local address (ipconfig shows it).
 
 ENGLISH (optional)
   ENGLISH.exe puts the game into English: about 7,200 lines of screen text, the players' names (Sega's own Latin
