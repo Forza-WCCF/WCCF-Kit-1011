@@ -44,6 +44,8 @@ game is not included. Newest first; each date is the day that kit was built.
   the ZIP (a public download).
 - A `kit-*` tag's draft release carries its notes (`.github\release-notes.md` and the kit's CHANGELOG section); it is
   refused when CHANGELOG.md's newest heading is not that kit.
+  Without pushing a tag: Actions > Kit > Run workflow on main with the tag (`kit-5.4`) under "release" - CI makes
+  the tag on main's commit once every check has passed, and drafts the same release.
 
 ## Kit 5.3 - 2026-10-08
 
