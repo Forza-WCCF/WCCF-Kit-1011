@@ -1004,7 +1004,7 @@ def main(argv):
             words, seat_no = rest[1:], None
             if len(words) >= 2 and words[-2] == "seat":          # a second player's PC: "remote ADDRESS seat 2"
                 if not (words[-1].isdigit() and 1 <= int(words[-1]) <= 8):
-                    say("Seats are 1 to 8, e.g. PLAY.exe remote 20.111.35.46 seat 2 - seat 1 is the PC that also "
+                    say("Seats are 1 to 8, e.g. PLAY.exe remote 192.168.1.20 seat 2 - seat 1 is the PC that also "
                         "shows the projector, so every other PC takes its own seat from 2 up.")
                     return 2
                 seat_no, words = int(words[-1]), words[:-2]

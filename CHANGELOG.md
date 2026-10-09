@@ -1,14 +1,18 @@
 # Changelog
 
-The WCCF 2010-11 (Rev D) kit: Sega's server, the projector and a player cabinet on one Windows PC, with an
-on-screen panel - and online play on a shared server. Newest first; each date is the day that kit was built.
+Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet's hardware and an on-screen panel, so
+your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
+game is not included. Newest first; each date is the day that kit was built.
 
-## Unreleased
+## Kit 5.4 - 2026-10-09
 
 ### Added
 - CLUB CARD: CLEAR BAD ENDINGS (click twice) sets the card's bad endings back to 0 at a restart, after a backup.
   Trade rights or money the game already took stay as they are. If it cannot be done, the kit says so and the game
   starts anyway. `scripts\edit_club_card.py` changes any other field.
+- CATALOGUE: COUNTRY and CLUB filters (top right of the catalogue): a list of every country or club, A to Z, with
+  its number of cards; typing narrows it, ANY clears it. On the card under the mouse, SAME CLUB and SAME COUNTRY
+  show its clubmates or countrymen (a second click clears). The stats pane now shows the card's country too.
 - Hosting a server: when the crash guard cannot catch a crash, `data\logs\run_server.txt` now says why
   (`MSGPARSE guard stepped aside: ...`, with what it found) - please share that line.
 
@@ -33,6 +37,15 @@ on-screen panel - and online play on a shared server. Newest first; each date is
   request builds every program (`source\build.ps1`), runs the checks that need no game (`source\check.ps1`) and packs
   the kit zip (`source\package.ps1`); a `kit-*` tag drafts a release with it. Git holds the source, not the built
   programs.
+- `source\package.ps1` reads the kit zip back and fails unless every program is in it (`PLAY.exe`, `SETUP.exe`,
+  `ENGLISH.exe`, `bin\`, `overlay\` and `python\python.exe`). A `kit-5.4` tag makes `WCCF-2010-11-kit-5.4.zip`.
+  A run's download on GitHub is that ZIP itself, no longer a ZIP around it, and CI checks the downloaded file too.
+- Test builds for players: Actions > Kit > Run workflow with a tag like `kit-5.4-test1` publishes a pre-release with
+  the ZIP (a public download).
+- A `kit-*` tag's draft release carries its notes (`.github\release-notes.md` and the kit's CHANGELOG section); it is
+  refused when CHANGELOG.md's newest heading is not that kit.
+  Without pushing a tag: Actions > Kit > Run workflow on main with the tag (`kit-5.4`) under "release" - CI makes
+  the tag on main's commit once every check has passed, and drafts the same release.
 
 ## Kit 5.3 - 2026-10-08
 
@@ -113,7 +126,7 @@ on-screen panel - and online play on a shared server. Newest first; each date is
 - English: the license date reads like 2026/10/5 (it was in Japanese).
 
 ## Kits 1 and 2 - 2026-10-05
-- The first kits: `SETUP.bat` and `PLAY.bat` run Sega's server, the projector and seat 1 on one PC, with the
+- The first kits: `SETUP.bat` and `PLAY.bat` start your own copy's server, projector and seat 1 on one PC, with the
   on-screen panel - cabinet buttons, a formation board and a catalogue of all 3,909 cards. No fixed paths: unzip
   anywhere.
 - English (`ENGLISH.bat`), a 2-minute entry window and a smoother projector.

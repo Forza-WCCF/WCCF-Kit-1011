@@ -1,5 +1,9 @@
 # Builds the kit from source on Windows, runs its checks and packs the kit ZIP (an artifact of every run).
-# A tag kit-* also gets a DRAFT release with that ZIP: a maintainer reads it and publishes it.
+# A tag kit-* also gets a DRAFT release with that ZIP: a maintainer reads it and publishes it. The same without
+# pushing a tag: Actions > Kit > Run workflow on main, type the tag (kit-5.4) under "release" - CI makes the tag on
+# main's commit and drafts the release.
+# A test build for players: Actions > Kit > Run workflow, pick the branch, type a tag like kit-5.4-test1 - CI makes
+# that tag on the branch's commit and publishes a PRE-RELEASE with the ZIP (a public download, no login needed).
 name: Kit
 
 on:
@@ -8,6 +12,15 @@ on:
     tags: ['kit-*']
   pull_request:
   workflow_dispatch:
+    inputs:
+      prerelease:
+        description: 'Publish a test pre-release with this new tag (kit-5.4-test1); empty: build only'
+        required: false
+        default: ''
+      release:
+        description: 'On main only: make this new tag (kit-5.4) and DRAFT its release, as a pushed tag does; empty: none'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -50,45 +63,176 @@ jobs:
         run: ./source/check.ps1
 
       - name: Package the kit ZIP (source/package.ps1)
+        id: package
         env:
           REF_TYPE: ${{ github.ref_type }}
           REF_NAME: ${{ github.ref_name }}
           SHA: ${{ github.sha }}
+          PRERELEASE: ${{ inputs.prerelease }}
+          RELEASE: ${{ inputs.release }}
         run: |
-          $suffix = if ($env:REF_TYPE -eq 'tag') { $env:REF_NAME } else { $env:SHA.Substring(0, 7) }
+          # tag kit-5.4 -> WCCF-2010-11-kit-5.4.zip; pre-release kit-5.4-test1 -> WCCF-2010-11-kit-5.4-test1.zip
+          if ($env:PRERELEASE -and $env:RELEASE) { throw 'Run workflow: a pre-release or a release, not both' }
+          if ($env:PRERELEASE -and $env:PRERELEASE -cnotmatch '^kit-[0-9][0-9.]*-test[0-9]*$') {
+            throw "a pre-release's tag looks like kit-5.4-test1, not '$env:PRERELEASE'"
+          }
+          if ($env:RELEASE -and $env:RELEASE -cnotmatch '^kit-[0-9]+(\.[0-9]+)*$') {
+            throw "a release's tag looks like kit-5.4, not '$env:RELEASE'"
+          }
+          $suffix = if ($env:PRERELEASE) { $env:PRERELEASE -replace '^kit-', '' }
+                    elseif ($env:RELEASE) { $env:RELEASE -replace '^kit-', '' }
+                    elseif ($env:REF_TYPE -eq 'tag') { $env:REF_NAME -replace '^kit-', '' }
+                    else { $env:SHA.Substring(0, 7) }
           ./source/package.ps1 -Name "WCCF-2010-11-kit-$suffix"
+          "zip=WCCF-2010-11-kit-$suffix.zip" >> $env:GITHUB_OUTPUT
 
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      # the kit ZIP as it is (archive: false): the run page's download is the kit ZIP itself, not a ZIP around it;
+      # the artifact takes the file's name
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: WCCF-2010-11-kit
-          path: |
-            dist/*.zip
-            dist/*.zip.sha256
+          path: dist/${{ steps.package.outputs.zip }}
+          archive: false
           if-no-files-found: error
           # the org's artifact storage is 500 MB on GitHub Free (shared by its repos): a 20 MB kit ZIP kept the
           # default 90 days fills it in about nine runs a month; 7 days leaves room for about a hundred
           retention-days: 7
-          compression-level: 0  # already a ZIP
+
+    outputs:
+      zip: ${{ steps.package.outputs.zip }}
+
+  zip-check:
+    name: The downloaded ZIP is the kit (not a ZIP in a ZIP)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ needs.build.outputs.zip }}
+          path: dist
+          skip-decompress: true  # keep the kit ZIP whole, as a player downloads it
+
+      - name: Every program at the top of the ZIP
+        env:
+          ZIP: dist/${{ needs.build.outputs.zip }}
+        run: |
+          set -euo pipefail
+          ls -l dist
+          unzip -Z1 "$ZIP" > entries.txt
+          for f in PLAY.exe SETUP.exe ENGLISH.exe bin/winmm.dll bin/FPR_Emu.exe bin/logowin.exe \
+                   overlay/wccfpanel.dll overlay/inject.exe python/python.exe; do
+            grep -qxF "WCCF-2010-11-kit/$f" entries.txt || { echo "missing in $ZIP: WCCF-2010-11-kit/$f"; exit 1; }
+          done
+          echo "$ZIP: $(wc -l < entries.txt) entries, every program in WCCF-2010-11-kit/"
 
   release:
-    name: Draft release (tag kit-*)
-    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'kit-')
-    needs: build
+    name: Draft release (tag kit-*, or Run workflow on main with a release tag)
+    if: >-
+      (github.ref_type == 'tag' && startsWith(github.ref_name, 'kit-')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.release != '')
+    needs: [build, zip-check]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          name: WCCF-2010-11-kit
-          path: dist
+          persist-credentials: false
+          sparse-checkout: |
+            CHANGELOG.md
+            .github/release-notes.md
+          sparse-checkout-cone-mode: false
 
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ needs.build.outputs.zip }}
+          path: dist
+          skip-decompress: true
+
+      # the notes: .github/release-notes.md, then the newest kit's section of CHANGELOG.md - whose heading must be
+      # this tag's kit (tag kit-5.4: "## Kit 5.4 - 2026-10-09"), so a release never goes out with the last kit's notes.
+      # From Run workflow the tag is made here, on main's built commit, once every check above has passed; a tag made
+      # with this job's token starts no other run, so it never drafts a second release
       - name: Draft the release with the kit ZIP
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+          TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release || github.ref_name }}
+          ZIP: ${{ needs.build.outputs.zip }}
         run: |
-          gh release create "$TAG" dist/*.zip dist/*.zip.sha256 --repo "$REPO" --draft --verify-tag \
-            --title "$TAG" --notes "The kit ZIP, built by CI from $TAG. See CHANGELOG.md; publish after a check."
+          set -euo pipefail
+          heading=$(grep -m1 '^## ' CHANGELOG.md)
+          version=${TAG#kit-}
+          [[ "$heading" =~ ^"## Kit $version - "([0-9]{4}-[0-9]{2}-[0-9]{2})$ ]] || {
+            echo "CHANGELOG.md's newest heading is '$heading', not '## Kit $version - <date>'"; exit 1; }
+          title="Kit $version (${BASH_REMATCH[1]})"
+          if [[ "$EVENT" == workflow_dispatch ]]; then
+            [[ "$REF" == refs/heads/main ]] || { echo "a release is made from main, not $REF"; exit 1; }
+            [[ "$TAG" =~ ^kit-[0-9]+(\.[0-9]+)*$ ]] || { echo "not a release tag: $TAG"; exit 1; }
+            if gh api "repos/$REPO/git/ref/tags/$TAG" > /dev/null 2>&1; then
+              echo "tag $TAG already exists"; exit 1
+            fi
+            object=$(gh api "repos/$REPO/git/tags" -f tag="$TAG" -f message="$title" -f object="$SHA" -f type=commit \
+              --jq .sha)
+            gh api "repos/$REPO/git/refs" -f ref="refs/tags/$TAG" -f sha="$object" > /dev/null
+            echo "made tag $TAG on ${SHA:0:7}"
+          fi
+          (cd dist && sha256sum "$ZIP" > "$ZIP.sha256")
+          sha=$(cut -d' ' -f1 "dist/$ZIP.sha256")
+          {
+            sed -e "s/{TITLE}/kit $version/" -e "s/{ZIP}/$ZIP/" -e "s/{SHA256}/$sha/" .github/release-notes.md
+            awk '/^## /{n++; next} n==1' CHANGELOG.md
+            echo "Every change: [CHANGELOG.md](https://github.com/$REPO/blob/$TAG/CHANGELOG.md)"
+          } > notes.md
+          gh release create "$TAG" "dist/$ZIP" "dist/$ZIP.sha256" --repo "$REPO" --draft --verify-tag \
+            --title "$title" --notes-file notes.md
+
+  prerelease:
+    name: Test pre-release (Run workflow with a tag)
+    if: github.event_name == 'workflow_dispatch' && inputs.prerelease != ''
+    needs: [build, zip-check]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          sparse-checkout: CHANGELOG.md
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ needs.build.outputs.zip }}
+          path: dist
+          skip-decompress: true
+
+      # the tag is made here, on the commit that was built; a tag made with this job's token starts no other run,
+      # so it never drafts a second (kit-*) release
+      - name: Publish the pre-release with the kit ZIP
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ inputs.prerelease }}
+          SHA: ${{ github.sha }}
+          ZIP: ${{ needs.build.outputs.zip }}
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^kit-[0-9][0-9.]*-test[0-9]*$ ]] || { echo "not a test tag: $TAG"; exit 1; }
+          (cd dist && sha256sum "$ZIP" > "$ZIP.sha256")
+          {
+            echo "**A test build, not a release yet** - from \`${SHA:0:7}\`. Download **$ZIP** below, unzip it anywhere,"
+            echo "then \`SETUP.exe\` and \`PLAY.exe\`. Please report what goes wrong."
+            echo
+            echo "SHA-256: \`$(cut -d' ' -f1 "dist/$ZIP.sha256")\`"
+            echo
+            # the newest kit's section of CHANGELOG.md, without its own heading
+            awk '/^## /{n++; next} n==1' CHANGELOG.md
+          } > notes.md
+          gh release create "$TAG" "dist/$ZIP" "dist/$ZIP.sha256" --repo "$REPO" --prerelease --target "$SHA" \
+            --title "$TAG (test build)" --notes-file notes.md
