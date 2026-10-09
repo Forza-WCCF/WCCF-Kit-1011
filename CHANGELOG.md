@@ -3,6 +3,21 @@
 The WCCF 2010-11 (Rev D) kit: Sega's server, the projector and a player cabinet on one Windows PC, with an
 on-screen panel - and online play on a shared server. Newest first; each date is the day that kit was built.
 
+## Unreleased
+
+### Changed
+- `PLAY`, `SETUP` and `ENGLISH` are programs (`.exe`, written in Rust: `source\launcher`) instead of `.bat` files,
+  used the same way. Updating from an earlier kit: delete the old `.bat` files.
+- Quitting is closing the game's window. `STOP` is gone: closing seat 1's (or the projector's) window ends the game
+  and everything the kit started with it. During a match the first close only warns (the card would get a bad
+  ending); a second close within 8 seconds quits anyway. A hosted server (`PLAY.exe server`, no window) and a stuck
+  game: `PLAY.exe stop`.
+
+### Fixed
+- Closing the game's window left the game itself running without a window, and with it the server, its match
+  engines and the kit's helpers, hidden, for up to 12 hours. Now everything stops (`data\logs\run_ended.txt`). A
+  server started on the same PC with `PLAY.exe server` keeps running for the other players.
+
 ## Kit 5.3 - 2026-10-08
 
 ### Fixed

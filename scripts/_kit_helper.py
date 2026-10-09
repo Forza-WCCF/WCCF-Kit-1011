@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 r"""_kit_helper.py - does what the in-game panels ask for and cannot do from inside the game.  play.py starts it
-(hidden) with the cabinets; STOP ends it with everything else.
-    python _kit_helper.py SECONDS [DATA PLAY_BAT [hidden]]        (DATA, PLAY_BAT, hidden: tests only)
+(hidden) with the cabinets; the end of the run ends it with everything else.
+    python _kit_helper.py SECONDS [DATA PLAY_EXE [hidden]]        (DATA, PLAY_EXE, hidden: tests only)
 
 RESTART NOW (the SETTINGS panel, 2026-10-06): the panel writes data\restart.request; this helper takes the file away
-and opens "PLAY.bat restart" in a window of its own: a stop by STOP's own rules (during a card session it explains
+and opens "PLAY.exe restart" in a window of its own: a stop by the card rule (during a card session it explains
 and asks), then a plain start with the NEXT START settings.  It has to come from out here: seat 1 runs under a
 debugger that follows the programs it starts, so a restart started by the game itself would be killed half way.
 A request that is already there when the helper starts (left by a run that ended) is removed, never carried out.
@@ -128,7 +128,7 @@ def main(argv):
         return 2
     life = int(argv[0])
     data = argv[1] if len(argv) > 1 else os.path.join(os.path.dirname(HERE), "data")
-    bat = argv[2] if len(argv) > 2 else os.path.join(os.path.dirname(HERE), "PLAY.bat")
+    play = argv[2] if len(argv) > 2 else os.path.join(os.path.dirname(HERE), "PLAY.exe")
     flags = CREATE_NO_WINDOW if argv[3:] == ["hidden"] else CREATE_NEW_CONSOLE
     req = os.path.join(data, "restart.request")
     if os.path.exists(req):
@@ -150,12 +150,11 @@ def main(argv):
             except OSError:
                 time.sleep(0.5)
                 continue
-            say("RESTART NOW asked - opening PLAY.bat restart in its own window")
-            try:                                # cmd's own rule: the outer quotes go, the inner ones keep the path
-                subprocess.Popen('cmd.exe /c ""%s" restart"' % bat, cwd=os.path.dirname(bat), creationflags=flags,
-                                 close_fds=True)
+            say("RESTART NOW asked - opening PLAY.exe restart in its own window")
+            try:
+                subprocess.Popen([play, "restart"], cwd=os.path.dirname(play), creationflags=flags, close_fds=True)
             except OSError as ex:
-                say("could not open PLAY.bat restart: %s" % ex)
+                say("could not open PLAY.exe restart: %s" % ex)
         time.sleep(0.5)
     return 0
 

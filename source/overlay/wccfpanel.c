@@ -2683,7 +2683,7 @@ static void keys_hover(int x, int y)
 // ---------------------------------------------------------------- the SETTINGS panel (2026-10-06)
 // The button under CARD and COIN opens it over the middle column, like KEYS.  "NOW": what the hidden windows used to
 // tell - the link to the server, the club card's session mark and bad endings, its last save and backup, the game's
-// text.  "NEXT START": the two settings the player chose - where a plain PLAY.bat plays (THIS PC / ONLINE + an address) and
+// text.  "NEXT START": the two settings the player chose - where a plain PLAY.exe plays (THIS PC / ONLINE + an address) and
 // the game's text (ENGLISH / JAPANESE).  They go to data\panel.txt at once; play.py reads it at its next plain start
 // (read_panel, apply_english_request).  Nothing here changes the running game.
 #define SET_X0 14.0f                     // the SETTINGS button on the design sheet (measure_skin.js)
@@ -2708,7 +2708,7 @@ static char g_card_req[64] = "";         // card=: the CLUB CARD panel's choice 
 static volatile LONG g_set_dirty = 1;    // the status must be read again now
 // RESTART NOW (the player, 2026-10-06: "a button that goes to the next start"): a first click arms it for 8 s, a second
 // writes data\restart.request; _kit_helper.py (outside the game - seat 1's debugger would kill a restart the game
-// started) opens "PLAY.bat restart".  Not during a card session.  Not taken in 3 s = no helper: removed, and said.
+// started) opens "PLAY.exe restart".  Not during a card session.  Not taken in 3 s = no helper: removed, and said.
 static DWORD g_rs_armed = 0;             // armed until this tick
 static DWORD g_rs_sent = 0;              // when the request was written (0 = none waiting)
 
@@ -2753,7 +2753,7 @@ static int set_save_locked(void)
 {
     char text[640]; int n, k; FILE *f;
     n = _snprintf(text, sizeof text, "# WCCF 2010-11 kit - written by the SETTINGS panel in seat 1's window, read by "
-                  "PLAY.bat at its next\n# plain start (play.py). english= is a change asked for that start; PLAY "
+                  "PLAY.exe at its next\n# plain start (play.py). english= is a change asked for that start; PLAY "
                   "takes the line out once it is done.\nplay_on=%s\n", g_on_online ? "online" : "this_pc");
     if (g_server[0]) n += _snprintf(text + n, sizeof text - n, "server=%s\n", g_server);
     if (g_eng_req >= 0) n += _snprintf(text + n, sizeof text - n, "english=%s\n", g_eng_req ? "on" : "off");
@@ -2865,6 +2865,52 @@ static int card_session_c(const char *path, ULONGLONG since, int *bad, ULONGLONG
     return CS_UNREADABLE;
 }
 
+// ---- closing the window quits the game (2026-10-08)
+// The player: "remove STOP.exe and have a clean quit every time".  Closing seat 1's window (its X, Alt+F4) is how the
+// game is quit: _debug_launch.py ends the game once its window is gone, and PLAY.exe's watcher stops the rest.  During
+// a card session that ends the match without its locker-room save - a bad ending on the card - so the first close
+// then only warns, over the picture, and a second close within 8 s quits anyway: the question STOP used to ask.
+#define CLOSE_AGAIN_MS 8000
+static DWORD g_close_until = 0;          // a close warned about until then (0: none)
+
+static int close_allowed(void)           // WM_CLOSE: 1 = let the window close
+{
+    char p[MAX_PATH]; WIN32_FILE_ATTRIBUTE_DATA fa; ULONGLONG since = 0, saved = 0; int bad = -1, cs;
+    if (g_close_until && (LONG)(g_close_until - GetTickCount()) > 0) {
+        logline("close: closed again during the card session - the game ends");
+        return 1;
+    }
+    _snprintf(p, MAX_PATH, "%s\\running.json", g_data_dir); p[MAX_PATH - 1] = 0;      // this run's start (play.py)
+    if (GetFileAttributesExA(p, GetFileExInfoStandard, &fa)) since = ft_q(fa.ftLastWriteTime);
+    _snprintf(p, MAX_PATH, "%s\\save\\seat1_club.bin", g_data_dir); p[MAX_PATH - 1] = 0;
+    cs = card_session_c(p, since, &bad, &saved);
+    if (cs != CS_OPEN) {
+        logline("close: the window closes - the game ends");
+        return 1;
+    }
+    g_close_until = GetTickCount() + CLOSE_AGAIN_MS;
+    logline("close: a card session is open - warned, not closed");
+    return 0;
+}
+
+static void close_draw(IDirect3DDevice9 *dev)  // the warning, over everything, while it holds
+{
+    float s = g_s, x0 = g_mx0 + 30.0f * s, x1 = g_mx1 - 30.0f * s, y0 = g_ch * 0.5f - 60.0f * s;
+    if (!g_close_until || (LONG)(g_close_until - GetTickCount()) <= 0) { g_close_until = 0; return; }
+    if (!g_font_tex) build_font(dev);
+    set_flat(dev);
+    fill_rect(dev, x0, y0, x1 - x0, 120.0f * s, D3DCOLOR_ARGB(245, 24, 14, 14));
+    outline(dev, x0, y0, x1 - x0, 120.0f * s, 3.0f * s, D3DCOLOR_ARGB(255, 255, 110, 90));
+    if (!g_font_tex) return;
+    set_picture(dev, g_font_tex, 1);
+    put_in_rect(dev, RC(x0, y0 + 10.0f * s, x1, y0 + 46.0f * s), 0.72f * s, D3DCOLOR_ARGB(255, 255, 110, 90),
+                "A MATCH IS ON - THE GAME DID NOT CLOSE");
+    put_in_rect(dev, RC(x0, y0 + 50.0f * s, x1, y0 + 78.0f * s), 0.46f * s, D3DCOLOR_ARGB(255, 240, 240, 245),
+                "closing now ends it without the locker-room save: your card gets a bad ending");
+    put_in_rect(dev, RC(x0, y0 + 80.0f * s, x1, y0 + 108.0f * s), 0.46f * s, D3DCOLOR_ARGB(255, 255, 214, 40),
+                "close the window again within 8 seconds to quit anyway");
+}
+
 static void set_refresh(void)
 {
     struct SetStatus st; char p[MAX_PATH]; WIN32_FILE_ATTRIBUTE_DATA fa; WIN32_FIND_DATAA fd; HANDLE fh;
@@ -2921,7 +2967,7 @@ static void set_tick(void)               // the board thread, every pass: the st
         EnterCriticalSection(&g_board_cs);
         if (GetFileAttributesA(p) != INVALID_FILE_ATTRIBUTES) {
             DeleteFileA(p);                                     // never left lying for a later run to find
-            note_locked(D3DCOLOR_ARGB(255, 255, 110, 90), "the restart helper did not answer - use STOP.bat, then PLAY.bat");
+            note_locked(D3DCOLOR_ARGB(255, 255, 110, 90), "the restart helper did not answer - close the game, then PLAY.exe");
             logline("settings: restart request not picked up - removed");
         }
         g_rs_sent = 0;
@@ -3033,7 +3079,7 @@ static void set_draw(IDirect3DDevice9 *dev)
     set_picture(dev, g_font_tex, 1);
     put_str(dev, g.x0 + 24.0f * s, 14.0f * s, 0.85f * s, orange, "SETTINGS");
     put_str(dev, g.x0 + 24.0f * s, 58.0f * s, 0.42f * s, grey,
-            "NOW: what the game's hidden windows used to tell, read live.  NEXT START: what PLAY.bat does next time.");
+            "NOW: what the game's hidden windows used to tell, read live.  NEXT START: what PLAY.exe does next time.");
     put_str(dev, g.x0 + 24.0f * s, 76.0f * s, 0.42f * s, grey, "Esc closes this.  NEXT START waits for the next start; "
             "VIEW changes at once.  Nothing here changes the game itself");
     put_str(dev, g.lx, g.ynow, 0.46f * s, orange, "NOW");
@@ -3053,7 +3099,7 @@ static void set_draw(IDirect3DDevice9 *dev)
         case 1:
             switch (st.card) {
             case CS_OPEN:   _snprintf(v, sizeof v, "SESSION OPEN - a match is on: do not stop the game"); col = orange; break;
-            case CS_CLOSED: _snprintf(v, sizeof v, "closed - safe to stop (STOP.bat)"); col = green; break;
+            case CS_CLOSED: _snprintf(v, sizeof v, "closed - safe to close the game"); col = green; break;
             case CS_CUT:    _snprintf(v, sizeof v, "the last session did not end normally"); col = yellow; break;
             case CS_NEW:    _snprintf(v, sizeof v, "a new card - no club made yet"); col = grey; break;
             case CS_UNREADABLE: _snprintf(v, sizeof v, "the card file cannot be read"); col = red; break;
@@ -3110,7 +3156,7 @@ static void set_draw(IDirect3DDevice9 *dev)
         put_str(dev, (float)g.restart.left, (float)g.restart.bottom + 8.0f * s, 0.40f * s, grey,
                 "the game closes and opens again with these NEXT START settings");
     put_str(dev, g.lx, (float)g.restart.bottom + 42.0f * s, 0.42f * s, grey,
-            "Saved at once in data\\panel.txt. A plain PLAY.bat uses it; PLAY.bat local always plays on this PC.");
+            "Saved at once in data\\panel.txt. A plain PLAY.exe uses it; PLAY.exe local always plays on this PC.");
     put_str(dev, g.lx, g.yview, 0.46f * s, orange, "VIEW");
     y = (float)g.cab.top + ((float)(g.cab.bottom - g.cab.top) - (float)g_cellh * 0.44f * s) * 0.5f;
     put_str(dev, g.lx + 12.0f * s, y, 0.44f * s, grey, "LAYOUT");
@@ -3231,7 +3277,7 @@ static void set_click(HWND h, int x, int y)                     // a press insid
             DWORD now = GetTickCount(), yellow = D3DCOLOR_ARGB(255, 255, 214, 40);
             if (g_rs_sent) {
                 note_locked(yellow, "already asked - the game closes and opens again");
-            } else if (g_st.card == CS_OPEN) {                  // STOP's rule, said here before anything starts
+            } else if (g_st.card == CS_OPEN) {                  // the card rule, said here before anything starts
                 note_locked(red, "not during a card session - after the locker-room save");
                 logline("settings: restart refused - a card session is open");
             } else if (!g_rs_armed || (LONG)(g_rs_armed - now) <= 0) {
@@ -3244,7 +3290,7 @@ static void set_click(HWND h, int x, int y)                     // a press insid
                     g_rs_sent = now;
                     note_locked(green, "restarting - the game closes and opens again (about a minute)");
                     logline("settings: restart requested");
-                } else note_locked(red, "could not ask for the restart - use STOP.bat, then PLAY.bat");
+                } else note_locked(red, "could not ask for the restart - close the game, then PLAY.exe");
             }
         }
     }
@@ -3502,7 +3548,7 @@ static void club_draw(IDirect3DDevice9 *dev)
         put_in_rect(dev, cr, 0.8f * s, white, "X");
     }
     if (strcmp(g_cstate, "ok")) {                                                            // no club to show
-        const char *msg = !strcmp(g_cstate, "noview") ? "reading the club card - a moment after the start; started with PLAY.bat?" : g_creason;
+        const char *msg = !strcmp(g_cstate, "noview") ? "reading the club card - a moment after the start; started with PLAY.exe?" : g_creason;
         if (g_font_tex) put_fit(dev, lx, 130.0f * s, 0.46f * s, !strcmp(g_cstate, "unreadable") ? club_colour('r') : white,
                                 msg[0] ? msg : g_cstate, lw);            // the left column: YOUR CARDS is beside it
         y = 180.0f * s;
@@ -3645,7 +3691,7 @@ static void club_click(HWND h, int x, int y)
     if (pick < 0) { LeaveCriticalSection(&g_board_cs); return; }
     if (g_rs_sent) {
         note_locked(yellow, "already asked - the game closes and opens again");
-    } else if (!strcmp(g_csession, "open")) {                       // STOP's rule, said before anything moves
+    } else if (!strcmp(g_csession, "open")) {                       // the card rule, said before anything moves
         note_locked(red, "not during a card session - after the locker-room save");
         logline("club: switch refused - a card session is open");
     } else if (pick == WAL_NEW && !strcmp(g_cstate, "none")) {
@@ -3661,7 +3707,7 @@ static void club_click(HWND h, int x, int y)
         lstrcpynA(g_card_req, pick == WAL_NEW ? "new" : g_wal[pick].file, sizeof g_card_req);
         if (!set_save_locked()) note_locked(red, "could not save data\\panel.txt - try again");
         else if (!restart_request())
-            note_locked(red, "could not ask for the restart - STOP.bat then PLAY.bat does the switch");
+            note_locked(red, "could not ask for the restart - close the game, then PLAY.exe does the switch");
         else {
             g_rs_sent = now;
             note_locked(green, "switching - the game closes and opens again (about a minute)");
@@ -3864,6 +3910,7 @@ static void compose(IDirect3DDevice9 *dev, int have_game)
         keys_draw(dev);                             // the KEYS panel, when it is open
         set_draw(dev);                              // the SETTINGS panel, when it is open
         club_draw(dev);                             // the CLUB CARD panel, when it is open
+        close_draw(dev);                            // a close during a card session: the warning
         IDirect3DDevice9_EndScene(dev);
     }
 }
@@ -4071,6 +4118,7 @@ static int button_at(int x, int y)
 static LRESULT CALLBACK wndproc(HWND h, UINT m, WPARAM wp, LPARAM lp)
 {
     if (m == WM_WCCF_FS) { g_fs_msg_pending = 0; set_maximized(h, (int)wp); return 0; }
+    if (m == WM_CLOSE && !close_allowed()) return 0;               // a match is on: warned once (close_allowed)
     if (m == WM_DEVICECHANGE) InterlockedExchange(&g_pad_rescan, 1);   // plugged in or out: KEYS looks again (passed on)
     if ((m == WM_KEYDOWN || m == WM_KEYUP) && wp == VK_F11) {        // F11: maximized <-> window (the game never sees it)
         if (m == WM_KEYDOWN && !(lp & 0x40000000) && g_sc_frames > 0 && !g_sc_fail) set_maximized(h, !is_maximized(h));

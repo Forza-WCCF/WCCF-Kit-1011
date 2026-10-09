@@ -12,6 +12,15 @@ The C source of every program the kit ships. Each was built with Microsoft's C c
                           /link d3d9.lib gdi32.lib user32.lib ole32.lib windowscodecs.lib
   overlay\inject.exe   overlay\inject.c (must be 32-bit: it hands the game 32-bit LoadLibraryA's address)
                        cl /nologo /O2 /MT /W3 /D_CRT_SECURE_NO_WARNINGS inject.c /Fe:inject.exe
+  overlay\fakegame.c   not shipped: a stand-in for seat 1's game window to see the panel without the game (its
+                       header: the steps, and the settings that keep a test off the live game)
+                       cl /nologo /O2 /MT /W3 /D_CRT_SECURE_NO_WARNINGS fakegame.c /Fe:fakegame.exe /link d3d9.lib user32.lib
+
+PLAY.exe, SETUP.exe, ENGLISH.exe   launcher\ (Rust; Cargo.lock pins every crate)
+                       cargo build --release --locked --target x86_64-pc-windows-msvc
+                       then copy target\x86_64-pc-windows-msvc\release\{PLAY,SETUP,ENGLISH}.exe to the kit folder.
+                       The C runtime is linked in (launcher\.cargo\config.toml); checks: cargo fmt --check,
+                       cargo clippy --all-targets -- -D warnings, cargo test
 
 overlay\skin.tex is a picture (the panel's art, 1728x1080, BGRA) rendered from the project's skin page; it has no
 source here.
@@ -24,3 +33,6 @@ What each does, in short:
   logowin.exe   Sega's start-up notice window, replaced by one that only records the notice
   wccfpanel.dll the panel around seat 1's picture (drawn with the game's own Direct3D 9 device)
   inject.exe    loads wccfpanel.dll into seat 1's running game
+  launchers     run scripts\play.py, setup.py or english.py with the kit's Python and keep the window as the .bat
+                files did; PLAY leaves a windowless watcher (PLAY.exe --watch) that stops the rest of the run once a
+                game window is closed (launcher\src\watch.rs; scripts\_debug_launch.py ends the game itself)

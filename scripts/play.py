@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 r"""play.py - start (and stop) WCCF 2010-11 on this PC: Sega's server, the projector (the shared big screen) and the
-player cabinet (seat 1) with the overlay and your keyboard.  PLAY.bat and STOP.bat run it; run SETUP.bat first.
+player cabinet (seat 1) with the overlay and your keyboard.  PLAY.exe runs it; run SETUP.exe first.
 
     python play.py            start everything on this PC - or, when the SETTINGS panel chose ONLINE, the cabinets
                               on its server (as "remote ADDRESS"), and this PC if that server does not answer; it
-                              runs up to 12 hours, STOP.bat ends it sooner
+                              runs up to 12 hours; closing a game window ends it sooner
     python play.py local      everything on this PC, whatever the SETTINGS panel chose
     python play.py server     only the server side (scene service, server, its 4 match engines): for the PC or
                               cloud machine that hosts the game for others - its TCP port 20002 must be open to them;
@@ -23,13 +23,15 @@ player cabinet (seat 1) with the overlay and your keyboard.  PLAY.bat and STOP.b
     python play.py stop       stop everything - refused while your club card is in the reader (the game may be
                               saving it: press I in the game first); "stop force" stops anyway;
                               "stop check" only says what stop would do, and stops nothing
+    python play.py ended      what PLAY.exe's watcher runs once a game window is closed: stop the rest (a
+                              server started on this PC with "server" stays, for the other players)
     python play.py status     what is running
     python play.py show       show the server's hidden windows again: its console (the round-by-round log) and its
                               settings window - to look at; they are hidden again at the next start
     python play.py restart    what the panels' RESTART NOW runs, through _kit_helper.py, in a window of its own: when a
                               plain start would play the same way (same THIS PC / ONLINE server, no English switch) -
                               a club card switch, say - only the cabinet restarts and the projector keeps running;
-                              otherwise stop (STOP's own rules), then a plain start
+                              otherwise stop (the card rule), then a plain start
 
 Order, each step waiting for the one before: scene service -> server (and its 4 match engines) -> projector ->
 the cabinet's stand-ins (keychip and network, card reader, I/O board) -> seat 1 -> the overlay -> the key driver ->
@@ -140,7 +142,7 @@ def set_control_ip(conf, ip):
     with open(conf, "rb") as f:
         raw = f.read()
     if not re.search(rb"(?m)^CONTROL_IP=", raw):
-        raise Failed("%s has no CONTROL_IP line - run SETUP.bat again" % conf)
+        raise Failed("%s has no CONTROL_IP line - run SETUP.exe again" % conf)
     out = re.sub(rb"(?m)^(CONTROL_IP|MATCH_IP)=[^\r\n]*", lambda m: m.group(1) + b"=" + ip.encode("ascii"), raw)
     if out == raw:
         return False
@@ -160,7 +162,7 @@ def set_satellite_no(conf, n):
     with open(conf, "rb") as f:
         raw = f.read()
     if not re.search(rb"(?m)^SATELLITE_NO=", raw):
-        raise Failed("%s has no SATELLITE_NO line - run SETUP.bat again" % conf)
+        raise Failed("%s has no SATELLITE_NO line - run SETUP.exe again" % conf)
     out = re.sub(rb"(?m)^SATELLITE_NO=[^\r\n]*", b"SATELLITE_NO=%d" % n, raw)
     if out == raw:
         return False
@@ -280,7 +282,7 @@ def setup_state():
     seat = K.seat_dir(game) if game else None
     if (not game or not os.path.isfile(os.path.join(seat, ".wccf-kit"))
             or not os.path.isfile(os.path.join(K.OVERLAY, "catalogue.tsv"))):
-        say("Not set up yet - run SETUP.bat first.")
+        say("Not set up yet - run SETUP.exe first.")
         return None, None
     return game, seat
 
@@ -322,7 +324,7 @@ def drop_panel_line(name, path=None):
 
 def apply_english_request():
     """the SETTINGS panel's "english=on" / "english=off": done now, before anything starts (english.py refuses while
-    the game runs), then taken out of the file - a request, not a lasting setting, so ENGLISH.bat still works"""
+    the game runs), then taken out of the file - a request, not a lasting setting, so ENGLISH.exe still works"""
     want = read_panel().get("english", "").lower()
     if want not in ("on", "off"):
         return
@@ -484,7 +486,8 @@ def play(debug, mode="local", ip=None, seat_no=None):
     known = running_roles()
     busy = not_server_side(running, known) if mode == "remote" else running
     if busy:
-        say("Already running (%s) - use STOP.bat first." % ", ".join(sorted({p[2] for p in busy})))
+        say("Already running (%s) - close the game's window first (a game that is stuck: PLAY.exe stop)." %
+            ", ".join(sorted({p[2] for p in busy})))
         return 3
     beside_server = bool(running)            # only "remote" gets here with something running: a server on this PC
     if beside_server:
@@ -521,8 +524,8 @@ def play(debug, mode="local", ip=None, seat_no=None):
 
     if mode == "remote":
         if not server_answers(ip):
-            raise Failed("the server at %s does not answer on port %d - is it running there (PLAY.bat server), "
-                         "and is that port open to this PC? (PLAY.bat local plays on this PC instead)" %
+            raise Failed("the server at %s does not answer on port %d - is it running there (PLAY.exe server), "
+                         "and is that port open to this PC? (PLAY.exe local plays on this PC instead)" %
                          (ip, CONTROL_PORT))
         seat_no, projector = take_seat(ip, seat_no, env, roles)
         for conf in confs:
@@ -580,8 +583,8 @@ def play(debug, mode="local", ip=None, seat_no=None):
             say("     the match relay did not start (data\\logs\\run_match_relay.txt) - two players then play the CPU")
         write_running(roles, mode, None)
         say("")
-        say("Server running. On each player's PC: PLAY.bat remote, then this machine's address - the one their PC")
-        say("can reach. This machine must let in TCP ports %d and 20030, and UDP %d. STOP.bat ends it." % (
+        say("Server running. On each player's PC: PLAY.exe remote, then this machine's address - the one their PC")
+        say("can reach. This machine must let in TCP ports %d and 20030, and UDP %d. PLAY.exe stop ends it." % (
             CONTROL_PORT, RELAY_PORT))
         return 0
 
@@ -620,7 +623,7 @@ def play(debug, mode="local", ip=None, seat_no=None):
     say("  Enter START (free play: it puts a coin in for you)   X decide   C shoot   arrows: tactics")
     say("  I club card in / out   5 coin   F1 test menu   F11 window size   - or click the buttons around the picture")
     say("First time: put the card in with I, and the game makes your club. It is saved in data\\save\\seat1_club.bin.")
-    say("To finish: let the card come out after a match, then STOP.bat. %s" % (
+    say("To finish: let the card come out after a match, then close the game's window - the rest stops with it. %s" % (
         "(The key driver's window is minimized.)" if debug else
         "(The key driver runs in the background: its log is data\\logs\\run_keys.txt.)"))
     return 0
@@ -652,7 +655,7 @@ def console_in():
 
 
 def ask_yes(question):
-    """True only if someone at the STOP window types Y - never a dead end for a person, and never a wait when
+    """True only if someone at the stop's window types Y - never a dead end for a person, and never a wait when
     nobody can answer (no console: a tool, a test) - then it is a plain no"""
     try:
         if not sys.stdin or not console_in():
@@ -663,7 +666,7 @@ def ask_yes(question):
 
 
 def stop_guard(force, check, game, seat):
-    """STOP's card rule (below), for a stop and for a cabinet restart (2026-10-07): (3, ...) refused - said why - or
+    """The card rule (below), for a stop and for a cabinet restart (2026-10-07): (3, ...) refused - said why - or
     (0, card in?, session state) to go on"""
     seat_up = any(os.path.normcase(os.path.dirname(p[3])) == os.path.normcase(seat)
                   for p in K.game_processes(game) if p[2].lower() == "client_release.exe")
@@ -689,21 +692,27 @@ def stop_guard(force, check, game, seat):
     return 0, c, sess
 
 
-def stop(force, check=False):
+def stop(force, check=False, keep_server=False):
     """check=True: say what stop would do, and stop nothing (a refusal test must never be a real stop: 2026-10-05
     a stop run as a 'test' closed a game someone was playing - the card had come out since it was last read).
     Refused while the card is in the reader, or while the game has a card session open: it marks one open on the
     card at START and closed at the locker-room save - the card sensor alone reads "out" through a whole match
-    (seen 2026-10-06), so the mark is what counts."""
+    (seen 2026-10-06), so the mark is what counts.
+    keep_server=True (ended(), 2026-10-08): a server started on this PC with "server" keeps running, and
+    data\\running.json keeps its part."""
     game, seat = setup_state()
     if not game:
         return 2
     rc, c, sess = stop_guard(force, check, game, seat)
     if rc:
         return rc
-    ours = kit_pythons()
+    roles = running_roles() if keep_server else None
+
+    def mine(procs):
+        return procs if roles is None else not_server_side(procs, roles)
+    ours = mine(kit_pythons())
     if check:
-        g = K.game_processes(game)
+        g = mine(K.game_processes(game))
         say("check only - nothing stopped: stop would end %d kit processes and %d game processes (club card: %s, "
             "session: %s)" % (len(ours), len(g), {True: "in", False: "out", None: "unknown"}[c], SESSION_WORDS[sess])
             if ours or g else "Nothing running.")
@@ -711,12 +720,14 @@ def stop(force, check=False):
     for p in ours:               # the launchers first: each takes its game down with it
         K.kill(p[0])
     time.sleep(1.5)
-    left = K.game_processes(game)
+    left = mine(K.game_processes(game))
     for p in left:
         K.kill(p[0])
     time.sleep(1.0)
-    still = K.game_processes(game) + kit_pythons()
-    if os.path.exists(RUNNING):
+    still = mine(K.game_processes(game) + kit_pythons())
+    if roles is not None:
+        write_running({pid: r for pid, r in roles.items() if r in SERVER_ROLES}, "server", None)
+    elif os.path.exists(RUNNING):
         os.remove(RUNNING)
     if still:
         say("Still running: %s" % ", ".join("%s %d" % (p[2], p[0]) for p in still))
@@ -728,6 +739,23 @@ def stop(force, check=False):
     except Exception as ex:
         say("  (the cards on the table were not copied to their club: %s)" % ex)
     return 0
+
+
+def ended():
+    """a game window closed (2026-10-08; there is no STOP now): PLAY.exe's watcher saw one of the run's cabinet and
+    projector launchers end - _debug_launch.py ends the game, and itself, when the game's window is closed - and asks
+    for the rest to stop: the server, its match engines, the stand-ins, the key driver, the panel helper.  Before, they
+    ran on hidden for up to 12 hours.  The card rule still holds for a cabinet that still runs (the projector closed
+    during a match: refused, exit 3, and the watcher goes on watching).  A cabinet that played on a server started on
+    this PC with "server" leaves that server running for the other players."""
+    game, _seat = setup_state()
+    if not game:
+        return 2
+    server_here = running_info().get("mode") == "remote" and any(
+        p[2].lower() == "control_release.exe" for p in K.game_processes(game))
+    say("Every game window is closed - stopping the rest%s." % (" (the server on this PC keeps running)"
+                                                               if server_here else ""))
+    return stop(False, keep_server=server_here)
 
 
 def cabinet_restart_fits():
@@ -751,7 +779,7 @@ def cabinet_restart_fits():
 
 def restart_cabinet():
     """RESTART NOW for the cabinet only (2026-10-07; the player: "no one cabinet can restart or stop the projector,
-    that has to keep running"): seat N's side is stopped by STOP's card rule, the CLUB CARD panel's switch is done, and
+    that has to keep running"): seat N's side is stopped by the card rule, the CLUB CARD panel's switch is done, and
     that side starts again.  The projector, the scene service, the seat lease and the panel helper are never touched,
     so the projector stays in step with the server (one that rejoins mid-round waits up to a whole round)."""
     game, seat = setup_state()
@@ -789,7 +817,7 @@ def restart_cabinet():
     left = seat_side() + [p for p in kit_pythons() if p[0] in doomed]
     if left:
         write_running(roles, mode, ip, seat_no)
-        say("Still running: %s - the cabinet was not started again (STOP.bat, then PLAY.bat)." % ", ".join(
+        say("Still running: %s - the cabinet was not started again (PLAY.exe stop, then PLAY.exe)." % ", ".join(
             "%s %d" % (p[2], p[0]) for p in left))
         return 1
     apply_card_request()                     # the card reader is stopped: the CLUB CARD panel's switch goes in now
@@ -857,11 +885,13 @@ def main(argv):
     try:
         if a[:1] == ["stop"]:
             return stop("force" in a, check="check" in a)
+        if a == ["ended"]:
+            return ended()
         if a[:1] == ["status"]:
             return status()
         if a == ["show"]:
             return show()
-        if a[:1] == ["restart"]:              # RESTART NOW: stop by STOP's rules (asked during a session), then start
+        if a[:1] == ["restart"]:              # RESTART NOW: stop by the card rule (asked during a session), then start
             if a == ["restart"] and cabinet_restart_fits():   # the projector would come back the same: it is kept
                 return restart_cabinet()
             say("Restarting WCCF 2010-11, as the SETTINGS panel asked.")
@@ -886,7 +916,7 @@ def main(argv):
                     say("The SETTINGS panel says play online, but the server at %s does not answer - playing on this "
                         "PC instead. (The panel keeps ONLINE for next time; THIS PC there stops this try.)" % ip)
                     return play(debug)
-                say("Online, as the SETTINGS panel chose (PLAY.bat local plays on this PC).")
+                say("Online, as the SETTINGS panel chose (PLAY.exe local plays on this PC).")
                 return play(debug, "remote", ip)              # the server's seat desk picks the seat
             return play(debug)
         if rest == ["local"]:
@@ -897,7 +927,7 @@ def main(argv):
             words, seat_no = rest[1:], None
             if len(words) >= 2 and words[-2] == "seat":          # a second player's PC: "remote ADDRESS seat 2"
                 if not (words[-1].isdigit() and 1 <= int(words[-1]) <= 8):
-                    say("Seats are 1 to 8, e.g. PLAY.bat remote 20.111.35.46 seat 2 - seat 1 is the PC that also "
+                    say("Seats are 1 to 8, e.g. PLAY.exe remote 20.111.35.46 seat 2 - seat 1 is the PC that also "
                         "shows the projector, so every other PC takes its own seat from 2 up.")
                     return 2
                 seat_no, words = int(words[-1]), words[:-2]
@@ -907,7 +937,7 @@ def main(argv):
             s = K.load_settings()
             ip = words[0] if words else s.get("server")
             if not ip:
-                say("Which server? PLAY.bat remote, then the server's address (four numbers with dots).")
+                say("Which server? PLAY.exe remote, then the server's address (four numbers with dots).")
                 return 2
             if not valid_ipv4(ip):
                 say("\"%s\" is not an address the game can use: it takes four numbers 0-255 with dots, no names." % ip)

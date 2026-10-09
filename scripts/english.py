@@ -3,9 +3,9 @@ r"""english.py - WCCF 2010-11 in English.  Built on this PC from YOUR game files
 with Sega's files kept; "off" puts Sega's back.  Nothing of Sega's ships with the kit: english\ holds only English
 text and fingerprints (SHA-256) of Sega's files.
 
-    python english.py on       (ENGLISH.bat)       build, check, then put the English files in place
-    python english.py off      (ENGLISH.bat off)   Sega's Japanese files back
-    python english.py check    (ENGLISH.bat check) say what "on" would do; changes nothing
+    python english.py on       (ENGLISH.exe)       build, check, then put the English files in place
+    python english.py off      (ENGLISH.exe off)   Sega's Japanese files back
+    python english.py check    (ENGLISH.exe check) say what "on" would do; changes nothing
 
 What changes, in the game's extracted\ folder (seat 1 reads the same files through setup's folder links):
   data\string\string_list.bin + .hf       the screen text: about 7,200 lines in English
@@ -23,7 +23,7 @@ writing in them are not changed.
 Where the English comes from: english\screen_text.tsv (this kit's translation), Sega's own English that the game files
 already hold (a second language column), and english\sega_rstring.tsv (lines from Sega's European English of the
 older WCCF, matched by identical Japanese).
-Exit 0 done; 1 refused or a check failed (nothing changed); 2 no game set up (run SETUP.bat first).
+Exit 0 done; 1 refused or a check failed (nothing changed); 2 no game set up (run SETUP.exe first).
 """
 import bisect
 import collections
@@ -302,14 +302,14 @@ def build_names(game):
 def build_exe(game):
     sheet_rows, files = sheet("exe_text.tsv"), {}
     for rel, program, what in ((PROJECTOR, "client", "the projector's client_Release.exe (Sega's Rev D)"),
-                               (SEAT_EXE, "client", "seat 1's client_Release.exe (the copy SETUP.bat makes)"),
+                               (SEAT_EXE, "client", "seat 1's client_Release.exe (the copy SETUP.exe makes)"),
                                (SERVER, "server", "the server's control_Release.exe (Sega's Rev D)")):
         rows = [r for r in sheet_rows if r["program"] == program]
         if not rows:
             continue
         d = bytearray(sega_file(game, rel))
         if sha(d) != SEGA[rel]:
-            raise Failed("%s is not the expected file - run SETUP.bat first" % what)
+            raise Failed("%s is not the expected file - run SETUP.exe first" % what)
         size = len(d)
         for r in rows:
             o, n, en = int(r["offset"], 16), int(r["length"]), r["english"]
@@ -408,7 +408,7 @@ def turn_on(game, files):
         put(tgt, data)                                   # one step: the game's file is never missing (2026-10-06)
         with open(tgt, "rb") as f:
             if sha(f.read()) != sha(data):
-                raise Failed("%s did not write correctly - run ENGLISH.bat off" % rel)
+                raise Failed("%s did not write correctly - run ENGLISH.exe off" % rel)
         man[rel]["english"] = sha(data)
     save_manifest(man)
 
@@ -451,13 +451,13 @@ def main(argv):
         return 1
     game = K.find_game(K.load_settings().get("game"))
     if not game:
-        print("The game is not set up yet - run SETUP.bat first.")
+        print("The game is not set up yet - run SETUP.exe first.")
         return 2
     print("WCCF 2010-11 kit - English %s - game: %s" % (mode, game))
     try:
         if K.game_processes(game):
             if mode != "check":
-                raise Failed("the game is running - close it first (STOP.bat), then run this again")
+                raise Failed("the game is running - close its window first, then run this again")
             print("  NOTE  the game is running: \"on\" and \"off\" will refuse until it is closed")
         if mode == "off":
             if not load_manifest():
@@ -476,7 +476,7 @@ def main(argv):
                   % (len(files), sum(1 for r in files if r not in man)))
             return 0
         turn_on(game, files)
-        print("  ok    %d files in place, each read back.  Sega's are in data\\english_backup (ENGLISH.bat off puts "
+        print("  ok    %d files in place, each read back.  Sega's are in data\\english_backup (ENGLISH.exe off puts "
               "them back)." % len(files))
     except Failed as ex:
         print("  FAIL  %s" % ex)
@@ -484,7 +484,7 @@ def main(argv):
     except OSError as ex:
         print("  FAIL  %s" % ex)
         return 1
-    print("English is on. Start the game with PLAY.bat.")
+    print("English is on. Start the game with PLAY.exe.")
     return 0
 
 
