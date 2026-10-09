@@ -1168,10 +1168,10 @@ static void board_draw(IDirect3DDevice9 *dev)
                 (float)(r.bottom - r.top) + 6.0f * e, 3.0f * e, D3DCOLOR_ARGB(255, 255, 214, 40));
     }
     if (g_drag >= 0 && g_drag < g_ncards) draw_card(dev, g_drag, 1.12f, 1);
-    else if (g_hover >= 0 && g_hover < g_ncards && GetTickCount() - g_hover_since >= 1000)
-        board_caption(dev, draw_card(dev, g_hover, 2.4f, 1), g_cards[g_hover].no);   // resting on a card 1 s: shown big
-                                               // with who it is (350 ms was too eager, 8 s too slow; card games and
-                                               // tooltips wait about 0.4-1 s)
+    else if (g_hover >= 0 && g_hover < g_ncards && GetTickCount() - g_hover_since >= 3000)
+        board_caption(dev, draw_card(dev, g_hover, 2.4f, 1), g_cards[g_hover].no);   // resting on a card 3 s: shown big
+                                               // with who it is (350 ms was too eager, 8 s too slow, 1 s too soon -
+                                               // the owner chose 3 s, 2026-10-09)
     LeaveCriticalSection(&g_board_cs);
 }
 

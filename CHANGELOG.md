@@ -35,7 +35,7 @@ game is not included. Newest first; each date is the day that kit was built.
   an upload, 6 an hour from one address, 1 GB in all (the oldest go). A server must now let in TCP 20050 too.
 
 ### Changed
-- The formation board shows a card big after the mouse rests on it 1 s (was 8 s).
+- The formation board shows a card big after the mouse rests on it 3 s (was 8 s).
 - The BACK button is gone: it pressed nothing, and in the game the blue KEEPER button goes back.
 - The COIN button is gone: play is free (above). KEYS still lists COIN, for a key or a real coin switch.
 
