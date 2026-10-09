@@ -18,6 +18,12 @@ if ($LASTEXITCODE) { throw 'git archive failed' }
 if ($LASTEXITCODE) { throw 'tar failed' }
 Remove-Item $tar
 
+# version.txt (2026-10-09): which kit this is - kit-5.5, kit-5.5-test2, or CI's commit (kit-f13c146); a plain build
+# has none.  The panel shows it under the ping ("KIT 5.5"), SEND LOGS names the logs with it, and SETUP.exe's update
+# (PR #20) marks the kit you have with it - the same file and the same words as that PR's
+$version = $Name -replace '^WCCF-2010-11-kit-?', ''
+if ($version) { "kit-$version" | Set-Content -Encoding ascii (Join-Path $root 'version.txt') }
+
 $built = 'PLAY.exe', 'SETUP.exe', 'ENGLISH.exe', 'bin\winmm.dll', 'bin\FPR_Emu.exe', 'bin\logowin.exe',
          'overlay\wccfpanel.dll', 'overlay\inject.exe'
 foreach ($f in $built) {
@@ -38,7 +44,7 @@ if ($LASTEXITCODE) { throw 'tar (zip) failed' }
 # cannot start); python.exe comes from git, the rest from build.ps1
 $entries = @(& tar -t -f $zip)
 if ($LASTEXITCODE) { throw 'tar (list) failed' }
-$missing = @($built + 'python\python.exe' | Where-Object {
+$missing = @($built + 'python\python.exe' + $(if ($version) { 'version.txt' }) | Where-Object {
     $entry = 'WCCF-2010-11-kit/' + ($_ -replace '\\', '/')
     $entries -notcontains $entry
 })

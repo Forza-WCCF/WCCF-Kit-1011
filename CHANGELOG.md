@@ -24,15 +24,29 @@ game is not included. Newest first; each date is the day that kit was built.
 - FORMATION BOARD: resting the mouse on a card on the table (the big card) also shows its name, line, total and roles.
 - Logs: older runs are no longer deleted. `data\logs\previous` is still the run before; the runs before it are
   zipped into `data\logs\archive` (about the last 200 MB, the oldest go first).
+- Free play: the game's own FREE PLAY is switched on in seat 1, so no coin is needed anywhere - including the
+  two-choice screen after a cup match that PRESS / SHOOT decide, where START's coin did not help. The key driver
+  still puts a coin in on START, in case the panel is not loaded.
+- SETTINGS > LOGS: SEND LOGS (click twice) sends this game's logs to the server you play on and shows a short code
+  to post in Discord with what went wrong. Never the club card; the Windows user name and PC name are taken out.
+- The kit's version (`KIT 5.5`) at the top right of the game, under the ping meter when online -
+  `version.txt` in the kit (`kit-5.5`), written when the kit ZIP is made.
+- Server: the log inbox (`scripts\_log_inbox.py`, TCP 20050) keeps those logs in `data\player_logs`: at most 8 MB
+  an upload, 6 an hour from one address, 1 GB in all (the oldest go). A server must now let in TCP 20050 too.
 
 ### Changed
-- The formation board shows a card big after the mouse rests on it 1 s (was 8 s).
+- The formation board shows a card big after the mouse rests on it 3 s (was 8 s).
+- The BACK button is gone: it pressed nothing, and in the game the blue KEEPER button goes back.
+- The COIN button is gone: play is free (above). KEYS still lists COIN, for a key or a real coin switch.
 
 ### Fixed
 - The key driver could end when its input file stayed busy (an antivirus scan, for one): every key and controller
   button dead, the last one held, the game going on by itself. A possible cause of the freeze reported in team
   training and the locker room (not confirmed). It now tries again on its next round; if it ever stops anyway,
   `data\logs\keys_crash.txt` says why.
+- On a PC that had been on for more than 24.8 days without a restart, the card dispenser fix ("You are owed N
+  Player Card(s)" kept at 0) never ran, nor did the player card after a match: their once-a-second / every-2-s
+  timers started from 0 and never came round. They now count from the moment they start.
 - Server (seat desk): after a server restart, a game that rejoined by itself kept its old seat while the desk thought
   that seat was free, and gave it to the next player - who was never let in (seen on the shared server: 4 tries in 12
   minutes). The desk now reads who is in the game and never gives a seat, or the projector, that another PC is

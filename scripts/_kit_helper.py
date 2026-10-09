@@ -14,14 +14,20 @@ reader the website will use) whenever the card, its backups or the run change - 
 second, so the game's bursts of saves are not read half way.  A view that cannot be written is said once and never
 stops the helper: RESTART NOW does not depend on it.
 
+SEND LOGS (the SETTINGS panel, 2026-10-09): the panel writes data\sendlogs.request with the server's address; this
+helper takes it away, packs and sends the logs (send_logs.py) in a thread of its own, and writes data\sendlogs.result
+for the panel: "sending", then "ok CODE" or "fail WHY".  An old request at the start is removed, never sent.
+
 THE STARTING VOLUMES (2026-10-06): sound_defaults.py - the projector muted, seat 1 very low - set once for each, as
 soon as it has opened its sound (looked for every 0.5 s for 10 minutes after the start); never again, so a change in
 the Volume Mixer stays.  The game folder comes from play.py (WCCF_GAME); without it nothing is set.  Like the view, it
 never stops the helper.
 """
 import os
+import re
 import subprocess
 import sys
+import threading
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -78,6 +84,57 @@ class ClubView:
             if not self.said:
                 say("club card view could not be written (tried again every 5 s): %r" % ex)
                 self.said = True
+
+
+class SendLogs:
+    """SEND LOGS: data\\sendlogs.request (the address) -> send_logs.py in a thread -> data\\sendlogs.result"""
+
+    def __init__(self, data):
+        self.req, self.res = os.path.join(data, "sendlogs.request"), os.path.join(data, "sendlogs.result")
+        self.kit, self.job = os.path.dirname(os.path.abspath(data)), None
+        if os.path.exists(self.req):
+            try:
+                os.remove(self.req)
+                say("an old SEND LOGS request (from a run that ended) removed - not sent")
+            except OSError:
+                pass
+
+    def result(self, text):
+        try:
+            with open(self.res + ".tmp", "w", encoding="ascii", errors="replace") as f:
+                f.write(text + "\n")
+            os.replace(self.res + ".tmp", self.res)
+        except OSError as ex:
+            say("SEND LOGS: the result could not be written: %s" % ex)
+
+    def run(self, address):
+        try:
+            import send_logs
+            blob, n = send_logs.pack(self.kit)
+            ok, what = send_logs.send(address, blob, send_logs.version(self.kit))
+            say("SEND LOGS to %s: %d files, %d KB - %s" % (address, n, len(blob) // 1024,
+                                                          "code " + what if ok else "not sent: " + what))
+            self.result(("ok %s" if ok else "fail %s") % what)
+        except Exception as ex:             # never stops the helper: the panel is told
+            say("SEND LOGS failed: %r" % ex)
+            self.result("fail could not pack the logs (%s)" % ex.__class__.__name__)
+
+    def tick(self):
+        if not os.path.exists(self.req) or (self.job and self.job.is_alive()):
+            return
+        try:
+            with open(self.req, encoding="ascii", errors="replace") as f:
+                address = f.read().strip()
+            os.remove(self.req)             # taken first: one request, one upload
+        except OSError:
+            return
+        if not re.fullmatch(r"\d{1,3}(\.\d{1,3}){3}", address):
+            self.result("fail no server address - type it under PLAY ON first")
+            return
+        self.result("sending")
+        say("SEND LOGS asked - packing and sending to %s" % address)
+        self.job = threading.Thread(target=self.run, args=(address,), daemon=True)
+        self.job.start()
 
 
 class SoundDefaults:
@@ -140,10 +197,12 @@ def main(argv):
     say("watching %s" % req)
     view = ClubView(data)
     sound = SoundDefaults(os.environ.get("WCCF_GAME"), time.time())
+    logs = SendLogs(data)
     end = time.time() + life
     while time.time() < end:
         view.tick(time.time())
         sound.tick(time.time())
+        logs.tick()
         if os.path.exists(req):
             try:
                 os.remove(req)                  # taken first: one request, one restart

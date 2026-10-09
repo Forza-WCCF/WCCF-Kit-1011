@@ -62,7 +62,7 @@ import kit_common as K
 
 CONTROL_PORT = 20002
 RELAY_PORT = 20040                                    # UDP, the server's match relay (_relay.py)
-SERVER_ROLES = ("scene service", "server launcher", "seat desk", "match relay")
+SERVER_ROLES = ("scene service", "server launcher", "seat desk", "match relay", "log inbox")
 LIFE = 12 * 3600
 SERVER_LIFE = 32 * 24 * 3600      # "play.py server" (2026-10-07): a month and a day - a server for others stays up
                                   # all month; a keeper task on that machine restarts it whenever it stops
@@ -643,10 +643,18 @@ def play(debug, mode="local", ip=None, seat_no=None):
             say("     match relay: UDP %d - a match between two players goes through this machine" % RELAY_PORT)
         else:
             say("     the match relay did not start (data\\logs\\run_match_relay.txt) - two players then play the CPU")
+        # the log inbox (2026-10-09): the logs players send with SEND LOGS (SETTINGS) are kept in data\player_logs
+        li = start("_log_inbox.py", [life + 60, os.path.join(K.LOGS, "log_inbox.txt")], "run_log_inbox.txt", env)
+        time.sleep(1.0)
+        if li.poll() is None:
+            roles[li.pid] = "log inbox"
+            say("     log inbox: TCP 20050 - logs players send from SETTINGS go to data\\player_logs")
+        else:
+            say("     the log inbox did not start (data\\logs\\run_log_inbox.txt) - SEND LOGS will not reach here")
         write_running(roles, mode, None)
         say("")
         say("Server running. On each player's PC: PLAY.exe remote, then this machine's address - the one their PC")
-        say("can reach. This machine must let in TCP ports %d and 20030, and UDP %d. PLAY.exe stop ends it." % (
+        say("can reach. This machine must let in TCP ports %d, 20030 and 20050, and UDP %d. PLAY.exe stop ends it." % (
             CONTROL_PORT, RELAY_PORT))
         return 0
 
@@ -682,8 +690,8 @@ def play(debug, mode="local", ip=None, seat_no=None):
         say("Playing on the server at %s%s." % (ip, "" if projector else " as seat %d (no projector on this PC)" % seat_no))
     say("Running. Click the cabinet's window, then play with the keyboard (it works only while a game window is in "
         "front):")
-    say("  Enter START (free play: it puts a coin in for you)   X decide   C shoot   arrows: tactics")
-    say("  I club card in / out   5 coin   F1 test menu   F11 window size   - or click the buttons around the picture")
+    say("  Enter START (free play - no coin needed)   X decide   C shoot   arrows: tactics")
+    say("  I club card in / out   F1 test menu   F11 window size   - or click the buttons around the picture")
     say("First time: put the card in with I, and the game makes your club. It is saved in data\\save\\seat1_club.bin.")
     say("To finish: let the card come out after a match, then close the game's window - the rest stops with it. %s" % (
         "(The key driver's window is minimized.)" if debug else

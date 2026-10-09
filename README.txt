@@ -97,9 +97,9 @@ PLAY
   local\ctrl_user_option.conf in the game folder (seconds).
   Click seat 1's window, then:
       I       club card in / out (with a new card the game makes your club: manager license, club name)
-      Enter   START (free play: the key driver puts a coin in for you)
+      Enter   START (play is free: the game's own FREE PLAY is switched on - no coin needed)
       X       decide          C   shoot          arrows   tactics
-      5       a coin          F1  test menu      F11      window size
+      F1      test menu       F11 window size
   or click the buttons around the picture. Keys only count while a game window is in front.
   Your own keys: the KEYS button (right of START) lists every cabinet button with a KEY box and a CONTROLLER box.
   Click a KEY box, press the key you want; a key another button already has swaps over. Esc, F10, F11, Alt and the
@@ -111,8 +111,10 @@ PLAY
   Every change works at once and is kept in data\keys.txt (RESET, or deleting that file, gives the keys above back
   and clears the controller).
   Your club is saved in data\save\seat1_club.bin. Back it up.
+  The kit's version (KIT 5.5 ...) is at the top right of the game, under the ping when you play online: give it
+  when you report a problem.
 
-SETTINGS (left side, under CARD and COIN)
+SETTINGS (left side, under CARD)
   NOW: the link to the server, your card's session, its bad endings, its last save and backup, the game's text.
   NEXT START: THIS PC (everything on this PC) or ONLINE with a server's address (the cabinets on this PC play on
   that server), and ENGLISH or JAPANESE (does what ENGLISH.exe does, at the next start). They are kept in
@@ -120,6 +122,9 @@ SETTINGS (left side, under CARD and COIN)
   server and the language stay the same, only your cabinet restarts and the projector keeps running.
   VIEW, changes at once: LAYOUT CABINET (the cabinet's buttons around the game) or COMPACT (the game larger,
   without them - your keys or controller press them; SETTINGS and CLUB CARD move under CATALOGUE and KEYS).
+  LOGS: SEND LOGS (click twice) sends this game's logs to the server you play on (the address under PLAY ON) -
+  never your club card, and your Windows user name and PC name are taken out of them. You get a short code: post
+  it in Discord with what went wrong.
 
 CLUB CARD (left side, under SETTINGS)
   Your club card as the game reads it: club, manager, contract, league, prize money; the card's health (a session
@@ -153,8 +158,8 @@ QUIT
 ONLINE (play with others on one server)
   One PC hosts: "PLAY.exe server" starts only the server, in the background - no game window opens, and the
   window that started it closes by itself after 30 seconds while the server keeps running ("PLAY.exe stop" ends
-  it). That PC must let in TCP ports 20002 and 20030 and UDP 20040; at home behind a router, forward those ports
-  to it. Each player: "PLAY.exe remote" and the server's address (e.g. PLAY.exe remote 192.168.1.20), or ONLINE
+  it). That PC must let in TCP ports 20002, 20030 and 20050 and UDP 20040; at home behind a router, forward those
+  ports to it. Logs that players send with SEND LOGS are kept there in data\player_logs. Each player: "PLAY.exe remote" and the server's address (e.g. PLAY.exe remote 192.168.1.20), or ONLINE
   in SETTINGS. The first PC to join also shows the projector. The PC that hosts can play too: "PLAY.exe remote"
   with its own local address (ipconfig shows it).
 
