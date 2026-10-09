@@ -17,10 +17,10 @@ game is not included. Newest first; each date is the day that kit was built.
   zipped into `data\logs\archive` (about the last 200 MB, the oldest go first).
 
 ### Fixed
-- The keys and the controller could all stop at once while the game went on by itself (seen in team training and
-  the locker room): the key driver ended when its input file stayed busy (an antivirus scan, for one), and the last
-  button stayed held. It now tries again on its next round. If it ever stops anyway, `data\logs\keys_crash.txt`
-  says why.
+- The key driver could end when its input file stayed busy (an antivirus scan, for one): every key and controller
+  button dead, the last one held, the game going on by itself. A possible cause of the freeze reported in team
+  training and the locker room (not confirmed). It now tries again on its next round; if it ever stops anyway,
+  `data\logs\keys_crash.txt` says why.
 
 ## Kit 5.4 - 2026-10-09
 
