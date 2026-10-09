@@ -5,7 +5,7 @@ asks _kit_helper.py, which calls pack() and send(); by hand:
     python send_logs.py ADDRESS
 
 In the ZIP: data\logs (this run and the one before - not the zipped archive), the panel's logs (seat1\wccfpanel.log,
-data\logs\wccfpanel_projector.log), data\panel.txt, data\keys.txt, data\running.json and VERSION.txt - each its last
+data\logs\wccfpanel_projector.log), data\panel.txt, data\keys.txt, data\running.json and version.txt - each its last
 2 MB at most.  NEVER the club card (data\save).  In the text, what points at the person is replaced: the Windows user
 folder (%USERPROFILE%), the user name (USER) and the PC's name (PC).
 """
@@ -23,13 +23,14 @@ LIMIT = 7 * 1024 * 1024                    # the inbox takes 8 MB: a bigger ZIP 
 
 
 def version(kit=KIT):
-    """this kit's VERSION.txt ("5.5 (f13c146)"), or "dev" - one word for the inbox: "5.5" """
+    """this kit's version.txt ("kit-5.5", written by package.ps1) without "kit-": "5.5"; none: "dev" """
     try:
-        with open(os.path.join(kit, "VERSION.txt"), encoding="ascii", errors="replace") as f:
+        with open(os.path.join(kit, "version.txt"), encoding="ascii", errors="replace") as f:
             words = f.read().split()
-        return words[0] if words else "dev"
     except OSError:
         return "dev"
+    v = words[0] if words else ""
+    return (v[4:] if v.lower().startswith("kit-") else v) or "dev"
 
 
 def files(kit=KIT, game=None):
@@ -48,7 +49,7 @@ def files(kit=KIT, game=None):
                 out.append(("logs/" + (sub + "/" if sub else "") + n, p))
     for n in ("panel.txt", "keys.txt", "running.json"):
         out.append(("data/" + n, os.path.join(data, n)))
-    out.append(("VERSION.txt", os.path.join(kit, "VERSION.txt")))
+    out.append(("version.txt", os.path.join(kit, "version.txt")))
     game = game or os.environ.get("WCCF_GAME")
     if game:
         out.append(("seat1/wccfpanel.log", os.path.join(os.path.dirname(os.path.abspath(game)), "seat1",

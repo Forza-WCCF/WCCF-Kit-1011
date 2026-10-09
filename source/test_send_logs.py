@@ -67,20 +67,20 @@ try:
     with open(os.path.join(kit, "data/logs/run_seat1.txt"), "w", encoding="utf-8") as f:
         f.write("start\n" + "x" * 5000 + "\nopened %s\\Desktop\\a.txt\nthe end\n" % home)
     for n, body in (("data/logs/archive/old.zip", "an old run"), ("data/save/seat1_club.bin", "THE CLUB CARD"),
-                    ("data/panel.txt", "server=1.2.3.4"), ("VERSION.txt", "5.5 (abc1234)")):
+                    ("data/panel.txt", "server=1.2.3.4"), ("version.txt", "kit-5.5")):
         with open(os.path.join(kit, n), "w", encoding="utf-8") as f:
             f.write(body)
 
     blob, n = S.pack(kit, game=os.path.join(tmp, "nogame"), tail=1000)
     z = zipfile.ZipFile(io.BytesIO(blob))
     names = z.namelist()
-    check("pack: the run's log, panel.txt and VERSION.txt in; never the club card or the zipped archive",
-          sorted(names) == ["VERSION.txt", "data/panel.txt", "logs/run_seat1.txt"], ", ".join(names))
+    check("pack: the run's log, panel.txt and version.txt in; never the club card or the zipped archive",
+          sorted(names) == ["data/panel.txt", "logs/run_seat1.txt", "version.txt"], ", ".join(names))
     text = z.read("logs/run_seat1.txt").decode("utf-8")
     check("pack: a big log keeps its last bytes, and says what was left out",
           text.startswith("[... the first") and text.rstrip().endswith("the end"), text[:60])
     check("pack: the Windows user folder is taken out", (not home or home not in text) and "%USERPROFILE%" in text, "")
-    check("version: VERSION.txt's first word", S.version(kit) == "5.5", S.version(kit))
+    check("version: version.txt without kit-", S.version(kit) == "5.5", S.version(kit))
 
     keep, port = os.path.join(tmp, "keep"), 20952
     procs.append(inbox(port, keep, os.path.join(tmp, "inbox.txt"), WCCF_INBOX_PER_HOUR=4))   # junk and too big: not counted

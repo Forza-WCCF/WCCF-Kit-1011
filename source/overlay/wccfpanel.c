@@ -117,19 +117,21 @@ static DWORD  g_hover_since = 0;
 static ULONGLONG ft_q(FILETIME t) { return ((ULONGLONG)t.dwHighDateTime << 32) | t.dwLowDateTime; }
 
 // the kit's version (2026-10-09, the player: "a version number near the ping, so that we can know ... what the issues
-// they get and on what version"): VERSION.txt at the kit's top, written by source\package.ps1 ("5.5 (f13c146)");
-// a kit built by hand has none and shows "dev".  Drawn under the ping meter (ping_draw), online or not.
+// they get and on what version"): version.txt at the kit's top, written by source\package.ps1 - kit-5.5,
+// kit-5.5-test2, or CI's commit (SETUP.exe's update reads the same file); shown without "kit-" ("KIT 5.5").  A kit
+// built by hand has none and shows "dev".  Drawn under the ping meter (ping_draw), online or not.
 static char g_kitver[48] = "dev";
 
 static void kit_version(void)
 {
-    char p[MAX_PATH], line[64] = ""; FILE *f; size_t n;
-    _snprintf(p, MAX_PATH, "%s\\..\\VERSION.txt", g_dlldir); p[MAX_PATH - 1] = 0;
+    char p[MAX_PATH], line[64] = ""; FILE *f; size_t n; const char *v;
+    _snprintf(p, MAX_PATH, "%s\\..\\version.txt", g_dlldir); p[MAX_PATH - 1] = 0;
     if ((f = fopen(p, "rb")) != NULL) {
         n = fread(line, 1, sizeof line - 1, f); line[n] = 0; fclose(f);
         line[strcspn(line, "\r\n")] = 0;
         for (n = 0; line[n]; n++) if ((unsigned char)line[n] < 32 || (unsigned char)line[n] > 126) line[n] = '?';
-        if (line[0]) lstrcpynA(g_kitver, line, sizeof g_kitver);
+        v = _strnicmp(line, "kit-", 4) == 0 ? line + 4 : line;
+        if (v[0]) lstrcpynA(g_kitver, v, sizeof g_kitver);
     }
     logline("kit version: %s", g_kitver);
 }

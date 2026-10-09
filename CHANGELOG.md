@@ -29,8 +29,8 @@ game is not included. Newest first; each date is the day that kit was built.
   still puts a coin in on START, in case the panel is not loaded.
 - SETTINGS > LOGS: SEND LOGS (click twice) sends this game's logs to the server you play on and shows a short code
   to post in Discord with what went wrong. Never the club card; the Windows user name and PC name are taken out.
-- The kit's version (`KIT 5.5 (commit)`) at the top right of the game, under the ping meter when online -
-  `VERSION.txt` in the kit, written when the kit ZIP is made.
+- The kit's version (`KIT 5.5`) at the top right of the game, under the ping meter when online -
+  `version.txt` in the kit (`kit-5.5`), written when the kit ZIP is made.
 - Server: the log inbox (`scripts\_log_inbox.py`, TCP 20050) keeps those logs in `data\player_logs`: at most 8 MB
   an upload, 6 an hour from one address, 1 GB in all (the oldest go). A server must now let in TCP 20050 too.
 
