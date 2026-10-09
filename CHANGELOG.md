@@ -13,7 +13,16 @@ game is not included. Newest first; each date is the day that kit was built.
   the game's own numbers (the player record's first 16 hidden values); the role names are inferred from the players
   rated 10 in each.
 - FORMATION BOARD: resting the mouse on a card on the table (the big card) also shows its name, line, total and roles.
+- Logs: older runs are no longer deleted. `data\logs\previous` is still the run before; the runs before it are
+  zipped into `data\logs\archive` (about the last 200 MB, the oldest go first).
 
+### Fixed
+- The keys and the controller could all stop at once while the game went on by itself (seen in team training and
+  the locker room): the key driver ended when its input file stayed busy (an antivirus scan, for one), and the last
+  button stayed held. It now tries again on its next round. If it ever stops anyway, `data\logs\keys_crash.txt`
+  says why.
+
+## Kit 5.4 - 2026-10-09
 
 ### Added
 - CLUB CARD: CLEAR BAD ENDINGS (click twice) sets the card's bad endings back to 0 at a restart, after a backup.
