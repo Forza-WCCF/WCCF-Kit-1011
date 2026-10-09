@@ -1,5 +1,7 @@
 # Builds the kit from source on Windows, runs its checks and packs the kit ZIP (an artifact of every run).
 # A tag kit-* also gets a DRAFT release with that ZIP: a maintainer reads it and publishes it.
+# A test build for players: Actions > Kit > Run workflow, pick the branch, type a tag like kit-5.4-test1 - CI makes
+# that tag on the branch's commit and publishes a PRE-RELEASE with the ZIP (a public download, no login needed).
 name: Kit
 
 on:
@@ -8,6 +10,11 @@ on:
     tags: ['kit-*']
   pull_request:
   workflow_dispatch:
+    inputs:
+      prerelease:
+        description: 'Publish a test pre-release with this new tag (kit-5.4-test1); empty: build only'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -55,9 +62,15 @@ jobs:
           REF_TYPE: ${{ github.ref_type }}
           REF_NAME: ${{ github.ref_name }}
           SHA: ${{ github.sha }}
+          PRERELEASE: ${{ inputs.prerelease }}
         run: |
-          # tag kit-5.4 -> WCCF-2010-11-kit-5.4.zip
-          $suffix = if ($env:REF_TYPE -eq 'tag') { $env:REF_NAME -replace '^kit-', '' } else { $env:SHA.Substring(0, 7) }
+          # tag kit-5.4 -> WCCF-2010-11-kit-5.4.zip; pre-release kit-5.4-test1 -> WCCF-2010-11-kit-5.4-test1.zip
+          if ($env:PRERELEASE -and $env:PRERELEASE -cnotmatch '^kit-[0-9][0-9.]*-test[0-9]*$') {
+            throw "a pre-release's tag looks like kit-5.4-test1, not '$env:PRERELEASE'"
+          }
+          $suffix = if ($env:PRERELEASE) { $env:PRERELEASE -replace '^kit-', '' }
+                    elseif ($env:REF_TYPE -eq 'tag') { $env:REF_NAME -replace '^kit-', '' }
+                    else { $env:SHA.Substring(0, 7) }
           ./source/package.ps1 -Name "WCCF-2010-11-kit-$suffix"
           "zip=WCCF-2010-11-kit-$suffix.zip" >> $env:GITHUB_OUTPUT
 
@@ -127,3 +140,49 @@ jobs:
           sha256sum "$ZIP" > "$ZIP.sha256"
           gh release create "$TAG" "$ZIP" "$ZIP.sha256" --repo "$REPO" --draft --verify-tag \
             --title "$TAG" --notes "The kit ZIP, built by CI from $TAG. See CHANGELOG.md; publish after a check."
+
+  prerelease:
+    name: Test pre-release (Run workflow with a tag)
+    if: github.event_name == 'workflow_dispatch' && inputs.prerelease != ''
+    needs: [build, zip-check]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          sparse-checkout: CHANGELOG.md
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ needs.build.outputs.zip }}
+          path: dist
+          skip-decompress: true
+
+      # the tag is made here, on the commit that was built; a tag made with this job's token starts no other run,
+      # so it never drafts a second (kit-*) release
+      - name: Publish the pre-release with the kit ZIP
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ inputs.prerelease }}
+          SHA: ${{ github.sha }}
+          ZIP: ${{ needs.build.outputs.zip }}
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^kit-[0-9][0-9.]*-test[0-9]*$ ]] || { echo "not a test tag: $TAG"; exit 1; }
+          (cd dist && sha256sum "$ZIP" > "$ZIP.sha256")
+          {
+            echo "**A test build, not a release yet** - from \`${SHA:0:7}\`. Download **$ZIP** below, unzip it anywhere,"
+            echo "then \`SETUP.exe\` and \`PLAY.exe\`. Please report what goes wrong."
+            echo
+            echo "SHA-256: \`$(cut -d' ' -f1 "dist/$ZIP.sha256")\`"
+            echo
+            # the newest kit's section of CHANGELOG.md, without its own heading
+            awk '/^## /{n++; next} n==1' CHANGELOG.md
+          } > notes.md
+          gh release create "$TAG" "dist/$ZIP" "dist/$ZIP.sha256" --repo "$REPO" --prerelease --target "$SHA" \
+            --title "$TAG (test build)" --notes-file notes.md
