@@ -4,7 +4,16 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
-## Kit 5.4 - 2026-10-09
+## Unreleased
+
+### Added
+- CATALOGUE: the search takes several words, and a card must match each one: a name, club, country or season
+  (`milan 2004`), a line (`fw`) or a role (`dmf`: cards rated 8 or more in it). `brazil fw`, `italy cb`.
+- CATALOGUE: the card's pane lists the three roles the card suits best, out of 10 (`ROLES  DMF 10  CMF 7  CVR 5`):
+  the game's own numbers (the player record's first 16 hidden values); the role names are inferred from the players
+  rated 10 in each.
+- FORMATION BOARD: resting the mouse on a card on the table (the big card) also shows its name, line, total and roles.
+
 
 ### Added
 - CLUB CARD: CLEAR BAD ENDINGS (click twice) sets the card's bad endings back to 0 at a restart, after a backup.
