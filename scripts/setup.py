@@ -8,7 +8,8 @@ Run it once (SETUP.exe); running it again checks everything and repairs what is 
 
 What it changes, and nothing else on the PC:
   in extracted\   + winmm.dll (the kit's hook) and winmm_orig.dll (a copy of this PC's own Windows winmm.dll)
-                  logowin.exe -> logowin_sega.exe, and the kit's quiet logowin.exe in its place
+                  logowin.exe stays Sega's: the hook keeps the server from starting it (a kit before 2026-10-09
+                  put a stand-in there, Sega's as logowin_sega.exe - Sega's goes back)
                   + local\client_user_option.conf (the projector) and local\ctrl_user_option.conf (the server)
   beside it       seat1\   the player cabinet: links to extracted\'s folders and files, its own patched
                            client_Release.exe (15 changes, checked byte for byte) and its own local\ settings
@@ -211,13 +212,20 @@ def setup_extracted(game):
     print("in %s:" % game)
     copy_if_different(WINMM, os.path.join(game, "winmm_orig.dll"), "winmm_orig.dll (this PC's own winmm.dll)")
     copy_if_different(os.path.join(K.BIN, "winmm.dll"), os.path.join(game, "winmm.dll"), "winmm.dll (the hook)")
+    # logowin.exe (2026-10-09): the server starts it for its logo and error screens - a white window over the whole
+    # screen.  The hook (winmm.dll, above) now answers that start itself and runs nothing, so Sega's file stays.  A kit
+    # before this one put a quiet stand-in there (the exe antivirus programs flagged) and kept Sega's as
+    # logowin_sega.exe: Sega's goes back.  Seat 1's link to it follows (setup_seat links again what changed)
     lw, sega = os.path.join(game, "logowin.exe"), os.path.join(game, "logowin_sega.exe")
-    if not os.path.exists(sega):
-        if K.sha256(lw) != SEGA_LOGOWIN:
-            raise Failed("logowin.exe is not Sega's - leaving it alone")
-        os.replace(lw, sega)
-        ok("Sega's logowin.exe kept as logowin_sega.exe (it opens a white window over the whole screen)")
-    copy_if_different(os.path.join(K.BIN, "logowin.exe"), lw, "logowin.exe (the kit's quiet stand-in)")
+    if os.path.isfile(sega) and K.sha256(sega) == SEGA_LOGOWIN:
+        if os.path.isfile(lw):
+            os.remove(lw)
+        os.replace(sega, lw)
+        ok("Sega's logowin.exe back in place (the hook keeps the server from starting it)")
+    elif os.path.isfile(lw) and K.sha256(lw) == SEGA_LOGOWIN:
+        ok("logowin.exe: Sega's (the hook keeps the server from starting it)")
+    else:
+        note("logowin.exe is not Sega's - left alone (the hook keeps the server from starting it either way)")
     write_text(os.path.join(game, "local", "client_user_option.conf"), CONF_PROJECTOR, "projector settings")
     write_text(os.path.join(game, "local", "ctrl_user_option.conf"), CONF_CONTROL, "server settings")
 

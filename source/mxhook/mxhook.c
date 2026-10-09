@@ -23,6 +23,8 @@
  *    passes with an address that really exists on this PC. MXHOOK_NET_IP=off
  *    turns this off.
  *
+ *  - answers the server's start of logowin.exe itself (no process): see
+ *    "logowin" below (2026-10-09; before, the kit put a stand-in exe there);
  *  - loads the kit's overlay (WCCF_PANEL, wccfpanel.dll) once the game's
  *    window is up, for seat 1 and the projector (2026-10-09; before, the
  *    kit's inject.exe wrote it into the game from outside).
@@ -979,6 +981,67 @@ static void install_vcom_hooks(HMODULE exe)
                 g_vcom[i].jvs ? " [JVS I/O board]" : "", n);
 }
 
+/* ---- logowin.exe (2026-10-09) -------------------------------------------
+ * control_Release starts Sega's logowin.exe for its logo and error screens
+ * (FUN_00453bd0: CreateProcessA("logowin.exe", "logowin.exe error=..." or
+ * "... warning=.. sega=.. allnet=.. mainid=.. keychipid=..")) - a white,
+ * always-on-top window over the whole screen. It only ever asks whether it
+ * still runs (GetExitCodeProcess == STILL_ACTIVE, FUN_00453f70) and, to end
+ * it, posts WM_CLOSE to the window "logowin" or calls TerminateProcess
+ * (FUN_00453ef0). So no program is started: the message goes to
+ * logowin_messages.txt in the current folder (the game's), as the kit's
+ * stand-in logowin.exe wrote it, and the server gets a handle to its own
+ * process with query rights only - "still running", as the stand-in was until
+ * the server ended, and a TerminateProcess on it fails harmlessly. The
+ * stand-in, a windowless exe that waited on its parent, was what antivirus
+ * programs flagged. Any other CreateProcessA (match_Release, FPR_Emu) passes. */
+
+typedef BOOL (WINAPI *pfn_CreateProcessA)(LPCSTR, LPSTR, LPSECURITY_ATTRIBUTES, LPSECURITY_ATTRIBUTES, BOOL, DWORD,
+                                          LPVOID, LPCSTR, LPSTARTUPINFOA, LPPROCESS_INFORMATION);
+static pfn_CreateProcessA real_CreateProcessA;
+
+static int is_logowin(LPCSTR app, LPCSTR cmd)
+{
+    const char *p = app ? app : cmd, *base;
+    if (!p)
+        return 0;
+    base = strrchr(p, '\\');
+    base = base ? base + 1 : p;
+    return _strnicmp(base, "logowin.exe", 11) == 0 && (base[11] == 0 || base[11] == ' ' || base[11] == '"');
+}
+
+static BOOL WINAPI hook_CreateProcessA(LPCSTR app, LPSTR cmd, LPSECURITY_ATTRIBUTES pa, LPSECURITY_ATTRIBUTES ta,
+                                       BOOL inherit, DWORD flags, LPVOID env, LPCSTR dir, LPSTARTUPINFOA si,
+                                       LPPROCESS_INFORMATION pi)
+{
+    HANDLE me = GetCurrentProcess(), h = NULL, t = NULL;
+    SYSTEMTIME st;
+    FILE *f;
+    if (!is_logowin(app, cmd))
+        return real_CreateProcessA(app, cmd, pa, ta, inherit, flags, env, dir, si, pi);
+    GetLocalTime(&st);
+    f = fopen("logowin_messages.txt", "a");
+    if (f) {
+        fprintf(f, "%04d-%02d-%02d %02d:%02d:%02d  started by pid %lu  %s  (not run: the kit's winmm.dll)\n",
+                st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond,
+                (unsigned long)GetCurrentProcessId(), cmd ? cmd : app);
+        fclose(f);
+    }
+    logline("logowin: not started (%s)", cmd ? cmd : app);
+    if (!pi || !DuplicateHandle(me, me, me, &h, PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE, FALSE, 0)
+            || !DuplicateHandle(me, me, me, &t, PROCESS_QUERY_LIMITED_INFORMATION, FALSE, 0)) {
+        if (h)
+            CloseHandle(h);
+        SetLastError(ERROR_FILE_NOT_FOUND);
+        return FALSE;            /* the server's own "could not start it" path: nothing shows either way */
+    }
+    pi->hProcess = h;
+    pi->hThread = t;             /* the server closes it at once */
+    pi->dwProcessId = 0;
+    pi->dwThreadId = 0;
+    return TRUE;
+}
+
 static void install_hooks(void)
 {
     HMODULE exe = GetModuleHandleW(NULL);
@@ -990,6 +1053,7 @@ static void install_hooks(void)
     real_DeviceIoControl    = (pfn_DeviceIoControl)    patch_iat(exe, "kernel32.dll", "DeviceIoControl",    hook_DeviceIoControl);
     real_IpReleaseAddress   = (pfn_IpAddr) patch_iat(exe, "iphlpapi.dll", "IpReleaseAddress", hook_IpReleaseAddress);
     real_IpRenewAddress     = (pfn_IpAddr) patch_iat(exe, "iphlpapi.dll", "IpRenewAddress",   hook_IpRenewAddress);
+    real_CreateProcessA     = (pfn_CreateProcessA) patch_iat(exe, "kernel32.dll", "CreateProcessA", hook_CreateProcessA);
 
     logline("==== mxhook attached (pid %lu) ====", GetCurrentProcessId());
     {
@@ -1015,10 +1079,10 @@ static void install_hooks(void)
             logline("network address: this PC is presented to the game as %s (MXHOOK_NET_IP)", g_net_ip);
         }
     }
-    logline("hooks installed: CreateFileW=%d CreateFileA=%d CreateFileMappingA=%d OpenFileMappingA=%d DeviceIoControl=%d  IpRelease=%d IpRenew=%d  gethostbyname=%d inet_addr=%d",
+    logline("hooks installed: CreateFileW=%d CreateFileA=%d CreateFileMappingA=%d OpenFileMappingA=%d DeviceIoControl=%d  IpRelease=%d IpRenew=%d  CreateProcessA=%d  gethostbyname=%d inet_addr=%d",
             real_CreateFileW != 0, real_CreateFileA != 0, real_CreateFileMappingA != 0,
             real_OpenFileMappingA != 0, real_DeviceIoControl != 0,
-            real_IpReleaseAddress != 0, real_IpRenewAddress != 0,
+            real_IpReleaseAddress != 0, real_IpRenewAddress != 0, real_CreateProcessA != 0,
             g_net_on && real_gethostbyname != 0, g_net_on && real_inet_addr != 0);
 }
 
