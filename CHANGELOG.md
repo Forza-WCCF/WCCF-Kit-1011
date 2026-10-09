@@ -12,6 +12,10 @@ game is not included. Newest first; each date is the day that kit was built.
   moves the manager (name, salary, level, record, titles, division) to the new card and you make a new club in Club
   Make. At the next start the new club is in the slot and the old card goes to YOUR CARDS as "CLUB - transferred"
   (the game will not play it again: no PLAY THIS CLUB for it). The CLUB CARD panel says when a contract has ended.
+- A player card after each match, as the cabinet's dispenser gave one (a test): when a match ends with its
+  locker-room save, a window shows a card drawn from the catalogue - 2.5 % a card better than white and black
+  (RARE, LEGEND, ALL TIME LEGEND), else 70 % white (REGULAR) and 30 % black (SPECIAL). Only shown: nothing is added
+  to the club card. A click on it shuts it; it shuts itself after 20 s.
 - CATALOGUE: the search takes several words, and a card must match each one: a name, club, country or season
   (`milan 2004`), a line (`fw`) or a role (`dmf`: cards rated 8 or more in it). `brazil fw`, `italy cb`.
 - CATALOGUE: the card's pane lists the three roles the card suits best, out of 10 (`ROLES  DMF 10  CMF 7  CVR 5`):
@@ -20,6 +24,9 @@ game is not included. Newest first; each date is the day that kit was built.
 - FORMATION BOARD: resting the mouse on a card on the table (the big card) also shows its name, line, total and roles.
 - Logs: older runs are no longer deleted. `data\logs\previous` is still the run before; the runs before it are
   zipped into `data\logs\archive` (about the last 200 MB, the oldest go first).
+
+### Changed
+- The formation board shows a card big after the mouse rests on it 1 s (was 8 s).
 
 ### Fixed
 - The key driver could end when its input file stayed busy (an antivirus scan, for one): every key and controller
