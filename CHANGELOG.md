@@ -1,7 +1,8 @@
 # Changelog
 
-The WCCF 2010-11 (Rev D) kit: Sega's server, the projector and a player cabinet on one Windows PC, with an
-on-screen panel - and online play on a shared server. Newest first; each date is the day that kit was built.
+Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet's hardware and an on-screen panel, so
+your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
+game is not included. Newest first; each date is the day that kit was built.
 
 ## Kit 5.4 - 2026-10-09
 
@@ -121,7 +122,7 @@ on-screen panel - and online play on a shared server. Newest first; each date is
 - English: the license date reads like 2026/10/5 (it was in Japanese).
 
 ## Kits 1 and 2 - 2026-10-05
-- The first kits: `SETUP.bat` and `PLAY.bat` run Sega's server, the projector and seat 1 on one PC, with the
+- The first kits: `SETUP.bat` and `PLAY.bat` start your own copy's server, projector and seat 1 on one PC, with the
   on-screen panel - cabinet buttons, a formation board and a catalogue of all 3,909 cards. No fixed paths: unzip
   anywhere.
 - English (`ENGLISH.bat`), a 2-minute entry window and a smoother projector.
