@@ -26,6 +26,10 @@ $failed = @()
 & $py -I -c "import pathlib, sys; [compile(p.read_bytes(), str(p), 'exec') for p in sorted(pathlib.Path(sys.argv[1]).glob('*.py'))]; print('scripts: all compile')" (Join-Path $kit 'scripts')
 if ($LASTEXITCODE) { $failed += 'scripts compile' }
 
+# Kit 5.5 reused the name PANEL for wccfpanel.dll: a plain start read the dll as data\panel.txt and never went online
+& $py -I -c "import sys; sys.path.insert(0, sys.argv[1]); import play; assert play.PANEL.endswith('panel.txt'), play.PANEL; print('play.py: PANEL is panel.txt')" (Join-Path $kit 'scripts')
+if ($LASTEXITCODE) { $failed += 'play.py PANEL' }
+
 & $py -I (Join-Path $kit 'scripts\_keys_seat1.py') --selftest | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'key driver self-test' }
 
