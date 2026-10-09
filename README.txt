@@ -99,7 +99,7 @@ PLAY
       I       club card in / out (with a new card the game makes your club: manager license, club name)
       Enter   START (play is free: the game's own FREE PLAY is switched on - no coin needed)
       X       decide          C   shoot          arrows   tactics
-      5       a coin          F1  test menu      F11      window size
+      F1      test menu       F11 window size
   or click the buttons around the picture. Keys only count while a game window is in front.
   Your own keys: the KEYS button (right of START) lists every cabinet button with a KEY box and a CONTROLLER box.
   Click a KEY box, press the key you want; a key another button already has swaps over. Esc, F10, F11, Alt and the
@@ -114,7 +114,7 @@ PLAY
   The kit's version (KIT 5.5 ...) is at the top right of the game, under the ping when you play online: give it
   when you report a problem.
 
-SETTINGS (left side, under CARD and COIN)
+SETTINGS (left side, under CARD)
   NOW: the link to the server, your card's session, its bad endings, its last save and backup, the game's text.
   NEXT START: THIS PC (everything on this PC) or ONLINE with a server's address (the cabinets on this PC play on
   that server), and ENGLISH or JAPANESE (does what ENGLISH.exe does, at the next start). They are kept in

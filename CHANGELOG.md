@@ -37,6 +37,7 @@ game is not included. Newest first; each date is the day that kit was built.
 ### Changed
 - The formation board shows a card big after the mouse rests on it 1 s (was 8 s).
 - The BACK button is gone: it pressed nothing, and in the game the blue KEEPER button goes back.
+- The COIN button is gone: play is free (above). KEYS still lists COIN, for a key or a real coin switch.
 
 ### Fixed
 - The key driver could end when its input file stayed busy (an antivirus scan, for one): every key and controller

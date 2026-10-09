@@ -690,8 +690,8 @@ def play(debug, mode="local", ip=None, seat_no=None):
         say("Playing on the server at %s%s." % (ip, "" if projector else " as seat %d (no projector on this PC)" % seat_no))
     say("Running. Click the cabinet's window, then play with the keyboard (it works only while a game window is in "
         "front):")
-    say("  Enter START (free play: it puts a coin in for you)   X decide   C shoot   arrows: tactics")
-    say("  I club card in / out   5 coin   F1 test menu   F11 window size   - or click the buttons around the picture")
+    say("  Enter START (free play - no coin needed)   X decide   C shoot   arrows: tactics")
+    say("  I club card in / out   F1 test menu   F11 window size   - or click the buttons around the picture")
     say("First time: put the card in with I, and the game makes your club. It is saved in data\\save\\seat1_club.bin.")
     say("To finish: let the card come out after a match, then close the game's window - the rest stops with it. %s" % (
         "(The key driver's window is minimized.)" if debug else

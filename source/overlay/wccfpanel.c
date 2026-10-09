@@ -249,8 +249,10 @@ struct Btn { const char *label; int vk; int shape; DWORD color; RECT px; };
 #define COL_GREY   D3DCOLOR_ARGB(255,  78,  84,  96)
 // indices are referenced by name in layout()/draw; keep this order
 // BACK is gone (2026-10-09, the player: "in game the blue keeper button is almost always the back button"): it never
-// had a key; its picture was taken out of skin.tex too
-enum { B_UP, B_DOWN, B_LEFT, B_RIGHT, B_PRESS, B_DATA, B_SHOOT, B_KEEP, B_KEYPL, B_START, B_CARD, B_COIN };
+// had a key.  COIN is gone the same day ("remove the coin button after you fix the free play"): the game's own FREE
+// PLAY is on (free_play_install).  Both pictures were taken out of skin.tex too; COIN keeps its KEYS row (a key or a
+// real coin switch can still be given to it), with no button on screen.
+enum { B_UP, B_DOWN, B_LEFT, B_RIGHT, B_PRESS, B_DATA, B_SHOOT, B_KEEP, B_KEYPL, B_START, B_CARD };
 static struct Btn g_btn[] = {
     // tactics d-pad (left) - names from the manual; all four are the arrow keys
     { "CENTRAL", VK_UP,    SHAPE_RECT,  COL_GREEN,  {0} },   // 中央突破
@@ -265,7 +267,6 @@ static struct Btn g_btn[] = {
     { "KEYPLYR", 0x44,     SHAPE_ROUND, COL_YELLOW, {0} },   // キープレイヤー, yellow = D (guess - verify)
     { "START",   0x0D,     SHAPE_ROUND, COL_GREEN,  {0} },   // スタート, green (Enter)
     { "CARD",    0x49,     SHAPE_RECT,  COL_GREY,   {0} },   // I = card in/out
-    { "COIN",    0x35,     SHAPE_RECT,  COL_GREY,   {0} },   // 5
 };
 #define NBTN ((int)(sizeof g_btn / sizeof g_btn[0]))
 
@@ -404,7 +405,7 @@ static RECT strip_rect(float x0, float y0, float x1, float y1)    // sheet px in
     return r;
 }
 
-// Button hit-boxes as fractions of the 1440x900 design sheet, SAME order as the enum (B_UP..B_COIN).
+// Button hit-boxes as fractions of the 1440x900 design sheet, SAME order as the enum (B_UP..B_CARD).
 // These must match the positions baked into skin.html / skin.tex.
 static const float BTNF[NBTN][4] = {
     {  72/1440.f, 430/900.f, 118/1440.f, 476/900.f },  // UP
@@ -418,7 +419,6 @@ static const float BTNF[NBTN][4] = {
     {1208/1440.f, 594/900.f,1294/1440.f, 680/900.f },  // KEY PLAYER
     {1220/1440.f, 520/900.f,1282/1440.f, 582/900.f },  // START
     {  14/1440.f,  88/900.f,  92/1440.f, 122/900.f },  // CARD
-    {  98/1440.f,  88/900.f, 176/1440.f, 122/900.f },  // COIN
 };
 
 // A button answers on its whole picture (2026-10-06, the player: "when i click on the button as a whole it takes for the
@@ -426,11 +426,11 @@ static const float BTNF[NBTN][4] = {
 // shadow reach past them (fstest\click_areas.png, _probe_click_areas.py).  Each area grows by these sheet px - left,
 // top, right, bottom - and no two meet (checked there): the d-pad's buttons are 6 px apart, so they share the gap.
 static const float GROW_DPAD[4] = { 2.0f, 2.0f, 3.0f, 3.0f };      // UP DOWN LEFT RIGHT PRESS
-static const float GROW_LEFT[4] = { 3.0f, 3.0f, 2.0f, 4.0f };      // DATA CARD COIN SETTINGS CLUB CARD
+static const float GROW_LEFT[4] = { 3.0f, 3.0f, 2.0f, 4.0f };      // DATA CARD SETTINGS CLUB CARD
 static const float GROW_RIGHT[4] = { 3.0f, 3.0f, 5.0f, 7.0f };     // START KEY PL SHOOT KEEPER CATALOGUE KEYS
 static const float *const BTN_GROW[NBTN] = { GROW_DPAD, GROW_DPAD, GROW_DPAD, GROW_DPAD, GROW_DPAD, GROW_LEFT,
-                                             GROW_RIGHT, GROW_RIGHT, GROW_RIGHT, GROW_RIGHT, GROW_LEFT,
-                                             GROW_LEFT };     // the enum's order: B_UP .. B_COIN
+                                             GROW_RIGHT, GROW_RIGHT, GROW_RIGHT, GROW_RIGHT,
+                                             GROW_LEFT };     // the enum's order: B_UP .. B_CARD
 
 static RECT grown(RECT r, const float m[4])
 {
@@ -2140,7 +2140,7 @@ static struct KAct g_kact[] = {          // left column 0-7 (BUTTONS, CARD + COI
     { "DATA",      "DATA",       "",                 0x53, 0x53, B_DATA,  COL_BLUE   },
     { "KEYPLAYER", "KEY PLAYER", "a guess",          0x44, 0x44, B_KEYPL, COL_YELLOW },
     { "CARD",      "CARD",       "club card in/out", 0x49, 0x49, B_CARD,  COL_GOLD   },
-    { "COIN",      "COIN",       "",                 0x35, 0x35, B_COIN,  COL_ORANGE },
+    { "COIN",      "COIN",       "not needed",       0x35, 0x35, -1,      COL_ORANGE },   // free play; no button on screen
     { "UP",        "CENTRAL",    "tactic, up",       0x26, 0x26, B_UP,    COL_GREEN  },
     { "DOWN",      "COUNTER",    "tactic, down",     0x28, 0x28, B_DOWN,  COL_GREEN  },
     { "LEFT",      "L-SIDE",     "tactic, left",     0x25, 0x25, B_LEFT,  COL_GREEN  },
@@ -3288,6 +3288,7 @@ static void deal_tick(void)              // the board thread, once a second: ope
     static DWORD next = 0; static int seeded = 0, last = -1;
     char p[MAX_PATH]; ULONGLONG saved; int bad, cs;
     if (!seeded) { srand(GetTickCount() ^ GetCurrentProcessId()); seeded = 1; }     // rand() is per thread
+    if (!next) next = GetTickCount();                       // see dispenser_tick: from 0 it never ran after 24.8 days up
     if ((LONG)(GetTickCount() - next) < 0) return;
     next = GetTickCount() + 1000;
     _snprintf(p, MAX_PATH, "%s\\save\\seat1_club.bin", g_data_dir); p[MAX_PATH - 1] = 0;
@@ -5898,6 +5899,9 @@ static void dispenser_tick(void)                         // every 2 s on the ren
 {
     static DWORD next = 0; static int said = 0;
     DWORD now = GetTickCount();
+    // the first look counts from now (2026-10-09): from 0, (LONG)(now - next) is negative once Windows has been up 24.8
+    // days (GetTickCount past 0x7FFFFFFF) and this never ran - found on a PC up 30.8 days
+    if (!next) next = now;
     if (!g_owed_fix || (LONG)(now - next) < 0) return;
     next = now + 2000;
     __try {
@@ -5948,6 +5952,7 @@ static void free_play_tick(void)                         // every 2 s on the ren
 {
     static DWORD next = 0; static int said = 0;
     DWORD now = GetTickCount();
+    if (!next) next = now;                                   // see dispenser_tick: from 0 it never ran after 24.8 days up
     if (!g_free_play || (LONG)(now - next) < 0) return;
     next = now + 2000;
     __try {
