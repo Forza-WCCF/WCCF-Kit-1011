@@ -24,9 +24,19 @@ game is not included. Newest first; each date is the day that kit was built.
 - FORMATION BOARD: resting the mouse on a card on the table (the big card) also shows its name, line, total and roles.
 - Logs: older runs are no longer deleted. `data\logs\previous` is still the run before; the runs before it are
   zipped into `data\logs\archive` (about the last 200 MB, the oldest go first).
+- Free play: the game's own FREE PLAY is switched on in seat 1, so no coin is needed anywhere - including the
+  two-choice screen after a cup match that PRESS / SHOOT decide, where START's coin did not help. The key driver
+  still puts a coin in on START, in case the panel is not loaded.
+- SETTINGS > LOGS: SEND LOGS (click twice) sends this game's logs to the server you play on and shows a short code
+  to post in Discord with what went wrong. Never the club card; the Windows user name and PC name are taken out.
+- The kit's version (`KIT 5.5 (commit)`) at the top right of the game, under the ping meter when online -
+  `VERSION.txt` in the kit, written when the kit ZIP is made.
+- Server: the log inbox (`scripts\_log_inbox.py`, TCP 20050) keeps those logs in `data\player_logs`: at most 8 MB
+  an upload, 6 an hour from one address, 1 GB in all (the oldest go). A server must now let in TCP 20050 too.
 
 ### Changed
 - The formation board shows a card big after the mouse rests on it 1 s (was 8 s).
+- The BACK button is gone: it pressed nothing, and in the game the blue KEEPER button goes back.
 
 ### Fixed
 - The key driver could end when its input file stayed busy (an antivirus scan, for one): every key and controller

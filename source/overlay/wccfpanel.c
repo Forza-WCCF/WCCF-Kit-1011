@@ -69,6 +69,7 @@ static int     g_fs_asked = 0;           // the start-up switch was posted
 static volatile LONG g_fs_msg_pending = 0;
 static int     is_maximized(HWND h);
 static void    dispenser_tick(void);         // the card dispenser fix (below the Present hook's helpers)
+static void    free_play_tick(void);         // Sega's own FREE PLAY kept on (below the card dispenser fix)
 static void    set_tick(void);               // the SETTINGS panel's status (below the KEYS panel)
 static void    club_tick(void);              // the CLUB CARD panel's view (below the SETTINGS panel)
 static void    deal_tick(void);              // a player card after each match (below the close warning)
@@ -115,6 +116,24 @@ static DWORD  g_hover_since = 0;
 
 static ULONGLONG ft_q(FILETIME t) { return ((ULONGLONG)t.dwHighDateTime << 32) | t.dwLowDateTime; }
 
+// the kit's version (2026-10-09, the player: "a version number near the ping, so that we can know ... what the issues
+// they get and on what version"): VERSION.txt at the kit's top, written by source\package.ps1 ("5.5 (f13c146)");
+// a kit built by hand has none and shows "dev".  Drawn under the ping meter (ping_draw), online or not.
+static char g_kitver[48] = "dev";
+
+static void kit_version(void)
+{
+    char p[MAX_PATH], line[64] = ""; FILE *f; size_t n;
+    _snprintf(p, MAX_PATH, "%s\\..\\VERSION.txt", g_dlldir); p[MAX_PATH - 1] = 0;
+    if ((f = fopen(p, "rb")) != NULL) {
+        n = fread(line, 1, sizeof line - 1, f); line[n] = 0; fclose(f);
+        line[strcspn(line, "\r\n")] = 0;
+        for (n = 0; line[n]; n++) if ((unsigned char)line[n] < 32 || (unsigned char)line[n] > 126) line[n] = '?';
+        if (line[0]) lstrcpynA(g_kitver, line, sizeof g_kitver);
+    }
+    logline("kit version: %s", g_kitver);
+}
+
 static void board_paths(void)
 {
     char exe[MAX_PATH], dir[MAX_PATH], *sl;
@@ -135,6 +154,7 @@ static void board_paths(void)
         g_cards_dirw[MAX_PATH - 1] = 0;
     }
     logline("board: table %s ; fpr_panel state %s ; our files in %s", g_table_path, g_state_path, g_dlldir);
+    kit_version();
 }
 
 // the table file -> out[] (FPR_Emu's own rules: # comments, commas or spaces, slot 1..20); -1 = could not read
@@ -228,7 +248,9 @@ struct Btn { const char *label; int vk; int shape; DWORD color; RECT px; };
 #define COL_YELLOW D3DCOLOR_ARGB(255, 235, 200,  45)
 #define COL_GREY   D3DCOLOR_ARGB(255,  78,  84,  96)
 // indices are referenced by name in layout()/draw; keep this order
-enum { B_UP, B_DOWN, B_LEFT, B_RIGHT, B_PRESS, B_DATA, B_SHOOT, B_KEEP, B_KEYPL, B_START, B_BACK, B_CARD, B_COIN };
+// BACK is gone (2026-10-09, the player: "in game the blue keeper button is almost always the back button"): it never
+// had a key; its picture was taken out of skin.tex too
+enum { B_UP, B_DOWN, B_LEFT, B_RIGHT, B_PRESS, B_DATA, B_SHOOT, B_KEEP, B_KEYPL, B_START, B_CARD, B_COIN };
 static struct Btn g_btn[] = {
     // tactics d-pad (left) - names from the manual; all four are the arrow keys
     { "CENTRAL", VK_UP,    SHAPE_RECT,  COL_GREEN,  {0} },   // 中央突破
@@ -242,7 +264,6 @@ static struct Btn g_btn[] = {
     { "KEEPER",  0x42,     SHAPE_ROUND, COL_BLUE,   {0} },   // キーパー/goalie = B (the player: BACK/B actually does GOALIE) [V]
     { "KEYPLYR", 0x44,     SHAPE_ROUND, COL_YELLOW, {0} },   // キープレイヤー, yellow = D (guess - verify)
     { "START",   0x0D,     SHAPE_ROUND, COL_GREEN,  {0} },   // スタート, green (Enter)
-    { "BACK",    0,        SHAPE_RECT,  COL_GREY,   {0} },   // unknown - no key fired until verified
     { "CARD",    0x49,     SHAPE_RECT,  COL_GREY,   {0} },   // I = card in/out
     { "COIN",    0x35,     SHAPE_RECT,  COL_GREY,   {0} },   // 5
 };
@@ -261,7 +282,7 @@ static int g_dry = -1;               // WCCFPANEL_DRYKEYS=1: log instead of pres
 
 static void send_key(int vk, int up)
 {
-    if (!vk) return;                 // a button with no key yet (BACK) presses nothing
+    if (!vk) return;                 // a button with no key presses nothing
     if (g_dry < 0) { char e[8]; g_dry = GetEnvironmentVariableA("WCCFPANEL_DRYKEYS", e, sizeof e) > 0 && e[0] == '1'; }
     if (g_dry) { logline("key 0x%02X %s (dry run - not pressed)", vk, up ? "up" : "down"); return; }
     INPUT in; ZeroMemory(&in, sizeof in);
@@ -396,7 +417,6 @@ static const float BTNF[NBTN][4] = {
     {1312/1440.f, 700/900.f,1398/1440.f, 786/900.f },  // KEEPER
     {1208/1440.f, 594/900.f,1294/1440.f, 680/900.f },  // KEY PLAYER
     {1220/1440.f, 520/900.f,1282/1440.f, 582/900.f },  // START
-    {  98/1440.f,  46/900.f, 176/1440.f,  80/900.f },  // BACK
     {  14/1440.f,  88/900.f,  92/1440.f, 122/900.f },  // CARD
     {  98/1440.f,  88/900.f, 176/1440.f, 122/900.f },  // COIN
 };
@@ -406,10 +426,10 @@ static const float BTNF[NBTN][4] = {
 // shadow reach past them (fstest\click_areas.png, _probe_click_areas.py).  Each area grows by these sheet px - left,
 // top, right, bottom - and no two meet (checked there): the d-pad's buttons are 6 px apart, so they share the gap.
 static const float GROW_DPAD[4] = { 2.0f, 2.0f, 3.0f, 3.0f };      // UP DOWN LEFT RIGHT PRESS
-static const float GROW_LEFT[4] = { 3.0f, 3.0f, 2.0f, 4.0f };      // DATA BACK CARD COIN SETTINGS CLUB CARD
+static const float GROW_LEFT[4] = { 3.0f, 3.0f, 2.0f, 4.0f };      // DATA CARD COIN SETTINGS CLUB CARD
 static const float GROW_RIGHT[4] = { 3.0f, 3.0f, 5.0f, 7.0f };     // START KEY PL SHOOT KEEPER CATALOGUE KEYS
 static const float *const BTN_GROW[NBTN] = { GROW_DPAD, GROW_DPAD, GROW_DPAD, GROW_DPAD, GROW_DPAD, GROW_LEFT,
-                                             GROW_RIGHT, GROW_RIGHT, GROW_RIGHT, GROW_RIGHT, GROW_LEFT, GROW_LEFT,
+                                             GROW_RIGHT, GROW_RIGHT, GROW_RIGHT, GROW_RIGHT, GROW_LEFT,
                                              GROW_LEFT };     // the enum's order: B_UP .. B_COIN
 
 static RECT grown(RECT r, const float m[4])
@@ -3007,6 +3027,16 @@ static volatile LONG g_set_dirty = 1;    // the status must be read again now
 // started) opens "PLAY.exe restart".  Not during a card session.  Not taken in 3 s = no helper: removed, and said.
 static DWORD g_rs_armed = 0;             // armed until this tick
 static DWORD g_rs_sent = 0;              // when the request was written (0 = none waiting)
+// SEND LOGS (2026-10-09, the player: "add a button in the settings to send logs to the server, so people can send us
+// their logs from their own game"): a first click arms it for 8 s, a second writes data\sendlogs.request (the server's
+// address); _kit_helper.py packs the logs (send_logs.py, never the club card) and sends them to that server's log
+// inbox, and writes data\sendlogs.result: "sending", then "ok CODE" or "fail WHY" - shown under the button.  Not taken
+// in 5 s = no helper: removed, and said.
+static DWORD g_lg_armed = 0;             // armed until this tick
+static DWORD g_lg_sent = 0;              // when the request was written (0 = none waiting)
+static char  g_lg_res[96] = "";          // the helper's last answer this run ("" = none)
+static ULONGLONG g_lg_stamp = 0;         // the answer file's time when it was last read (an older run's is not shown)
+static ULONGLONG sendlogs_stamp(void);   // (below set_refresh)
 
 static int valid_ipv4(const char *s)     // = play.py valid_ipv4: four numbers 0-255 with dots, ASCII digits only
 {
@@ -3086,6 +3116,7 @@ static void set_init(void)               // the init thread: where data\ is, and
     }
     _snprintf(g_panel_path, MAX_PATH, "%s\\panel.txt", g_data_dir); g_panel_path[MAX_PATH - 1] = 0;
     _snprintf(g_panel_tmp, MAX_PATH, "%s.panel", g_panel_path); g_panel_tmp[MAX_PATH - 1] = 0;
+    g_lg_stamp = sendlogs_stamp();                              // an answer from an earlier run is not shown
     EnterCriticalSection(&g_board_cs);
     set_load_locked();
     g_st.link = -1; g_st.card = CS_NONE; g_st.bad = -1;
@@ -3371,8 +3402,60 @@ static int restart_request(void)         // the request, whole (a temporary file
     return k && MoveFileExA(tmp, p, MOVEFILE_REPLACE_EXISTING);
 }
 
+static void sendlogs_path(char *p, const char *what)   // data\sendlogs.request / data\sendlogs.result
+{
+    _snprintf(p, MAX_PATH, "%s\\sendlogs.%s", g_data_dir, what); p[MAX_PATH - 1] = 0;
+}
+
+static int sendlogs_request(const char *server)   // the request, whole (a temporary file, then one swap)
+{
+    char p[MAX_PATH], tmp[MAX_PATH + 8]; FILE *f; int k;
+    sendlogs_path(p, "request");
+    _snprintf(tmp, sizeof tmp, "%s.panel", p); tmp[sizeof tmp - 1] = 0;
+    if (!(f = fopen(tmp, "wb"))) return 0;
+    k = fprintf(f, "%s\n", server) > 0;
+    fclose(f);
+    return k && MoveFileExA(tmp, p, MOVEFILE_REPLACE_EXISTING);
+}
+
+static ULONGLONG sendlogs_stamp(void)    // the answer file's time, 0 = none
+{
+    char p[MAX_PATH]; WIN32_FILE_ATTRIBUTE_DATA fa;
+    sendlogs_path(p, "result");
+    return GetFileAttributesExA(p, GetFileExInfoStandard, &fa) ? ft_q(fa.ftLastWriteTime) : 0;
+}
+
+static void sendlogs_poll(void)          // the board thread: the helper's answer, read again when the file changes
+{
+    char p[MAX_PATH], line[96]; FILE *f; size_t n; ULONGLONG st = sendlogs_stamp();
+    if (!st || st == g_lg_stamp) return;
+    sendlogs_path(p, "result");
+    if (!(f = fopen(p, "rb"))) return;                          // being swapped in: the next pass
+    n = fread(line, 1, sizeof line - 1, f); fclose(f); line[n] = 0;
+    line[strcspn(line, "\r\n")] = 0;
+    for (n = 0; line[n]; n++) if ((unsigned char)line[n] < 32 || (unsigned char)line[n] > 126) line[n] = '?';
+    EnterCriticalSection(&g_board_cs);
+    lstrcpynA(g_lg_res, line, sizeof g_lg_res); g_lg_stamp = st; g_lg_sent = 0;
+    LeaveCriticalSection(&g_board_cs);
+    logline("settings: send logs - %s", line);
+}
+
 static void set_tick(void)               // the board thread, every pass: the status while the panel is open
 {
+    sendlogs_poll();
+    if (g_lg_sent && GetTickCount() - g_lg_sent > 5000) {      // the helper takes it within 0.5 s when it runs
+        char p[MAX_PATH];
+        sendlogs_path(p, "request");
+        EnterCriticalSection(&g_board_cs);
+        if (GetFileAttributesA(p) != INVALID_FILE_ATTRIBUTES) {
+            DeleteFileA(p);
+            lstrcpynA(g_lg_res, "fail the kit's helper did not answer - close the game, PLAY.exe, then try again",
+                      sizeof g_lg_res);
+            logline("settings: send logs request not picked up - removed");
+        }
+        g_lg_sent = 0;
+        LeaveCriticalSection(&g_board_cs);
+    }
     if (g_rs_sent && GetTickCount() - g_rs_sent > 3000) {      // the helper takes it within 0.5 s when it runs
         char p[MAX_PATH];
         restart_path(p);
@@ -3407,7 +3490,7 @@ static void fmt_when(char *out, size_t cap, ULONGLONG t)   // a file time as the
 // the panel's parts, in canvas pixels over the middle column: title + help + X; "NOW" with six rows; "NEXT START"
 // with two rows of choices (THIS PC / ONLINE + the address box, ENGLISH / JAPANESE) and RESTART NOW; "VIEW" with the
 // LAYOUT (CABINET / COMPACT, 2026-10-06), which changes at once
-struct SGeo { float x0, x1, lx, vx, rowh, ynow, ynext, yview; RECT close, pc, online, addr, eng, jap, restart, cab, cmp; };
+struct SGeo { float x0, x1, lx, vx, rowh, ynow, ynext, yview; RECT close, pc, online, addr, eng, jap, restart, cab, cmp, logs; };
 
 static void set_geo(struct SGeo *g)
 {
@@ -3430,6 +3513,8 @@ static void set_geo(struct SGeo *g)
     y = g->yview + 36.0f * s;
     g->cab = RC(g->vx, y, g->vx + 130.0f * s, y + 36.0f * s);
     g->cmp = RC(g->vx + 140.0f * s, y, g->vx + 270.0f * s, y + 36.0f * s);
+    y += 36.0f * s + 30.0f * s;                            // under LAYOUT's note: LOGS - SEND LOGS (2026-10-09)
+    g->logs = RC(g->vx, y, g->vx + 270.0f * s, y + 38.0f * s);
 }
 
 static void set_chip(IDirect3DDevice9 *dev, RECT r, const char *label, int on, float s)
@@ -3487,6 +3572,10 @@ static void set_draw(IDirect3DDevice9 *dev)
     }
     set_chip(dev, g.cab, "CABINET", !g_compact, s);
     set_chip(dev, g.cmp, "COMPACT", g_compact, s);
+    {
+        int armed = g_lg_armed && (LONG)(g_lg_armed - now) > 0, busy = g_lg_sent || !strcmp(g_lg_res, "sending");
+        set_chip(dev, g.logs, busy ? "SENDING ..." : armed ? "CLICK AGAIN TO SEND" : "SEND LOGS", armed || busy, s);
+    }
     if (!g_font_tex) return;
     set_picture(dev, g_font_tex, 1);
     put_str(dev, g.x0 + 24.0f * s, 14.0f * s, 0.85f * s, orange, "SETTINGS");
@@ -3575,6 +3664,19 @@ static void set_draw(IDirect3DDevice9 *dev)
     put_str(dev, (float)g.cab.left, (float)g.cab.bottom + 8.0f * s, 0.40f * s, grey, g_compact
             ? "COMPACT: the game larger, no cabinet buttons - your keys and controller press them; changes at once"
             : "CABINET: the cabinet's buttons around the game.  COMPACT: the game larger, without them");
+    y = (float)g.logs.top + ((float)(g.logs.bottom - g.logs.top) - (float)g_cellh * 0.44f * s) * 0.5f;
+    put_str(dev, g.lx + 12.0f * s, y, 0.44f * s, grey, "LOGS");
+    if (!strncmp(g_lg_res, "ok ", 3)) {                                      // the code, big: the player tells us it
+        _snprintf(v, sizeof v, "CODE %s", g_lg_res + 3); v[sizeof v - 1] = 0;
+        put_str(dev, (float)g.logs.right + 18.0f * s, (float)g.logs.top + 4.0f * s, 0.7f * s, green, v);
+        _snprintf(v, sizeof v, "sent - post this code in Discord with what went wrong");
+        col = green;
+    } else if (!strncmp(g_lg_res, "fail ", 5)) { _snprintf(v, sizeof v, "not sent: %s", g_lg_res + 5); col = red; }
+    else if (g_lg_sent || !strcmp(g_lg_res, "sending")) { _snprintf(v, sizeof v, "packing and sending - a few seconds"); col = yellow; }
+    else if (!valid_ipv4(g_server)) { _snprintf(v, sizeof v, "they go to the server you play on - type its address under PLAY ON first"); col = grey; }
+    else { _snprintf(v, sizeof v, "this game's logs (never your club card) go to the server at %s", g_server); col = grey; }
+    v[sizeof v - 1] = 0;
+    put_str(dev, (float)g.logs.left, (float)g.logs.bottom + 8.0f * s, 0.40f * s, col, v);
     if (g_bmsg[0] && (LONG)(g_bmsg_until - now) > 0) {                                          // the last change
         RECT nr = RC(g.x0 + (g.x1 - g.x0) * 0.2f, g_ch - 70.0f * s, g.x1 - (g.x1 - g.x0) * 0.2f, g_ch - 22.0f * s);
         set_flat(dev);
@@ -3684,6 +3786,24 @@ static void set_click(HWND h, int x, int y)                     // a press insid
                                                   "right, under KEYS");
                 else note_locked(green, "CABINET: the cabinet's buttons are back around the game");
                 logline("settings: layout %s", want ? "compact" : "cabinet");
+            }
+        } else if (in_rect(&g.logs, x, y)) {                  // SEND LOGS: click twice
+            DWORD now = GetTickCount(), yellow = D3DCOLOR_ARGB(255, 255, 214, 40);
+            if (g_lg_sent || !strcmp(g_lg_res, "sending")) {
+                note_locked(yellow, "already sending - a few seconds");
+            } else if (!valid_ipv4(g_server)) {
+                note_locked(red, "type the server's address under PLAY ON first - the logs go there");
+            } else if (!g_lg_armed || (LONG)(g_lg_armed - now) <= 0) {
+                g_lg_armed = now + 8000;
+                note_locked(yellow, "click SEND LOGS again to send this game's logs to %s", g_server);
+                logline("settings: send logs armed");
+            } else {
+                g_lg_armed = 0;
+                if (sendlogs_request(g_server)) {
+                    g_lg_sent = now; g_lg_res[0] = 0;
+                    note_locked(green, "sending this game's logs to %s", g_server);
+                    logline("settings: send logs asked (to %s)", g_server);
+                } else note_locked(red, "could not ask for it - try again");
             }
         } else if (in_rect(&g.restart, x, y)) {
             DWORD now = GetTickCount(), yellow = D3DCOLOR_ARGB(255, 255, 214, 40);
@@ -4295,11 +4415,29 @@ static void ping_install(void)                    // a cabinet playing online: p
 }
 
 static void ping_draw(IDirect3DDevice9 *dev)      // the meter, top right above the game (the player's place for it, 2026-10-07)
-{
-    float s = g_s, bw = 10.0f * s, gap = 4.0f * s, tscale = 0.8f * s, lscale = 0.42f * s, blockh = 62.0f * s;
-    float midW, a, gw, gh, gx1, gy0, right, top, x, y, tw, lw, roww; LONG ms; int bars, i, inside;
-    DWORD col, dim = D3DCOLOR_ARGB(255, 58, 62, 74), grey = D3DCOLOR_ARGB(255, 150, 156, 170); char txt[24];
-    if (!g_ping_on) return;                       // online only
+{                                                 // and the kit's version under it (2026-10-09), online or not
+    float s = g_s, bw = 10.0f * s, gap = 4.0f * s, tscale = 0.8f * s, lscale = 0.42f * s, blockh = 80.0f * s;
+    float midW, a, gw, gh, gx1, gy0, right, top, x, y, tw, lw, vw, roww, boxw; LONG ms; int bars, i, inside;
+    DWORD col, dim = D3DCOLOR_ARGB(255, 58, 62, 74), grey = D3DCOLOR_ARGB(255, 150, 156, 170); char txt[24], ver[64];
+    _snprintf(ver, sizeof ver, "KIT %s", g_kitver); ver[sizeof ver - 1] = 0;
+    if (!g_font_tex) build_font(dev);
+    if (!g_ping_on) {                             // this PC: the version alone, where the meter's label would be
+        if (!g_font_tex) return;
+        midW = g_mx1 - g_mx0; a = (g_gw && g_gh) ? (float)g_gw / (float)g_gh : 1.6f;
+        gw = midW; gh = midW / a;
+        if (gh > g_ch) { gh = g_ch; gw = gh * a; }
+        gx1 = g_mx0 + (midW - gw) * 0.5f + gw; gy0 = (g_ch - gh) * 0.5f;
+        vw = str_w(ver, lscale); right = gx1 - 14.0f * s;
+        top = gy0 < 24.0f * s ? gy0 + 6.0f * s : (gy0 - (float)g_cellh * lscale) * 0.5f;
+        if (gy0 < 24.0f * s) {
+            set_flat(dev);
+            fill_rect(dev, right - vw - 6.0f * s, top - 3.0f * s, vw + 12.0f * s, (float)g_cellh * lscale + 6.0f * s,
+                      D3DCOLOR_ARGB(190, 10, 11, 15));
+        }
+        set_picture(dev, g_font_tex, 1);
+        put_str(dev, right - vw, top, lscale, grey, ver);
+        return;
+    }
     ms = g_ping_ms;
     if (ms >= 0 && GetTickCount() - (DWORD)g_ping_tick > 6000) ms = -1;              // nothing for 6 s: no answer
     if (ms < 0) { col = grey; bars = 0; _snprintf(txt, sizeof txt, "-- ms"); }
@@ -4310,7 +4448,6 @@ static void ping_draw(IDirect3DDevice9 *dev)      // the meter, top right above 
         _snprintf(txt, sizeof txt, "%ld ms", ms);
     }
     txt[sizeof txt - 1] = 0;
-    if (!g_font_tex) build_font(dev);
     // where the game's picture is (draw_game_scaled's own sums): the meter sits in the band above it, against the
     // picture's right edge; a window with no band for it gets it just inside the picture's top right, on a dark box
     midW = g_mx1 - g_mx0; a = (g_gw && g_gh) ? (float)g_gw / (float)g_gh : 1.6f;
@@ -4322,10 +4459,12 @@ static void ping_draw(IDirect3DDevice9 *dev)      // the meter, top right above 
     top = inside ? gy0 + 8.0f * s : (gy0 - blockh) * 0.5f;
     tw = g_font_tex ? str_w(txt, tscale) : 0.0f;
     lw = g_font_tex ? str_w("PING TO SERVER", lscale) : 0.0f;
+    vw = g_font_tex ? str_w(ver, lscale) : 0.0f;
     roww = 4 * bw + 3 * gap + 10.0f * s + tw;
+    boxw = roww > lw ? roww : lw; if (vw > boxw) boxw = vw;
     set_flat(dev);
-    if (inside) fill_rect(dev, right - (roww > lw ? roww : lw) - 8.0f * s, top - 4.0f * s,
-                          (roww > lw ? roww : lw) + 16.0f * s, blockh + 8.0f * s, D3DCOLOR_ARGB(190, 10, 11, 15));
+    if (inside) fill_rect(dev, right - boxw - 8.0f * s, top - 4.0f * s, boxw + 16.0f * s, blockh + 8.0f * s,
+                          D3DCOLOR_ARGB(190, 10, 11, 15));
     x = right - roww; y = top;
     for (i = 0; i < 4; i++) {                     // four rising bars, lit up to `bars`
         float h = (10.0f + 8.0f * i) * s;
@@ -4335,6 +4474,7 @@ static void ping_draw(IDirect3DDevice9 *dev)      // the meter, top right above 
         set_picture(dev, g_font_tex, 1);
         put_str(dev, right - tw, y + 6.0f * s, tscale, col, txt);
         put_str(dev, right - lw, y + 46.0f * s, lscale, grey, "PING TO SERVER");
+        put_str(dev, right - vw, y + 64.0f * s, lscale, grey, ver);
     }
 }
 
@@ -4468,6 +4608,7 @@ static HRESULT WINAPI hook_present(IDirect3DDevice9 *dev, const RECT *src, const
         send_key(g_held_vk, 1); g_held_vk = 0; g_held_btn = -1;
     }
     dispenser_tick();
+    free_play_tick();
     if (g_write_pending) {                       // a card move FPR_Emu was reading over: swap it in now
         EnterCriticalSection(&g_board_cs);
         if (g_write_pending) write_table_locked();
@@ -5771,6 +5912,55 @@ static void dispenser_tick(void)                         // every 2 s on the ren
     }
 }
 
+// ---------------------------------------------------------------- free play (2026-10-09)
+// The player: "the coin button is useless ... make it free or unlimited, so no one has to click the coin button".  The
+// game has Sega's own FREE PLAY: byte 2 of its credit library's coin setting (DAT_00cd0f9a).  At 1 every credit check
+// passes and no credit is taken (FUN_0082bdf0, FUN_0082be60, FUN_0082c4b0; docs\research\FREE-PLAY-2010-11.md).  A
+// cabinet keeps it in its settings chip, which the kit's stand-ins do not have, so the game starts with it off.  The
+// library clears its block when it starts and then sets DAT_00cd0f90 = 1: from then on the byte is set here, and again
+// every 2 s.  Only in client_Release.exe, and only if the code that reads it (0x0082BFE0) is byte for byte the one
+// studied.  The key driver's coin on START stays as the fallback when this panel is not there.
+static const BYTE FREE_SIG[19] = { 0x33, 0xC0, 0x39, 0x05, 0x90, 0x0F, 0xCD, 0x00, 0x75, 0x03, 0xC2, 0x04, 0x00,
+                                   0x38, 0x05, 0x9A, 0x0F, 0xCD, 0x00 };
+static int g_free_play = 0;
+
+static void free_play_install(void)
+{
+    char exe[MAX_PATH], *nm; MEMORY_BASIC_INFORMATION mi;
+    GetModuleFileNameA(NULL, exe, MAX_PATH);
+    nm = strrchr(exe, '\\'); nm = nm ? nm + 1 : exe;
+    if (_stricmp(nm, "client_Release.exe") != 0) { logline("free play: not the game (%s) - nothing changed", nm); return; }
+    if (!VirtualQuery((void *)0x0082BFE0, &mi, sizeof mi) || mi.State != MEM_COMMIT ||
+        memcmp((void *)0x0082BFE0, FREE_SIG, sizeof FREE_SIG) != 0) {
+        logline("free play: the credit check is not the code studied - nothing changed (a coin is still put in on START)");
+        return;
+    }
+    if (!VirtualQuery((void *)0x00CD0F90, &mi, sizeof mi) || mi.State != MEM_COMMIT ||
+        !(mi.Protect & (PAGE_READWRITE | PAGE_WRITECOPY | PAGE_EXECUTE_READWRITE))) {
+        logline("free play: the credit setting is not writable memory - nothing changed");
+        return;
+    }
+    g_free_play = 1;
+    logline("free play: on - set as soon as the game's credits start, then every 2 s");
+}
+
+static void free_play_tick(void)                         // every 2 s on the render thread
+{
+    static DWORD next = 0; static int said = 0;
+    DWORD now = GetTickCount();
+    if (!g_free_play || (LONG)(now - next) < 0) return;
+    next = now + 2000;
+    __try {
+        if (*(volatile DWORD *)0x00CD0F90 == 1 && *(volatile BYTE *)0x00CD0F9A != 1) {
+            *(volatile BYTE *)0x00CD0F9A = 1;
+            if (said < 3) { logline("free play: the game's credits are running - FREE PLAY set"); said++; }
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        g_free_play = 0;
+        logline("free play: the credit setting could not be reached - stopped");
+    }
+}
+
 // ---------------------------------------------------------------- install the Present hook
 static void *inline_hook5(void *target, void *detour)
 {
@@ -5851,6 +6041,7 @@ static DWORD WINAPI init_thread(LPVOID arg)
     relay_install();                             // on a server: a match against another player through its relay
     ping_install();                              // on a server: the ping meter (its own socket, every 2 s)
     dispenser_install();                         // no player card owed to a dispenser that is not there
+    free_play_install();                         // Sega's own FREE PLAY: no coin needed anywhere
     CreateThread(NULL, 0, board_thread, NULL, 0, NULL);
     if (install_hook()) hook_mouse();
     return 0;
