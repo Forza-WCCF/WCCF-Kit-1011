@@ -1,6 +1,6 @@
 [package]
 name = "wccf-kit-launcher"
-version = "5.2.0"
+version = "5.4.0"
 edition = "2024"
 rust-version = "1.99"
 description = "PLAY, SETUP and ENGLISH.exe: the WCCF 2010-11 kit's launchers"

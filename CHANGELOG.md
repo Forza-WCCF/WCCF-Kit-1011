@@ -4,7 +4,7 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
-## Unreleased
+## Kit 5.4 - 2026-10-09
 
 ### Added
 - CLUB CARD: CLEAR BAD ENDINGS (click twice) sets the card's bad endings back to 0 at a restart, after a backup.
@@ -37,6 +37,13 @@ game is not included. Newest first; each date is the day that kit was built.
   request builds every program (`source\build.ps1`), runs the checks that need no game (`source\check.ps1`) and packs
   the kit zip (`source\package.ps1`); a `kit-*` tag drafts a release with it. Git holds the source, not the built
   programs.
+- `source\package.ps1` reads the kit zip back and fails unless every program is in it (`PLAY.exe`, `SETUP.exe`,
+  `ENGLISH.exe`, `bin\`, `overlay\` and `python\python.exe`). A `kit-5.4` tag makes `WCCF-2010-11-kit-5.4.zip`.
+  A run's download on GitHub is that ZIP itself, no longer a ZIP around it, and CI checks the downloaded file too.
+- Test builds for players: Actions > Kit > Run workflow with a tag like `kit-5.4-test1` publishes a pre-release with
+  the ZIP (a public download).
+- A `kit-*` tag's draft release carries its notes (`.github\release-notes.md` and the kit's CHANGELOG section); it is
+  refused when CHANGELOG.md's newest heading is not that kit.
 
 ## Kit 5.3 - 2026-10-08
 
