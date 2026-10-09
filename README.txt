@@ -11,6 +11,10 @@ WHAT IT IS
   or a game controller's buttons, SETTINGS, and CLUB CARD, your club card and your other clubs.
   The kit holds none of Sega's files. Everything that comes from the game is made by setup from YOUR copy.
 
+NEW IN KIT 5.5.1
+  - Fixed: Kit 5.5 played on this PC even with ONLINE chosen in SETTINGS (and did not see the club card, English
+    and card fix choices there). Update with SETUP.exe's UPDATE, or unzip this kit over the old folder.
+
 NEW IN KIT 5.5
   - Free play: the game's own FREE PLAY is on, so you never need a coin - not even on the screen after a cup match.
     The COIN and BACK buttons are gone, and DATA and CARD are full width.

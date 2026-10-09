@@ -231,7 +231,8 @@ def is_cabinet_role(role):
 # the overlay (seat 1's panels, the projector's money): the game's winmm.dll (the kit's, mxhook.c) loads it once the
 # game's window is up, in the game itself - for the two windows whose environment names it, never the server.  Before
 # 2026-10-09 overlay\inject.exe wrote it into the running game from outside, which antivirus programs flag
-PANEL = os.path.join(K.OVERLAY, "wccfpanel.dll")
+PANEL_DLL = os.path.join(K.OVERLAY, "wccfpanel.dll")      # not PANEL: that is data\panel.txt (Kit 5.5 reused the
+                                                          # name, so a plain start read the dll and never went online)
 
 
 def kit_env(game):
@@ -493,7 +494,7 @@ def start_cabinet(debug, env, mode, ip, seat_no, seat, roles):
         senv.update(WCCF_RELAY="%s:%d" % (ip, RELAY_PORT), WCCF_SEAT=str(seat_no))
     if debug:
         senv["MXHOOK_VERBOSE"] = "1"
-    senv["WCCF_PANEL"] = PANEL
+    senv["WCCF_PANEL"] = PANEL_DLL
     # the cabinet in the seat1 folder SETUP made, whatever its seat number: the number is only its command line
     p = start("_debug_launch.py", [LIFE, "client", "follow", "arg=%d" % seat_no, "dir=" + seat], "run_seat1.txt", senv)
     roles[p.pid] = "seat 1 launcher" if seat_no == 1 else "seat %d launcher" % seat_no
@@ -659,7 +660,7 @@ def play(debug, mode="local", ip=None, seat_no=None):
 
     if projector:
         p = start("_debug_launch.py", [LIFE, "client", "follow", "arg=0"], "run_projector.txt",
-                  dict(env, WCCF_PANEL=PANEL))     # the overlay too, in its money-only mode (below)
+                  dict(env, WCCF_PANEL=PANEL_DLL))     # the overlay too, in its money-only mode (below)
         roles[p.pid] = "projector launcher"
         say("  3/6 projector (seat 0) - its window opens in a few seconds")
     else:

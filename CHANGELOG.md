@@ -4,6 +4,14 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
+## Kit 5.5.1 - 2026-10-10
+
+### Fixed
+- A plain PLAY.exe start went online no more: Kit 5.5 played on this PC (its own server and projector) even with
+  SETTINGS > NEXT START: ONLINE. play.py used the name PANEL for both data\panel.txt and overlay\wccfpanel.dll, so
+  it read the dll as the SETTINGS file - ONLINE, the club card choice, the English change and the card fix were all
+  not seen. check.ps1 now checks it.
+
 ## Kit 5.5 - 2026-10-10
 
 ### Added
