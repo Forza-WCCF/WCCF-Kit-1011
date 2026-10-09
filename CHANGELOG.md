@@ -44,6 +44,9 @@ game is not included. Newest first; each date is the day that kit was built.
   button dead, the last one held, the game going on by itself. A possible cause of the freeze reported in team
   training and the locker room (not confirmed). It now tries again on its next round; if it ever stops anyway,
   `data\logs\keys_crash.txt` says why.
+- On a PC that had been on for more than 24.8 days without a restart, the card dispenser fix ("You are owed N
+  Player Card(s)" kept at 0) never ran, nor did the player card after a match: their once-a-second / every-2-s
+  timers started from 0 and never came round. They now count from the moment they start.
 - Server (seat desk): after a server restart, a game that rejoined by itself kept its old seat while the desk thought
   that seat was free, and gave it to the next player - who was never let in (seen on the shared server: 4 tries in 12
   minutes). The desk now reads who is in the game and never gives a seat, or the projector, that another PC is
