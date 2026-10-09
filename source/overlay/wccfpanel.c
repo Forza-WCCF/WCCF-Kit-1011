@@ -3512,7 +3512,7 @@ static int  g_ncl = 0, g_ncsq = 0, g_ncbak = 0, g_club = 0;
 // YOUR CARDS (the player, 2026-10-06: "multiple cards ... create a new club card"; switched "with a restart"): the view's
 // "wallet|FILE|CLUB|SUMMARY" lines; a choice writes card=FILE (or card=new) into data\panel.txt and asks for
 // RESTART NOW; play.py switches the files while nothing runs (club_wallet.py).  Not during a card session.
-struct CWal { char file[64], club[40], summary[48]; };
+struct CWal { char file[64], club[40], summary[48]; int dead; };   // dead: transferred, the game will not play it
 #define MAXWAL  16                        // other clubs read from the view (2026-10-08: was 8)
 #define WAL_NEW 99                        // g_wal_armed / a pick: NEW CLUB CARD (was 8 - a 9th card would have been it)
 #define WAL_FIX 98                        // g_wal_armed / a pick: CLEAR BAD ENDINGS
@@ -3586,7 +3586,8 @@ static void club_read(void)
             lstrcpynA(sess, f[1], sizeof sess);
         } else if (!strcmp(f[0], "wallet") && nf >= 4 && ncw < MAXWAL) {
             lstrcpynA(cw[ncw].file, f[1], sizeof cw[0].file); lstrcpynA(cw[ncw].club, f[2], sizeof cw[0].club);
-            lstrcpynA(cw[ncw].summary, f[3], sizeof cw[0].summary); ncw++;
+            lstrcpynA(cw[ncw].summary, f[3], sizeof cw[0].summary);
+            cw[ncw].dead = nf >= 5 && !strcmp(f[4], "transferred"); ncw++;
         }
     }
     free(buf);
@@ -3861,7 +3862,13 @@ static void club_draw(IDirect3DDevice9 *dev)
             }
         }
         for (i = 0; i < g.n; i++)
-            set_chip(dev, g.use[i], armed == g.first + i ? "CLICK AGAIN" : "PLAY THIS CLUB", armed == g.first + i, s);
+            if (!g_wal[g.first + i].dead)
+                set_chip(dev, g.use[i], armed == g.first + i ? "CLICK AGAIN" : "PLAY THIS CLUB", armed == g.first + i, s);
+        if (g_font_tex) {                                // a transferred card: a word, not a button
+            set_picture(dev, g_font_tex, 1);
+            for (i = 0; i < g.n; i++)
+                if (g_wal[g.first + i].dead) put_in_rect(dev, g.use[i], 0.40f * s, grey, "TRANSFERRED");
+        }
         if (g.paged) {
             set_chip(dev, g.prev, "< PREV", 0, s);
             set_chip(dev, g.next, "NEXT >", 0, s);
@@ -3902,7 +3909,7 @@ static void club_click(HWND h, int x, int y)
         LeaveCriticalSection(&g_board_cs);
         return;
     }
-    for (i = 0; i < g.n; i++) if (in_rect(&g.use[i], x, y)) pick = g.first + i;
+    for (i = 0; i < g.n; i++) if (in_rect(&g.use[i], x, y) && !g_wal[g.first + i].dead) pick = g.first + i;
     if (in_rect(&g.newc, x, y)) pick = WAL_NEW;
     if (in_rect(&g_cfix, x, y)) pick = WAL_FIX;
     if (pick < 0) { LeaveCriticalSection(&g_board_cs); return; }

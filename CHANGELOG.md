@@ -4,6 +4,15 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
+## Unreleased
+
+### Added
+- When a contract ends, the game's own manager transfer works: put the card in again after the last match, and the
+  card reader stand-in puts a blank new card beside it, as if two cards were stacked on the arcade's reader. The game
+  moves the manager (name, salary, level, record, titles, division) to the new card and you make a new club in Club
+  Make. At the next start the new club is in the slot and the old card goes to YOUR CARDS as "CLUB - transferred"
+  (the game will not play it again: no PLAY THIS CLUB for it). The CLUB CARD panel says when a contract has ended.
+
 ## Kit 5.4 - 2026-10-09
 
 ### Added

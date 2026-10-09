@@ -39,6 +39,8 @@ def club_label(card):
         d = D.decode(D.copy_of(blocks, chosen))
         lg = D.league(d)
         name = V.ascii_name(D.text(d[("Club", 0, "CLUB_NAME")])) or None
+        if used_up(card):                                # its manager moved to a new card (finish_transfer)
+            return name, "transferred to a new card"    # short: YOUR CARDS has ~27 letters beside its button
         return name, "Div %d %s, W%d D%d L%d%s" % (lg["division"], V.ordinal(lg["position_computed"]), lg["win"],
                                                     lg["draw"], lg["lose"], ", %d bad" % bad if bad else "")
     except Exception as ex:                              # a card the decoder cannot take: say so, never raise
@@ -98,6 +100,13 @@ def counter(card):
     return raw[5] | raw[6] << 8 if len(raw) == 7 else None
 
 
+def used_up(card):
+    """True for a card the game will not play again: counter low byte 0, its manager moved to a new card (Sega's
+    transfer) - kept in your cards as a record, never put back in the slot"""
+    c = counter(card)
+    return c is not None and c != 0xFFFF and c & 0xFF == 0
+
+
 def finish_transfer(slot=None, new=None, folder=None):
     """after Sega's manager transfer (2026-10-08: the card reader puts a blank card beside an expired one, the game
     moves the manager to it, makes a new club there and marks the old card used up - counter 0, its club still on
@@ -142,6 +151,9 @@ def switch(request, slot=None, folder=None):
             return False, "%s is not in your cards (any more) - the card in the slot stays" % req
         if K.card_session(target)[0] in ("unreadable", "none"):
             return False, "%s cannot be read - it stays in your cards, the card in the slot stays" % req
+        if used_up(target):
+            return False, "%s is transferred - the game will not play it again; it stays in your cards, the card in " \
+                          "the slot stays" % req
     os.makedirs(folder, exist_ok=True)
     put_away = ""
     if os.path.isfile(slot):                             # 1: the card in the slot goes to your cards, by club name
