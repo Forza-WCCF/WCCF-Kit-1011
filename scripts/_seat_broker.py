@@ -21,10 +21,20 @@ Who is on which seat comes from control's debug log (_dbg_control.txt beside thi
 "sateID=n" then "++ACCEPT++ 'address'" = a cabinet on seat n, "---DISCONNECT--- sateID=n" = gone; sateID 0 is the
 projector. The same address may take its seat back (WANT SEAT n), and the projector's role is not given out while
 another address shows the projector. Two PCs behind one router share an address: the desk cannot tell them apart.
+
+THE PROJECTOR BOX ON HOLD (2026-10-09): a machine that only shows the projector (a stream box) is kept out of the game
+until a player is in it.  On the shared server every run whose FIRST client was that box took (almost) no player in
+afterwards - 6 runs, 1 player let in of about 17 tries - and every run a player joined first took everyone (3 runs);
+a pattern, not a proof.  data\hold_projector.txt (the data folder above this desk's logs) names the box's address.
+While no player is in the game and the box is not in it, a Windows firewall rule ("WCCF hold projector box") keeps
+that address off TCP 20002; as soon as a player is in, it is lifted and the box joins in seconds.  Looked at every
+second.  The box asks "HOLD" -> "HOLD 1" (held) or "HOLD 0", and its keeper does not restart it while it is held.
+No file: nothing is held (every other server).  Needs the rights to change the firewall (the server task's SYSTEM).
 """
 import os
 import re
 import socket
+import subprocess
 import sys
 import threading
 import time
@@ -112,6 +122,72 @@ class InGame:
 
 in_game = InGame(os.environ.get("WCCF_CONTROL_LOG") or "")
 
+HOLD_RULE = "WCCF hold projector box"
+hold_ip, held, hold_fails = None, None, 0        # the box's address; held now (None = not set yet); failed tries
+
+
+def read_hold_ip(path):
+    """the address in data\\hold_projector.txt (its first word, four numbers 0-255), or None"""
+    try:
+        with open(path, encoding="ascii", errors="replace") as f:
+            words = f.read().split()
+    except OSError:
+        return None
+    ip = words[0] if words else ""
+    parts = ip.split(".")
+    return ip if len(parts) == 4 and all(p.isdigit() and int(p) < 256 for p in parts) else None
+
+
+def firewall(block):
+    """the hold rule on (block hold_ip on TCP 20002) or off; never two of it.  WCCF_HOLD_FW=FILE (the tests): a line
+    "block ADDRESS" or "open" is added to FILE instead"""
+    test = os.environ.get("WCCF_HOLD_FW")
+    if test:
+        try:
+            with open(test, "a", encoding="ascii") as f:
+                f.write(("block %s\n" % hold_ip) if block else "open\n")
+            return True
+        except OSError:
+            return False
+    netsh = [os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32", "netsh.exe"), "advfirewall", "firewall"]
+    try:
+        subprocess.run(netsh + ["delete", "rule", "name=" + HOLD_RULE], capture_output=True, timeout=30,
+                       creationflags=0x08000000)
+        if not block:
+            return True
+        r = subprocess.run(netsh + ["add", "rule", "name=" + HOLD_RULE, "dir=in", "action=block", "protocol=TCP",
+                                    "localport=20002", "remoteip=" + hold_ip], capture_output=True, timeout=30,
+                           creationflags=0x08000000)
+        return r.returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+def hold_tick():
+    """the box held while no player is in the game and it is not in it itself; a change is logged"""
+    global held, hold_fails
+    with lock:
+        game = in_game.now()
+    player = any(s >= 1 for s in game)
+    want = not player and game.get(0) != hold_ip
+    if want == held:
+        return
+    if not firewall(want):
+        hold_fails += 1
+        if hold_fails in (1, 60) or hold_fails % 600 == 0:
+            log("projector box %s: the firewall rule could not be %s (try %d) - is this the server task (SYSTEM)?" % (
+                hold_ip, "set" if want else "lifted", hold_fails))
+        return
+    held, hold_fails = want, 0
+    log("projector box %s: %s" % (hold_ip, "held - it joins the game once a player is in" if want else
+                                  "let in - a player is in the game" if player else "in the game - not held"))
+
+
+def hold_loop(end):
+    while time.time() < end:
+        hold_tick()
+        time.sleep(1.0)
+
 
 def serve(conn, peer):
     global projector, next_id
@@ -120,6 +196,9 @@ def serve(conn, peer):
     try:
         words = read_line(conn, buf).split()
         ip = peer.rsplit(":", 1)[0]
+        if words == ["HOLD"]:                                       # the projector box: held? (no seat taken)
+            conn.sendall(b"HOLD 1\n" if held else b"HOLD 0\n")
+            return
         with lock:
             game = in_game.now()
             others = {s: a for s, a in game.items() if a != ip}     # seats another address has in the game
@@ -171,7 +250,7 @@ def serve(conn, peer):
 
 
 def main(argv):
-    global log_file
+    global log_file, hold_ip
     life = float(argv[0]) if argv else 12 * 3600
     log_file = argv[1] if len(argv) > 1 else None
     if not in_game.path and log_file:                               # control's debug log is beside this desk's log
@@ -186,6 +265,11 @@ def main(argv):
     srv.settimeout(1.0)
     log("seat broker listening on TCP %d: seats 1-8, the first PC also shows the projector" % PORT)
     end = time.time() + life
+    data =os.path.dirname(os.path.dirname(os.path.abspath(log_file))) if log_file else ""
+    hold_ip = read_hold_ip(os.environ.get("WCCF_HOLD_FILE") or os.path.join(data, "hold_projector.txt"))
+    if hold_ip:
+        hold_tick()                                                 # at once: the box must not be the first in
+        threading.Thread(target=hold_loop, args=(end,), daemon=True).start()
     while time.time() < end:
         try:
             conn, addr = srv.accept()
