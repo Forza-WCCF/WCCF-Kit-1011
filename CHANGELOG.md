@@ -12,6 +12,20 @@ game is not included. Newest first; each date is the day that kit was built.
   moves the manager (name, salary, level, record, titles, division) to the new card and you make a new club in Club
   Make. At the next start the new club is in the slot and the old card goes to YOUR CARDS as "CLUB - transferred"
   (the game will not play it again: no PLAY THIS CLUB for it). The CLUB CARD panel says when a contract has ended.
+- CATALOGUE: the search takes several words, and a card must match each one: a name, club, country or season
+  (`milan 2004`), a line (`fw`) or a role (`dmf`: cards rated 8 or more in it). `brazil fw`, `italy cb`.
+- CATALOGUE: the card's pane lists the three roles the card suits best, out of 10 (`ROLES  DMF 10  CMF 7  CVR 5`):
+  the game's own numbers (the player record's first 16 hidden values); the role names are inferred from the players
+  rated 10 in each.
+- FORMATION BOARD: resting the mouse on a card on the table (the big card) also shows its name, line, total and roles.
+- Logs: older runs are no longer deleted. `data\logs\previous` is still the run before; the runs before it are
+  zipped into `data\logs\archive` (about the last 200 MB, the oldest go first).
+
+### Fixed
+- The key driver could end when its input file stayed busy (an antivirus scan, for one): every key and controller
+  button dead, the last one held, the game going on by itself. A possible cause of the freeze reported in team
+  training and the locker room (not confirmed). It now tries again on its next round; if it ever stops anyway,
+  `data\logs\keys_crash.txt` says why.
 
 ## Kit 5.4 - 2026-10-09
 

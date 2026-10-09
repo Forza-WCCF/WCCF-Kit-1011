@@ -44,7 +44,8 @@ The SETTINGS panel in seat 1's window writes data\panel.txt (2026-10-06): "play_
 "remote" next to a server started on this PC with "server" uses that server's scene service and keeps its logs
 (the cabinets' logs of the run before are then not kept); if such a start fails, everything on this PC is stopped,
 the server too.
-Logs: data\logs\ (the run before: data\logs\previous\); the key driver's is run_keys.txt.
+Logs: data\logs\ (the run before: data\logs\previous\; older runs zipped in data\logs\archive\, the oldest dropped
+past ARCHIVE_LIMIT); the key driver's is run_keys.txt.
 Exit: 0 ok, 1 a step failed, 2 not set up, 3 refused.
 """
 import json
@@ -55,6 +56,7 @@ import socket
 import subprocess
 import sys
 import time
+import zipfile
 
 import kit_common as K
 
@@ -264,12 +266,44 @@ def wait_for(what, test, seconds, proc=None, log_name=None):
     raise Failed("%s did not come up%s" % (what, (" - see data\\logs\\%s" % log_name) if log_name else ""))
 
 
+ARCHIVE_LIMIT = 200 * 1024 * 1024       # data\logs\archive: zipped runs kept up to this many bytes, the oldest go first
+
+
+def archive_run(folder, archive, limit=ARCHIVE_LIMIT):
+    r"""a run's log folder -> archive\run-<time of its last write>.zip (2026-10-09: the player's freeze was two runs
+    back, gone with the old rmtree).  Then the oldest zips go until the archive fits in `limit`.  True = zipped."""
+    files = [os.path.join(d, n) for d, _, ns in os.walk(folder) for n in ns]
+    if not files:
+        return False
+    os.makedirs(archive, exist_ok=True)
+    stamp = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime(max(os.path.getmtime(f) for f in files)))
+    out, n = os.path.join(archive, "run-%s.zip" % stamp), 2
+    while os.path.exists(out):
+        out, n = os.path.join(archive, "run-%s (%d).zip" % (stamp, n)), n + 1
+    with zipfile.ZipFile(out + ".tmp", "w", zipfile.ZIP_DEFLATED) as z:
+        for f in files:
+            z.write(f, os.path.relpath(f, folder))
+    os.replace(out + ".tmp", out)
+    zips = sorted(os.path.join(archive, n) for n in os.listdir(archive) if n.endswith(".zip"))   # names sort by time
+    total = sum(os.path.getsize(z) for z in zips)
+    for z in zips[:-1]:                                  # the newest stays, however big
+        if total <= limit:
+            break
+        total -= os.path.getsize(z)
+        os.remove(z)
+    return True
+
+
 def rotate_logs():
     os.makedirs(K.LOGS, exist_ok=True)
     prev = os.path.join(K.LOGS, "previous")
     if os.path.isdir(prev):
+        try:
+            archive_run(prev, os.path.join(K.LOGS, "archive"))
+        except (OSError, zipfile.BadZipFile) as ex:     # never a reason not to start: the old run's logs just go
+            say("  logs: the run before last not archived (%s)" % ex)
         shutil.rmtree(prev)
-    names = [n for n in os.listdir(K.LOGS) if n != "previous"]
+    names = [n for n in os.listdir(K.LOGS) if n not in ("previous", "archive")]
     if names:
         os.makedirs(prev)
         for n in names:

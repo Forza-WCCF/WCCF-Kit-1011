@@ -4,6 +4,7 @@
 #   play.py's choice when a game window ends: a closed window stops the rest, a crash does not (source\test_ended.py)
 #   the club card editor's self-test (edit_club_card.py --self-test: cards made in memory, no real card)
 #   a missing club-card helper file never stops a start (source\test_card_fix.py: a scratch panel.txt)
+#   the run before last zipped into data\logs\archive, the archive kept to its size (source\test_log_archive.py)
 #   a transferred card is listed as such and never played again (source\test_wallet_transferred.py: scratch cards)
 #   the panel's money and relay self-tests (wccfpanel.dll loaded by source\build\fakegame.exe, in a scratch folder;
 #   the relay test plays two seats through scripts\_relay.py on 127.0.0.1:20941 - the C side and the Python side
@@ -30,6 +31,9 @@ if ($LASTEXITCODE) { $failed += 'club card editor self-test' }
 
 & $py -I (Join-Path $PSScriptRoot 'test_card_fix.py')
 if ($LASTEXITCODE) { $failed += 'a missing card helper file must not stop a start' }
+
+& $py -I (Join-Path $PSScriptRoot 'test_log_archive.py')
+if ($LASTEXITCODE) { $failed += 'logs: the run before last zipped, the archive kept to its size' }
 
 & $py -I (Join-Path $PSScriptRoot 'test_wallet_transferred.py')
 if ($LASTEXITCODE) { $failed += 'a transferred card: listed as such, never played again' }
