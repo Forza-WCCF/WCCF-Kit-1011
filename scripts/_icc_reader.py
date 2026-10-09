@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """Stand-in for the player cabinet's Club Team Card reader (WCCF 2010-11), served over a named pipe.
 
-    python .work/_icc_reader.py PIPE_NAME SECONDS [LOGFILE] [CARDFILE]
-    python .work/_icc_reader.py \\\\.\\pipe\\wccf_icc_seat1 6000 _icc_seat1_log.txt _card_seat1.bin
+    python .work/_icc_reader.py PIPE_NAME SECONDS [LOGFILE] [CARDFILE] [NEWCARDFILE]
+    python .work/_icc_reader.py \\\\.\\pipe\\wccf_icc_seat1 6000 _icc_seat1_log.txt _card_seat1.bin _card_seat1.new.bin
 
 The game opens "COM1" (client FUN_004d5820); the winmm hook, started with
 MXHOOK_COM=COM1=\\\\.\\pipe\\wccf_icc_seat1, hands it this pipe instead. This file answers like the reader.
@@ -20,6 +20,14 @@ then replaces the card in one step, so a kill, a crash or a power cut can never 
 first save of a session (no save for BACKUP_GAP s) the card on disk is copied into the backup folder beside it. A
 card file of the wrong size is refused, not touched. Exit 0 after SECONDS, 2 when the pipe or the card file cannot
 be used.
+
+NEWCARDFILE (2026-10-08) gives the reader room for a second card, as Flycast's had: when the club card has expired
+(its counter's low byte is 1 - the contract ended, or the card's life ran out) a blank card with its own id is put
+beside it in NEWCARDFILE, and the game runs Sega's manager transfer (the manager goes to the new card, a new club is
+made on it, the old card is marked used up: counter 0, its club left on it). At the next card check the old card is
+off the reader and the new one plays; club_wallet.finish_transfer() swaps the two files at the next start. Which cards
+lie on the reader is decided only at LoadKey, the start of the game's card check - never in the middle of a session.
+Without NEWCARDFILE the reader holds one card, as before.
 """
 import ctypes
 import ctypes.wintypes as w
@@ -101,6 +109,21 @@ class Card:
         self.last_save = 0.0
         if path and os.path.exists(path):
             self.load(path)
+
+    @classmethod
+    def blank(cls, path):
+        """a fresh BLANK card with its own id, for a transfer: two cards with the kit's one UID could not be told
+        apart (the game re-selects each card by UID).  Block 0 = UID + its check byte (the XOR of the four) + 18 02 00,
+        as on the kit's card; its own serial, above the 10,000,000 the game requires."""
+        c = cls()
+        uid = bytes(c.uid)
+        while uid == bytes(c.uid) or uid[0] == 0x88:   # 0x88 is MIFARE's cascade tag, never a UID's first byte
+            uid = os.urandom(4)
+        c.uid = uid
+        c.blocks[0][:] = uid + bytes([uid[0] ^ uid[1] ^ uid[2] ^ uid[3], 0x18, 0x02, 0x00]) + bytes(8)
+        c.blocks[6][12:16] = (10000002 + int.from_bytes(os.urandom(3), "big")).to_bytes(4, "big")
+        c.path = path
+        return c
 
     def load(self, path):
         with open(path, "rb") as f:
@@ -190,24 +213,83 @@ class CardFileError(Exception):
 class Reader:
     """Answers one command (cmd, data) -> (status, reply_data). status 0 = OK. Implements the 12 commands
     the game uses (icc_protocol_notes.md section 2); block 4 writes MUST fail (a successful one = the game
-    rejects the card). 'A' Request returns 0 when a card is present and not halted, 0x01 otherwise."""
+    rejects the card). 'A' Request returns 0 when a card is present and not halted, 0x01 otherwise.
+    The cards on the reader are `field`; `card` is the selected one, which every block command reads or writes.  As a
+    real reader: Anticoll answers with the first card that is awake, a Halt puts the selected card to sleep, so the
+    next Request reaches the other one, and RF Control wakes them all.  The game re-selects a card by comparing its UID
+    and halting the wrong one (client FUN_004d6a90), so this order is all a second card needs."""
 
-    def __init__(self, card, log):
-        self.card, self.log = card, log
+    def __init__(self, card, log, new_path=None):
+        self.main, self.log, self.new_path = card, log, new_path
+        self.second = None                           # the card beside it: a blank for a transfer, then the new club
+        self.bad_new = False                         # NEWCARDFILE could not be loaded: never written over
+        self.field = [card]
+        self.card = card
+
+    def lay_out(self):
+        """which cards lie on the reader for the card check now starting (the class docstring of the module)"""
+        if not self.new_path:
+            return
+        main, sec = self.main, self.second
+        if sec is None and not self.bad_new and os.path.exists(self.new_path):
+            try:
+                sec = Card(self.new_path)
+                sec.log = main.log
+            except CardFileError as e:
+                self.bad_new = True
+                self.log("NEW CARD FILE REFUSED: %s - only the club card is on the reader" % e)
+        low = main.counter & 0xFF
+        if low == 0 and sec is not None and sec.counter == 0xFFFF:
+            # Sega's order marks the old card used up (job 4) BEFORE it writes the new one: a cut in between leaves
+            # the old club untouched on a "used up" card and a still-blank new one - set the old card back to expired
+            # and the transfer simply runs again
+            main.counter = 0xFF01
+            main.save()
+            self.log("  the last transfer was cut half way - the old card is expired again (0xFF01), it runs again")
+            low = 1
+        if low == 0 and sec is not None:
+            field = [sec]                            # transfer done: the old card is off the reader
+        elif low == 1 and not self.bad_new:
+            if sec is None:
+                sec = Card.blank(self.new_path)
+                sec.log = main.log
+                sec.save()
+                self.log("  contract ended: a NEW blank card (id %s) is on the reader beside the club card - the game "
+                         "moves the manager to it" % sec.uid.hex(" "))
+            if sec.counter == 0xFFFF:
+                field = [main, sec]
+            else:
+                field = [main]
+                self.log("  %s is a written card, not a blank - not put beside the expired one" % self.new_path)
+        else:
+            field = [main]
+        if [id(x) for x in field] != [id(x) for x in self.field]:
+            self.log("  on the reader now: %s" % ", ".join("%s (counter 0x%04X)" % (x.uid.hex(" "), x.counter)
+                                                          for x in field))
+        self.second, self.field = sec, field
+        if self.card not in field:
+            self.card = field[0]
 
     def answer(self, cmd, data):
         c = self.card
-        if cmd == 0x4E:                              # 'N' RF Control: also un-halts
-            c.halted = False
+        if cmd == 0x4E:                              # 'N' RF Control: wakes every card on the reader
+            for x in self.field:
+                x.halted = False
             return 0, b""
-        if cmd == 0x4C:                              # 'L' LoadKey: accept any key
+        if cmd == 0x4C:                              # 'L' LoadKey: accept any key - the game's card check starts here
+            self.lay_out()
             return 0, b""
-        if cmd == 0x41:                              # 'A' Request
-            return (0, b"") if (c.present and not c.halted) else (0x01, b"")
-        if cmd == 0x42:                              # 'B' Anticoll -> 4-byte UID
-            return 0, bytes(c.uid[:4])
-        if cmd == 0x43:                              # 'C' Select
-            return 0, b""
+        if cmd == 0x41:                              # 'A' Request: is a card awake?
+            return (0, b"") if any(x.present and not x.halted for x in self.field) else (0x01, b"")
+        if cmd == 0x42:                              # 'B' Anticoll -> the first awake card's 4-byte UID
+            awake = [x for x in self.field if x.present and not x.halted]
+            return (0, bytes(awake[0].uid[:4])) if awake else (0x01, b"")
+        if cmd == 0x43:                              # 'C' Select: the card with that UID
+            for x in self.field:
+                if bytes(x.uid[:4]) == bytes(data[:4]):
+                    self.card = x
+                    return 0, b""
+            return 0x01, b""
         if cmd == 0x45:                              # 'E' Halt
             c.halted = True
             return 0, b""
@@ -251,6 +333,7 @@ def main(argv):
     pipe_name, seconds = argv[0], int(argv[1])
     logf = open(argv[2], "a", encoding="utf-8") if len(argv) > 2 else None
     cardfile = argv[3] if len(argv) > 3 else None
+    newfile = argv[4] if len(argv) > 4 and cardfile else None
     t0 = time.time()
 
     def log(msg):
@@ -271,9 +354,10 @@ def main(argv):
         log("cannot create pipe %s (err %d) - another reader running?" % (pipe_name, k.GetLastError()))
         return 2
     kind = "NEW (blank, counter 0xFFFF)" if card.counter == 0xFFFF else "existing (counter 0x%04X)" % card.counter
-    log("card reader stand-in on %s for %d s; a card IS on the reader: %s%s" % (
-        pipe_name, seconds, kind, (" <- %s" % cardfile) if cardfile else ""))
-    reader = Reader(card, log)
+    log("card reader stand-in on %s for %d s; a card IS on the reader: %s%s%s" % (
+        pipe_name, seconds, kind, (" <- %s" % cardfile) if cardfile else "",
+        ("; room for a second card (a manager transfer) in %s" % newfile) if newfile else ""))
+    reader = Reader(card, log, newfile)
     buf = (ctypes.c_char * 4096)()
     got = w.DWORD()
 

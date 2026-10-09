@@ -19,6 +19,7 @@ import kit_common as K
 
 SLOT = os.path.join(K.SAVE, "seat1_club.bin")
 WALLET = os.path.join(K.SAVE, "cards")
+NEW = os.path.join(K.SAVE, "seat1_club.new.bin")      # the second card of a manager transfer (_icc_reader.py)
 
 
 def club_label(card):
@@ -85,6 +86,45 @@ def move_board(card_from, card_to):
             n += 1
         os.rename(dst, "%s (%d)" % (dst, n))
     os.rename(src, dst)
+
+
+def counter(card):
+    """a card file's use counter (header bytes 5-6: 0xFFFF blank, low byte 1 expired, 0 used up), or None"""
+    try:
+        with open(card, "rb") as f:
+            raw = f.read(7)
+    except OSError:
+        return None
+    return raw[5] | raw[6] << 8 if len(raw) == 7 else None
+
+
+def finish_transfer(slot=None, new=None, folder=None):
+    """after Sega's manager transfer (2026-10-08: the card reader puts a blank card beside an expired one, the game
+    moves the manager to it, makes a new club there and marks the old card used up - counter 0, its club still on
+    it): the old card goes to your cards as "CLUB - transferred", its table with it, and the new card into the slot.
+    At a start, while nothing runs (play.py, before the card reader).  -> (done, what to say); (False, "") when there
+    is nothing to finish - no transfer, or one not done yet (the new card still blank).  Two renames, either order of
+    a stop is finished at the next start; no card is ever overwritten."""
+    slot, new, folder = slot or SLOT, new or NEW, folder or WALLET
+    old_c, new_c = counter(slot), counter(new)
+    if new_c is None or new_c == 0xFFFF:
+        return False, ""
+    if old_c is None and not os.path.exists(slot):       # stopped between the two renames: the second one now
+        os.rename(new, slot)
+        return True, "manager transfer finished: the new club is in the slot"
+    if old_c is None or old_c & 0xFF != 0:
+        return False, ""
+    if K.card_session(new)[0] in ("unreadable", "none"):
+        return False, "the new card from the transfer cannot be read - both cards stay where they are"
+    os.makedirs(folder, exist_ok=True)
+    name, _summary = club_label(slot)
+    dst = free_path(safe(name or "club card")[:26] + " - transferred", folder)
+    move_board(slot, dst)                                # the old club's table goes with it
+    os.rename(slot, dst)
+    os.rename(new, slot)                                 # the new club starts with no table of its own (boards.py)
+    new_name, _summary = club_label(slot)
+    return True, "manager transfer finished: %s went to your cards (%s, the game will not play it again); %s is in " \
+                 "the slot" % (name or "the old club", os.path.basename(dst), new_name or "the new club")
 
 
 def switch(request, slot=None, folder=None):
