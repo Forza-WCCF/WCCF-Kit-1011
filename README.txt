@@ -201,7 +201,8 @@ GOOD TO KNOW
   - Logs are in data\logs ("PLAY.exe debug" keeps more; the card reader's full log grows about 60 MB an hour).
     If a game window closes by itself, its log (run_seat1.txt, run_projector.txt or run_server.txt) says how,
     and for the game's own "invalid parameter" stop it names the function that caused it - share that log.
-    The previous run's logs are in data\logs\previous.
+    The previous run's logs are in data\logs\previous; older runs are zipped in data\logs\archive (about the
+    last 200 MB of them, the oldest go first).
   - Seat 1 used to close itself at the start of some matches: the game draws a text it cannot format (a stray %).
     The panel now catches that one case: the text is shown as it is, the game goes on, and the text is written to
     seat1\wccfpanel.log (beside the game folder) as a "badfmt:" line - please share that line.

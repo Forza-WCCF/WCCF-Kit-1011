@@ -364,18 +364,24 @@ def file_stamp(path):
 
 
 def write(path, text):
-    """replace the file whole, so the stand-in never reads half of it; retry if it has it open"""
+    """replace the file whole, so the stand-in never reads half of it; retry if it has it open.  Never fatal (2026-10-09):
+    the file held open too long (an antivirus scan, the stand-in) used to raise here and end the driver - every key and
+    controller dead, the last button held, the game going on by itself.  False = not written; the caller tries again."""
     tmp = path + ".tmp"
-    with open(tmp, "w", encoding="ascii", newline="\n") as f:
-        f.write(text)
-    for _ in range(40):
-        try:
-            os.replace(tmp, path)
-            return
-        except PermissionError:
-            time.sleep(0.005)
-    with open(path, "w", encoding="ascii", newline="\n") as f:   # last resort: write in place
-        f.write(text)
+    try:
+        with open(tmp, "w", encoding="ascii", newline="\n") as f:
+            f.write(text)
+        for _ in range(40):
+            try:
+                os.replace(tmp, path)
+                return True
+            except PermissionError:
+                time.sleep(0.005)
+        with open(path, "w", encoding="ascii", newline="\n") as f:   # last resort: write in place
+            f.write(text)
+        return True
+    except OSError:
+        return False
 
 
 # ---- reading the controllers (CONTROLLERS above)
@@ -802,6 +808,7 @@ def selftest():
               "p1=0x80 0x00")
     finally:
         apply_keys(DEFAULTS)
+    check("write: a file it cannot write is not fatal", write(os.path.join(HERE, "no such folder", "x.txt"), "x"), False)
     check("apply_keys(DEFAULTS) leaves no control", (PADS, render({PAD_BUTTON + 1}, False, 0).splitlines()[2]),
           ({}, "p1=0x00 0x00"))
     print("selftest: %d passed, %d failed" % (ok, bad))
@@ -959,8 +966,7 @@ def main(argv):
                     armed = (now + START_DELAY, now + START_MIN)
                 start = start_held(now, "START" in acts, armed)
             text = render(down, card, coin, start)
-            if text != last:
-                write(LIVE, text)
+            if text != last and write(LIVE, text):    # not written (held open): the next round tries again
                 last = text
             for e in events:
                 print(time.strftime("%H:%M:%S"), " ", e)
@@ -972,4 +978,13 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except Exception:                            # the driver's window may be gone with it: keep why for a report
+        import traceback
+        try:
+            with open(os.path.join(os.environ.get("WCCF_LOGS") or HERE, "keys_crash.txt"), "a", encoding="utf-8") as f:
+                f.write("%s\n%s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), traceback.format_exc()))
+        except OSError:
+            pass
+        raise
