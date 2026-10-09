@@ -8,6 +8,8 @@
 /PLAY.exe
 /SETUP.exe
 /ENGLISH.exe
+/version.txt
+/files.txt
 /bin/
 /overlay/wccfpanel.dll
 /overlay/inject.exe

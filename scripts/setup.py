@@ -150,7 +150,7 @@ def make_junction(link, target):
 
 
 def sega_client(game):
-    """path of Sega's client exe: extracted\\'s own, or - while English is on (ENGLISH.exe) - the copy in the backup"""
+    """path of Sega's client exe: extracted\\'s own, or - while English is on - the copy in the backup"""
     p = os.path.join(game, "client_Release.exe")
     b = os.path.join(ENGLISH_BACKUP, "client_Release.exe")
     if K.sha256(p) != SEGA_CLIENT and os.path.isfile(b) and K.sha256(b) == SEGA_CLIENT:
@@ -185,7 +185,7 @@ def check_game(game):
         raise Failed("the game is running - close its window first, then run setup again")
     h = K.sha256(sega_client(game))
     if sega_client(game) != os.path.join(game, "client_Release.exe"):
-        ok("English is on (ENGLISH.exe): Sega's client_Release.exe is checked in data\\english_backup")
+        ok("English is on (SETUP.exe's ENGLISH): Sega's client_Release.exe is checked in data\\english_backup")
     if h == PATCHED_CLIENT:
         raise Failed("the game folder's client_Release.exe is already PATCHED - setup needs the unchanged exe there "
                      "(only seat1\\ gets the patched copy). Put your own unchanged client_Release.exe back first.")
@@ -265,7 +265,7 @@ def setup_seat(game):
     if have == PATCHED_CLIENT:
         ok("client_Release.exe: seat 1's patched copy already in place")
     elif have and have == english_copy(os.path.join("seat1", "client_Release.exe")):
-        ok("client_Release.exe: seat 1's patched copy with the kit's English text (ENGLISH.exe) already in place")
+        ok("client_Release.exe: seat 1's patched copy with the kit's English text already in place")
     else:
         put_file(patched_client(game), exe)
         if K.sha256(exe) != PATCHED_CLIENT:
@@ -298,7 +298,7 @@ def undo(game):
     if K.game_processes(game):
         raise Failed("the game is running - close its window first, then undo")
     if os.path.isfile(os.path.join(ENGLISH_BACKUP, "manifest.json")):
-        raise Failed("English is on - run \"ENGLISH.exe off\" first, so Sega's files go back before the undo")
+        raise Failed("English is on - press JAPANESE in SETUP.exe first, so Sega's files go back before the undo")
     seat = K.seat_dir(game)
     if os.path.isdir(seat):
         if not os.path.isfile(os.path.join(seat, MARKER)):

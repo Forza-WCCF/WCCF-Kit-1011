@@ -1,6 +1,6 @@
 # build.ps1 - every program the kit ships, built from source\ into the places the kit runs them from (2026-10-08):
 #   bin\winmm.dll  bin\FPR_Emu.exe  bin\logowin.exe  overlay\wccfpanel.dll  overlay\inject.exe   (C, 32-bit, MSVC)
-#   PLAY.exe  SETUP.exe  ENGLISH.exe                                                           (Rust, 64-bit)
+#   PLAY.exe  SETUP.exe                                                                        (Rust, 64-bit)
 # and source\build\fakegame.exe (tests only, not shipped).  Git holds none of them: run this after a checkout, or take
 # the kit ZIP that CI makes (.github\workflows\kit.yml runs this same script).
 #
@@ -44,7 +44,7 @@ try {
     & cargo build --release --locked --target x86_64-pc-windows-msvc
     if ($LASTEXITCODE) { throw 'cargo build failed' }
 } finally { Pop-Location }
-foreach ($exe in 'PLAY', 'SETUP', 'ENGLISH') {
+foreach ($exe in 'PLAY', 'SETUP') {
     Copy-Item (Join-Path $src "launcher\target\x86_64-pc-windows-msvc\release\$exe.exe") (Join-Path $kit "$exe.exe")
     Write-Host "built $kit\$exe.exe"
 }

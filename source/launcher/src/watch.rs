@@ -26,6 +26,7 @@ use windows_sys::Win32::Foundation::{
     FALSE, HANDLE, HANDLE_FLAG_INHERIT, SetHandleInformation, TRUE, WAIT_ABANDONED, WAIT_OBJECT_0,
 };
 use windows_sys::Win32::System::Console::{GetStdHandle, STD_ERROR_HANDLE, STD_INPUT_HANDLE, STD_OUTPUT_HANDLE};
+use windows_sys::Win32::System::ProcessStatus::K32EnumProcesses;
 use windows_sys::Win32::System::Threading::{
     CREATE_NEW_PROCESS_GROUP, CREATE_NO_WINDOW, CreateEventW, CreateMutexW, DETACHED_PROCESS, INFINITE, OpenProcess,
     PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_SYNCHRONIZE, QueryFullProcessImageNameW,
@@ -199,6 +200,12 @@ fn is_window_launcher(role: &str) -> bool {
 
 /// A handle to wait on pid, if it runs `python`.
 fn open_if_runs(pid: u32, python: &Path) -> Option<OwnedHandle> {
+    let (process, image) = open_with_image(pid)?;
+    (image == python).then_some(process)
+}
+
+/// The process and the program it runs (canonical path), if this user may look at it.
+fn open_with_image(pid: u32) -> Option<(OwnedHandle, PathBuf)> {
     // SAFETY: the handle is checked, then owned; the buffer and its length go together.
     unsafe {
         let process = owned(OpenProcess(
@@ -212,9 +219,28 @@ fn open_if_runs(pid: u32, python: &Path) -> Option<OwnedHandle> {
         if QueryFullProcessImageNameW(raw(&process), PROCESS_NAME_WIN32, buf.as_mut_ptr(), &mut len) == 0 {
             return None;
         }
-        let image = PathBuf::from(OsString::from_wide(&buf[..len as usize]));
-        (fs::canonicalize(image).ok()? == python).then_some(process)
+        let image = fs::canonicalize(PathBuf::from(OsString::from_wide(&buf[..len as usize]))).ok()?;
+        Some((process, image))
     }
+}
+
+/// A program that runs from the kit folder (the kit's Python, a launcher, the injector ...), this one aside: the game
+/// or a kit tool is on.  SETUP.exe's update writes over the kit only when there is none.
+pub fn kit_program_running(kit: &Kit) -> Option<PathBuf> {
+    let dir = fs::canonicalize(&kit.dir).ok()?;
+    let mut pids = vec![0u32; 4096];
+    let mut bytes = 0;
+    let size = u32::try_from(pids.len() * 4).ok()?;
+    // SAFETY: the buffer holds `size` bytes; Windows writes at most that many and says how many in `bytes`.
+    if unsafe { K32EnumProcesses(pids.as_mut_ptr(), size, &mut bytes) } == 0 {
+        return None;
+    }
+    pids.truncate(bytes as usize / 4);
+    pids.into_iter()
+        .filter(|&pid| pid != std::process::id())
+        .filter_map(open_with_image)
+        .map(|(_, image)| image)
+        .find(|image| image.starts_with(&dir))
 }
 
 /// A name for the kit folder that every build gives the same (FNV-1a over its path, ASCII case folded).
