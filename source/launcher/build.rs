@@ -25,7 +25,10 @@ fn main() {
     let version = env::var("CARGO_PKG_VERSION").expect("CARGO_PKG_VERSION");
     for (bin, what) in [
         ("PLAY", "starts the game: server, projector and seat 1"),
-        ("SETUP", "sets up the game folder, the game's language and the kit's updates"),
+        (
+            "SETUP",
+            "sets up the game folder, the game's language and the kit's updates",
+        ),
     ] {
         let script = out.join(format!("{bin}.rc"));
         let res = out.join(format!("{bin}.res"));
