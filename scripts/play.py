@@ -358,7 +358,7 @@ def drop_panel_line(name, path=None):
 
 def apply_english_request():
     """the SETTINGS panel's "english=on" / "english=off": done now, before anything starts (english.py refuses while
-    the game runs), then taken out of the file - a request, not a lasting setting, so ENGLISH.exe still works"""
+    the game runs), then taken out of the file - a request, not a lasting setting, so SETUP.exe's ENGLISH still works"""
     want = read_panel().get("english", "").lower()
     if want not in ("on", "off"):
         return

@@ -29,9 +29,9 @@ Community-developed launcher, hardware compatibility tools and an in-game overla
 
 1. **You need** Windows 10 or 11 (64-bit), your own copy of the game (Rev D) as a folder of files, and DirectX 9 (Microsoft's June 2010 runtime; SETUP tells you if it is missing).
 2. **Unzip the kit** into a folder of its own.
-3. **Drag your game folder onto `SETUP.exe`** (the one that holds `client_Release.exe`). It checks your copy is Rev D, sets it up and makes the card catalogue (about a minute).
+3. **Drag your game folder onto `SETUP.exe`** (the one that holds `client_Release.exe`), or open `SETUP.exe` and pick it. It checks your copy is Rev D, sets it up and makes the card catalogue (about a minute).
 4. **Double-click `PLAY.exe`.** Click the cabinet's window and play with the keyboard. To quit, close the game's window.
-5. Optional: **`ENGLISH.exe`** puts the game into English.
+5. Optional: **ENGLISH** in `SETUP.exe` puts the game into English. **UPDATE** in `SETUP.exe` puts a newer kit (or a test build) into the folder; your club, keys and settings stay.
 
 Everything else, including every key, setting and panel, is in [README.txt](/README.txt), the guide that comes with the kit.
 

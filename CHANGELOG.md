@@ -7,6 +7,13 @@ game is not included. Newest first; each date is the day that kit was built.
 ## Unreleased
 
 ### Added
+- SETUP.exe is a window: the game folder (BROWSE, or drag it onto the window or onto SETUP.exe) with SET UP /
+  REPAIR and UNDO SETUP; GAME LANGUAGE, ENGLISH or JAPANESE (what ENGLISH.exe did); and UPDATE, the kit's releases
+  and test builds on GitHub. UPDATE downloads the one you pick and copies it over the kit folder - data\ (club
+  cards, keys, settings, logs) is never written, nothing is copied while the game runs - removes the files the old
+  kit had and the new one does not, then offers setup again (and the English, if it is on). The scripts' output shows
+  in the window. Its words are English, or Italian or Japanese when Windows is.
+- The kit ZIP holds version.txt (which kit it is) and files.txt (every file it ships), for UPDATE.
 - When a contract ends, the game's own manager transfer works: put the card in again after the last match, and the
   card reader stand-in puts a blank new card beside it, as if two cards were stacked on the arcade's reader. The game
   moves the manager (name, salary, level, record, titles, division) to the new card and you make a new club in Club
@@ -27,6 +34,9 @@ game is not included. Newest first; each date is the day that kit was built.
 
 ### Changed
 - The formation board shows a card big after the mouse rests on it 1 s (was 8 s).
+
+### Removed
+- ENGLISH.exe: SETUP.exe's GAME LANGUAGE does the same. SETUP.exe removes it, and the .bat files of kits before 5.4.
 
 ### Fixed
 - The key driver could end when its input file stayed busy (an antivirus scan, for one): every key and controller

@@ -3,7 +3,7 @@ name = "wccf-kit-launcher"
 version = "5.4.0"
 edition = "2024"
 rust-version = "1.99"
-description = "PLAY, SETUP and ENGLISH.exe: the WCCF 2010-11 kit's launchers"
+description = "PLAY and SETUP.exe: the WCCF 2010-11 kit's launchers"
 publish = false
 
 [lib]
@@ -16,19 +16,26 @@ path = "src/bin/play.rs"
 
 [[bin]]
 name = "SETUP"
-path = "src/bin/setup.rs"
-
-[[bin]]
-name = "ENGLISH"
-path = "src/bin/english.rs"
+path = "src/bin/setup/main.rs"
 
 [dependencies]
 serde_json = "1.0.151"
 windows-sys = { version = "0.61.2", features = [
     "Win32_Foundation",
+    "Win32_Globalization",
+    "Win32_Graphics_Gdi",
     "Win32_Security",
+    "Win32_System_Com",
     "Win32_System_Console",
+    "Win32_System_LibraryLoader",
+    "Win32_System_ProcessStatus",
+    "Win32_System_SystemServices",
     "Win32_System_Threading",
+    "Win32_UI_Controls",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_Shell",
+    "Win32_UI_Shell_Common",
+    "Win32_UI_WindowsAndMessaging",
 ] }
 
 [lints.rust]

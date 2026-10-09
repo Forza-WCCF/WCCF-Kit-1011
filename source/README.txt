@@ -28,9 +28,9 @@ The C source of every program the kit ships. Each was built with Microsoft's C c
                        header: the steps, and the settings that keep a test off the live game)
                        cl /nologo /O2 /MT /W3 /D_CRT_SECURE_NO_WARNINGS fakegame.c /Fe:fakegame.exe /link d3d9.lib user32.lib
 
-PLAY.exe, SETUP.exe, ENGLISH.exe   launcher\ (Rust; Cargo.lock pins every crate)
+PLAY.exe, SETUP.exe   launcher\ (Rust; Cargo.lock pins every crate)
                        cargo build --release --locked --target x86_64-pc-windows-msvc
-                       then copy target\x86_64-pc-windows-msvc\release\{PLAY,SETUP,ENGLISH}.exe to the kit folder.
+                       then copy target\x86_64-pc-windows-msvc\release\{PLAY,SETUP}.exe to the kit folder.
                        The C runtime is linked in (launcher\.cargo\config.toml); checks: cargo fmt --check,
                        cargo clippy --all-targets -- -D warnings, cargo test
 

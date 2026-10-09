@@ -1,4 +1,4 @@
-//! The kit's launchers, PLAY, SETUP and ENGLISH.exe (in place of the .bat files, 2026-10-08).  Each runs one
+//! The kit's launchers' shared code (in place of the .bat files, 2026-10-08), used by PLAY.exe.  It runs one
 //! kit script with the kit's own Python (python\python.exe) in its window, passes its arguments on as they are and
 //! keeps the window as the .bat did: after a problem until a key is pressed, after a good PLAY for 30 seconds.
 //! PLAY also leaves the run's watcher behind (watch.rs): once a game window is closed, it stops the rest.
@@ -19,7 +19,7 @@ use windows_sys::Win32::System::Console::{
 use windows_sys::Win32::System::Threading::{INFINITE, WaitForSingleObject};
 use windows_sys::core::BOOL;
 
-pub use watch::{spawn_watcher, take_over, watch};
+pub use watch::{kit_program_running, spawn_watcher, take_over, watch};
 
 /// The kit folder: the one this exe is in.
 pub struct Kit {
@@ -31,6 +31,10 @@ impl Kit {
         let exe = env::current_exe().unwrap_or_default();
         let dir = exe.parent().map_or_else(|| PathBuf::from("."), Path::to_path_buf);
         Self { dir }
+    }
+
+    pub fn dir(&self) -> &Path {
+        &self.dir
     }
 
     fn python(&self) -> PathBuf {

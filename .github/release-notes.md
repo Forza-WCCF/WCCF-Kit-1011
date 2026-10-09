@@ -4,9 +4,9 @@ cabinet (seat 1) run on one Windows PC - or play online on a shared server. The 
 **{ZIP}** below.
 
 ### Updating
-Close the game, unzip the new kit over the old folder (your club, keys and settings stay), then `SETUP.exe` again,
-and `ENGLISH.exe` again if you use English. From a kit with `.bat` files: delete the old `PLAY.bat`, `STOP.bat`,
-`SETUP.bat` and `ENGLISH.bat` - the `.exe` files of the same names replace them.
+Close the game, open `SETUP.exe` and pick the new kit under UPDATE (your club, keys and settings stay); it sets up
+the game folder again, and the English if you use it. From a kit without that (Kit 5.4 and older): unzip the new kit
+over the old folder, then `SETUP.exe` - it also removes the old `.bat` files and `ENGLISH.exe`.
 
 ### You need
 Windows 10/11 (64-bit) · your own copy of the game, Rev D, as a folder of files · DirectX June 2010 runtime (setup

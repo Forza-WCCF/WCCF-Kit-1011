@@ -74,14 +74,20 @@ YOU NEED
 SETUP (once)
   1. Unzip this kit into a folder of its own. Keep the game in a folder of its own too (e.g. D:\Games\WCCF).
      Plain paths are safest: the game has trouble with non-English letters in folder names.
-  2. Drag the game folder onto SETUP.exe (or double-click SETUP.exe and drag the folder into its window).
+  2. Drag the game folder onto SETUP.exe. Or open SETUP.exe, pick the game folder (BROWSE, or drag it into the
+     window) and click SET UP / REPAIR.
   3. Setup checks that your copy is Rev D, makes the changes listed under WHAT SETUP CHANGES, then makes the card
-     catalogue and the card pictures from your files (about a minute). Running it again checks and repairs.
-  Updating from an earlier kit: close the game, unzip the new kit over the old folder (data\ keeps your club, your other
-  clubs, settings, keys and catalogue), then SETUP.exe again, and ENGLISH.exe again if you use English (it then also
-  does this kit's newer English: money, the result screen, the shop's name). A server settings file you edited by
-  hand is kept as .before-kit. From a kit with .bat files: delete the old PLAY.bat, STOP.bat, SETUP.bat and
-  ENGLISH.bat (the .exe files of the same names replace them).
+     catalogue and the card pictures from your files (about a minute); what it does shows in SETUP's window.
+     Running it again checks and repairs.
+  SETUP.exe is one window for the rest too: GAME LANGUAGE (see ENGLISH), UNDO SETUP, and UPDATE. Its own words are
+  in English, or in Italian or Japanese when Windows is.
+  Updating: close the game, open SETUP.exe: under UPDATE it lists the kit's releases and test builds on GitHub ("What's
+  new" opens one's page). Pick one, UPDATE: it is downloaded and put into this folder - data\ (your club, your other
+  clubs, settings, keys, catalogue, logs) stays as it is - and the files the old kit had and the new one does not
+  are removed. Then SETUP offers to set up the game folder again, and the English with it if you use English. A
+  server settings file you edited by hand is kept as .before-kit. By hand, or from Kit 5.4 and older: unzip the new
+  kit over the old folder, then open SETUP.exe (it removes the old .bat files and ENGLISH.exe), SET UP / REPAIR,
+  and ENGLISH if you use English.
 
 PLAY
   PLAY.exe starts everything in about 30 seconds: the server, the projector's window, seat 1's window with the
@@ -115,7 +121,7 @@ PLAY
 SETTINGS (left side, under CARD and COIN)
   NOW: the link to the server, your card's session, its bad endings, its last save and backup, the game's text.
   NEXT START: THIS PC (everything on this PC) or ONLINE with a server's address (the cabinets on this PC play on
-  that server), and ENGLISH or JAPANESE (does what ENGLISH.exe does, at the next start). They are kept in
+  that server), and ENGLISH or JAPANESE (does what SETUP.exe's GAME LANGUAGE does, at the next start). They are kept in
   data\panel.txt. RESTART NOW (click it twice) starts the game again with them - not during a match. When the
   server and the language stay the same, only your cabinet restarts and the projector keeps running.
   VIEW, changes at once: LAYOUT CABINET (the cabinet's buttons around the game) or COMPACT (the game larger,
@@ -159,23 +165,23 @@ ONLINE (play with others on one server)
   with its own local address (ipconfig shows it).
 
 ENGLISH (optional)
-  ENGLISH.exe puts the game into English: about 7,200 lines of screen text, the players' names (Sega's own Latin
-  spelling, e.g. M.DIARRA) and skill names, the CPU teams' names, the projector's "Next match" ticker, the
-  dates on seat 1 (e.g. 2026/10/5 on the manager license), money in dollars, and the shop's name on the projector's
-  awards ("Local Shop" - also inside the server program, the only change ENGLISH makes to it).
+  ENGLISH (in SETUP.exe, GAME LANGUAGE) puts the game into English: about 7,200 lines of screen text, the players'
+  names (Sega's own Latin spelling, e.g. M.DIARRA) and skill names, the CPU teams' names, the projector's "Next match"
+  ticker, the dates on seat 1 (e.g. 2026/10/5 on the manager license), money in dollars, and the shop's name on the
+  projector's awards ("Local Shop" - also inside the server program, the only change ENGLISH makes to it).
   Awards the game saved before English was on keep the names they were saved with (e.g. the CPU's Best Eleven
   team, in Japanese, on the projector's MVP and Best Eleven awards).
   With English on, the panel also writes money as one amount with commas ($3,982,700) on seat 1 and the projector.
   Four rare screens still show it in two pieces ("$2 million$299000"): a fan event, a golden age, a financial
   crisis and the end of a contract.
   It is built on your PC from your own game files and every line is checked; the kit holds only the English text.
-  Sega's files are kept in data\english_backup, and "ENGLISH.exe off" puts them back. Close the game first.
+  Sega's files are kept in data\english_backup, and JAPANESE puts them back. Close the game first.
   Still Japanese: country and prefecture names (the game finds its weather table by them, and English ones crash
   the server), the network-ranking areas, and writing that is part of a picture (logos, some titles and buttons).
   The English comes from this kit's translation, from Sega's own English that the game files already hold, and
   from Sega's European English of the older WCCF (lines with the same Japanese).
 
-WHAT SETUP CHANGES   ("SETUP.exe undo" takes all of it back out)
+WHAT SETUP CHANGES   (UNDO SETUP in SETUP.exe takes all of it back out)
   game folder     adds winmm.dll (the kit's hook) and winmm_orig.dll (a copy of your Windows' own winmm.dll)
                   renames logowin.exe to logowin_sega.exe and puts a quiet stand-in in its place
                   (Sega's opens a white window over the whole screen)
@@ -208,7 +214,7 @@ GOOD TO KNOW
     seat1\wccfpanel.log (beside the game folder) as a "badfmt:" line - please share that line.
   - The arcade printed the player cards you earn from a dispenser. There is none here, so the game counted every
     card as owed ("You are owed N Player Card(s)"). The panel now tells the game nothing is owed.
-  - The game is in Japanese; ENGLISH.exe translates most of it (see ENGLISH).
+  - The game is in Japanese; SETUP.exe's ENGLISH translates most of it (see ENGLISH).
   - Windows 11 slows the timers of a program whose window is minimized or covered, and the server's window starts
     minimized: its loop then ran too slowly for the projector's live matches, which stuttered. The kit tells
     Windows not to slow any of the game's programs (data\logs\run_server.txt: "Windows' throttling off").
@@ -226,7 +232,7 @@ FOLDERS
   english\   the kit's English: screen_text.tsv (the translation), sega_rstring.tsv (Sega's European English),
              cpu_names.tsv (team names), exe_text.tsv (the ticker, the dates, money, the shop's name) - text and
              fingerprints only
-  source\    the source of every program in bin\ and overlay\ (C) and of PLAY, SETUP and ENGLISH.exe (Rust,
+  source\    the source of every program in bin\ and overlay\ (C) and of PLAY and SETUP.exe (Rust,
              source\launcher) - source\README.txt: how they were built
   python\    Python 3.13 (python.org's embeddable build) with Pillow
   data\      made on your PC: settings (panel.txt), your club card (save\, with backup\ and your other clubs in

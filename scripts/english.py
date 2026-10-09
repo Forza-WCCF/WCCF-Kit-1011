@@ -3,9 +3,9 @@ r"""english.py - WCCF 2010-11 in English.  Built on this PC from YOUR game files
 with Sega's files kept; "off" puts Sega's back.  Nothing of Sega's ships with the kit: english\ holds only English
 text and fingerprints (SHA-256) of Sega's files.
 
-    python english.py on       (ENGLISH.exe)       build, check, then put the English files in place
-    python english.py off      (ENGLISH.exe off)   Sega's Japanese files back
-    python english.py check    (ENGLISH.exe check) say what "on" would do; changes nothing
+    python english.py on       (SETUP.exe: ENGLISH)   build, check, then put the English files in place
+    python english.py off      (SETUP.exe: JAPANESE)  Sega's Japanese files back
+    python english.py check                           say what "on" would do; changes nothing
 
 What changes, in the game's extracted\ folder (seat 1 reads the same files through setup's folder links):
   data\string\string_list.bin + .hf       the screen text: about 7,200 lines in English
@@ -408,7 +408,7 @@ def turn_on(game, files):
         put(tgt, data)                                   # one step: the game's file is never missing (2026-10-06)
         with open(tgt, "rb") as f:
             if sha(f.read()) != sha(data):
-                raise Failed("%s did not write correctly - run ENGLISH.exe off" % rel)
+                raise Failed("%s did not write correctly - press JAPANESE in SETUP.exe" % rel)
         man[rel]["english"] = sha(data)
     save_manifest(man)
 
@@ -476,8 +476,8 @@ def main(argv):
                   % (len(files), sum(1 for r in files if r not in man)))
             return 0
         turn_on(game, files)
-        print("  ok    %d files in place, each read back.  Sega's are in data\\english_backup (ENGLISH.exe off puts "
-              "them back)." % len(files))
+        print("  ok    %d files in place, each read back.  Sega's are in data\\english_backup (JAPANESE in "
+              "SETUP.exe puts them back)." % len(files))
     except Failed as ex:
         print("  FAIL  %s" % ex)
         return 1
