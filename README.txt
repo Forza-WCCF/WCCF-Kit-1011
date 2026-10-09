@@ -211,8 +211,8 @@ ENGLISH (optional)
 
 WHAT SETUP CHANGES   (UNDO SETUP in SETUP.exe takes all of it back out)
   game folder     adds winmm.dll (the kit's hook) and winmm_orig.dll (a copy of your Windows' own winmm.dll)
-                  renames logowin.exe to logowin_sega.exe and puts a quiet stand-in in its place
-                  (Sega's opens a white window over the whole screen)
+                  (the hook also keeps the server from starting Sega's logowin.exe, which opens a white window
+                  over the whole screen; a kit that had put a stand-in in its place puts Sega's back)
                   adds local\client_user_option.conf (projector) and local\ctrl_user_option.conf (server)
   beside it       seat1\   the player cabinet: links to the game folder's files and folders, its own copy of
                            client_Release.exe with 15 changes (checked byte for byte), its own settings
@@ -251,7 +251,7 @@ GOOD TO KNOW
     it evenly.
 
 FOLDERS
-  bin\       winmm.dll (the hook), FPR_Emu.exe (card-table helper), logowin.exe (stand-in)
+  bin\       winmm.dll (the hook), FPR_Emu.exe (card-table helper)
   overlay\   wccfpanel.dll (the panel; the game's winmm.dll loads it into seat 1, and into the projector for its money
              with commas only), skin.tex (its picture);
              setup adds catalogue.tsv and cards\

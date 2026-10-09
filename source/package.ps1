@@ -18,7 +18,7 @@ if ($LASTEXITCODE) { throw 'git archive failed' }
 if ($LASTEXITCODE) { throw 'tar failed' }
 Remove-Item $tar
 
-$built = 'PLAY.exe', 'SETUP.exe', 'bin\winmm.dll', 'bin\FPR_Emu.exe', 'bin\logowin.exe',
+$built = 'PLAY.exe', 'SETUP.exe', 'bin\winmm.dll', 'bin\FPR_Emu.exe',
          'overlay\wccfpanel.dll'
 foreach ($f in $built) {
     $from = Join-Path $kit $f

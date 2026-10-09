@@ -119,7 +119,7 @@ jobs:
           set -euo pipefail
           ls -l dist
           unzip -Z1 "$ZIP" > entries.txt
-          for f in PLAY.exe SETUP.exe files.txt bin/winmm.dll bin/FPR_Emu.exe bin/logowin.exe \
+          for f in PLAY.exe SETUP.exe files.txt bin/winmm.dll bin/FPR_Emu.exe \
                    overlay/wccfpanel.dll python/python.exe; do
             grep -qxF "WCCF-2010-11-kit/$f" entries.txt || { echo "missing in $ZIP: WCCF-2010-11-kit/$f"; exit 1; }
           done

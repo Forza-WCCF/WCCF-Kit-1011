@@ -17,8 +17,6 @@ The C source of every program the kit ships. Each was built with Microsoft's C c
                        cl /nologo /LD /O2 /MT /W3 /D_CRT_SECURE_NO_WARNINGS mxhook.c /Fe:winmm.dll
   bin\FPR_Emu.exe      fpr_emu\fpr_emu.c
                        cl /nologo /O2 /MT /W3 /D_CRT_SECURE_NO_WARNINGS fpr_emu.c /Fe:FPR_Emu.exe /link user32.lib
-  bin\logowin.exe      logowin\logowin_standin.c
-                       cl /nologo /O2 /MT /W3 /D_CRT_SECURE_NO_WARNINGS logowin_standin.c /Fe:logowin.exe /link /SUBSYSTEM:WINDOWS
   overlay\wccfpanel.dll   overlay\wccfpanel.c
                        cl /nologo /LD /O2 /MT /W3 /D_CRT_SECURE_NO_WARNINGS wccfpanel.c /Fe:wccfpanel.dll
                           /link d3d9.lib gdi32.lib user32.lib ole32.lib windowscodecs.lib
@@ -40,7 +38,6 @@ What each does, in short:
                 every winmm call through, and stands in for the arcade's devices: serial ports to the card reader
                 and I/O board stand-ins (named pipes), the RingEdge memory, the network address (127.0.0.1)
   FPR_Emu.exe   answers the game's card-table polls with the cards in seat1\fpr_table0.txt
-  logowin.exe   Sega's start-up notice window, replaced by one that only records the notice
   wccfpanel.dll the panel around seat 1's picture (drawn with the game's own Direct3D 9 device)
   launchers     run scripts\play.py, setup.py or english.py with the kit's Python and keep the window as the .bat
                 files did; PLAY leaves a windowless watcher (PLAY.exe --watch) that stops the rest of the run once a
