@@ -2,3 +2,5 @@
 .github export-ignore
 .gitattributes export-ignore
 .gitignore export-ignore
+# research notes for the people working on the kit, not for players
+docs export-ignore
