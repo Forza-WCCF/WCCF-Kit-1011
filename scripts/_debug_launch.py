@@ -278,6 +278,8 @@ WOW64_CONTEXT_FULL = 0x00010007
 # (ImageBase 0x400000).  Only this signature in control is ever touched; every other fault is left exactly as before.
 # Off with WCCF_MSGGUARD=0.  Analysis: .work\research\control_crash\ANALYSIS.md.
 MSGPARSE_RET_OFF = 0x1226A          # control+0x1226A: FUN_00412140's instruction right after it calls FUN_00412860
+if os.environ.get("WCCF_MSGGUARD_RET"):  # TESTS ONLY (research\control_crash): a stand-in exe's own return offset
+    MSGPARSE_RET_OFF = int(os.environ["WCCF_MSGGUARD_RET"], 16)
 MSGPARSE_GUARD_ON = os.environ.get("WCCF_MSGGUARD", "1") != "0"
 MSGPARSE_STACK_SCAN = 0x120         # bytes of stack to scan up from ESP for the return address
 MSGPARSE_FRAME_SPAN = 0x90000       # FUN_00412140's frame holds a ~512 KB (0x80000) recv buffer: its &len/&off live here
@@ -444,26 +446,40 @@ class Proc:
     def try_recover_412860(self, tid):
         """If thread tid faulted while control's FUN_00412860 was on the stack (the message reassembler - read OR a
         memcpy it makes), make that function return cleanly (drop the bad message) and return a short note; else None.
-        Only for control_Release, and only when WCCF_MSGGUARD is on."""
+        Only for control_Release, and only when WCCF_MSGGUARD is on.  Every time it steps aside it says why in
+        self.why (2026-10-08: it stepped aside twice on the live server and nothing said why)."""
+        self.why = ""
         if not MSGPARSE_GUARD_ON or self.name.lower() != "control_release.exe":
             return None
         h = self.threads.get(tid, (None, 0))[0]
         if not h:
+            self.why = "no handle for thread %d" % tid
             return None
         ctx = WOW64_CONTEXT()
         ctx.ContextFlags = WOW64_CONTEXT_FULL
         if not k.Wow64GetThreadContext(h, ctypes.byref(ctx)):
+            self.why = "could not read the thread's registers (err %d)" % ctypes.GetLastError()
             return None
         fault_eip = ctx.Eip
         plan = plan_412860_recovery(ctx.Esp, self.rd, self.base, self.end)
         if not plan:
+            stack = self.rd(ctx.Esp, MSGPARSE_STACK_SCAN) or b""
+            ret = (self.base + MSGPARSE_RET_OFF) & 0xFFFFFFFF
+            dw = [struct.unpack_from("<I", stack, o)[0] for o in range(0, len(stack) - 3, 4)]
+            hits = [i * 4 for i, v in enumerate(dw) if v == ret]
+            self.why = "no plan: %d stack bytes at ESP 0x%08X; return 0x%08X at %s; stack: %s" % (
+                len(stack), ctx.Esp, ret, ", ".join(
+                    "+0x%X (then %s)" % (o, " ".join("%08X" % v for v in dw[o // 4 + 1:o // 4 + 4])) for o in hits[:3])
+                or "nowhere", " ".join("%08X" % v for v in dw[:16]))
             return None
         for addr in plan["zero"]:                    # remaining length and offset -> 0: abandon the bad chunk
             if not self.wr(addr, b"\x00\x00\x00\x00"):
+                self.why = "could not write 0x%08X (err %d)" % (addr, ctypes.GetLastError())
                 return None
         for field, val in plan["regs"].items():
             setattr(ctx, field, val)
         if not k.Wow64SetThreadContext(h, ctypes.byref(ctx)):
+            self.why = "could not set the thread's registers (err %d)" % ctypes.GetLastError()
             return None
         return "fault at 0x%08X (%s, frame +0x%X); len@0x%08X=0 off@0x%08X=0 -> return 1 to 0x%08X" % (
             fault_eip, self.name_of(fault_eip), plan["at"], plan["p_len"], plan["p_off"], plan["retaddr"])
@@ -846,6 +862,9 @@ def main(argv):
                         detail, tid))
                     if ec == EXCEPTION_ACCESS_VIOLATION or not first:
                         pr.dump_thread(tid)
+                if ec == EXCEPTION_ACCESS_VIOLATION and first and getattr(pr, "why", ""):
+                    print("  t+%5.1fs MSGPARSE guard stepped aside: %s" % (now, pr.why))
+                    dbg_file.write("t+%6.2fs MSGPARSE guard stepped aside: %s\n" % (now, pr.why))
                 if not first and pid == p.pid:
                     fatal = True
                     k.ContinueDebugEvent(pid, tid, status)
