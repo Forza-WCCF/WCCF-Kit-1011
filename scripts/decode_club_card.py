@@ -32,9 +32,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 try:
     from club_card_schema import FIELDS, GROUP_ORDER, EXE_SHA256
-except ImportError:
-    print("club_card_schema.py is missing: it must sit beside this file (make it with make_schema_module.py)")
-    sys.exit(2)
+except ImportError:      # an error, never an exit: play.py, the panel helper and boards.py load this module themselves
+    raise ImportError("club_card_schema.py is missing: it must sit beside this file "
+                      "(make it with make_schema_module.py)") from None
 
 CARD_BYTES = 16 + 256 * 16          # the kit's card file (_icc_reader.py CARD_BYTES)
 RAW_BYTES = 256 * 16                # a bare block dump, no header

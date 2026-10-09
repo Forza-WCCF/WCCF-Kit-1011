@@ -33,9 +33,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 try:
     import decode_club_card as D
-except ImportError:
-    print("decode_club_card.py and club_card_schema.py must sit beside this file")
-    sys.exit(2)
+except ImportError as e:  # an error, never an exit: play.py loads this module at a start (apply_card_fix)
+    raise ImportError("decode_club_card.py and club_card_schema.py must sit beside this file (%s)" % e) from None
 
 BACKUP_KEEP = 20                    # backups kept in backup\ (the same number the card reader keeps)
 
