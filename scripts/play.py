@@ -228,6 +228,12 @@ def is_cabinet_role(role):
     return role in CABINET_ROLES or bool(re.fullmatch(r"seat \d+ launcher", role or ""))
 
 
+# the overlay (seat 1's panels, the projector's money): the game's winmm.dll (the kit's, mxhook.c) loads it once the
+# game's window is up, in the game itself - for the two windows whose environment names it, never the server.  Before
+# 2026-10-09 overlay\inject.exe wrote it into the running game from outside, which antivirus programs flag
+PANEL = os.path.join(K.OVERLAY, "wccfpanel.dll")
+
+
 def kit_env(game):
     """what every program of a run gets: this PC's environment without an earlier run's MXHOOK_ / WCCF settings, and
     where the game and the logs are"""
@@ -487,6 +493,7 @@ def start_cabinet(debug, env, mode, ip, seat_no, seat, roles):
         senv.update(WCCF_RELAY="%s:%d" % (ip, RELAY_PORT), WCCF_SEAT=str(seat_no))
     if debug:
         senv["MXHOOK_VERBOSE"] = "1"
+    senv["WCCF_PANEL"] = PANEL
     # the cabinet in the seat1 folder SETUP made, whatever its seat number: the number is only its command line
     p = start("_debug_launch.py", [LIFE, "client", "follow", "arg=%d" % seat_no, "dir=" + seat], "run_seat1.txt", senv)
     roles[p.pid] = "seat 1 launcher" if seat_no == 1 else "seat %d launcher" % seat_no
@@ -503,30 +510,22 @@ def start_cabinet(debug, env, mode, ip, seat_no, seat, roles):
     wait_for("seat %d" % seat_no, seat_pid, 30, p, "run_seat1.txt")
     wait_for("seat %d's window" % seat_no, lambda: K.windows_of(found["pid"]), 120, p, "run_seat1.txt")
     say("  5/6 seat %d (the player cabinet) - window up" % seat_no)
-    time.sleep(3)
     olog = os.path.join(seat, "wccfpanel.log")
     skip = len(open(olog, encoding="utf-8", errors="replace").read()) if os.path.exists(olog) else 0
-    try:
-        r = subprocess.run([os.path.join(K.OVERLAY, "inject.exe"), str(found["pid"]),
-                            os.path.join(K.OVERLAY, "wccfpanel.dll")], capture_output=True, text=True, timeout=60)
-        why = "" if r.returncode == 0 else (r.stdout.strip() or r.stderr.strip() or "exit %d" % r.returncode)
-    except (OSError, subprocess.TimeoutExpired) as ex:
-        why = str(ex)
 
     def overlay_up():
         try:
             return "maximized" in open(olog, encoding="utf-8", errors="replace").read()[skip:]
         except OSError:
             return False
-    if why:     # the game runs without the overlay - never a reason to take the game away (2026-10-06)
-        say("  6/6 the overlay did not load (%s) - the game runs without its panels; the keyboard works as usual" %
-            why)
-    else:
-        try:
-            wait_for("the overlay", overlay_up, 60)
-            say("  6/6 overlay in seat %d's window" % seat_no)
-        except Failed:
-            say("  6/6 overlay loaded (it did not report its window yet - see seat1\\wccfpanel.log)")
+    # the game itself loads the overlay: its winmm.dll (the kit's) loads WCCF_PANEL 3 s after this window is up.  The
+    # game runs without it if it does not come - never a reason to take the game away (2026-10-06)
+    try:
+        wait_for("the overlay", overlay_up, 60)
+        say("  6/6 overlay in seat %d's window" % seat_no)
+    except Failed:
+        say("  6/6 the overlay did not report its window (seat1\\wccfpanel.log; data\\logs\\hook says if it loaded) - "
+            "the game runs; the keyboard works as usual")
     if debug:                               # its own window, minimized, as before
         k = start("_keys_seat1.py", [], None, env, show=SW_SHOWMINNOACTIVE)
     else:
@@ -659,7 +658,8 @@ def play(debug, mode="local", ip=None, seat_no=None):
         return 0
 
     if projector:
-        p = start("_debug_launch.py", [LIFE, "client", "follow", "arg=0"], "run_projector.txt", env)
+        p = start("_debug_launch.py", [LIFE, "client", "follow", "arg=0"], "run_projector.txt",
+                  dict(env, WCCF_PANEL=PANEL))     # the overlay too, in its money-only mode (below)
         roles[p.pid] = "projector launcher"
         say("  3/6 projector (seat 0) - its window opens in a few seconds")
     else:
@@ -667,20 +667,8 @@ def play(debug, mode="local", ip=None, seat_no=None):
 
     start_cabinet(debug, env, mode, ip, seat_no, seat, roles)
     # the projector gets the overlay too (2026-10-06), in its money-only mode: its amounts with commas
-    # (wccfpanel.c is_projector - no panels, nothing else); it plays on as before if it does not load
-    if projector:
-        try:
-            m = re.search(r"launched client_Release\.exe pid (\d+)",
-                          open(os.path.join(K.LOGS, "run_projector.txt")).read())
-            r = subprocess.run([os.path.join(K.OVERLAY, "inject.exe"), m.group(1),
-                                os.path.join(K.OVERLAY, "wccfpanel.dll")], capture_output=True, text=True,
-                               timeout=60) if m else None
-            pwhy = "its process was not found" if not m else "" if r.returncode == 0 else (
-                r.stdout.strip() or r.stderr.strip() or "exit %d" % r.returncode)
-        except (OSError, subprocess.TimeoutExpired) as ex:
-            pwhy = str(ex)
-        say("       projector: amounts with commas" if not pwhy else
-            "       projector: its amounts stay without commas (%s)" % pwhy)
+    # (wccfpanel.c is_projector - no panels, nothing else); its winmm.dll loads it (WCCF_PANEL above), and it plays on
+    # as before if it does not load (data\logs\wccfpanel_projector.log)
 
     h = start("_kit_helper.py", [LIFE], "run_helper.txt", env)      # the panels' RESTART NOW (from outside the game)
     roles[h.pid] = "panel helper"

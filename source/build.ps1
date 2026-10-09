@@ -1,5 +1,5 @@
 # build.ps1 - every program the kit ships, built from source\ into the places the kit runs them from (2026-10-08):
-#   bin\winmm.dll  bin\FPR_Emu.exe  bin\logowin.exe  overlay\wccfpanel.dll  overlay\inject.exe   (C, 32-bit, MSVC)
+#   bin\winmm.dll  bin\FPR_Emu.exe  bin\logowin.exe  overlay\wccfpanel.dll                       (C, 32-bit, MSVC)
 #   PLAY.exe  SETUP.exe                                                                        (Rust, 64-bit)
 # and source\build\fakegame.exe (tests only, not shipped).  Git holds none of them: run this after a checkout, or take
 # the kit ZIP that CI makes (.github\workflows\kit.yml runs this same script).
@@ -13,7 +13,7 @@ $src = $PSScriptRoot
 $obj = Join-Path $src 'build'
 New-Item -ItemType Directory -Force $obj, (Join-Path $kit 'bin') | Out-Null
 
-# MSVC for 32-bit x86: the game is 32-bit, so its hook, its panel and the injector must be too
+# MSVC for 32-bit x86: the game is 32-bit, so its hook and its panel must be too
 $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
 $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
 if (-not $vs) { throw 'no Visual Studio with the C++ tools (vswhere found none)' }
@@ -34,7 +34,6 @@ Build-C 'mxhook\mxhook.c' "$kit\bin\winmm.dll" @('/LD')
 Build-C 'fpr_emu\fpr_emu.c' "$kit\bin\FPR_Emu.exe" @() @('user32.lib')
 Build-C 'logowin\logowin_standin.c' "$kit\bin\logowin.exe" @() @('/SUBSYSTEM:WINDOWS')
 Build-C 'overlay\wccfpanel.c' "$kit\overlay\wccfpanel.dll" @('/LD') @('d3d9.lib', 'gdi32.lib', 'user32.lib', 'ole32.lib', 'windowscodecs.lib')
-Build-C 'overlay\inject.c' "$kit\overlay\inject.exe"
 Build-C 'overlay\fakegame.c' "$obj\fakegame.exe" @() @('d3d9.lib', 'user32.lib')
 
 # the launchers: the toolchain is pinned by source\launcher\rust-toolchain.toml, every crate by Cargo.lock, the static
