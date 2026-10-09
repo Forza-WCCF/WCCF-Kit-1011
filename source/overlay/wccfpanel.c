@@ -413,12 +413,12 @@ static const float BTNF[NBTN][4] = {
     {  20/1440.f, 482/900.f,  66/1440.f, 528/900.f },  // LEFT
     { 124/1440.f, 482/900.f, 170/1440.f, 528/900.f },  // RIGHT
     {  72/1440.f, 482/900.f, 118/1440.f, 528/900.f },  // PRESS (centre)
-    {  14/1440.f,  46/900.f,  92/1440.f,  80/900.f },  // DATA
+    {  14/1440.f,  46/900.f, 176/1440.f,  80/900.f },  // DATA  (full width since BACK went, 2026-10-09)
     {1104/1440.f, 700/900.f,1190/1440.f, 786/900.f },  // SHOOT
     {1312/1440.f, 700/900.f,1398/1440.f, 786/900.f },  // KEEPER
     {1208/1440.f, 594/900.f,1294/1440.f, 680/900.f },  // KEY PLAYER
     {1220/1440.f, 520/900.f,1282/1440.f, 582/900.f },  // START
-    {  14/1440.f,  88/900.f,  92/1440.f, 122/900.f },  // CARD
+    {  14/1440.f,  88/900.f, 176/1440.f, 122/900.f },  // CARD  (full width since COIN went)
 };
 
 // A button answers on its whole picture (2026-10-06, the player: "when i click on the button as a whole it takes for the
