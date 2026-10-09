@@ -1238,8 +1238,8 @@ static void board_hover(HWND h, int x, int y)
 #define ADD_Y0 529.0f
 #define ADD_X1 1196.0f
 #define ADD_Y1 569.0f
-struct CatCard { int no; char full[48]; char shown[24]; char pos[4]; char club[28]; char season[16]; char rar[16];
-                 unsigned char st[6]; unsigned char total; };      // st: offence defence technique power speed stamina
+struct CatCard { int no; char full[48]; char shown[24]; char pos[4]; char club[28]; char nat[28]; char season[16];
+                 char rar[16]; unsigned char st[6]; unsigned char total; };   // st: offence defence technique power speed stamina
 static struct CatCard *g_cat = NULL;     // the catalogue, placeholders left out, sorted by the shown name
 static int   g_ncat = 0;
 static int   g_browse = 0;               // the browser is open
@@ -1259,6 +1259,18 @@ static const char *SL_NAME[7] = { "OFF", "DEF", "TEC", "POW", "SPD", "STA", "TOT
 static const int  SL_MIN[7]  = { 1, 1, 1, 1, 1, 1, 60 }, SL_MAX[7] = { 20, 20, 20, 20, 20, 20, 100 };
 static int   g_rlo[7] = { 1, 1, 1, 1, 1, 1, 60 }, g_rhi[7] = { 20, 20, 20, 20, 20, 20, 100 };
 static int   g_sdrag = -1;                                // the handle being dragged: slider*2 + (0 low, 1 high); -1 = none
+// COUNTRY and CLUB (the player, 2026-10-09: "add countries and club filtering to the catalogue"): a chip each in the
+// title line opens a list over the grid - every country (or club) A to Z with its number of cards; typing narrows it,
+// a click picks one, ANY clears.  On the card under the mouse, SAME CLUB and SAME COUNTRY pick that card's own (a
+// second click clears).  Same nationality raises a pair's link grade and the same club starts a new link higher
+// (.work\research\AFFINITY-2010-11.md), so "his countrymen" is how a team that links quickly is found.
+struct Pick { char name[28]; int n; };
+static struct Pick g_pnat[128], g_pclub[128];             // A to Z, with their numbers of cards (made with the catalogue)
+static int   g_npnat = 0, g_npclub = 0;
+static char  g_fnat[28], g_fclub[28];                     // the chosen country and club ("" = any)
+static int   g_pick = 0;                                  // the list open over the grid: 0 none, 1 country, 2 club
+static char  g_pq[28];                                    // what is typed while the list is open
+static int   g_pscroll = 0;                               // the list's first row
 
 static void ranges_reset(void)
 {
@@ -1324,6 +1336,7 @@ static void run_search_locked(void)
         const struct CatCard *c = &g_cat[i];
         if (g_fpos && strcmp(c->pos, POS_CHIP[g_fpos]) != 0) continue;
         if (g_frar && strcmp(c->rar, RAR_NAME[g_frar]) != 0) continue;
+        if ((g_fnat[0] && strcmp(c->nat, g_fnat) != 0) || (g_fclub[0] && strcmp(c->club, g_fclub) != 0)) continue;
         {
             int k, out = 0;
             for (k = 0; k < 6; k++) if (c->st[k] < g_rlo[k] || c->st[k] > g_rhi[k]) out = 1;
@@ -1337,12 +1350,25 @@ static void run_search_locked(void)
     g_scroll = 0; g_bhover = -1;
 }
 
+static void picks_add(struct Pick *p, int *n, int cap, const char *name)   // one more card of this country / club
+{
+    if (!name[0]) return;                                  // no club (25 cards), no country (1): only under ANY
+    for (int i = 0; i < *n; i++) if (strcmp(p[i].name, name) == 0) { p[i].n++; return; }
+    if (*n < cap) { lstrcpynA(p[*n].name, name, sizeof p[0].name); p[*n].n = 1; (*n)++; }
+}
+
+static int pick_cmp(const void *a, const void *b)
+{
+    return lstrcmpiA(((const struct Pick *)a)->name, ((const struct Pick *)b)->name);
+}
+
 // .work\playercards1011\catalogue.tsv (one card per line, tab-separated, UTF-8): 0 card_no, 5 season, 7 rarity_name,
-// 9 is_placeholder, 10 name_full_latin, 11 name_short_latin, 15 position_name, 17 club_name, 24-29 the six stats
-// (offence defence technique power speed stamina, 1..20), 30 stats_total.  Board thread, once.
+// 9 is_placeholder, 10 name_full_latin, 11 name_short_latin, 15 position_name, 17 club_name, 19 nationality_name,
+// 24-29 the six stats (offence defence technique power speed stamina, 1..20), 30 stats_total.  Board thread, once.
 static void load_catalogue(void)
 {
-    char line[8192]; int n = 0, cap = 4096, k; struct CatCard *a; FILE *f = fopen(g_cat_path, "rb");
+    static struct Pick pn[128], pc[128];                   // the lists, made here and copied in under the lock
+    char line[8192]; int n = 0, cap = 4096, k, npn = 0, npc = 0; struct CatCard *a; FILE *f = fopen(g_cat_path, "rb");
     if (!f) { logline("browser: no catalogue at %s", g_cat_path); return; }
     a = (struct CatCard *)calloc((size_t)cap, sizeof *a);
     if (!a) { fclose(f); return; }
@@ -1355,6 +1381,7 @@ static void load_catalogue(void)
         fold_name(fld[10], a[n].full, sizeof a[n].full);
         fold_name(fld[11], a[n].shown, sizeof a[n].shown);
         fold_name(fld[17], a[n].club, sizeof a[n].club);
+        fold_name(fld[19], a[n].nat, sizeof a[n].nat);
         lstrcpynA(a[n].pos, fld[15], sizeof a[n].pos);
         lstrcpynA(a[n].season, fld[5], sizeof a[n].season);
         lstrcpynA(a[n].rar, fld[7], sizeof a[n].rar);
@@ -1364,11 +1391,16 @@ static void load_catalogue(void)
     }
     fclose(f);
     qsort(a, (size_t)n, sizeof *a, cat_cmp);
+    for (k = 0; k < n; k++) { picks_add(pn, &npn, 128, a[k].nat); picks_add(pc, &npc, 128, a[k].club); }
+    qsort(pn, (size_t)npn, sizeof pn[0], pick_cmp);
+    qsort(pc, (size_t)npc, sizeof pc[0], pick_cmp);
     EnterCriticalSection(&g_board_cs);
     g_cat = a; g_ncat = n;
+    memcpy(g_pnat, pn, sizeof pn[0] * (size_t)npn); g_npnat = npn;
+    memcpy(g_pclub, pc, sizeof pc[0] * (size_t)npc); g_npclub = npc;
     if (g_browse) run_search_locked();
     LeaveCriticalSection(&g_board_cs);
-    logline("browser: catalogue %d cards", n);
+    logline("browser: catalogue %d cards, %d countries, %d clubs", n, npn, npc);
 }
 
 static void note_locked(DWORD col, const char *fmt, ...)
@@ -1429,7 +1461,8 @@ static void board_add_locked(const struct CatCard *c)
 // chips (POSITION, RARITY), a row of sort chips, then the card grid on the left and the stats pane on the right
 // sliders: blocks of four per row (OFF DEF TEC POW / SPD STA TOTAL + RESET); in a block: name, track, values
 struct Geo { float x0, x1, gx0, gy0, tw, th, cw, ch, lab_rar; int cols, rows;
-             RECT close, box, pos[5], rar[6], sort[8], sl[7], reset, pane; float tx0[7], tx1[7]; };
+             RECT close, box, pos[5], rar[6], sort[8], sl[7], reset, pane; float tx0[7], tx1[7];
+             RECT nat, club; float lab_nat, lab_club, px0, pcw, pch, pstep; int pcols, prows; };  // COUNTRY / CLUB + their list
 
 static float chip_row(RECT *out, const char **labels, int n, float x, float y, float s)   // chips left to right
 {
@@ -1446,6 +1479,10 @@ static void browse_geo(struct Geo *g)
     float s = g_s, x, room;
     g->x0 = g_mx0; g->x1 = g_mx1;
     g->close = RC(g->x1 - 58.0f * s, 12.0f * s, g->x1 - 18.0f * s, 50.0f * s);
+    g->club = RC((float)g->close.left - 206.0f * s, 20.0f * s, (float)g->close.left - 16.0f * s, 44.0f * s);   // in the
+    g->lab_club = (float)g->club.left - 44.0f * s;                                  // title line: a new row would cost
+    g->nat = RC(g->lab_club - 206.0f * s, 20.0f * s, g->lab_club - 16.0f * s, 44.0f * s);   // the grid a row of cards
+    g->lab_nat = (float)g->nat.left - 70.0f * s;
     g->box = RC(g->x0 + 24.0f * s, 54.0f * s, g->x1 - 24.0f * s, 90.0f * s);
     x = chip_row(g->pos, POS_CHIP, 5, g->x0 + 108.0f * s, 98.0f * s, s);
     g->lab_rar = x + 14.0f * s;
@@ -1469,6 +1506,14 @@ static void browse_geo(struct Geo *g)
     g->cols = (int)(room / g->cw); if (g->cols < 1) g->cols = 1;
     g->rows = (int)((g_ch - g->gy0 - 8.0f * s) / g->ch); if (g->rows < 1) g->rows = 1;
     g->gx0 = g->x0 + 16.0f * s + (room - g->cols * g->cw) * 0.5f;
+    {                                                // the COUNTRY / CLUB list: over the grid and the stats pane
+        float avail = (g->x1 - 16.0f * s) - (g->x0 + 16.0f * s);
+        g->px0 = g->x0 + 16.0f * s;
+        g->pcols = (int)((avail + 8.0f * s) / (208.0f * s)); if (g->pcols < 1) g->pcols = 1;
+        g->pcw = (avail - (float)(g->pcols - 1) * 8.0f * s) / (float)g->pcols;
+        g->pch = 24.0f * s; g->pstep = 28.0f * s;
+        g->prows = (int)((g_ch - g->gy0 - 8.0f * s) / g->pstep); if (g->prows < 1) g->prows = 1;
+    }
 }
 
 static DWORD line_colour(const char *pos)         // GK yellow, DF blue, MF green, FW red (as the pitch's zones)
@@ -1531,7 +1576,7 @@ static void draw_pane(IDirect3DDevice9 *dev, const struct Geo *g, float s)
     set_picture(dev, g_font_tex, 1);
     put_in_rect(dev, RC(px, y, px + pw, y + 26.0f * s), 0.58f * s, white, c->full[0] ? c->full : c->shown);
     y += 28.0f * s;
-    _snprintf(line, sizeof line, "%s  -  %s", c->pos, c->club[0] ? c->club : "-");
+    _snprintf(line, sizeof line, "%s  -  %s  -  %s", c->pos, c->club[0] ? c->club : "-", c->nat[0] ? c->nat : "-");
     put_in_rect(dev, RC(px, y, px + pw, y + 20.0f * s), 0.42f * s, line_colour(c->pos), line);
     y += 20.0f * s;
     _snprintf(line, sizeof line, "%s  -  %s  -  #%d", c->season, c->rar, c->no);
@@ -1562,7 +1607,7 @@ static void draw_pane(IDirect3DDevice9 *dev, const struct Geo *g, float s)
 static int browse_hit_locked(const struct Geo *g, int x, int y)  // the result under a canvas point, -1 = none
 {
     int col, row, r; float tx, ty;
-    if (x < g->gx0 || y < g->gy0) return -1;
+    if (g_pick || x < g->gx0 || y < g->gy0) return -1;          // the COUNTRY / CLUB list covers the grid
     col = (int)((x - g->gx0) / g->cw); row = (int)((y - g->gy0) / g->ch);
     if (col >= g->cols || row >= g->rows) return -1;
     tx = g->gx0 + col * g->cw + (g->cw - g->tw) * 0.5f; ty = g->gy0 + row * g->ch;
@@ -1583,8 +1628,95 @@ static void log_filters_locked(void)       // one line for the log (and the test
     for (int k = 0; k < 7; k++)
         if (g_rlo[k] != SL_MIN[k] || g_rhi[k] != SL_MAX[k])
             n += _snprintf(rg + n, sizeof rg - n, " %s %d-%d", SL_NAME[k], g_rlo[k], g_rhi[k]);
-    logline("browser: %s, %s, sorted by %s, ranges%s - %d found%s%s", POS_CHIP[g_fpos], RAR_CHIP[g_frar], SORT_CHIP[g_sort],
+    logline("browser: %s, %s, country %s, club %s, sorted by %s, ranges%s - %d found%s%s", POS_CHIP[g_fpos],
+            RAR_CHIP[g_frar], g_fnat[0] ? g_fnat : "any", g_fclub[0] ? g_fclub : "any", SORT_CHIP[g_sort],
             rg[0] ? rg : " all", g_nres, g_nres ? ", first " : "", g_nres ? g_cat[g_res[0]].shown : "");
+}
+
+static int pick_list_locked(int *out, int cap)   // the open list's entries: -1 = ANY (nothing typed), else a table index
+{
+    const struct Pick *p = g_pick == 1 ? g_pnat : g_pclub;
+    int n = g_pick == 1 ? g_npnat : g_npclub, k = 0;
+    if (!g_pq[0] && k < cap) out[k++] = -1;
+    for (int i = 0; i < n && k < cap; i++) if (has_text(p[i].name, g_pq)) out[k++] = i;
+    return k;
+}
+
+static int pick_visible(const struct Geo *g, int v)  // entry v of the list is on screen (after its scroll)
+{
+    int row = v / g->pcols - g_pscroll;
+    return row >= 0 && row < g->prows;
+}
+
+static RECT pick_rect(const struct Geo *g, int v)    // entry v of the list on the canvas: left to right, then down
+{
+    int row = v / g->pcols - g_pscroll, col = v % g->pcols;
+    float x = g->px0 + (float)col * (g->pcw + 8.0f * g_s), y = g->gy0 + (float)row * g->pstep;
+    return RC(x, y, x + g->pcw, y + g->pch);
+}
+
+static void pick_scroll_locked(const struct Geo *g, int by)   // the list moves by rows, within its length
+{
+    int list[160], n = pick_list_locked(list, 160), last = (n + g->pcols - 1) / g->pcols - g->prows;
+    g_pscroll += by;
+    if (g_pscroll > last) g_pscroll = last;
+    if (g_pscroll < 0) g_pscroll = 0;
+}
+
+static void pick_choose_locked(int idx)          // entry idx of the open list (-1 = ANY) is the filter now; it closes
+{
+    char *f = g_pick == 1 ? g_fnat : g_fclub;
+    const struct Pick *p = g_pick == 1 ? g_pnat : g_pclub;
+    if (idx < 0) f[0] = 0; else lstrcpynA(f, p[idx].name, sizeof g_fnat);
+    g_pick = 0; g_pq[0] = 0; g_pscroll = 0;
+    run_search_locked();
+    log_filters_locked();
+}
+
+static void same_toggle_locked(char *f, const char *v)   // SAME CLUB / SAME COUNTRY: the card's own, or off again
+{
+    if (strcmp(f, v) == 0) f[0] = 0; else lstrcpynA(f, v, sizeof g_fnat);
+    run_search_locked();
+    log_filters_locked();
+}
+
+// the card under the mouse (result r): its SAME CLUB and SAME COUNTRY chips over the bottom of its face; 0 = not shown
+static int card_minis(const struct Geo *g, int r, RECT *club, RECT *nat)
+{
+    int row = r / g->cols - g_scroll, col = r % g->cols; float s = g_s;
+    float tx = g->gx0 + col * g->cw + (g->cw - g->tw) * 0.5f, ty = g->gy0 + row * g->ch;
+    *club = RC(tx + 3.0f * s, ty + g->th - 46.0f * s, tx + g->tw - 3.0f * s, ty + g->th - 25.0f * s);
+    *nat = RC(tx + 3.0f * s, ty + g->th - 23.0f * s, tx + g->tw - 3.0f * s, ty + g->th - 2.0f * s);
+    return row >= 0 && row < g->rows;
+}
+
+// the COUNTRY / CLUB list over the grid and the stats pane: a chip per entry, the name left and its cards right
+static void draw_picker(IDirect3DDevice9 *dev, const struct Geo *g, float s)
+{
+    static int list[160];
+    const struct Pick *p = g_pick == 1 ? g_pnat : g_pclub; const char *cur = g_pick == 1 ? g_fnat : g_fclub;
+    int n = pick_list_locked(list, 160); char num[16];
+    for (int v = 0; v < n; v++) {
+        const char *name = list[v] < 0 ? "ANY" : p[list[v]].name;
+        int on = list[v] < 0 ? !cur[0] : strcmp(cur, name) == 0;
+        RECT r;
+        if (!pick_visible(g, v)) continue;
+        r = pick_rect(g, v);
+        draw_chip(dev, r, "", on, s);
+        if (!g_font_tex) continue;
+        set_picture(dev, g_font_tex, 1);
+        put_str(dev, (float)r.left + 10.0f * s, (float)r.top + 5.0f * s, 0.42f * s,
+                on ? D3DCOLOR_ARGB(255, 25, 18, 8) : D3DCOLOR_ARGB(255, 222, 226, 236), name);
+        if (list[v] < 0) continue;
+        _snprintf(num, sizeof num, "%d", p[list[v]].n);
+        put_str(dev, (float)r.right - 10.0f * s - str_w(num, 0.42f * s), (float)r.top + 5.0f * s, 0.42f * s,
+                on ? D3DCOLOR_ARGB(255, 25, 18, 8) : D3DCOLOR_ARGB(255, 150, 156, 170), num);
+    }
+    if (!n && g_font_tex) {
+        set_picture(dev, g_font_tex, 1);
+        put_str(dev, g->px0, g->gy0 + 6.0f * s, 0.46f * s, D3DCOLOR_ARGB(255, 150, 156, 170),
+                "nothing matches what you typed - Backspace takes a letter off");
+    }
 }
 
 static void slider_move(int x)             // the dragged handle to the value under x (the list follows at once)
@@ -1666,9 +1798,12 @@ static void browse_draw(IDirect3DDevice9 *dev)
     draw_chips(dev, g.pos, POS_CHIP, 5, g_fpos, s);
     draw_chips(dev, g.rar, RAR_CHIP, 6, g_frar, s);
     draw_chips(dev, g.sort, SORT_CHIP, 8, g_sort, s);
+    draw_chip(dev, g.nat, g_fnat[0] ? g_fnat : "ANY", g_fnat[0] || g_pick == 1, s);
+    draw_chip(dev, g.club, g_fclub[0] ? g_fclub : "ANY", g_fclub[0] || g_pick == 2, s);
     draw_sliders(dev, &g, s);
-    draw_pane(dev, &g, s);
-    for (int row = 0; row < g.rows; row++)
+    if (g_pick) draw_picker(dev, &g, s);
+    else draw_pane(dev, &g, s);
+    for (int row = 0; row < g.rows && !g_pick; row++)
         for (int col = 0; col < g.cols; col++) {
             int r = (g_scroll + row) * g.cols + col, on = 0;
             const struct CatCard *c; struct CardPic *p;
@@ -1700,17 +1835,31 @@ static void browse_draw(IDirect3DDevice9 *dev)
                     put_in_rect(dev, RC(tx, ty, tx + g.tw, ty + g.th), 0.5f * s, white, line);
                 }
             }
+            if (r == g_bhover) {                     // the card under the mouse: SAME CLUB / SAME COUNTRY on it
+                RECT mc, mn;
+                card_minis(&g, r, &mc, &mn);
+                if (c->club[0]) draw_chip(dev, mc, "SAME CLUB", strcmp(g_fclub, c->club) == 0, s);
+                if (c->nat[0]) draw_chip(dev, mn, "SAME COUNTRY", strcmp(g_fnat, c->nat) == 0, s);
+            }
         }
     if (g_font_tex) {
         set_picture(dev, g_font_tex, 1);
         put_str(dev, g.x0 + 24.0f * s, 14.0f * s, 0.85f * s, orange, "CATALOGUE");
-        if (g_query[0]) _snprintf(line, sizeof line, "%s%s", g_query, (now / 500) & 1 ? "_" : "");
-        else _snprintf(line, sizeof line, "type a name or a card number%s", (now / 500) & 1 ? "_" : "");
-        put_str(dev, (float)g.box.left + 10.0f * s, (float)g.box.top + 6.0f * s, 0.72f * s, g_query[0] ? white : grey, line);
+        {
+            const char *typed = g_pick ? g_pq : g_query;      // the open COUNTRY / CLUB list takes the typing
+            if (typed[0]) _snprintf(line, sizeof line, "%s%s", typed, (now / 500) & 1 ? "_" : "");
+            else _snprintf(line, sizeof line, "%s%s", g_pick == 1 ? "type to find a country" : g_pick == 2 ?
+                           "type to find a club" : "type a name or a card number", (now / 500) & 1 ? "_" : "");
+            put_str(dev, (float)g.box.left + 10.0f * s, (float)g.box.top + 6.0f * s, 0.72f * s, typed[0] ? white : grey, line);
+        }
+        put_str(dev, g.lab_nat, 24.0f * s, 0.42f * s, g_fnat[0] ? orange : grey, "COUNTRY");
+        put_str(dev, g.lab_club, 24.0f * s, 0.42f * s, g_fclub[0] ? orange : grey, "CLUB");
         put_str(dev, g.x0 + 24.0f * s, 102.0f * s, 0.42f * s, grey, "POSITION");
         put_str(dev, g.lab_rar, 102.0f * s, 0.42f * s, grey, "RARITY");
         put_str(dev, g.x0 + 24.0f * s, 132.0f * s, 0.42f * s, grey, "SORT BY");
-        _snprintf(line, sizeof line, "%d found - table %d/16 - click adds - Esc closes", g_nres, g_ncards);
+        if (g_pick) _snprintf(line, sizeof line, "pick a %s - type to narrow the list - Esc closes it",
+                              g_pick == 1 ? "country" : "club");
+        else _snprintf(line, sizeof line, "%d found - table %d/16 - click adds - Esc closes", g_nres, g_ncards);
         put_str(dev, (float)g.sort[7].right + 18.0f * s, 132.0f * s, 0.42f * s, grey, line);
         put_in_rect(dev, g.close, 0.8f * s, white, "X");
         if (g_bmsg[0] && (LONG)(g_bmsg_until - now) > 0) {
@@ -1729,6 +1878,7 @@ static void browse_open(HWND h, int open)
 {
     EnterCriticalSection(&g_board_cs);
     g_browse = open;
+    g_pick = 0; g_pq[0] = 0;                                  // the COUNTRY / CLUB list starts closed (the choices stay)
     if (open) { g_query[0] = 0; g_bmsg[0] = 0; g_bdetail = -1; run_search_locked(); }
     LeaveCriticalSection(&g_board_cs);
     if (open) SetPropA(h, "WCCF_TYPING", (HANDLE)1);         // _keys_seat1.py: these keys are not cabinet buttons
@@ -1739,10 +1889,25 @@ static void browse_open(HWND h, int open)
 static void browse_key(HWND h, WPARAM vk, LPARAM lp)       // a key while the browser is open: always the browser's
 {
     BYTE ks[256]; WORD ch = 0; size_t n; struct Geo g;
+    EnterCriticalSection(&g_board_cs);
+    browse_geo(&g);
+    if (g_pick) {                                             // the COUNTRY / CLUB list is open: the keys are its
+        int list[160], k = pick_list_locked(list, 160);
+        n = strlen(g_pq);
+        if (vk == VK_ESCAPE) { g_pick = 0; g_pq[0] = 0; }    // Esc closes the list, not the catalogue
+        else if (vk == VK_BACK) { if (n) { g_pq[n - 1] = 0; g_pscroll = 0; } }
+        else if (vk == VK_RETURN) { if (k) pick_choose_locked(list[0]); }
+        else if (vk == VK_NEXT || vk == VK_DOWN) pick_scroll_locked(&g, vk == VK_NEXT ? g.prows : 1);
+        else if (vk == VK_PRIOR || vk == VK_UP) pick_scroll_locked(&g, vk == VK_PRIOR ? -g.prows : -1);
+        else if (GetKeyboardState(ks) && ToAscii((UINT)vk, (UINT)((lp >> 16) & 0xFF), ks, &ch, 0) == 1 &&
+                 ch >= 32 && ch < 127 && n < sizeof g_pq - 1) { g_pq[n] = (char)ch; g_pq[n + 1] = 0; g_pscroll = 0; }
+        LeaveCriticalSection(&g_board_cs);
+        return;
+    }
+    LeaveCriticalSection(&g_board_cs);
     if (vk == VK_ESCAPE) { browse_open(h, 0); return; }
     EnterCriticalSection(&g_board_cs);
     n = strlen(g_query);
-    browse_geo(&g);
     if (vk == VK_BACK) { if (n) { g_query[n - 1] = 0; run_search_locked(); } }
     else if (vk == VK_RETURN) { if (g_nres > 0) board_add_locked(&g_cat[g_res[0]]); }
     else if (vk == VK_NEXT || vk == VK_DOWN) { if ((g_scroll + g.rows) * g.cols < g_nres) g_scroll += vk == VK_NEXT ? g.rows : 1; }
@@ -1764,6 +1929,26 @@ static void browse_click(HWND h, int x, int y)
     EnterCriticalSection(&g_board_cs);
     browse_geo(&g);
     if (in_rect(&g.close, x, y)) { LeaveCriticalSection(&g_board_cs); browse_open(h, 0); return; }
+    if (in_rect(&g.nat, x, y) || in_rect(&g.club, x, y)) {    // COUNTRY / CLUB: its list opens (clicked again: closes)
+        int want = in_rect(&g.nat, x, y) ? 1 : 2;
+        g_pick = g_pick == want ? 0 : want; g_pq[0] = 0; g_pscroll = 0; g_bhover = -1;
+        logline("browser: %s list %s", want == 1 ? "country" : "club", g_pick ? "opened" : "closed");
+        LeaveCriticalSection(&g_board_cs);
+        return;
+    }
+    if (g_pick) {
+        if (y >= g.gy0) {                                     // in the list: the entry under the click is chosen
+            int list[160], k = pick_list_locked(list, 160);
+            for (i = 0; i < k; i++)
+                if (pick_visible(&g, i)) {
+                    RECT pr = pick_rect(&g, i);
+                    if (in_rect(&pr, x, y)) { pick_choose_locked(list[i]); break; }
+                }
+            LeaveCriticalSection(&g_board_cs);
+            return;
+        }
+        g_pick = 0; g_pq[0] = 0;                              // a click above the list closes it, and still counts
+    }
     for (i = 0; i < 5; i++) if (in_rect(&g.pos[i], x, y))  { g_fpos = i; chip = 1; }
     for (i = 0; i < 6; i++) if (in_rect(&g.rar[i], x, y))  { g_frar = i; chip = 1; }
     for (i = 0; i < 8; i++) if (in_rect(&g.sort[i], x, y)) { g_sort = i; chip = 1; }
@@ -1785,7 +1970,13 @@ static void browse_click(HWND h, int x, int y)
         log_filters_locked();
     } else {
         r = browse_hit_locked(&g, x, y);
-        if (r >= 0) board_add_locked(&g_cat[g_res[r]]);
+        if (r >= 0) {
+            const struct CatCard *c = &g_cat[g_res[r]]; RECT mc, mn;
+            int minis = r == g_bhover && card_minis(&g, r, &mc, &mn);      // drawn only on the card under the mouse
+            if (minis && c->club[0] && in_rect(&mc, x, y)) same_toggle_locked(g_fclub, c->club);
+            else if (minis && c->nat[0] && in_rect(&mn, x, y)) same_toggle_locked(g_fnat, c->nat);
+            else board_add_locked(c);
+        }
     }
     LeaveCriticalSection(&g_board_cs);
 }
@@ -1795,6 +1986,7 @@ static void browse_wheel(int notches)                    // + = up
     struct Geo g;
     EnterCriticalSection(&g_board_cs);
     browse_geo(&g);
+    if (g_pick) { pick_scroll_locked(&g, -notches); LeaveCriticalSection(&g_board_cs); return; }   // the list scrolls
     g_scroll -= notches;
     if ((g_scroll + g.rows) * g.cols >= g_nres + g.cols) g_scroll = (g_nres + g.cols - 1) / g.cols - g.rows;
     if (g_scroll < 0) g_scroll = 0;

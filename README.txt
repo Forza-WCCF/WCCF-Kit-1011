@@ -6,9 +6,9 @@ WHAT IT IS
   and an in-game panel, so the game's server, the projector (the shared big screen) and a player cabinet (seat 1)
   run on one Windows PC. The game itself is not part of the kit. Around seat 1's picture there is a panel with
   the cabinet's buttons, a FORMATION BOARD for your cards (drag to move, drop on another card to swap, right-click
-  to take a card off), a CATALOGUE of all 3,909 player cards (search, position and rarity filters, sort,
-  a slider per stat, a stats pane; a click puts the card on your table), KEYS, where you choose your own keys or
-  a game controller's buttons, SETTINGS, and CLUB CARD, your club card and your other clubs.
+  to take a card off), a CATALOGUE of all 3,909 player cards (search, position, rarity, country and club filters,
+  sort, a slider per stat, a stats pane; a click puts the card on your table), KEYS, where you choose your own keys
+  or a game controller's buttons, SETTINGS, and CLUB CARD, your club card and your other clubs.
   The kit holds none of Sega's files. Everything that comes from the game is made by setup from YOUR copy.
 
 NEW IN THE NEXT KIT
@@ -18,6 +18,8 @@ NEW IN THE NEXT KIT
     cost your card a bad ending); close again within 8 seconds to quit anyway. A game that crashes stops nothing
     else: the projector keeps running.
   - CLUB CARD: CLEAR BAD ENDINGS (click twice) sets the card's bad endings back to 0 at a restart.
+  - CATALOGUE: COUNTRY and CLUB (top right) - pick from a list of every country or club with its number of cards
+    (type to narrow it); on the card under the mouse, SAME CLUB and SAME COUNTRY show its clubmates or countrymen.
   - Hosting a server: when the crash guard cannot catch a crash, data\logs\run_server.txt now says why
     ("MSGPARSE guard stepped aside: ...") - please share that line.
   - PLAY, SETUP and ENGLISH are programs (.exe) instead of .bat files; they are used the same way.
