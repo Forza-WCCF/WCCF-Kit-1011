@@ -33,6 +33,10 @@ game is not included. Newest first; each date is the day that kit was built.
   button dead, the last one held, the game going on by itself. A possible cause of the freeze reported in team
   training and the locker room (not confirmed). It now tries again on its next round; if it ever stops anyway,
   `data\logs\keys_crash.txt` says why.
+- Server (seat desk): after a server restart, a game that rejoined by itself kept its old seat while the desk thought
+  that seat was free, and gave it to the next player - who was never let in (seen on the shared server: 4 tries in 12
+  minutes). The desk now reads who is in the game and never gives a seat, or the projector, that another PC is
+  using; the same PC can take its seat back.
 
 ## Kit 5.4 - 2026-10-09
 

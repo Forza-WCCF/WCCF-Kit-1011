@@ -6,6 +6,8 @@
 #   a missing club-card helper file never stops a start (source\test_card_fix.py: a scratch panel.txt)
 #   the run before last zipped into data\logs\archive, the archive kept to its size (source\test_log_archive.py)
 #   a transferred card is listed as such and never played again (source\test_wallet_transferred.py: scratch cards)
+#   the seat desk never gives a seat that is in the game (source\test_seat_desk_game.py: a scratch control log, the
+#   desk on 127.0.0.1:20932)
 #   the panel's money, relay and dealt-card self-tests (wccfpanel.dll loaded by source\build\fakegame.exe, in a
 #   scratch folder; the relay test plays two seats through scripts\_relay.py on 127.0.0.1:20941 - the C side and
 #   the Python side of the match relay checked against each other)
@@ -37,6 +39,9 @@ if ($LASTEXITCODE) { $failed += 'logs: the run before last zipped, the archive k
 
 & $py -I (Join-Path $PSScriptRoot 'test_wallet_transferred.py')
 if ($LASTEXITCODE) { $failed += 'a transferred card: listed as such, never played again' }
+
+& $py -I (Join-Path $PSScriptRoot 'test_seat_desk_game.py') | Select-Object -Last 1
+if ($LASTEXITCODE) { $failed += 'the seat desk: never a seat that is in the game' }
 
 $t = Join-Path ([IO.Path]::GetTempPath()) "wccfpanel-check-$PID"
 Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
