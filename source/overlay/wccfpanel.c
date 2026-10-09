@@ -2705,6 +2705,7 @@ static char g_addr[16];                  // the address box while typing
 static int  g_typing = 0;                // the address box has the keyboard
 static int  g_eng_req = -1;              // english=: -1 no request, 0 off (Japanese), 1 on
 static char g_card_req[64] = "";         // card=: the CLUB CARD panel's choice for the next start ("" none, "new")
+static int  g_fix_req = 0;               // card_fix=bad_endings: CLEAR BAD ENDINGS, done by play.py at the next start
 static volatile LONG g_set_dirty = 1;    // the status must be read again now
 // RESTART NOW (the player, 2026-10-06: "a button that goes to the next start"): a first click arms it for 8 s, a second
 // writes data\restart.request; _kit_helper.py (outside the game - seat 1's debugger would kill a restart the game
@@ -2731,7 +2732,7 @@ static int valid_ipv4(const char *s)     // = play.py valid_ipv4: four numbers 0
 static void set_load_locked(void)
 {
     FILE *f = fopen(g_panel_path, "rb"); char line[256];
-    g_on_online = 0; g_server[0] = 0; g_eng_req = -1; g_card_req[0] = 0; g_compact = 0;
+    g_on_online = 0; g_server[0] = 0; g_eng_req = -1; g_card_req[0] = 0; g_fix_req = 0; g_compact = 0;
     if (!f) return;
     while (fgets(line, sizeof line, f)) {
         char *p = strchr(line, '#'), *eq, *name, *val;
@@ -2743,6 +2744,7 @@ static void set_load_locked(void)
         else if (!_stricmp(name, "server")) lstrcpynA(g_server, val, sizeof g_server);
         else if (!_stricmp(name, "english")) g_eng_req = !_stricmp(val, "on") ? 1 : !_stricmp(val, "off") ? 0 : -1;
         else if (!_stricmp(name, "card")) lstrcpynA(g_card_req, val, sizeof g_card_req);
+        else if (!_stricmp(name, "card_fix")) g_fix_req = !_stricmp(val, "bad_endings");
         else if (!_stricmp(name, "layout")) g_compact = !_stricmp(val, "compact");
     }
     fclose(f);
@@ -2758,6 +2760,7 @@ static int set_save_locked(void)
     if (g_server[0]) n += _snprintf(text + n, sizeof text - n, "server=%s\n", g_server);
     if (g_eng_req >= 0) n += _snprintf(text + n, sizeof text - n, "english=%s\n", g_eng_req ? "on" : "off");
     if (g_card_req[0]) n += _snprintf(text + n, sizeof text - n, "card=%s\n", g_card_req);
+    if (g_fix_req) n += _snprintf(text + n, sizeof text - n, "card_fix=bad_endings\n");
     if (g_compact) n += _snprintf(text + n, sizeof text - n, "layout=compact\n");     // the VIEW: kept, not a request
     f = fopen(g_panel_tmp, "wb");
     if (!f) { logline("settings: could not write %s", g_panel_tmp); return 0; }
@@ -2766,9 +2769,10 @@ static int set_save_locked(void)
     if (!k) { logline("settings: could not write %s", g_panel_tmp); return 0; }
     for (k = 0; k < 40; k++) {
         if (MoveFileExA(g_panel_tmp, g_panel_path, MOVEFILE_REPLACE_EXISTING)) {
-            logline("settings: saved play_on=%s server=%s english=%s%s%s layout=%s", g_on_online ? "online" : "this_pc",
+            logline("settings: saved play_on=%s server=%s english=%s%s%s%s layout=%s", g_on_online ? "online" : "this_pc",
                     g_server[0] ? g_server : "-", g_eng_req < 0 ? "-" : g_eng_req ? "on" : "off",
-                    g_card_req[0] ? " card=" : "", g_card_req, g_compact ? "compact" : "cabinet");
+                    g_card_req[0] ? " card=" : "", g_card_req, g_fix_req ? " card_fix=bad_endings" : "",
+                    g_compact ? "compact" : "cabinet");
             return 1;
         }
         Sleep(5);
@@ -3319,10 +3323,17 @@ static int  g_ncl = 0, g_ncsq = 0, g_ncbak = 0, g_club = 0;
 struct CWal { char file[64], club[40], summary[48]; };
 #define MAXWAL  16                        // other clubs read from the view (2026-10-08: was 8)
 #define WAL_NEW 99                        // g_wal_armed / a pick: NEW CLUB CARD (was 8 - a 9th card would have been it)
+#define WAL_FIX 98                        // g_wal_armed / a pick: CLEAR BAD ENDINGS
 static struct CWal g_wal[MAXWAL];         // (g_cw is the canvas width: these are g_wal)
 static int  g_nwal = 0;
 static int  g_wal_top = 0;                // the first card shown when they do not all fit (the page buttons move it)
 static char g_csession[16] = "";         // the slot's card session, from the view's "session|..." line
+// CLEAR BAD ENDINGS (the community, 2026-10-08: "some easy way to remove bad endings from the club card"): shown under
+// CARD HEALTH while the view's BAD ENDINGS row is not 0 or the last session was cut; two clicks write card_fix=bad_endings
+// into data\panel.txt and ask for RESTART NOW, and play.py sets the card's bad-ending counts back to 0 while nothing
+// runs (edit_club_card.clear_bad_endings: the game's own checks, a backup first).  Not during a card session.
+static int  g_cbad = 0;                  // the view's BAD ENDINGS
+static RECT g_cfix;                      // the button where club_draw last put it (empty: not shown)
 static int  g_wal_armed = -1;             // the choice armed by a first click: a card's index, or WAL_NEW (-1 none)
 static DWORD g_wal_until = 0;
 static ULONGLONG g_cview_at = 0;         // the view file's write time as last read (0 = none read)
@@ -3335,7 +3346,7 @@ static void club_read(void)
 {
     char p[MAX_PATH], *buf, *line, *next; HANDLE h; DWORD got = 0, size; BY_HANDLE_FILE_INFORMATION fi;
     struct CLine cl[48]; struct CSq sq[16]; struct CWal cw[MAXWAL]; char bak[8][24], state[16], reason[128], sess[16] = "";
-    int ncl = 0, nsq = 0, nbak = 0, ncw = 0;
+    int ncl = 0, nsq = 0, nbak = 0, ncw = 0, bad = 0;
     _snprintf(p, MAX_PATH, "%s\\club_view.txt", g_data_dir); p[MAX_PATH - 1] = 0;
     h = CreateFileA(p, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING,
                     FILE_ATTRIBUTE_NORMAL, NULL);
@@ -3373,6 +3384,7 @@ static void club_read(void)
         } else if (!strcmp(f[0], "row") && nf >= 3 && ncl < 48) {
             cl[ncl].kind = 'r'; lstrcpynA(cl[ncl].a, f[1], sizeof cl[0].a); lstrcpynA(cl[ncl].b, f[2], sizeof cl[0].b);
             cl[ncl].col = nf >= 4 ? f[3][0] : 'w'; ncl++;
+            if (!strcmp(f[1], "BAD ENDINGS")) bad = atoi(f[2]);
         } else if (!strcmp(f[0], "squad") && nf >= 9 && nsq < 16) {
             for (k = 0; k < 8; k++) lstrcpynA(sq[nsq].f[k], f[k + 1], sizeof sq[0].f[0]);
             nsq++;
@@ -3391,7 +3403,8 @@ static void club_read(void)
     memcpy(g_csq, sq, sizeof sq[0] * (size_t)nsq); g_ncsq = nsq;
     memcpy(g_cbak, bak, sizeof bak[0] * (size_t)nbak); g_ncbak = nbak;
     memcpy(g_wal, cw, sizeof cw[0] * (size_t)ncw); g_nwal = ncw;
-    if (g_wal_armed >= ncw && g_wal_armed != WAL_NEW) g_wal_armed = -1;        // the list changed under an armed choice
+    if (g_wal_armed >= ncw && g_wal_armed != WAL_NEW && g_wal_armed != WAL_FIX) g_wal_armed = -1;   // the list changed
+    g_cbad = bad;
     if (g_wal_top >= ncw) g_wal_top = 0;                                       // fewer cards now: back to the first
     lstrcpynA(g_csession, sess, sizeof g_csession);
     lstrcpynA(g_cstate, state, sizeof g_cstate); lstrcpynA(g_creason, reason, sizeof g_creason);
@@ -3548,6 +3561,7 @@ static void club_draw(IDirect3DDevice9 *dev)
         put_in_rect(dev, cr, 0.8f * s, white, "X");
     }
     if (strcmp(g_cstate, "ok")) {                                                            // no club to show
+        g_cfix = RC(0.0f, 0.0f, 0.0f, 0.0f);
         const char *msg = !strcmp(g_cstate, "noview") ? "reading the club card - a moment after the start; started with PLAY.exe?" : g_creason;
         if (g_font_tex) put_fit(dev, lx, 130.0f * s, 0.46f * s, !strcmp(g_cstate, "unreadable") ? club_colour('r') : white,
                                 msg[0] ? msg : g_cstate, lw);            // the left column: YOUR CARDS is beside it
@@ -3572,6 +3586,16 @@ static void club_draw(IDirect3DDevice9 *dev)
                 y += 32.0f * s;
             }
         }
+        if (g_cbad > 0 || !strcmp(g_csession, "cut")) {                // CLEAR BAD ENDINGS, under CARD HEALTH
+            int armed = g_wal_armed == WAL_FIX && (LONG)(g_wal_until - GetTickCount()) > 0;
+            g_cfix = RC(lx, y + 6.0f * s, lx + 260.0f * s, y + 36.0f * s);
+            set_chip(dev, g_cfix, armed ? "CLICK AGAIN TO CLEAR" : "CLEAR BAD ENDINGS", armed, s);
+            if (g_font_tex) {
+                set_picture(dev, g_font_tex, 1);
+                put_fit(dev, lx, y + 44.0f * s, 0.36f * s, grey,
+                        "back to 0 at a restart - trade rights the game already took stay lost", lw);
+            }
+        } else g_cfix = RC(0.0f, 0.0f, 0.0f, 0.0f);
         y = 110.0f * s;                                                                       // the right column
         set_flat(dev);
         fill_rect(dev, rx, y + 22.0f * s, x1 - rx - 24.0f * s, 2.0f * s, rule);
@@ -3688,6 +3712,7 @@ static void club_click(HWND h, int x, int y)
     }
     for (i = 0; i < g.n; i++) if (in_rect(&g.use[i], x, y)) pick = g.first + i;
     if (in_rect(&g.newc, x, y)) pick = WAL_NEW;
+    if (in_rect(&g_cfix, x, y)) pick = WAL_FIX;
     if (pick < 0) { LeaveCriticalSection(&g_board_cs); return; }
     if (g_rs_sent) {
         note_locked(yellow, "already asked - the game closes and opens again");
@@ -3698,20 +3723,24 @@ static void club_click(HWND h, int x, int y)
         note_locked(yellow, "the slot already holds a blank card - put it in (CARD) and the game makes a club");
     } else if (g_wal_armed != pick || (LONG)(g_wal_until - now) <= 0) {
         g_wal_armed = pick; g_wal_until = now + 8000;                  // 4 s ran out once for the player: 8
-        if (pick == WAL_NEW) note_locked(yellow, "click again: this club goes to YOUR CARDS, a new card into the slot");
+        if (pick == WAL_FIX) note_locked(yellow, "click again: the bad endings go back to 0 - the game restarts");
+        else if (pick == WAL_NEW) note_locked(yellow, "click again: this club goes to YOUR CARDS, a new card into the slot");
         else note_locked(yellow, "click again to play %s - the game restarts with it", g_wal[pick].club);
-        logline("club: %s armed", pick == WAL_NEW ? "new card" : g_wal[pick].file);
+        logline("club: %s armed", pick == WAL_FIX ? "clear bad endings" : pick == WAL_NEW ? "new card" : g_wal[pick].file);
     } else {
         g_wal_armed = -1;
         set_load_locked();                                          // the settings file as it is now, plus this
-        lstrcpynA(g_card_req, pick == WAL_NEW ? "new" : g_wal[pick].file, sizeof g_card_req);
+        if (pick == WAL_FIX) g_fix_req = 1;
+        else lstrcpynA(g_card_req, pick == WAL_NEW ? "new" : g_wal[pick].file, sizeof g_card_req);
         if (!set_save_locked()) note_locked(red, "could not save data\\panel.txt - try again");
         else if (!restart_request())
             note_locked(red, "could not ask for the restart - close the game, then PLAY.exe does the switch");
         else {
             g_rs_sent = now;
-            note_locked(green, "switching - the game closes and opens again (about a minute)");
-            logline("club: switch to %s requested", g_card_req);
+            note_locked(green, pick == WAL_FIX ? "clearing the bad endings - the game closes and opens again"
+                                               : "switching - the game closes and opens again (about a minute)");
+            if (pick == WAL_FIX) logline("club: clear bad endings requested");
+            else logline("club: switch to %s requested", g_card_req);
         }
     }
     LeaveCriticalSection(&g_board_cs);

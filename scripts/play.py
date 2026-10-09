@@ -362,6 +362,24 @@ def apply_card_request():
     drop_panel_line("card")
 
 
+def apply_card_fix():
+    """the CLUB CARD panel's "card_fix=bad_endings" (2026-10-08): the slot card's bad endings back to 0
+    (edit_club_card.clear_bad_endings: the game's own checks, the old card into data\\save\\backup first), done now
+    while the card reader is not running, then taken out of the file.  Anything wrong: said, and the card stays as it
+    was (never a reason not to start)."""
+    want = read_panel().get("card_fix", "").lower()
+    if not want:
+        return
+    if want == "bad_endings":
+        try:
+            import edit_club_card
+            what = edit_club_card.clear_bad_endings(CARD)
+        except Exception as ex:
+            what = "the bad endings were not cleared (%s) - the card stays as it was" % ex
+        say("  club card: %s" % what)
+    drop_panel_line("card_fix")
+
+
 def apply_board(seat):
     """the cards on the table follow the club card in the slot (boards.py, 2026-10-08: the player saw another club's
     formation on the board) - done while nothing reads the table: the card reader, FPR_Emu and the overlay start after
@@ -498,6 +516,7 @@ def play(debug, mode="local", ip=None, seat_no=None):
         rotate_logs()
         apply_english_request()
     apply_card_request()                       # the card reader is not running yet, in every mode that gets here
+    apply_card_fix()
     if mode != "server":
         apply_board(seat)                      # ... nor FPR_Emu or the overlay: the slot club's cards on the table
     env = kit_env(game)
@@ -857,6 +876,7 @@ def restart_cabinet():
             "%s %d" % (p[2], p[0]) for p in left))
         return 1
     apply_card_request()                     # the card reader is stopped: the CLUB CARD panel's switch goes in now
+    apply_card_fix()                         # and its CLEAR BAD ENDINGS
     apply_board(seat)                        # and the new club's cards onto the table, before FPR_Emu and the overlay
     time.sleep(1.0)                          # Windows frees the cabinet's ports and pipes
     start_cabinet(False, kit_env(game), mode, ip, seat_no, seat, roles)
