@@ -2,7 +2,7 @@
 r"""cards.py - make the CATALOGUE's files from your own copy of WCCF 2010-11 (Rev D).  Only READS the game's files.
 
     python cards.py GAME OUT
-      GAME  the folder with client_Release.exe in it (the "extracted" folder of the sbwg download)
+      GAME  the game folder, the one with client_Release.exe in it
       OUT   where catalogue.tsv and cards\ are written (the overlay's folder)
 
 Writes  catalogue.tsv           one line per card: number, season, rarity, names, line, club, the six stats, total ...
@@ -277,7 +277,7 @@ def main(argv):
     game, out = os.path.abspath(argv[0]), os.path.abspath(argv[1])
     files = game_files(game)
     if not files:
-        print("GAME must be the folder that holds client_Release.exe (the sbwg download's \"extracted\" folder)")
+        print("GAME must be the game folder, the one that holds client_Release.exe")
         return 2
     cards_dir = os.path.join(out, "cards")
     if os.path.islink(cards_dir) or (hasattr(os.path, "isjunction") and os.path.isjunction(cards_dir)):

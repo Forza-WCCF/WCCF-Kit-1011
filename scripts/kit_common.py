@@ -44,7 +44,7 @@ def save_settings(s):
 
 
 def find_game(path):
-    """the sbwg "extracted" folder from a path to it or to the folder above it, else None"""
+    """the game folder (the one with the three game programs) from a path to it or to the folder above it, else None"""
     if not path:
         return None
     path = os.path.abspath(path.strip().strip('"'))

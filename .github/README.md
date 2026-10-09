@@ -9,15 +9,15 @@
   <img alt="Python inside the kit" src="https://img.shields.io/badge/Python-inside%20the%20kit-3776ab">
 </p>
 
-**World Club Champion Football: Intercontinental Clubs 2010-11** on a Windows PC: Sega's arcade server, the projector (the shared big screen) and a player cabinet on one PC, or many PCs playing on one server. Around the game's picture sits a panel with the cabinet's buttons, your cards and your club.
+Community-developed launcher, hardware compatibility tools and an in-game overlay for **WCCF 2010-11 (Rev D)**. With your own copy of the game, it runs the game's server, the projector (the shared big screen) and a player cabinet on one Windows PC, or several PCs on one server, and puts a panel around the game's picture with the cabinet's buttons, your cards and your club.
 
-> **The kit holds none of Sega's files.** Everything that comes from the game is made by SETUP from your own copy.
+> **The game is not included, and the kit holds none of Sega's files.** It works with your own copy: what it needs from the game, SETUP makes from that copy, on your PC.
 
 ## What you get
 
 | | |
 |---|---|
-| **The whole arcade on one PC** | PLAY starts the server, the projector and seat 1 together; only two windows open |
+| **One launcher** | PLAY starts your game's server, projector and seat 1 together; only two windows open |
 | **Formation board** | your cards on the table: drag to move, drop on another card to swap, right-click to take one off |
 | **Catalogue** | all 3,909 player cards: search, position and rarity filters, sorting, a slider per stat |
 | **Keys** | choose your own keys, or a game controller's buttons |
@@ -27,9 +27,9 @@
 
 ## Quick start
 
-1. **You need** Windows 10 or 11 (64-bit), the community's Rev D download (its "sbwg" zip, unzipped to a folder called `extracted`) and DirectX 9 (Microsoft's June 2010 runtime; SETUP tells you if it is missing).
+1. **You need** Windows 10 or 11 (64-bit), your own copy of the game (Rev D) as a folder of files, and DirectX 9 (Microsoft's June 2010 runtime; SETUP tells you if it is missing).
 2. **Unzip the kit** into a folder of its own.
-3. **Drag the `extracted` folder onto `SETUP.exe`.** It checks your copy, sets it up and makes the card catalogue (about a minute).
+3. **Drag your game folder onto `SETUP.exe`** (the one that holds `client_Release.exe`). It checks your copy is Rev D, sets it up and makes the card catalogue (about a minute).
 4. **Double-click `PLAY.exe`.** Click the cabinet's window and play with the keyboard. To quit, close the game's window.
 5. Optional: **`ENGLISH.exe`** puts the game into English.
 

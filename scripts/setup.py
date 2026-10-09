@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-r"""setup.py - make your copy of WCCF 2010-11 (Rev D: the community's "sbwg" download) run on this PC with the kit.
+r"""setup.py - make your own copy of WCCF 2010-11 (Rev D) run on this PC with the kit.
 Run it once (SETUP.exe); running it again checks everything and repairs what is missing.
 
-    python setup.py [GAME]     GAME = the sbwg download's "extracted" folder (or the folder above it); asked for if
-                               not given, then remembered in data\settings.json
-    python setup.py undo       put the game folder back the way the download had it
+    python setup.py [GAME]     GAME = the game folder, the one that holds client_Release.exe (or the folder above
+                               it); asked for if not given, then remembered in data\settings.json
+    python setup.py undo       put the game folder back the way it was before setup
 
 What it changes, and nothing else on the PC:
   in extracted\   + winmm.dll (the kit's hook) and winmm_orig.dll (a copy of this PC's own Windows winmm.dll)
@@ -187,11 +187,11 @@ def check_game(game):
     if sega_client(game) != os.path.join(game, "client_Release.exe"):
         ok("English is on (ENGLISH.exe): Sega's client_Release.exe is checked in data\\english_backup")
     if h == PATCHED_CLIENT:
-        raise Failed("extracted\\client_Release.exe is already PATCHED - setup needs Sega's unchanged exe there "
-                     "(only seat1\\ gets the patched copy). Unzip client_Release.exe from the download again.")
+        raise Failed("the game folder's client_Release.exe is already PATCHED - setup needs the unchanged exe there "
+                     "(only seat1\\ gets the patched copy). Put your own unchanged client_Release.exe back first.")
     if h != SEGA_CLIENT:
-        raise Failed("extracted\\client_Release.exe is not Rev D (SHA-256 %s...) - this kit is for the community's "
-                     "Rev D download only" % h[:16])
+        raise Failed("the game folder's client_Release.exe is not Rev D (SHA-256 %s...) - this kit is for Rev D only"
+                     % h[:16])
     ok("client_Release.exe is Sega's Rev D")
     for n, want in SEGA_OTHERS.items():
         if K.sha256(os.path.join(game, n)) != want:
@@ -357,7 +357,7 @@ def undo(game):
     s = K.load_settings()
     s.pop("game", None)
     K.save_settings(s)
-    print("Undone. The game folder is as the download had it, apart from the files the game itself writes when it "
+    print("Undone. The game folder is as it was before setup, apart from the files the game itself writes when it "
           "runs (busram*.bin, eeprom*.bin). Your club card stays in data\\save.")
 
 
@@ -375,7 +375,8 @@ def main(argv):
         print("no WCCF 2010-11 game files in %s (client_Release.exe, control_Release.exe, match_Release.exe)" % rest[0])
         return 2
     if not game and mode == "setup":
-        print("Where is the game? Drag the sbwg download's \"extracted\" folder into this window, then press Enter:")
+        print("Where is the game? Drag the game folder (the one with client_Release.exe) into this window, then press "
+              "Enter:")
         try:
             game = K.find_game(input("> "))
         except EOFError:
