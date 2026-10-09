@@ -50,6 +50,7 @@ jobs:
         run: ./source/check.ps1
 
       - name: Package the kit ZIP (source/package.ps1)
+        id: package
         env:
           REF_TYPE: ${{ github.ref_type }}
           REF_NAME: ${{ github.ref_name }}
@@ -58,38 +59,71 @@ jobs:
           # tag kit-5.4 -> WCCF-2010-11-kit-5.4.zip
           $suffix = if ($env:REF_TYPE -eq 'tag') { $env:REF_NAME -replace '^kit-', '' } else { $env:SHA.Substring(0, 7) }
           ./source/package.ps1 -Name "WCCF-2010-11-kit-$suffix"
+          "zip=WCCF-2010-11-kit-$suffix.zip" >> $env:GITHUB_OUTPUT
 
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      # the kit ZIP as it is (archive: false): the run page's download is the kit ZIP itself, not a ZIP around it;
+      # the artifact takes the file's name
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: WCCF-2010-11-kit
-          path: |
-            dist/*.zip
-            dist/*.zip.sha256
+          path: dist/${{ steps.package.outputs.zip }}
+          archive: false
           if-no-files-found: error
           # the org's artifact storage is 500 MB on GitHub Free (shared by its repos): a 20 MB kit ZIP kept the
           # default 90 days fills it in about nine runs a month; 7 days leaves room for about a hundred
           retention-days: 7
-          compression-level: 0  # already a ZIP
+
+    outputs:
+      zip: ${{ steps.package.outputs.zip }}
+
+  zip-check:
+    name: The downloaded ZIP is the kit (not a ZIP in a ZIP)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ needs.build.outputs.zip }}
+          path: dist
+          skip-decompress: true  # keep the kit ZIP whole, as a player downloads it
+
+      - name: Every program at the top of the ZIP
+        env:
+          ZIP: dist/${{ needs.build.outputs.zip }}
+        run: |
+          set -euo pipefail
+          ls -l dist
+          unzip -Z1 "$ZIP" > entries.txt
+          for f in PLAY.exe SETUP.exe ENGLISH.exe bin/winmm.dll bin/FPR_Emu.exe bin/logowin.exe \
+                   overlay/wccfpanel.dll overlay/inject.exe python/python.exe; do
+            grep -qxF "WCCF-2010-11-kit/$f" entries.txt || { echo "missing in $ZIP: WCCF-2010-11-kit/$f"; exit 1; }
+          done
+          echo "$ZIP: $(wc -l < entries.txt) entries, every program in WCCF-2010-11-kit/"
 
   release:
     name: Draft release (tag kit-*)
     if: github.ref_type == 'tag' && startsWith(github.ref_name, 'kit-')
-    needs: build
+    needs: [build, zip-check]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: WCCF-2010-11-kit
+          name: ${{ needs.build.outputs.zip }}
           path: dist
+          skip-decompress: true
 
       - name: Draft the release with the kit ZIP
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
+          ZIP: ${{ needs.build.outputs.zip }}
         run: |
-          gh release create "$TAG" dist/*.zip dist/*.zip.sha256 --repo "$REPO" --draft --verify-tag \
+          set -euo pipefail
+          cd dist
+          sha256sum "$ZIP" > "$ZIP.sha256"
+          gh release create "$TAG" "$ZIP" "$ZIP.sha256" --repo "$REPO" --draft --verify-tag \
             --title "$TAG" --notes "The kit ZIP, built by CI from $TAG. See CHANGELOG.md; publish after a check."

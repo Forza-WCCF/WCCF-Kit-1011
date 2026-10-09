@@ -35,6 +35,7 @@ on-screen panel - and online play on a shared server. Newest first; each date is
   programs.
 - `source\package.ps1` reads the kit zip back and fails unless every program is in it (`PLAY.exe`, `SETUP.exe`,
   `ENGLISH.exe`, `bin\`, `overlay\` and `python\python.exe`). A `kit-5.4` tag makes `WCCF-2010-11-kit-5.4.zip`.
+  A run's download on GitHub is that ZIP itself, no longer a ZIP around it, and CI checks the downloaded file too.
 
 ## Kit 5.3 - 2026-10-08
 
