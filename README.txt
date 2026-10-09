@@ -11,7 +11,7 @@ WHAT IT IS
   a game controller's buttons, SETTINGS, and CLUB CARD, your club card and your other clubs.
   The kit holds none of Sega's files. Everything that comes from the game is made by setup from YOUR copy.
 
-NEW IN THE NEXT KIT
+NEW IN KIT 5.4
   - Closing the game's window quits the game, cleanly, every time: the game and everything the kit started with it
     (the server, its match engines, the kit's helpers) stop by themselves. Before, the game and its helpers ran on
     hidden in the background. There is no STOP any more. During a match the first close only warns you (it would

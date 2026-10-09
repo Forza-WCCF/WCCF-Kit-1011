@@ -55,7 +55,8 @@ jobs:
           REF_NAME: ${{ github.ref_name }}
           SHA: ${{ github.sha }}
         run: |
-          $suffix = if ($env:REF_TYPE -eq 'tag') { $env:REF_NAME } else { $env:SHA.Substring(0, 7) }
+          # tag kit-5.4 -> WCCF-2010-11-kit-5.4.zip
+          $suffix = if ($env:REF_TYPE -eq 'tag') { $env:REF_NAME -replace '^kit-', '' } else { $env:SHA.Substring(0, 7) }
           ./source/package.ps1 -Name "WCCF-2010-11-kit-$suffix"
 
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6

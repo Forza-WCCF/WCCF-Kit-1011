@@ -33,6 +33,18 @@ $zip = Join-Path $dist "$Name.zip"
 # unzip programs take as part of a file name
 & tar -a -c -f $zip -C $dist 'WCCF-2010-11-kit'
 if ($LASTEXITCODE) { throw 'tar (zip) failed' }
+
+# read the ZIP back: every program must be in it, not only in the folder it was made from (a kit without them
+# cannot start); python.exe comes from git, the rest from build.ps1
+$entries = @(& tar -t -f $zip)
+if ($LASTEXITCODE) { throw 'tar (list) failed' }
+$missing = @($built + 'python\python.exe' | Where-Object {
+    $entry = 'WCCF-2010-11-kit/' + ($_ -replace '\\', '/')
+    $entries -notcontains $entry
+})
+if ($missing) { throw "the ZIP lacks: $($missing -join ', ')" }
+Write-Host "the ZIP has every program: $(($built + 'python\python.exe') -join ', ')"
+
 $hash = (Get-FileHash -Algorithm SHA256 $zip).Hash.ToLower()
 "$hash  $Name.zip" | Set-Content -Encoding ascii "$zip.sha256"
 Write-Host "packaged $zip ($([math]::Round((Get-Item $zip).Length / 1MB, 1)) MB, sha256 $hash)"

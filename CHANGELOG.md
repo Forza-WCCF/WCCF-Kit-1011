@@ -3,7 +3,7 @@
 The WCCF 2010-11 (Rev D) kit: Sega's server, the projector and a player cabinet on one Windows PC, with an
 on-screen panel - and online play on a shared server. Newest first; each date is the day that kit was built.
 
-## Unreleased
+## Kit 5.4 - 2026-10-09
 
 ### Added
 - CLUB CARD: CLEAR BAD ENDINGS (click twice) sets the card's bad endings back to 0 at a restart, after a backup.
@@ -33,6 +33,8 @@ on-screen panel - and online play on a shared server. Newest first; each date is
   request builds every program (`source\build.ps1`), runs the checks that need no game (`source\check.ps1`) and packs
   the kit zip (`source\package.ps1`); a `kit-*` tag drafts a release with it. Git holds the source, not the built
   programs.
+- `source\package.ps1` reads the kit zip back and fails unless every program is in it (`PLAY.exe`, `SETUP.exe`,
+  `ENGLISH.exe`, `bin\`, `overlay\` and `python\python.exe`). A `kit-5.4` tag makes `WCCF-2010-11-kit-5.4.zip`.
 
 ## Kit 5.3 - 2026-10-08
 
