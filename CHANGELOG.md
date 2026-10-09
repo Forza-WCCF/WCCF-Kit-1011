@@ -44,6 +44,10 @@ game is not included. Newest first; each date is the day that kit was built.
   an upload, 6 an hour from one address, 1 GB in all (the oldest go). A server must now let in TCP 20050 too.
 
 ### Changed
+- The panel is loaded by the game itself: the kit's winmm.dll, which the game already loads, loads wccfpanel.dll
+  3 s after the window is up, for seat 1 and the projector. overlay\inject.exe, which wrote it into the running game
+  from outside (VirtualAllocEx + CreateRemoteThread, a method antivirus programs watch for), is gone; an update
+  removes it.
 - The formation board shows a card big after the mouse rests on it 3 s (was 8 s).
 - The BACK button is gone: it pressed nothing, and in the game the blue KEEPER button goes back.
 - The COIN button is gone: play is free (above). KEYS still lists COIN, for a key or a real coin switch.

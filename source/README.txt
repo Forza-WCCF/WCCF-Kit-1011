@@ -22,8 +22,6 @@ The C source of every program the kit ships. Each was built with Microsoft's C c
   overlay\wccfpanel.dll   overlay\wccfpanel.c
                        cl /nologo /LD /O2 /MT /W3 /D_CRT_SECURE_NO_WARNINGS wccfpanel.c /Fe:wccfpanel.dll
                           /link d3d9.lib gdi32.lib user32.lib ole32.lib windowscodecs.lib
-  overlay\inject.exe   overlay\inject.c (must be 32-bit: it hands the game 32-bit LoadLibraryA's address)
-                       cl /nologo /O2 /MT /W3 /D_CRT_SECURE_NO_WARNINGS inject.c /Fe:inject.exe
   overlay\fakegame.c   not shipped: a stand-in for seat 1's game window to see the panel without the game (its
                        header: the steps, and the settings that keep a test off the live game)
                        cl /nologo /O2 /MT /W3 /D_CRT_SECURE_NO_WARNINGS fakegame.c /Fe:fakegame.exe /link d3d9.lib user32.lib
@@ -44,7 +42,6 @@ What each does, in short:
   FPR_Emu.exe   answers the game's card-table polls with the cards in seat1\fpr_table0.txt
   logowin.exe   Sega's start-up notice window, replaced by one that only records the notice
   wccfpanel.dll the panel around seat 1's picture (drawn with the game's own Direct3D 9 device)
-  inject.exe    loads wccfpanel.dll into seat 1's running game
   launchers     run scripts\play.py, setup.py or english.py with the kit's Python and keep the window as the .bat
                 files did; PLAY leaves a windowless watcher (PLAY.exe --watch) that stops the rest of the run once a
                 game window is closed (launcher\src\watch.rs; scripts\_debug_launch.py ends the game itself)
