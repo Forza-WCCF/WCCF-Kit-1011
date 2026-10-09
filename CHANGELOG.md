@@ -4,14 +4,6 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
-## Unreleased
-
-### Changed
-- bin\logowin.exe is gone: Kit 5.5's stand-in for Sega's logo window - a program without a window that waited for
-  the server to end - was what a player's Windows Defender flagged. The kit's winmm.dll now answers the server's
-  start of logowin itself: the message still goes to logowin_messages.txt in the game folder, and nothing runs.
-  SETUP puts Sega's logowin.exe back (kept as logowin_sega.exe); an update removes bin\logowin.exe.
-
 ## Kit 5.5 - 2026-10-10
 
 ### Added
@@ -57,6 +49,10 @@ game is not included. Newest first; each date is the day that kit was built.
   an upload, 6 an hour from one address, 1 GB in all (the oldest go). A server must now let in TCP 20050 too.
 
 ### Changed
+- bin\logowin.exe is gone: The kit's stand-in for Sega's logo window - a program without a window that waited for
+  the server to end - was what a player's Windows Defender flagged. The kit's winmm.dll now answers the server's
+  start of logowin itself: the message still goes to logowin_messages.txt in the game folder, and nothing runs.
+  SETUP puts Sega's logowin.exe back (kept as logowin_sega.exe); an update removes bin\logowin.exe.
 - The panel is loaded by the game itself: the kit's winmm.dll, which the game already loads, loads wccfpanel.dll
   3 s after the window is up, for seat 1 and the projector. overlay\inject.exe, which wrote it into the running game
   from outside (VirtualAllocEx + CreateRemoteThread, a method antivirus programs watch for), is gone; an update

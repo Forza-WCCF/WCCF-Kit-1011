@@ -19,8 +19,8 @@ NEW IN KIT 5.5
   - SETUP.exe is a window: your game folder, the game's language (English or Japanese - ENGLISH.exe is gone), and
     UPDATE, which updates the kit for you from now on (your clubs, keys and settings are never touched). PLAY.exe
     tells you when a newer kit is out.
-  - Antivirus: the panel now loads from inside the game itself. overlay\inject.exe is gone - it is what Windows
-    Defender blocked on one player's PC.
+  - Antivirus: overlay\inject.exe and bin\logowin.exe are gone - what Windows Defender blocked on one player's PC.
+    The panel now loads from inside the game itself, and the server's logo window is answered by the kit's hook.
   - After each match, a player card is shown as the cabinet's dispenser gave one - only shown, nothing is added to
     your club card.
   - CATALOGUE: search with several words (milan 2004, brazil fw); each card's pane shows the roles it suits best.
