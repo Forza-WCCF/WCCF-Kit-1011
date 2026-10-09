@@ -40,6 +40,11 @@ game is not included. Newest first; each date is the day that kit was built.
   to post in Discord with what went wrong. Never the club card; the Windows user name and PC name are taken out.
 - The kit's version (`KIT 5.5`) at the top right of the game, under the ping meter when online -
   `version.txt` in the kit (`kit-5.5`), written when the kit ZIP is made.
+- Server: a box that only shows the projector (a stream box) can be kept out of the game until a player is in it -
+  put its address in `data\hold_projector.txt`. The seat desk then holds that address off TCP 20002 with a Windows
+  firewall rule and lifts it as soon as a player joins; "HOLD" tells the box whether it is held. On the shared server,
+  runs where the stream box was the first in let almost no players in afterwards (6 runs); runs a player joined first
+  let everyone in (3 runs). Other servers: no file, nothing changes.
 - Server: the log inbox (`scripts\_log_inbox.py`, TCP 20050) keeps those logs in `data\player_logs`: at most 8 MB
   an upload, 6 an hour from one address, 1 GB in all (the oldest go). A server must now let in TCP 20050 too.
 

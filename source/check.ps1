@@ -8,6 +8,8 @@
 #   a transferred card is listed as such and never played again (source\test_wallet_transferred.py: scratch cards)
 #   the seat desk never gives a seat that is in the game (source\test_seat_desk_game.py: a scratch control log, the
 #   desk on 127.0.0.1:20932)
+#   the projector box held off the game until a player is in (source\test_hold_projector.py: the desk on 127.0.0.1:20933-6,
+#   the firewall rule written to a scratch file)
 #   SEND LOGS: packed without the club card, names taken out, kept by the log inbox - which refuses junk, too big, not
 #   a ZIP and too many (source\test_send_logs.py: a scratch kit, inboxes on 127.0.0.1:20952 and 20953)
 #   the panel's money, relay and dealt-card self-tests (wccfpanel.dll loaded by source\build\fakegame.exe, in a
@@ -44,6 +46,9 @@ if ($LASTEXITCODE) { $failed += 'a transferred card: listed as such, never playe
 
 & $py -I (Join-Path $PSScriptRoot 'test_seat_desk_game.py') | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'the seat desk: never a seat that is in the game' }
+
+& $py -I (Join-Path $PSScriptRoot 'test_hold_projector.py') | Select-Object -Last 1
+if ($LASTEXITCODE) { $failed += 'the projector box: held until a player is in' }
 
 & $py -I (Join-Path $PSScriptRoot 'test_send_logs.py') | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'SEND LOGS: packed, sent, kept - and refused when it must be' }
