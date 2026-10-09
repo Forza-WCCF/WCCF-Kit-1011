@@ -741,20 +741,56 @@ def stop(force, check=False, keep_server=False):
     return 0
 
 
+WINDOW_CLOSED = "its window was closed"   # _debug_launch.py's line when it ends a game because its window was closed
+
+
+def window_launchers(roles):
+    """{pid: its log} of the run's game-window launchers (start_cabinet: every seat writes run_seat1.txt)"""
+    return {pid: "run_projector.txt" if r == "projector launcher" else "run_seat1.txt" for pid, r in roles.items()
+            if r == "projector launcher" or re.fullmatch(r"seat \d+ launcher", r)}
+
+
+def crashed_logs(launchers, alive, read_log):
+    """the logs of the launchers that ended WITHOUT their window being closed (a crash), when another game window of
+    the run still runs - then nothing may stop (the player, 2026-10-07: "no one cabinet can restart or stop the
+    projector"); None when a window was closed, or when no game window is left to keep running.  An empty list: none
+    has ended (a hand-run "ended") - nothing stops then either"""
+    gone = sorted({log for pid, log in launchers.items() if pid not in alive})
+    if any(WINDOW_CLOSED in read_log(log) for log in gone) or not any(pid in alive for pid in launchers):
+        return None
+    return gone
+
+
+def read_log(name):
+    try:
+        with open(os.path.join(K.LOGS, name), encoding="utf-8", errors="replace") as f:
+            return f.read()
+    except OSError:
+        return ""                # unreadable counts as no close: the safe side keeps the rest running
+
+
 def ended():
     """a game window closed (2026-10-08; there is no STOP now): PLAY.exe's watcher saw one of the run's cabinet and
     projector launchers end - _debug_launch.py ends the game, and itself, when the game's window is closed - and asks
     for the rest to stop: the server, its match engines, the stand-ins, the key driver, the panel helper.  Before, they
     ran on hidden for up to 12 hours.  The card rule still holds for a cabinet that still runs (the projector closed
     during a match: refused, exit 3, and the watcher goes on watching).  A cabinet that played on a server started on
-    this PC with "server" leaves that server running for the other players."""
+    this PC with "server" leaves that server running for the other players.  A game that went by itself (a crash, no
+    close in its log) stops nothing while another game window runs - the projector keeps running (exit 3 too)."""
     game, _seat = setup_state()
     if not game:
         return 2
+    launchers, alive = window_launchers(running_roles()), {p[0] for p in kit_pythons()}
+    crashed = crashed_logs(launchers, alive, read_log)
+    if crashed is not None:
+        say("A game window went by itself, not closed (a crash - see data\\logs\\%s): the rest keeps running, the "
+            "projector too." % ", ".join(crashed) if crashed else "No game window has ended - nothing stopped.")
+        return 3
     server_here = running_info().get("mode") == "remote" and any(
         p[2].lower() == "control_release.exe" for p in K.game_processes(game))
-    say("Every game window is closed - stopping the rest%s." % (" (the server on this PC keeps running)"
-                                                               if server_here else ""))
+    say("%s - stopping the rest%s." % ("A game window was closed" if any(pid in alive for pid in launchers) else
+                                       "No game window is left", " (the server on this PC keeps running)"
+                                       if server_here else ""))
     return stop(False, keep_server=server_here)
 
 

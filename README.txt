@@ -14,7 +14,8 @@ NEW IN THE NEXT KIT
   - Closing the game's window quits the game, cleanly, every time: the game and everything the kit started with it
     (the server, its match engines, the kit's helpers) stop by themselves. Before, the game and its helpers ran on
     hidden in the background. There is no STOP any more. During a match the first close only warns you (it would
-    cost your card a bad ending); close again within 8 seconds to quit anyway.
+    cost your card a bad ending); close again within 8 seconds to quit anyway. A game that crashes stops nothing
+    else: the projector keeps running.
   - PLAY, SETUP and ENGLISH are programs (.exe) instead of .bat files; they are used the same way.
     Updating: delete the old PLAY.bat, STOP.bat, SETUP.bat and ENGLISH.bat.
 
@@ -136,6 +137,8 @@ QUIT
   window during a match leaves seat 1 playing; close seat 1 after the match.)
   A server started with "PLAY.exe server" has no window: "PLAY.exe stop" ends it. A cabinet that played on it from
   this same PC leaves it running for the other players when its window closes.
+  A game window that goes by itself (a crash, not a close) stops nothing else: the projector keeps running. Its log
+  says what happened (data\logs\run_seat1.txt or run_projector.txt); "PLAY.exe stop" ends the rest.
   A game that is stuck (no window to close, or it will not close): "PLAY.exe stop force".
 
 ENGLISH (optional)

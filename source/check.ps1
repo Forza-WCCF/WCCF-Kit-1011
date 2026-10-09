@@ -1,6 +1,7 @@
 # check.ps1 - the kit's own checks that need no game (2026-10-08), after build.ps1; CI runs it too (kit.yml):
 #   every script in scripts\ compiles with the kit's own Python (nothing written)
 #   the key driver's self-test (_keys_seat1.py --selftest: a scratch file, nothing live)
+#   play.py's choice when a game window ends: a closed window stops the rest, a crash does not (source\test_ended.py)
 #   the panel's money and relay self-tests (wccfpanel.dll loaded by source\build\fakegame.exe, in a scratch folder;
 #   the relay test plays two seats through scripts\_relay.py on 127.0.0.1:20941 - the C side and the Python side
 #   of the match relay checked against each other)
@@ -17,6 +18,9 @@ if ($LASTEXITCODE) { $failed += 'scripts compile' }
 
 & $py -I (Join-Path $kit 'scripts\_keys_seat1.py') --selftest | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'key driver self-test' }
+
+& $py -I (Join-Path $PSScriptRoot 'test_ended.py')
+if ($LASTEXITCODE) { $failed += 'play.py ended: a closed window vs a crash' }
 
 $t = Join-Path ([IO.Path]::GetTempPath()) "wccfpanel-check-$PID"
 Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue

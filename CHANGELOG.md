@@ -11,7 +11,8 @@ on-screen panel - and online play on a shared server. Newest first; each date is
 - Quitting is closing the game's window. `STOP` is gone: closing seat 1's (or the projector's) window ends the game
   and everything the kit started with it. During a match the first close only warns (the card would get a bad
   ending); a second close within 8 seconds quits anyway. A hosted server (`PLAY.exe server`, no window) and a stuck
-  game: `PLAY.exe stop`.
+  game: `PLAY.exe stop`. A game window that goes by itself (a crash, not a close) stops nothing else while another
+  game window runs: the projector keeps running (`data\logs\run_ended.txt` says so).
 
 ### Fixed
 - Closing the game's window left the game itself running without a window, and with it the server, its match
