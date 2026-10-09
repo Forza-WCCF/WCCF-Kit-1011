@@ -122,6 +122,156 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            CHANGELOG.md
+            .github/release-notes.md
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ needs.build.outputs.zip }}
+          path: dist
+          skip-decompress: true
+
+      # the notes: .github/release-notes.md, then the newest kit's section of CHANGELOG.md - whose heading must be
+      # this tag's kit (tag kit-5.4: "## Kit 5.4 - 2026-10-09"), so a release never goes out with the last kit's notes
+      - name: Draft the release with the kit ZIP
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          ZIP: ${{ needs.build.outputs.zip }}
+        run: |
+          set -euo pipefail
+          heading=$(grep -m1 '^## ' CHANGELOG.md)
+          version=${TAG#kit-}
+          [[ "$heading" =~ ^"## Kit $version - "([0-9]{4}-[0-9]{2}-[0-9]{2})$ ]] || {
+            echo "CHANGELOG.md's newest heading is '$heading', not '## Kit $version - <date>'"; exit 1; }
+          title="Kit $version (${BASH_REMATCH[1]})"
+          (cd dist && sha256sum "$ZIP" > "$ZIP.sha256")
+          sha=$(cut -d' ' -f1 "dist/$ZIP.sha256")
+          {
+            sed -e "s/{TITLE}/kit $version/" -e "s/{ZIP}/$ZIP/" -e "s/{SHA256}/$sha/" .github/release-notes.md
+            awk '/^## /{n++; next} n==1' CHANGELOG.md
+            echo "Every change: [CHANGELOG.md](https://github.com/$REPO/blob/$TAG/CHANGELOG.md)"
+          } > notes.md
+          gh release create "$TAG" "dist/$ZIP" "dist/$ZIP.sha256" --repo "$REPO" --draft --verify-tag \
+            --title "$title" --notes-file notes.md
+
+  prerelease:
+        description: 'Publish a test pre-release with this new tag (kit-5.4-test1); empty: build only'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build, check and package (Windows)
+    runs-on: windows-2025
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Rust toolchain (source/launcher/rust-toolchain.toml)
+        working-directory: source/launcher
+        run: rustup show
+
+      - name: Launchers - format, lint, tests
+        working-directory: source/launcher
+        run: |
+          cargo fmt --all -- --check
+          if ($LASTEXITCODE) { exit 1 }
+          cargo clippy --locked --all-targets --target x86_64-pc-windows-msvc -- -D warnings
+          if ($LASTEXITCODE) { exit 1 }
+          cargo test --locked --target x86_64-pc-windows-msvc
+          if ($LASTEXITCODE) { exit 1 }
+
+      - name: Build every program (source/build.ps1)
+        run: ./source/build.ps1
+
+      - name: Checks without the game (source/check.ps1)
+        run: ./source/check.ps1
+
+      - name: Package the kit ZIP (source/package.ps1)
+        id: package
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          # tag kit-5.4 -> WCCF-2010-11-kit-5.4.zip; pre-release kit-5.4-test1 -> WCCF-2010-11-kit-5.4-test1.zip
+          if ($env:PRERELEASE -and $env:PRERELEASE -cnotmatch '^kit-[0-9][0-9.]*-test[0-9]*$') {
+            throw "a pre-release's tag looks like kit-5.4-test1, not '$env:PRERELEASE'"
+          }
+          $suffix = if ($env:PRERELEASE) { $env:PRERELEASE -replace '^kit-', '' }
+                    elseif ($env:REF_TYPE -eq 'tag') { $env:REF_NAME -replace '^kit-', '' }
+                    else { $env:SHA.Substring(0, 7) }
+          ./source/package.ps1 -Name "WCCF-2010-11-kit-$suffix"
+          "zip=WCCF-2010-11-kit-$suffix.zip" >> $env:GITHUB_OUTPUT
+
+      # the kit ZIP as it is (archive: false): the run page's download is the kit ZIP itself, not a ZIP around it;
+      # the artifact takes the file's name
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          path: dist/${{ steps.package.outputs.zip }}
+          archive: false
+          if-no-files-found: error
+          # the org's artifact storage is 500 MB on GitHub Free (shared by its repos): a 20 MB kit ZIP kept the
+          # default 90 days fills it in about nine runs a month; 7 days leaves room for about a hundred
+          retention-days: 7
+
+    outputs:
+      zip: ${{ steps.package.outputs.zip }}
+
+  zip-check:
+    name: The downloaded ZIP is the kit (not a ZIP in a ZIP)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ needs.build.outputs.zip }}
+          path: dist
+          skip-decompress: true  # keep the kit ZIP whole, as a player downloads it
+
+      - name: Every program at the top of the ZIP
+        env:
+          ZIP: dist/${{ needs.build.outputs.zip }}
+        run: |
+          set -euo pipefail
+          ls -l dist
+          unzip -Z1 "$ZIP" > entries.txt
+          for f in PLAY.exe SETUP.exe ENGLISH.exe bin/winmm.dll bin/FPR_Emu.exe bin/logowin.exe \
+                   overlay/wccfpanel.dll overlay/inject.exe python/python.exe; do
+            grep -qxF "WCCF-2010-11-kit/$f" entries.txt || { echo "missing in $ZIP: WCCF-2010-11-kit/$f"; exit 1; }
+          done
+          echo "$ZIP: $(wc -l < entries.txt) entries, every program in WCCF-2010-11-kit/"
+
+  release:
+    name: Draft release (tag kit-*)
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'kit-')
+    needs: [build, zip-check]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: ${{ needs.build.outputs.zip }}

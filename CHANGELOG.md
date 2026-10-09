@@ -42,6 +42,8 @@ game is not included. Newest first; each date is the day that kit was built.
   A run's download on GitHub is that ZIP itself, no longer a ZIP around it, and CI checks the downloaded file too.
 - Test builds for players: Actions > Kit > Run workflow with a tag like `kit-5.4-test1` publishes a pre-release with
   the ZIP (a public download).
+- A `kit-*` tag's draft release carries its notes (`.github\release-notes.md` and the kit's CHANGELOG section); it is
+  refused when CHANGELOG.md's newest heading is not that kit.
 
 ## Kit 5.3 - 2026-10-08
 
