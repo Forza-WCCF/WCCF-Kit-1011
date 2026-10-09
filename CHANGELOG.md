@@ -7,6 +7,11 @@ game is not included. Newest first; each date is the day that kit was built.
 ## Unreleased
 
 ### Added
+- When a contract ends, the game's own manager transfer works: put the card in again after the last match, and the
+  card reader stand-in puts a blank new card beside it, as if two cards were stacked on the arcade's reader. The game
+  moves the manager (name, salary, level, record, titles, division) to the new card and you make a new club in Club
+  Make. At the next start the new club is in the slot and the old card goes to YOUR CARDS as "CLUB - transferred"
+  (the game will not play it again: no PLAY THIS CLUB for it). The CLUB CARD panel says when a contract has ended.
 - CATALOGUE: the search takes several words, and a card must match each one: a name, club, country or season
   (`milan 2004`), a line (`fw`) or a role (`dmf`: cards rated 8 or more in it). `brazil fw`, `italy cb`.
 - CATALOGUE: the card's pane lists the three roles the card suits best, out of 10 (`ROLES  DMF 10  CMF 7  CVR 5`):

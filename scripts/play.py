@@ -383,7 +383,15 @@ def apply_card_request():
     """the CLUB CARD panel's "card=FILE" / "card=new" (2026-10-06): which club card goes into the slot, done now while
     nothing runs (club_wallet.switch: two renames, no card ever overwritten), then taken out of the file - only
     after the switch, so one stopped half way is finished at the next start.  Anything wrong: said, and the game
-    starts with the card that is in the slot (never locked out)."""
+    starts with the card that is in the slot (never locked out).  First, a finished manager transfer is put away
+    (club_wallet.finish_transfer, 2026-10-08): the new club into the slot, the old card to your cards."""
+    try:
+        import club_wallet
+        _done, what = club_wallet.finish_transfer()
+    except Exception as ex:                    # e.g. a card file held by another program: both stay, said
+        what = "the manager transfer could not be finished now (%s) - both cards stay where they are" % ex
+    if what:
+        say("  club card: %s" % what)
     want = read_panel().get("card", "")
     if not want:
         return
@@ -463,8 +471,9 @@ def start_cabinet(debug, env, mode, ip, seat_no, seat, roles):
     (2026-10-07) runs only this: the projector, the scene service, the seat lease and the panel helper keep running."""
     p = start("_ringedge_services.py", [LIFE, "ringedge_log.txt"], "run_ringedge.txt", env)
     roles[p.pid] = "keychip / network stand-in"
-    p = start("_icc_reader.py", [ICC_PIPE, LIFE, "icc_log.txt" if debug else "NUL", CARD], "run_cardreader.txt", env,
-              quiet=not debug)
+    import club_wallet                         # its NEW: room for a second card, for a manager transfer (2026-10-08)
+    p = start("_icc_reader.py", [ICC_PIPE, LIFE, "icc_log.txt" if debug else "NUL", CARD, club_wallet.NEW],
+              "run_cardreader.txt", env, quiet=not debug)
     roles[p.pid] = "card reader stand-in"
     p = start("_jvs_board.py", [JVS_PIPE, LIFE, "jvs_log.txt", KEYS_INPUT], "run_ioboard.txt", env)
     roles[p.pid] = "I/O board stand-in"
@@ -718,13 +727,25 @@ def ask_yes(question):
         return False
 
 
+def club_session():
+    """(session state, bad endings) of the club in play: the slot card, or during a manager transfer the new card
+    beside it (2026-10-08) - an open session on either one is open"""
+    import club_wallet
+    since = run_started()
+    sess, bad = K.card_session(CARD, since)
+    new_sess, new_bad = K.card_session(club_wallet.NEW, since)
+    if new_sess == "open" or (new_sess == "cut" and sess != "open"):
+        return new_sess, new_bad
+    return sess, bad
+
+
 def stop_guard(force, check, game, seat):
     """The card rule (below), for a stop and for a cabinet restart (2026-10-07): (3, ...) refused - said why - or
     (0, card in?, session state) to go on"""
     seat_up = any(os.path.normcase(os.path.dirname(p[3])) == os.path.normcase(seat)
                   for p in K.game_processes(game) if p[2].lower() == "client_release.exe")
     c = card_in()
-    sess, bad = K.card_session(CARD, run_started())
+    sess, bad = club_session()
     if seat_up and not force and (c is not False or sess == "open"):
         if sess == "open":
             say("A card session is open: a match or Club Make is on, and the game saves your card in the locker room "
@@ -944,7 +965,7 @@ def status():
     for p in g:
         say("  game  %-28s pid %d  (%s)" % (p[2], p[0], os.path.basename(os.path.dirname(p[3]))))
     say("club card: %s" % {True: "IN the reader", False: "out", None: "unknown"}[card_in()])
-    sess, bad = K.card_session(CARD, run_started())
+    sess, bad = club_session()
     say("card session: %s%s" % (SESSION_WORDS[sess], "" if bad is None else ", bad endings %d" % bad))
     return 0
 

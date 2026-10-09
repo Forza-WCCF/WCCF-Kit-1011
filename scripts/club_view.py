@@ -15,7 +15,8 @@ The view (data\club_view.txt) is ASCII lines for the overlay's ASCII font:
   squad|NUMBER|NAME|POSITION|APPS|GOALS|ASSISTS|CONDITION|INJURY
   session|open / closed / cut / new / none / unreadable      the slot's card session (kit_common.card_session)
   backup|WHEN
-  wallet|FILE|CLUB|SUMMARY                 your other cards (club_wallet.py), with every state
+  wallet|FILE|CLUB|SUMMARY[|transferred]   your other cards (club_wallet.py), with every state; "transferred": a
+                                           used-up card the game will not play again (no PLAY THIS CLUB for it)
 Field meanings checked against the game's own CLUB TEAM DATA screen for the test club (2026-10-06): contract left
 (91), salary and prize money in $100 units ($207,500, $3,597,000), record (W7 D2 L0), birthday, and the squad in the
 game's order (by position, then card order).  The manager level and the fan count are left out: not yet tied to
@@ -134,9 +135,10 @@ def build(card=CARD, catalogue=CATALOGUE, backups=BACKUPS, running=RUNNING, card
     except OSError:
         since = None
     session, bad = K.card_session(card, since)
+    folder = cards or os.path.join(os.path.dirname(card), "cards")
     tail = ["session|%s" % session] + ["backup|" + b for b in back] + \
-           ["wallet|%s|%s|%s" % (f, name or "-", summary) for f, name, summary in
-            W.wallet(cards or os.path.join(os.path.dirname(card), "cards"))]
+           ["wallet|%s|%s|%s%s" % (f, name or "-", summary, "|transferred" if W.used_up(os.path.join(folder, f)) else "")
+            for f, name, summary in W.wallet(folder)]
     if session == "none":
         return ["state|none|no club card in the slot yet - put one in with the CARD key"] + tail
     try:
@@ -159,8 +161,14 @@ def build(card=CARD, catalogue=CATALOGUE, backups=BACKUPS, running=RUNNING, card
                                                  D.ymd8(one("Club", "CLUB_FOUNDATION"))))
     lines.append("row|MANAGER|%s  (born %s)|w" % (ascii_name(D.text(d[("Coach", 0, "COACH_NAME")])) or "-",
                                                  D.ymd8(one("Coach", "COACH_BIRTHDAY"))))
-    left = one("Coach", "COACH_LAST_TERM")
-    lines.append("row|CONTRACT|%d matches left|%s" % (left, "y" if left <= 10 else "w"))
+    c = W.counter(card)                                  # 0 is a real counter (used up): not "or" - it would drop it
+    left, low = one("Coach", "COACH_LAST_TERM"), (0xFFFF if c is None else c) & 0xFF
+    if low == 0:                                         # used up: its manager moved to a new card (Sega's transfer)
+        lines.append("row|CONTRACT|transferred - the game will not play this card again|r")
+    elif low == 1 or left == 0:                          # last use: the next insert offers the transfer to a new card
+        lines.append("row|CONTRACT|ended - put the card in: the game moves your manager to a new card|o")
+    else:
+        lines.append("row|CONTRACT|%d matches left|%s" % (left, "y" if left <= 10 else "w"))
     lines.append("row|SALARY|%s a year|w" % money(one("Coach", "COACH_SALARY")))
     lines.append("row|LEAGUE|Div %d, leg %d: %s - W%d D%d L%d, %d-%d, %d pts|w" % (
         lg["division"], lg["leg"], ordinal(lg["position_computed"]), lg["win"], lg["draw"], lg["lose"],
