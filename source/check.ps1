@@ -6,9 +6,9 @@
 #   a missing club-card helper file never stops a start (source\test_card_fix.py: a scratch panel.txt)
 #   the run before last zipped into data\logs\archive, the archive kept to its size (source\test_log_archive.py)
 #   a transferred card is listed as such and never played again (source\test_wallet_transferred.py: scratch cards)
-#   the panel's money and relay self-tests (wccfpanel.dll loaded by source\build\fakegame.exe, in a scratch folder;
-#   the relay test plays two seats through scripts\_relay.py on 127.0.0.1:20941 - the C side and the Python side
-#   of the match relay checked against each other)
+#   the panel's money, relay and dealt-card self-tests (wccfpanel.dll loaded by source\build\fakegame.exe, in a
+#   scratch folder; the relay test plays two seats through scripts\_relay.py on 127.0.0.1:20941 - the C side and
+#   the Python side of the match relay checked against each other)
 # The panel's frame-wait test (WCCFPANEL_LIMITERTEST) measures milliseconds and stays out: a busy machine fails it.
 #
 #   powershell -ExecutionPolicy Bypass -File source\check.ps1
@@ -49,6 +49,7 @@ $env:WCCF_DATA = Join-Path $t 'data'
 $env:WCCF_KEYS = Join-Path $t 'data\keys.txt'
 $env:WCCFPANEL_MONEYTEST = '1'
 $env:WCCFPANEL_RELAYTEST = '1'
+$env:WCCFPANEL_DEALTEST = '1'             # the dealt card's odds
 $env:WCCF_RELAY_PORT = '20941'
 $relay = Start-Process -FilePath $py -ArgumentList '-I', "`"$(Join-Path $kit 'scripts\_relay.py')`"", '60' -PassThru -WindowStyle Hidden
 try {
@@ -68,7 +69,7 @@ try {
 } finally {
     if (-not $relay.HasExited) { Stop-Process -Id $relay.Id -Force }
     'WCCF_RELAY_PORT', 'WCCFPANEL_ROLE', 'WCCFPANEL_DRYKEYS', 'WCCFPANEL_FULLSCREEN', 'WCCF_DATA', 'WCCF_KEYS', 'WCCFPANEL_MONEYTEST',
-    'WCCFPANEL_RELAYTEST' | ForEach-Object { Remove-Item "env:$_" -ErrorAction SilentlyContinue }
+    'WCCFPANEL_RELAYTEST', 'WCCFPANEL_DEALTEST' | ForEach-Object { Remove-Item "env:$_" -ErrorAction SilentlyContinue }
     Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
 }
 
