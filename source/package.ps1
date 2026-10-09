@@ -27,6 +27,13 @@ foreach ($f in $built) {
     New-Item -ItemType Directory -Force (Split-Path $to) | Out-Null
     Copy-Item $from $to
 }
+# PLAY.exe and SETUP.exe must carry their version information (source\launcher\build.rs, 2026-10-10): a nameless
+# unsigned program is what Windows Defender's machine learning flagged (Kit 5.5's first SETUP.exe was quarantined)
+foreach ($f in 'PLAY.exe', 'SETUP.exe') {
+    $v = (Get-Item (Join-Path $root $f)).VersionInfo
+    if ($v.ProductName -ne 'WCCF 2010-11 kit' -or -not $v.FileVersion) { throw "$f has no version information - see source\launcher\build.rs" }
+    Write-Host "$f : $($v.ProductName) $($v.FileVersion) - $($v.FileDescription)"
+}
 
 # for SETUP.exe's update: version.txt, which kit this is (kit-5.4, kit-5.5-test1, or CI's commit), and files.txt,
 # every file this kit ships - an update removes what the old kit's list has and the new one's does not
