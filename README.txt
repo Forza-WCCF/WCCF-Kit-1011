@@ -2,8 +2,9 @@ WCCF 2010-11 (Rev D) on a PC - the kit
 ======================================
 
 WHAT IT IS
-  What makes the community's Rev D download (the "sbwg" zip) run on one Windows PC: Sega's server, the
-  projector (the shared big screen) and a player cabinet (seat 1). Around seat 1's picture there is a panel with
+  Community-made tools for your own copy of WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet's hardware
+  and an in-game panel, so the game's server, the projector (the shared big screen) and a player cabinet (seat 1)
+  run on one Windows PC. The game itself is not part of the kit. Around seat 1's picture there is a panel with
   the cabinet's buttons, a FORMATION BOARD for your cards (drag to move, drop on another card to swap, right-click
   to take a card off), a CATALOGUE of all 3,909 player cards (search, position and rarity filters, sort,
   a slider per stat, a stats pane; a click puts the card on your table), KEYS, where you choose your own keys or
@@ -63,17 +64,15 @@ NEW IN KIT 4
 
 YOU NEED
   - Windows 10 or 11, 64-bit, with the game on an NTFS drive (normal for C: and D:)
-  - the community's Rev D download, "World Club Champion Football - Intercontinental Clubs 2010-2011 (Japan)
-    (Rev D).iso Extracted.zip" (about 3.7 GB). Unzip it: inside are "wccf-revd-sbwg-extracted.zip" (the one you
-    need) and "wccf-revd-sbtr-extracted.zip" (not needed). Unzipping the sbwg one makes a folder called "extracted".
-    (If Windows has trouble with zips this big, 7-Zip is free.)
+  - your own copy of the game, Rev D, as a folder of files: the game folder is the one that holds
+    client_Release.exe, control_Release.exe and match_Release.exe. Setup checks that it is Rev D.
   - DirectX 9: Microsoft's "DirectX End-User Runtime (June 2010)". Setup tells you if it is missing.
   Nothing else: Python is inside the kit.
 
 SETUP (once)
-  1. Unzip this kit into a folder of its own. Unzip the sbwg zip into a folder of its own too (e.g. D:\Games\WCCF).
+  1. Unzip this kit into a folder of its own. Keep the game in a folder of its own too (e.g. D:\Games\WCCF).
      Plain paths are safest: the game has trouble with non-English letters in folder names.
-  2. Drag the "extracted" folder onto SETUP.exe (or double-click SETUP.exe and drag the folder into its window).
+  2. Drag the game folder onto SETUP.exe (or double-click SETUP.exe and drag the folder into its window).
   3. Setup checks that your copy is Rev D, makes the changes listed under WHAT SETUP CHANGES, then makes the card
      catalogue and the card pictures from your files (about a minute). Running it again checks and repairs.
   Updating from an earlier kit: close the game, unzip the new kit over the old folder (data\ keeps your club, your other
@@ -93,7 +92,7 @@ PLAY
   for 2 minutes (the game's own 40 seconds were too short for a seat that had just started, which then waited a
   whole 12-minute round, the projector meanwhile on "Now Synchronizing"). Put your card in soon after starting
   and you play in the first round. To change the 2 minutes: FIX_REST_ENTRY_TIME in
-  extracted\local\ctrl_user_option.conf (seconds).
+  local\ctrl_user_option.conf in the game folder (seconds).
   Click seat 1's window, then:
       I       club card in / out (with a new card the game makes your club: manager license, club name)
       Enter   START (free play: the key driver puts a coin in for you)
@@ -175,11 +174,11 @@ ENGLISH (optional)
   from Sega's European English of the older WCCF (lines with the same Japanese).
 
 WHAT SETUP CHANGES   ("SETUP.exe undo" takes all of it back out)
-  in extracted\   adds winmm.dll (the kit's hook) and winmm_orig.dll (a copy of your Windows' own winmm.dll)
+  game folder     adds winmm.dll (the kit's hook) and winmm_orig.dll (a copy of your Windows' own winmm.dll)
                   renames logowin.exe to logowin_sega.exe and puts a quiet stand-in in its place
                   (Sega's opens a white window over the whole screen)
                   adds local\client_user_option.conf (projector) and local\ctrl_user_option.conf (server)
-  beside it       seat1\   the player cabinet: links to extracted\'s files and folders, its own copy of
+  beside it       seat1\   the player cabinet: links to the game folder's files and folders, its own copy of
                            client_Release.exe with 15 changes (checked byte for byte), its own settings
                   misc\FlatPanelReader_Emulator\exe\FPR_Emu.exe   the card-table helper the game starts
   Nothing else on the PC is changed.
@@ -203,7 +202,7 @@ GOOD TO KNOW
     The previous run's logs are in data\logs\previous.
   - Seat 1 used to close itself at the start of some matches: the game draws a text it cannot format (a stray %).
     The panel now catches that one case: the text is shown as it is, the game goes on, and the text is written to
-    seat1\wccfpanel.log (beside extracted) as a "badfmt:" line - please share that line.
+    seat1\wccfpanel.log (beside the game folder) as a "badfmt:" line - please share that line.
   - The arcade printed the player cards you earn from a dispenser. There is none here, so the game counted every
     card as owed ("You are owed N Player Card(s)"). The panel now tells the game nothing is owed.
   - The game is in Japanese; ENGLISH.exe translates most of it (see ENGLISH).

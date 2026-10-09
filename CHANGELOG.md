@@ -13,6 +13,8 @@ on-screen panel - and online play on a shared server. Newest first; each date is
   (`MSGPARSE guard stepped aside: ...`, with what it found) - please share that line.
 
 ### Changed
+- The README, the GitHub page and SETUP's messages speak of your own copy of the game: the kit does not include the
+  game, and no longer names any download of it.
 - `PLAY`, `SETUP` and `ENGLISH` are programs (`.exe`, written in Rust: `source\launcher`) instead of `.bat` files,
   used the same way. Updating from an earlier kit: delete the old `.bat` files.
 - Quitting is closing the game's window. `STOP` is gone: closing seat 1's (or the projector's) window ends the game
