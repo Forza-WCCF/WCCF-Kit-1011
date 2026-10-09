@@ -11,6 +11,28 @@ WHAT IT IS
   or a game controller's buttons, SETTINGS, and CLUB CARD, your club card and your other clubs.
   The kit holds none of Sega's files. Everything that comes from the game is made by setup from YOUR copy.
 
+NEW IN KIT 5.5
+  - Free play: the game's own FREE PLAY is on, so you never need a coin - not even on the screen after a cup match.
+    The COIN and BACK buttons are gone, and DATA and CARD are full width.
+  - When your contract ends, put the card in again after the last match: the game moves your manager to a new card
+    and you make a new club. The old card is kept in YOUR CARDS as "transferred".
+  - SETUP.exe is a window: your game folder, the game's language (English or Japanese - ENGLISH.exe is gone), and
+    UPDATE, which updates the kit for you from now on (your clubs, keys and settings are never touched). PLAY.exe
+    tells you when a newer kit is out.
+  - Antivirus: the panel now loads from inside the game itself. overlay\inject.exe is gone - it is what Windows
+    Defender blocked on one player's PC.
+  - After each match, a player card is shown as the cabinet's dispenser gave one - only shown, nothing is added to
+    your club card.
+  - CATALOGUE: search with several words (milan 2004, brazil fw); each card's pane shows the roles it suits best.
+    On the FORMATION BOARD a card shows big after the mouse rests on it 3 s.
+  - The kit's version (KIT 5.5) is at the top right of the game. SETTINGS > LOGS > SEND LOGS sends your logs (never
+    your club card) to the server you play on and shows a code: post the code in Discord with what went wrong.
+  - Online: no more two players on one seat after a server restart (the second one was never let in), and the
+    shared server notices when it stops letting players in and restarts by itself.
+  - Fixed: on a PC left on for more than 24 days, the "You are owed N Player Card(s)" fix did not run.
+  - Updating from 5.4: unzip this kit over the old folder, then open SETUP.exe and SET UP / REPAIR (and English if
+    you use it). Next time, SETUP's UPDATE does it for you.
+
 NEW IN KIT 5.4
   - Closing the game's window quits the game, cleanly, every time: the game and everything the kit started with it
     (the server, its match engines, the kit's helpers) stop by themselves. Before, the game and its helpers ran on

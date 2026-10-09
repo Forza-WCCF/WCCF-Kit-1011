@@ -4,9 +4,17 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
-## Unreleased
+## Kit 5.5 - 2026-10-10
 
 ### Added
+- Free play: the game's own FREE PLAY is switched on in seat 1, so no coin is needed anywhere - including the
+  two-choice screen after a cup match that PRESS / SHOOT decide, where START's coin did not help. The key driver
+  still puts a coin in on START, in case the panel is not loaded.
+- When a contract ends, the game's own manager transfer works: put the card in again after the last match, and the
+  card reader stand-in puts a blank new card beside it, as if two cards were stacked on the arcade's reader. The game
+  moves the manager (name, salary, level, record, titles, division) to the new card and you make a new club in Club
+  Make. At the next start the new club is in the slot and the old card goes to YOUR CARDS as "CLUB - transferred"
+  (the game will not play it again: no PLAY THIS CLUB for it). The CLUB CARD panel says when a contract has ended.
 - SETUP.exe is a window: the game folder (BROWSE, or drag it onto the window or onto SETUP.exe) with SET UP /
   REPAIR and UNDO SETUP; GAME LANGUAGE, ENGLISH or JAPANESE (what ENGLISH.exe did); and UPDATE, the kit's releases
   and test builds on GitHub. UPDATE downloads the one you pick and copies it over the kit folder - data\ (club
@@ -15,12 +23,6 @@ game is not included. Newest first; each date is the day that kit was built.
   in the window. Its words are English, or Italian or Japanese when Windows is.
 - PLAY.exe says when a newer kit is out, and SETUP.exe marks it "(newer)" and says so: a release only, never a test
   build. PLAY asks GitHub while the game starts and waits at most 3 s more for the answer.
-- The kit ZIP holds version.txt (which kit it is) and files.txt (every file it ships), for UPDATE.
-- When a contract ends, the game's own manager transfer works: put the card in again after the last match, and the
-  card reader stand-in puts a blank new card beside it, as if two cards were stacked on the arcade's reader. The game
-  moves the manager (name, salary, level, record, titles, division) to the new card and you make a new club in Club
-  Make. At the next start the new club is in the slot and the old card goes to YOUR CARDS as "CLUB - transferred"
-  (the game will not play it again: no PLAY THIS CLUB for it). The CLUB CARD panel says when a contract has ended.
 - A player card after each match, as the cabinet's dispenser gave one (a test): when a match ends with its
   locker-room save, a window shows a card drawn from the catalogue - 2.5 % a card better than white and black
   (RARE, LEGEND, ALL TIME LEGEND), else 70 % white (REGULAR) and 30 % black (SPECIAL). Only shown: nothing is added
@@ -31,15 +33,13 @@ game is not included. Newest first; each date is the day that kit was built.
   the game's own numbers (the player record's first 16 hidden values); the role names are inferred from the players
   rated 10 in each.
 - FORMATION BOARD: resting the mouse on a card on the table (the big card) also shows its name, line, total and roles.
-- Logs: older runs are no longer deleted. `data\logs\previous` is still the run before; the runs before it are
-  zipped into `data\logs\archive` (about the last 200 MB, the oldest go first).
-- Free play: the game's own FREE PLAY is switched on in seat 1, so no coin is needed anywhere - including the
-  two-choice screen after a cup match that PRESS / SHOOT decide, where START's coin did not help. The key driver
-  still puts a coin in on START, in case the panel is not loaded.
 - SETTINGS > LOGS: SEND LOGS (click twice) sends this game's logs to the server you play on and shows a short code
   to post in Discord with what went wrong. Never the club card; the Windows user name and PC name are taken out.
 - The kit's version (`KIT 5.5`) at the top right of the game, under the ping meter when online -
   `version.txt` in the kit (`kit-5.5`), written when the kit ZIP is made.
+- Logs: older runs are no longer deleted. `data\logs\previous` is still the run before; the runs before it are
+  zipped into `data\logs\archive` (about the last 200 MB, the oldest go first).
+- The kit ZIP holds version.txt (which kit it is) and files.txt (every file it ships), for UPDATE.
 - Server: a box that only shows the projector (a stream box) can be kept out of the game until a player is in it -
   put its address in `data\hold_projector.txt`. The seat desk then holds that address off TCP 20002 with a Windows
   firewall rule and lifts it as soon as a player joins; "HOLD" tells the box whether it is held. On the shared server,
