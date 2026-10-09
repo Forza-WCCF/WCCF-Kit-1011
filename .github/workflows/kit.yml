@@ -26,7 +26,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: kit-${{ github.ref }}
+  # by event too: a release (Run workflow) must not cancel the push build of the same commit - it did twice on
+  # 2026-10-10, leaving main's latest commit with a red X although its release build passed
+  group: kit-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
