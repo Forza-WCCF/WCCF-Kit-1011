@@ -13,6 +13,8 @@ game is not included. Newest first; each date is the day that kit was built.
   cards, keys, settings, logs) is never written, nothing is copied while the game runs - removes the files the old
   kit had and the new one does not, then offers setup again (and the English, if it is on). The scripts' output shows
   in the window. Its words are English, or Italian or Japanese when Windows is.
+- PLAY.exe says when a newer kit is out, and SETUP.exe marks it "(newer)" and says so: a release only, never a test
+  build. PLAY asks GitHub while the game starts and waits at most 3 s more for the answer.
 - The kit ZIP holds version.txt (which kit it is) and files.txt (every file it ships), for UPDATE.
 - When a contract ends, the game's own manager transfer works: put the card in again after the last match, and the
   card reader stand-in puts a blank new card beside it, as if two cards were stacked on the arcade's reader. The game

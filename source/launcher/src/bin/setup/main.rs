@@ -26,6 +26,7 @@ use std::time::Duration;
 use std::{env, fs, mem, ptr, thread};
 
 use launcher::Kit;
+use launcher::release::{REPO, curl, is_newer, system32};
 use serde_json::Value;
 use text::{fill, t};
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, RECT, WPARAM};
@@ -48,7 +49,6 @@ use windows_sys::Win32::UI::Shell::{
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
 use windows_sys::core::{PCWSTR, w};
 
-const REPO: &str = "Forza-WCCF/WCCF-Kit-1011";
 /// Launchers of earlier kits that this one replaced (PLAY.exe, SETUP.exe): removed unless the kit lists them.
 const LEGACY: &[&str] = &[
     "PLAY.bat",
@@ -166,30 +166,6 @@ fn releases(json: &str) -> Result<Vec<Release>, String> {
             })
         })
         .collect())
-}
-
-/// Windows' own program, by full path: never a curl.exe or tar.exe that lies in the kit folder.
-fn system32(exe: &str) -> Command {
-    let root = env::var_os("SystemRoot").unwrap_or_else(|| r"C:\Windows".into());
-    let mut cmd = Command::new(Path::new(&root).join("System32").join(exe));
-    cmd.stdin(Stdio::null()).creation_flags(CREATE_NO_WINDOW);
-    cmd
-}
-
-/// curl.exe that fails on an HTTP error and gives up on a connection that stays silent for a minute.
-fn curl() -> Command {
-    let mut cmd = system32("curl.exe");
-    cmd.args([
-        "-sSfL",
-        "--connect-timeout",
-        "20",
-        "--speed-limit",
-        "1",
-        "--speed-time",
-        "60",
-    ])
-    .args(["-A", "wccf-kit-setup"]);
-    cmd
 }
 
 fn fetch() -> Result<Vec<Release>, String> {
@@ -435,9 +411,8 @@ fn remembered_game(kit: &Kit) -> String {
         .unwrap_or_default()
 }
 
-/// version.txt, which the kit ZIP brings (source\package.ps1 writes it).
 fn this_kit(kit: &Kit) -> String {
-    fs::read_to_string(kit.dir().join("version.txt")).map_or_else(|_| t().not_known.into(), |v| v.trim().to_owned())
+    kit.version().unwrap_or_else(|| t().not_known.into())
 }
 
 /// The steps one by one in a worker; the first that fails ends the job.
@@ -657,7 +632,13 @@ fn refresh(hwnd: HWND) {
             SendMessageW(box_, LB_RESETCONTENT, 0, 0);
             for r in &list {
                 let kind = if r.test { t().test_build } else { t().release };
-                let mark = if r.tag == installed { t().this_kit } else { "" };
+                let mark = if r.tag == installed {
+                    t().this_kit
+                } else if !r.test && is_newer(&r.tag, &installed) {
+                    t().newer
+                } else {
+                    ""
+                };
                 let line = wide(&format!("{}\t{kind}\t{}\t{mark}", r.tag, r.date));
                 SendMessageW(box_, LB_ADDSTRING, 0, line.as_ptr() as LPARAM);
             }
@@ -752,7 +733,9 @@ fn main() {
         let mut s = shared();
         match found {
             Ok(list) if !list.is_empty() => {
-                s.status = t().pick.into();
+                let installed = this_kit(&Kit::here());
+                let newest = list.iter().find(|r| !r.test && is_newer(&r.tag, &installed));
+                s.status = newest.map_or_else(|| t().pick.into(), |r| fill(t().available, &[&r.tag]));
                 s.releases = list;
                 s.listed = true;
             }

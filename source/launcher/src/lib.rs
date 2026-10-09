@@ -3,6 +3,7 @@
 //! keeps the window as the .bat did: after a problem until a key is pressed, after a good PLAY for 30 seconds.
 //! PLAY also leaves the run's watcher behind (watch.rs): once a game window is closed, it stops the rest.
 
+pub mod release;
 mod watch;
 
 use std::ffi::OsStr;

@@ -81,13 +81,14 @@ SETUP (once)
      Running it again checks and repairs.
   SETUP.exe is one window for the rest too: GAME LANGUAGE (see ENGLISH), UNDO SETUP, and UPDATE. Its own words are
   in English, or in Italian or Japanese when Windows is.
-  Updating: close the game, open SETUP.exe: under UPDATE it lists the kit's releases and test builds on GitHub ("What's
-  new" opens one's page). Pick one, UPDATE: it is downloaded and put into this folder - data\ (your club, your other
-  clubs, settings, keys, catalogue, logs) stays as it is - and the files the old kit had and the new one does not
-  are removed. Then SETUP offers to set up the game folder again, and the English with it if you use English. A
-  server settings file you edited by hand is kept as .before-kit. By hand, or from Kit 5.4 and older: unzip the new
-  kit over the old folder, then open SETUP.exe (it removes the old .bat files and ENGLISH.exe), SET UP / REPAIR,
-  and ENGLISH if you use English.
+  Updating: PLAY.exe says when a newer kit is out (a release, never a test build), and so does SETUP.exe, which marks
+  it "(newer)". Close the game, open SETUP.exe: under UPDATE it lists the kit's releases and test builds on GitHub
+  ("What's new" opens one's page). Pick one, UPDATE: it is downloaded and put into this folder - data\ (your club,
+  your other clubs, settings, keys, catalogue, logs) stays as it is - and the files the old kit had and the new one
+  does not are removed. Then SETUP offers to set up the game folder again, and the English with it if you use English.
+  A server settings file you edited by hand is kept as .before-kit. By hand, or from Kit 5.4 and older: unzip the new
+  kit over the old folder, then open SETUP.exe (it removes the old .bat files and ENGLISH.exe), SET UP / REPAIR, and
+  ENGLISH if you use English.
 
 PLAY
   PLAY.exe starts everything in about 30 seconds: the server, the projector's window, seat 1's window with the
