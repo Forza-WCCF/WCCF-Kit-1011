@@ -1,0 +1,94 @@
+# Builds the kit from source on Windows, runs its checks and packs the kit ZIP (an artifact of every run).
+# A tag kit-* also gets a DRAFT release with that ZIP: a maintainer reads it and publishes it.
+name: Kit
+
+on:
+  push:
+    branches: [main]
+    tags: ['kit-*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build, check and package (Windows)
+    runs-on: windows-2025
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Rust toolchain (source/launcher/rust-toolchain.toml)
+        working-directory: source/launcher
+        run: rustup show
+
+      - name: Launchers - format, lint, tests
+        working-directory: source/launcher
+        run: |
+          cargo fmt --all -- --check
+          if ($LASTEXITCODE) { exit 1 }
+          cargo clippy --locked --all-targets --target x86_64-pc-windows-msvc -- -D warnings
+          if ($LASTEXITCODE) { exit 1 }
+          cargo test --locked --target x86_64-pc-windows-msvc
+          if ($LASTEXITCODE) { exit 1 }
+
+      - name: Build every program (source/build.ps1)
+        run: ./source/build.ps1
+
+      - name: Checks without the game (source/check.ps1)
+        run: ./source/check.ps1
+
+      - name: Package the kit ZIP (source/package.ps1)
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+        run: |
+          $suffix = if ($env:REF_TYPE -eq 'tag') { $env:REF_NAME } else { $env:SHA.Substring(0, 7) }
+          ./source/package.ps1 -Name "WCCF-2010-11-kit-$suffix"
+
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: WCCF-2010-11-kit
+          path: |
+            dist/*.zip
+            dist/*.zip.sha256
+          if-no-files-found: error
+          # the org's artifact storage is 500 MB on GitHub Free (shared by its repos): a 20 MB kit ZIP kept the
+          # default 90 days fills it in about nine runs a month; 7 days leaves room for about a hundred
+          retention-days: 7
+          compression-level: 0  # already a ZIP
+
+  release:
+    name: Draft release (tag kit-*)
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'kit-')
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: WCCF-2010-11-kit
+          path: dist
+
+      - name: Draft the release with the kit ZIP
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" dist/*.zip dist/*.zip.sha256 --repo "$REPO" --draft --verify-tag \
+            --title "$TAG" --notes "The kit ZIP, built by CI from $TAG. See CHANGELOG.md; publish after a check."

@@ -1,3 +1,15 @@
+The source of every program the kit ships, and how each is built.  The kit ZIP carries the built programs; git
+holds only their source (2026-10-08).  From a git checkout, build them all into their places with:
+
+    powershell -ExecutionPolicy Bypass -File source\build.ps1     the C programs (32-bit, MSVC) and the launchers (Rust)
+    powershell -ExecutionPolicy Bypass -File source\check.ps1     the checks that need no game (scripts, key driver, panel)
+    powershell -ExecutionPolicy Bypass -File source\package.ps1   the kit ZIP in dist\, as players get it
+
+Needs Visual Studio 2022 (or its Build Tools) with "Desktop development with C++", and rustup.  CI
+(.github\workflows\kit.yml) runs the same three on every push and pull request; a tag kit-* also gets a draft
+release with the ZIP.  The commands each program is built with, for the record (build.ps1 adds /Brepro, so the same
+source gives the same file, and keeps the compiler's leftovers in source\build\):
+
 The C source of every program the kit ships. Each was built with Microsoft's C compiler for 32-bit x86
 (Visual Studio Build Tools, "vcvarsall.bat x86"), the runtime linked in (/MT), so no Visual C++ runtime is needed.
 

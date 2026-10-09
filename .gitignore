@@ -1,0 +1,19 @@
+# Made on a player's PC by the kit: settings, keys, logs and the club cards - never commit a save.
+/data/
+# Made by SETUP.exe from the player's own game files.
+/overlay/catalogue.tsv
+/overlay/cards/
+
+# Built from source\ by source\build.ps1 (and by CI into the kit ZIP) - git holds the source, not the programs.
+/PLAY.exe
+/SETUP.exe
+/ENGLISH.exe
+/bin/
+/overlay/wccfpanel.dll
+/overlay/inject.exe
+/source/build/
+/source/launcher/target/
+/dist/
+
+# Python's caches (a script run from a checkout).
+__pycache__/
