@@ -39,6 +39,9 @@ if ($LASTEXITCODE) { $failed += 'play.py ended: a closed window vs a crash' }
 & $py -I (Join-Path $kit 'scripts\edit_club_card.py') --self-test | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'club card editor self-test' }
 
+& $py -I (Join-Path $PSScriptRoot 'test_hook.py')
+if ($LASTEXITCODE) { $failed += 'play.py puts the kit''s winmm.dll back; Windows Security named in plain words' }
+
 & $py -I (Join-Path $PSScriptRoot 'test_card_fix.py')
 if ($LASTEXITCODE) { $failed += 'a missing card helper file must not stop a start' }
 

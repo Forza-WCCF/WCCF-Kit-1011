@@ -262,6 +262,13 @@ def not_server_side(running, roles, py=None):
     return out
 
 
+# Windows' "the file contains a virus": Windows Security stopped a file as the game loaded it (2026-10-10: Kit 5.5.1's
+# winmm.dll, quarantined from seat1\ the moment the game started)
+VIRUS = "0xC0000906"
+BLOCKED = (" - Windows Security blocked one of the kit's files as the game started (0xc0000906). Update the kit with "
+           "SETUP.exe (UPDATE); Windows Security > Virus & threat protection > Protection history shows which file")
+
+
 def wait_for(what, test, seconds, proc=None, log_name=None):
     end = time.time() + seconds
     while time.time() < end:
@@ -270,7 +277,44 @@ def wait_for(what, test, seconds, proc=None, log_name=None):
         if proc is not None and proc.poll() is not None:
             break
         time.sleep(0.5)
-    raise Failed("%s did not come up%s" % (what, (" - see data\\logs\\%s" % log_name) if log_name else ""))
+    why = (" - see data\\logs\\%s" % log_name) if log_name else ""
+    try:
+        if log_name and VIRUS in open(os.path.join(K.LOGS, log_name), encoding="utf-8", errors="replace").read():
+            why = BLOCKED
+    except OSError:
+        pass
+    raise Failed("%s did not come up%s" % (what, why))
+
+
+def ensure_hook(folders, bin_dir=None):
+    """the kit's winmm.dll in each game folder (extracted\\ and seat1\\), as SETUP put it there - put back if it is
+    missing or not the kit's.  2026-10-10: Windows Security quarantined seat1\\winmm.dll as the game started, and the
+    next start ran the game without it: it stopped 0.3 s in (0xC0000005), because only SETUP copied it.  Returns the
+    folders it put it back in; Failed, in plain words, when the kit's own copy is gone or blocked."""
+    src = os.path.join(bin_dir or K.BIN, "winmm.dll")
+    try:
+        want = K.sha256(src)
+    except OSError as ex:
+        raise Failed("the kit's bin\\winmm.dll is %s (%s) - the game cannot start without it. Windows Security may "
+                     "have removed it: update the kit with SETUP.exe (UPDATE), or download the latest kit"
+                     % ("missing" if not os.path.exists(src) else "blocked", ex.strerror or ex))
+    put = []
+    for d in folders:
+        dst = os.path.join(d, "winmm.dll")
+        try:
+            if K.sha256(dst) == want:
+                continue
+        except OSError:
+            pass                                    # missing, or blocked by Windows Security: copy over it
+        try:
+            shutil.copyfile(src, dst)
+            if K.sha256(dst) != want:
+                raise OSError("the copy does not match")
+        except OSError as ex:
+            raise Failed("could not put the kit's winmm.dll back in %s (%s) - run SETUP.exe (SET UP / REPAIR)"
+                         % (d, ex.strerror or ex))
+        put.append(d)
+    return put
 
 
 ARCHIVE_LIMIT = 200 * 1024 * 1024       # data\logs\archive: zipped runs kept up to this many bytes, the oldest go first
@@ -551,6 +595,9 @@ def play(debug, mode="local", ip=None, seat_no=None):
             ", ".join(sorted({p[2] for p in busy})))
         return 3
     beside_server = bool(running)            # only "remote" gets here with something running: a server on this PC
+    # beside a server on this PC the game folder's winmm.dll is loaded by it: only seat 1's is checked then
+    for d in ensure_hook((seat,) if beside_server else (game, seat)):
+        say("  the kit's winmm.dll was missing or changed in %s - put back" % d)
     if beside_server:
         os.makedirs(os.path.join(K.LOGS, "hook"), exist_ok=True)     # its logs are open: no rotation
         if read_panel().get("english", "").lower() in ("on", "off"):
