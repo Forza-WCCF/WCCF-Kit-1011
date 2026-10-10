@@ -32,37 +32,12 @@ game is not included. Newest first; each date is the day that kit was built.
   (W, L, D), the weekdays Monday to Saturday, and 12 supporter-group words (Heroes, Stars, Samurai, Tigers, ...).
   7,200 lines are now in English; only the debug menus stay Japanese.
 - `english.py check` names the screen lines still in Japanese, so a gap shows without a survey.
-- The game no longer refuses to start just because the card CATALOGUE has not been built. The catalogue is only the
-  panel's card browser; now the game starts and only the catalogue is empty (SETUP rebuilds it).
-- The card-overwrite switch (SW1) no longer has a key by default. On Sega's card-recovery screen SW1 means "write
-  the backup over your Club Card", and it used to be the `8` key - one stray press could roll your card back. SW1
-  and SW2 now have no key unless you set one in KEYS.
-- Closing the game during a manager transfer now warns you too. When your contract ends and the game is making your
-  new club, closing the window used to close with no warning and cost that new club a bad ending - the warning only
-  watched your old card. Now it (and the SETTINGS > RESTART NOW gate) watch both cards.
-- The game no longer fails to start because a log file is open. If something is holding a file in the logs folder
-  (an antivirus, or you viewing a log), the kit sets that folder aside and starts anyway, instead of failing every
-  time until the file is released. (`source\test_rotate_logs.py`.)
-- Online: your live match can no longer be hijacked. The match relay now treats a seat as belonging to the address
-  that holds it, so a stranger sending "I am seat n" from somewhere else is ignored while you are playing. Before,
-  anyone could redirect another player's match to themselves and drop them to a CPU game. (`source\test_relay.py`.)
-- Online: a brief network blip no longer loses your seat. The kit now reconnects to the server's seat desk and
-  re-claims the same seat; before, one missed reply ended the hold for good and the server freed your seat under
-  the running game. (`source\test_seat_lease.py`.)
-- Online: two PCs can no longer land on the same seat. If the server's seat desk was slow or gave an odd answer,
-  the kit used to start on seat 1 anyway - so a second PC could take seat 1 and one of them never got into the game.
-  Now it only plays "as before" when a server genuinely has no seat desk; otherwise it stops with a clear message
-  and offers local play. (`source\test_take_seat.py`.)
-- A long game is no longer force-closed. Before, any session was killed after 12 hours even in the middle of a
-  match, which costs your club card a bad ending. Now a run ends only when you close the game window.
-- Your club card can no longer be lost to a busy file. When the card cannot be saved to disk because something else
-  (an antivirus scan, a backup tool, a search indexer) is holding the file, the kit now keeps your newest card in
-  memory and tries again - the card on disk stays your last good one. Before, it would write the card straight over
-  the file as a last resort, which could leave a half-written, unusable card.
-- A damaged or wrong-size card file no longer locks you out. The game now still opens with a new blank card (so you
-  can use CLUB CARD), and your unreadable file is kept safe as a `.bad` copy so it can be recovered. Before, the game
-  would simply fail to start, with nothing on screen to say why.
-  (The card reader now has an automated test for both - `source\test_icc_reader.py`.)
+- English: the six team stats around the hexagon (OFFENCE, DEFENCE, SPEED, POWER, CONTROL, TACKLING) and the OK /
+  BACK names under the buttons were pictures with Japanese writing. ENGLISH now redraws them from your game's own
+  pictures in Windows' Arial Bold and adds them at the end of `data\wccf_data.xaf`, pointing the archive's table of
+  contents at them; Sega's bytes are not written over, and JAPANESE puts the old entries back and cuts the added
+  end away (the 1.4 GB archive is never copied). check.ps1 checks both ways on a scratch archive.
+
 
 ## Kit 5.5.1 - 2026-10-10
 
