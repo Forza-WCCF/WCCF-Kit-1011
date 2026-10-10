@@ -1,0 +1,2399 @@
+key	italiano
+CLM_MNAME_keyboard_0005	OK
+CLM_MNAME_keyboard_0006	E' stata inserita una parola non corretta.
+CLM_MNAME_omakase_0000	Abel
+CLM_MNAME_omakase_0002	Adams
+CLM_MNAME_omakase_0003	Andersson
+CLM_MNAME_omakase_0004	Correl
+CLM_MNAME_omakase_0005	Ancic
+CLM_MNAME_omakase_0006	Max
+CLM_MNAME_omakase_0007	Mehri
+CLM_MNAME_omakase_0008	Ruben
+CLM_MNAME_omakase_0009	Baker
+CLM_MNAME_omakase_0011	Chongming Che 
+CLM_MNAME_omakase_0012	Michell
+CLM_MNAME_omakase_0013	Tangsheng Lee
+CLM_MNAME_omakase_0014	Moore
+CLM_MNAME_omakase_0015	Kamara
+CLM_MNAME_omakase_0016	Enriquez
+CLM_MNAME_omakase_0017	Marcio
+CLM_MNAME_omakase_0018	Gangabo
+CLM_MNAME_omakase_0019	Gomez
+CLM_MNAME_omakase_0020	Beck
+CLM_MNAME_omakase_0021	Krechenko
+CLM_MNAME_omakase_0022	Toricci
+CLM_MNAME_omakase_0023	Alonso
+CLM_MNAME_omakase_0024	Hakan
+CLM_MNAME_omakase_0025	Bertollini
+CLM_MNAME_omakase_0026	Sandro
+CLM_MNAME_omakase_0027	Bjorkman
+CLM_MNAME_omakase_0028	Blanco
+CLM_MNAME_omakase_0029	Sarakov
+CLM_MNAME_omakase_0030	Carlsen
+CLM_MNAME_omakase_0031	Thomas
+CLM_MNAME_omakase_0032	Souza
+CLM_MNAME_omakase_0033	Chiles
+CLM_MNAME_omakase_0034	Costa
+CLM_MNAME_omakase_0035	Marcos
+CLM_MNAME_omakase_0036	Delgado
+CLM_MNAME_omakase_0037	Eagle
+CLM_MNAME_omakase_0038	Ferreira
+CLM_MNAME_omakase_0039	Fukarek
+CLM_MNAME_omakase_0040	Valez
+CLM_MNAME_omakase_0041	Garcia
+CLM_MNAME_omakase_0042	Huss
+CLM_MNAME_omakase_0043	Johansson
+CLM_MNAME_omakase_0044	Carlovich
+CLM_MNAME_omakase_0045	Coleman
+CLM_MNAME_omakase_0046	Kutchera
+CLM_MNAME_omakase_0047	Novak
+CLM_MNAME_omakase_0048	Perez
+CLM_MNAME_omakase_0049	Rios
+CLM_MNAME_caution_0001	Si'
+CLM_MNAME_caution_0002	No
+CLM_MREAD_keyboard_0002	OK
+CLM_MREAD_keyboard_0003	E' stata inserita una parola non corretta.
+CLM_MACCENT_keyboard_0003	OK
+CLM_MBIRTH_keyboard_0001	OK
+CLM_CLUBTEAM_result_0001	Seleziona la citta' di appartenenza
+CLM_CHOME_keyboard_0005	Si'
+CLM_CHOME_keyboard_0006	No
+CLM_CNAME_keyboard_0004	OK
+CLM_CNAME_keyboard_0005	E' stata inserita una parola non corretta.
+CLM_CREAD_keyboard_0002	OK
+CLM_CREAD_keyboard_0003	E' stata inserita una parola non corretta.
+CLM_CACCENT_keybord_0003	OK
+CLM_CUNIFORM1_keyboard_0007	OK
+CLM_CUNIFORM2_keyboard_0007	OK
+CLM_CEMBLEM_keyboard_0003	OK
+CLM_PLAYER_header_0000	Giocatori registrati
+CLM_INAUGRATION_manager_0001	$%d00
+MAKE_area_000	Giappone
+MAKE_city_000	Hokkaido
+MAKE_city_001	Akabira
+MAKE_city_002	Asahikawa
+MAKE_city_003	Ashibetsu
+MAKE_city_004	Abashiri
+MAKE_city_005	Ishikari
+MAKE_city_006	Iwamizawa
+MAKE_city_007	Utashinai
+MAKE_city_008	Eniwa
+MAKE_city_009	Ebetsu
+MAKE_city_010	Otaru
+MAKE_city_011	Obihiro
+MAKE_city_012	Kitahiroshima
+MAKE_city_013	Kitami
+MAKE_city_014	Kushiro
+MAKE_city_015	Atsubetsu
+MAKE_city_016	Kita
+MAKE_city_017	Kiyota
+MAKE_city_018	Sapporo
+MAKE_city_019	Shiroishi
+MAKE_city_020	Chuo
+MAKE_city_021	Teine
+MAKE_city_022	Toyohira
+MAKE_city_023	Nishi
+MAKE_city_024	Higashi
+MAKE_city_025	Minami
+MAKE_city_026	Shibetsu
+MAKE_city_027	Sunagawa
+MAKE_city_028	Takikawa
+MAKE_city_029	Date
+MAKE_city_030	Chitose
+MAKE_city_031	Tomakomai
+MAKE_city_032	Nayoro
+MAKE_city_033	Nemuro
+MAKE_city_034	Noboribetsu
+MAKE_city_035	Hakodate
+MAKE_city_036	Bibai
+MAKE_city_037	Fukagawa
+MAKE_city_038	Furano
+MAKE_city_039	Hokuto
+MAKE_city_040	Mikasa
+MAKE_city_041	Muroran
+MAKE_city_042	Monbetsu
+MAKE_city_043	Yubari
+MAKE_city_044	Rumoi
+MAKE_city_045	Wakkanai
+MAKE_city_046	Aomori
+MAKE_city_047	Kuroishi
+MAKE_city_048	Goshogawara
+MAKE_city_049	Tsugaru
+MAKE_city_050	Towada
+MAKE_city_051	Hachinohe
+MAKE_city_052	Hirakawa
+MAKE_city_053	Hirosaki
+MAKE_city_054	Misawa
+MAKE_city_055	Mutsu
+MAKE_city_056	Iwate
+MAKE_city_057	Ichinoseki
+MAKE_city_058	Esashi
+MAKE_city_059	Oushu
+MAKE_city_060	Ofunato
+MAKE_city_061	Kamaishi
+MAKE_city_062	Kitakami
+MAKE_city_063	Kuji
+MAKE_city_064	Tono
+MAKE_city_065	Ninohe
+MAKE_city_066	Hachimantai
+MAKE_city_067	Hanamaki
+MAKE_city_068	Mizusawa
+MAKE_city_069	Miyako
+MAKE_city_070	Morioka
+MAKE_city_071	Rikuzentakata
+MAKE_city_072	Miyagi
+MAKE_city_073	Ishinomaki
+MAKE_city_074	Iwanuma
+MAKE_city_075	Osaki
+MAKE_city_076	Kakuda
+MAKE_city_077	Kurihara
+MAKE_city_078	Kesennuma
+MAKE_city_079	Shiogama
+MAKE_city_080	Shiroishi
+MAKE_city_081	Aoba
+MAKE_city_082	Izumi
+MAKE_city_083	Sendai
+MAKE_city_084	Taihaku
+MAKE_city_085	Miyagino
+MAKE_city_086	Wakabayashi
+MAKE_city_087	Tagajo
+MAKE_city_088	Tome
+MAKE_city_089	Natori
+MAKE_city_090	Higashimatsushima
+MAKE_city_091	Furukawa
+MAKE_city_092	Akita
+MAKE_city_093	Odate
+MAKE_city_094	Omagari
+MAKE_city_095	Oga
+MAKE_city_096	Katagami
+MAKE_city_097	Kazuno
+MAKE_city_098	Kitaakita
+MAKE_city_099	Senboku
+MAKE_city_100	Daisen
+MAKE_city_101	Nikaho
+MAKE_city_102	Noshiro
+MAKE_city_103	Honjo
+MAKE_city_104	Yuzawa
+MAKE_city_105	Yurihonjo
+MAKE_city_106	Yokote
+MAKE_city_107	Yamagata
+MAKE_city_108	Obanazawa
+MAKE_city_109	Kaminoyama
+MAKE_city_110	Sagae
+MAKE_city_111	Sakata
+MAKE_city_112	Shinjo
+MAKE_city_113	Tsuruoka
+MAKE_city_114	Tendo
+MAKE_city_115	Nagai
+MAKE_city_116	Nanyo
+MAKE_city_117	Higashine
+MAKE_city_118	Murayama
+MAKE_city_119	Yonezawa
+MAKE_city_120	Fukushima
+MAKE_city_121	Aizuwakamatsu
+MAKE_city_122	Iwaki
+MAKE_city_123	Kitakata
+MAKE_city_124	Koriyama
+MAKE_city_125	Shirakawa
+MAKE_city_126	Sukagawa
+MAKE_city_127	Soma
+MAKE_city_128	Date
+MAKE_city_129	Tamura
+MAKE_city_130	Nihonmatsu
+MAKE_city_131	Haramachi
+MAKE_city_132	Minamisoma
+MAKE_city_134	Ibaraki
+MAKE_city_135	Ishioka
+MAKE_city_136	Itako
+MAKE_city_137	Inashiki
+MAKE_city_138	Iwai
+MAKE_city_139	Ushiku
+MAKE_city_141	Kasama
+MAKE_city_142	Kashima
+MAKE_city_143	Kashima
+MAKE_city_144	Kasumigaura
+MAKE_city_145	Kamisu
+MAKE_city_146	Kitaibaraki
+MAKE_city_147	Koga
+MAKE_city_148	Sakuragawa
+MAKE_city_149	Shimodate
+MAKE_city_150	Shimotsuma
+MAKE_city_151	Jyouso
+MAKE_city_152	Takahagi
+MAKE_city_153	Chikusei
+MAKE_city_154	Tsukuba
+MAKE_city_155	Tsukubamirai
+MAKE_city_156	Tsuchiura
+MAKE_city_157	Toride
+MAKE_city_158	Naka
+MAKE_city_159	Namegata
+MAKE_city_160	Bando
+MAKE_city_161	Hitachi
+MAKE_city_162	Hitachiota
+MAKE_city_163	Hitachiomiya
+MAKE_city_164	Hitachinaka
+MAKE_city_165	Hokota
+MAKE_city_166	Mitsukaido
+MAKE_city_167	Mito
+MAKE_city_168	Moriya
+MAKE_city_169	Yuki
+MAKE_city_170	Ryugasaki
+MAKE_city_171	Tochigi
+MAKE_city_172	Ashikaga
+MAKE_city_173	Imaichi
+MAKE_city_174	Utsunomiya
+MAKE_city_175	Otawara
+MAKE_city_176	Oyama
+MAKE_city_177	Kanuma
+MAKE_city_178	Kuroiso
+MAKE_city_179	Sakura
+MAKE_city_180	Sano
+MAKE_city_181	Shimotsuke
+MAKE_city_182	Nasukarayama
+MAKE_city_183	Nasushiobara
+MAKE_city_184	Nikko
+MAKE_city_185	Mooka
+MAKE_city_186	Yaita
+MAKE_city_187	Gunma
+MAKE_city_188	Annaka
+MAKE_city_189	Isesaki
+MAKE_city_190	Ota
+MAKE_city_191	Kiryu
+MAKE_city_192	Shibukawa
+MAKE_city_193	Takasaki
+MAKE_city_194	Tatebayashi
+MAKE_city_195	Tomioka
+MAKE_city_196	Numata
+MAKE_city_197	Fujioka
+MAKE_city_198	Maebashi
+MAKE_city_199	Midori
+MAKE_city_200	Saitama
+MAKE_city_201	Ageo
+MAKE_city_202	Asaka
+MAKE_city_203	Iruma
+MAKE_city_204	Iwatsuki
+MAKE_city_205	Urawa
+MAKE_city_206	Omiya
+MAKE_city_207	Okegawa
+MAKE_city_208	Kasukabe
+MAKE_city_209	Kazo
+MAKE_city_210	Kamifukuoka
+MAKE_city_211	Kawaguchi
+MAKE_city_212	Kawagoe
+MAKE_city_213	Kitamoto
+MAKE_city_214	Gyoda
+MAKE_city_215	Kuki
+MAKE_city_216	Kumagaya
+MAKE_city_217	Konosu
+MAKE_city_218	Koshigaya
+MAKE_city_219	Saitama
+MAKE_city_220	Sakado
+MAKE_city_221	Satte
+MAKE_city_222	Sayama
+MAKE_city_223	Shiki
+MAKE_city_224	Soka
+MAKE_city_225	Chichibu
+MAKE_city_226	Tsurugashima
+MAKE_city_227	Tokorozawa
+MAKE_city_228	Toda
+MAKE_city_229	Niiza
+MAKE_city_230	Hasuda
+MAKE_city_231	Hatogaya
+MAKE_city_232	Hanyu
+MAKE_city_233	Hanno
+MAKE_city_234	Higashimatsuyama
+MAKE_city_235	Hidaka
+MAKE_city_236	Fukaya
+MAKE_city_237	Fujimi
+MAKE_city_238	Fujimino
+MAKE_city_239	Honjo
+MAKE_city_240	Misato
+MAKE_city_241	Yashio
+MAKE_city_242	Yoshikawa
+MAKE_city_243	Wako
+MAKE_city_244	Warabi
+MAKE_city_245	Chiba
+MAKE_city_246	Asahi
+MAKE_city_247	Abiko
+MAKE_city_248	Isumi
+MAKE_city_249	Ichikawa
+MAKE_city_250	Ichihara
+MAKE_city_251	Inzai
+MAKE_city_252	Urayasu
+MAKE_city_253	Kashiwa
+MAKE_city_254	Katsuura
+MAKE_city_255	Katori
+MAKE_city_256	Kamagaya
+MAKE_city_257	Kamogawa
+MAKE_city_258	Kisarazu
+MAKE_city_259	Kimitsu
+MAKE_city_260	Sakura
+MAKE_city_261	Sawara
+MAKE_city_262	Sanmu
+MAKE_city_263	Shiroi
+MAKE_city_264	Sousa
+MAKE_city_265	Sodegaura
+MAKE_city_266	Tateyama
+MAKE_city_267	Inage
+MAKE_city_268	Chuo
+MAKE_city_269	Hanamigawa
+MAKE_city_270	Midori
+MAKE_city_271	Mihama
+MAKE_city_272	Wakaba
+MAKE_city_273	Choshi
+MAKE_city_274	Togane
+MAKE_city_275	Tomisato
+MAKE_city_276	Nagareyama
+MAKE_city_277	Narashino
+MAKE_city_278	Narita
+MAKE_city_279	Noda
+MAKE_city_280	Futtsu
+MAKE_city_281	Funabashi
+MAKE_city_282	Matsudo
+MAKE_city_283	Asakura
+MAKE_city_284	Mobara
+MAKE_city_285	Yachimata
+MAKE_city_286	Yachiyo
+MAKE_city_287	Yokaichiba
+MAKE_city_288	Yotsukaido
+MAKE_city_289	Tokyo
+MAKE_city_290	Akishima
+MAKE_city_291	Akiruno
+MAKE_city_292	Inagi
+MAKE_city_293	Ome
+MAKE_city_294	Kiyose
+MAKE_city_295	Kunitachi
+MAKE_city_296	Koganei
+MAKE_city_297	Kokubunji
+MAKE_city_298	Kodaira
+MAKE_city_299	Komae
+MAKE_city_300	Tachikawa
+MAKE_city_301	Tama
+MAKE_city_302	Chofu
+MAKE_city_303	Adachi
+MAKE_city_304	Arakawa
+MAKE_city_305	Itabashi
+MAKE_city_306	Edogawa
+MAKE_city_307	Ota
+MAKE_city_308	Katsushika
+MAKE_city_309	Kita
+MAKE_city_310	Koto
+MAKE_city_311	Shinagawa
+MAKE_city_312	Shibuya
+MAKE_city_313	Shinjuku
+MAKE_city_314	Suginami
+MAKE_city_315	Sumida
+MAKE_city_316	Setagaya
+MAKE_city_317	Taito
+MAKE_city_318	Chuo
+MAKE_city_319	Chiyoda
+MAKE_city_320	Toshima
+MAKE_city_321	Nakano
+MAKE_city_322	Nerima
+MAKE_city_323	Bunkyo
+MAKE_city_324	Minato
+MAKE_city_325	Meguro
+MAKE_city_326	Nishitokyo
+MAKE_city_327	Hachioji
+MAKE_city_328	Hamura
+MAKE_city_329	Higashikurume
+MAKE_city_330	Higashimurayama
+MAKE_city_331	Higashiyamato
+MAKE_city_332	Hino
+MAKE_city_333	Fuchu
+MAKE_city_334	Fussa
+MAKE_city_335	Machida
+MAKE_city_336	Mitaka
+MAKE_city_337	Musashino
+MAKE_city_338	Musashimurayama
+MAKE_city_339	Kanagawa
+MAKE_city_340	Atsugi
+MAKE_city_341	Ayase
+MAKE_city_342	Isehara
+MAKE_city_343	Ebina
+MAKE_city_344	Odawara
+MAKE_city_345	Kamakura
+MAKE_city_346	Asao
+MAKE_city_347	Kawasaki
+MAKE_city_348	Saiwai
+MAKE_city_349	Takatsu
+MAKE_city_350	Tama
+MAKE_city_351	Nakahara
+MAKE_city_352	Miyamae
+MAKE_city_353	Sagamihara
+MAKE_city_354	Zama
+MAKE_city_355	Shonan
+MAKE_city_356	Zushi
+MAKE_city_357	Chigasaki
+MAKE_city_358	Hadano
+MAKE_city_359	Hiratsuka
+MAKE_city_360	Fujisawa
+MAKE_city_361	Miura
+MAKE_city_362	Minamiashigara
+MAKE_city_363	Yamato
+MAKE_city_364	Yokosuka
+MAKE_city_365	Aoba
+MAKE_city_366	Asahi
+MAKE_city_367	Izumi
+MAKE_city_368	Isogo
+MAKE_city_369	Kanazawa
+MAKE_city_370	Konan
+MAKE_city_371	Kohoku
+MAKE_city_372	Sakae
+MAKE_city_373	Seya
+MAKE_city_374	Tsuzuki
+MAKE_city_375	Tsurumi
+MAKE_city_376	Totsuka
+MAKE_city_377	Naka
+MAKE_city_378	Nishi
+MAKE_city_379	Hodogaya
+MAKE_city_380	Midori
+MAKE_city_381	Minami
+MAKE_city_382	Yokohama
+MAKE_city_383	Niigata
+MAKE_city_384	Agano
+MAKE_city_385	Arai
+MAKE_city_386	Itoigawa
+MAKE_city_387	Uonuma
+MAKE_city_388	Ojiya
+MAKE_city_389	Kashiwazaki
+MAKE_city_390	Kamo
+MAKE_city_391	Gosen
+MAKE_city_392	Sado
+MAKE_city_393	Sanjo
+MAKE_city_394	Shibata
+MAKE_city_395	Joetsu
+MAKE_city_396	Shirone
+MAKE_city_397	Tainai
+MAKE_city_398	Tsubame
+MAKE_city_399	Tokamachi
+MAKE_city_400	Tochio
+MAKE_city_401	Toyosaka
+MAKE_city_402	Nagaoka
+MAKE_city_403	Niitsu
+MAKE_city_404	Mitsuke
+MAKE_city_405	Minamiuonuma
+MAKE_city_406	Myoko
+MAKE_city_407	Murakami
+MAKE_city_408	Ryotsu
+MAKE_city_409	Toyama
+MAKE_city_410	Imizu
+MAKE_city_411	Uozu
+MAKE_city_412	Oyabe
+MAKE_city_413	Kurobe
+MAKE_city_414	Shinminato
+MAKE_city_415	Takaoka
+MAKE_city_416	Tonami
+MAKE_city_417	Namerikawa
+MAKE_city_418	Nanto
+MAKE_city_419	Himi
+MAKE_city_420	Ishikawa
+MAKE_city_421	Kaga
+MAKE_city_422	Kanazawa
+MAKE_city_423	Kahoku
+MAKE_city_424	Komatsu
+MAKE_city_425	Suzu
+MAKE_city_426	Nanao
+MAKE_city_427	Nomi
+MAKE_city_428	Hakui
+MAKE_city_429	Hakusan
+MAKE_city_430	Matto
+MAKE_city_431	Wajima
+MAKE_city_432	Fukui
+MAKE_city_433	Awara
+MAKE_city_434	Echizen
+MAKE_city_435	Ono
+MAKE_city_436	Obama
+MAKE_city_437	Katsuyama
+MAKE_city_438	Sakai
+MAKE_city_439	Sabae
+MAKE_city_440	Takefu
+MAKE_city_441	Tsuruga
+MAKE_city_442	Yamanashi
+MAKE_city_443	Uenohara
+MAKE_city_444	Enzan
+MAKE_city_445	Otsuki
+MAKE_city_446	Kai
+MAKE_city_447	Koushu
+MAKE_city_448	Kofu
+MAKE_city_449	Chuo
+MAKE_city_450	Tsuru
+MAKE_city_451	Nirasaki
+MAKE_city_452	Fuefuki
+MAKE_city_453	Fujiyoshida
+MAKE_city_454	Hokuto
+MAKE_city_455	Minami Alps
+MAKE_city_456	Nagano
+MAKE_city_457	Adzumino
+MAKE_city_458	Iida
+MAKE_city_459	Iiyama
+MAKE_city_460	Ina
+MAKE_city_461	Ueda
+MAKE_city_462	Omachi
+MAKE_city_463	Okaya
+MAKE_city_464	Koshoku
+MAKE_city_465	Komagane
+MAKE_city_466	Komoro
+MAKE_city_467	Saku
+MAKE_city_468	Shiojiri
+MAKE_city_469	Suzaka
+MAKE_city_470	Suwa
+MAKE_city_471	Chikuma
+MAKE_city_472	Chino
+MAKE_city_473	Tomi
+MAKE_city_474	Nakano
+MAKE_city_475	Matsumoto
+MAKE_city_476	Gifu
+MAKE_city_477	Ena
+MAKE_city_478	Ogaki
+MAKE_city_479	Kaiji
+MAKE_city_480	Kakamigahara
+MAKE_city_481	Kani
+MAKE_city_482	Gujo
+MAKE_city_483	Gero
+MAKE_city_484	Seki
+MAKE_city_485	Takayama
+MAKE_city_486	Tajimi
+MAKE_city_487	Toki
+MAKE_city_488	Nakatsugawa
+MAKE_city_489	Hashima
+MAKE_city_490	Hida
+MAKE_city_491	Mizunami
+MAKE_city_492	Mizuho
+MAKE_city_493	Mino
+MAKE_city_494	Minokamo
+MAKE_city_495	Motosu
+MAKE_city_496	Yamagata
+MAKE_city_497	Shizuoka
+MAKE_city_498	Atami
+MAKE_city_499	Izu
+MAKE_city_500	Izunokuni
+MAKE_city_501	Ito
+MAKE_city_502	Iwata
+MAKE_city_503	Omaezaki
+MAKE_city_504	Kakegawa
+MAKE_city_505	Kikugawa
+MAKE_city_506	Kosai
+MAKE_city_507	Gotenba
+MAKE_city_508	Shimada
+MAKE_city_509	Shimizu
+MAKE_city_510	Shimoda
+MAKE_city_511	Susono
+MAKE_city_512	Tenryu
+MAKE_city_513	Numazu
+MAKE_city_514	Hamakita
+MAKE_city_515	Hamamatsu
+MAKE_city_516	Fukuroi
+MAKE_city_517	Fuji
+MAKE_city_518	Fujieda
+MAKE_city_519	Fujinomiya
+MAKE_city_520	Makinohara
+MAKE_city_521	Mishima
+MAKE_city_522	Yaizu
+MAKE_city_523	Aichi
+MAKE_city_524	Aisai
+MAKE_city_525	Anjo
+MAKE_city_526	Ichinomiya
+MAKE_city_527	Inazawa
+MAKE_city_528	Inuyama
+MAKE_city_529	Iwakura
+MAKE_city_530	Obu
+MAKE_city_531	Okazaki
+MAKE_city_532	Owariasahi
+MAKE_city_533	Kasugai
+MAKE_city_534	Gamagori
+MAKE_city_535	Kariya
+MAKE_city_536	Kitanagoya
+MAKE_city_537	Kiyosu
+MAKE_city_538	Konan
+MAKE_city_539	Komaki
+MAKE_city_540	Shinshiro
+MAKE_city_541	Seto
+MAKE_city_542	Takahama
+MAKE_city_543	Tahara
+MAKE_city_544	Chita
+MAKE_city_545	Chiryu
+MAKE_city_546	Tsushima
+MAKE_city_547	TOKAI
+MAKE_city_548	Tokoname
+MAKE_city_549	Toyoake
+MAKE_city_550	Toyokawa
+MAKE_city_551	Toyota
+MAKE_city_552	Toyohashi
+MAKE_city_553	Atsuta
+MAKE_city_554	Kita
+MAKE_city_555	Showa
+MAKE_city_556	Chikusa
+MAKE_city_557	Tenpaku
+MAKE_city_558	Naka
+MAKE_city_559	Nakagawa
+MAKE_city_560	Nakamura
+MAKE_city_561	Nagoya
+MAKE_city_562	Nishi
+MAKE_city_563	Higashi
+MAKE_city_564	Mizuho
+MAKE_city_565	Midori
+MAKE_city_566	Minato
+MAKE_city_567	Minami
+MAKE_city_568	Meito
+MAKE_city_569	Moriyama
+MAKE_city_570	Nishio
+MAKE_city_571	Nisshin
+MAKE_city_572	Handa
+MAKE_city_573	Bisai
+MAKE_city_574	Hekinan
+MAKE_city_575	Yatomi
+MAKE_city_576	Mie
+MAKE_city_577	Iga
+MAKE_city_578	Ise
+MAKE_city_579	Inabe
+MAKE_city_580	Ueno
+MAKE_city_581	Owase
+MAKE_city_582	Kameyama
+MAKE_city_583	Kumano
+MAKE_city_584	Kuwana
+MAKE_city_585	Shima
+MAKE_city_586	Suzuka
+MAKE_city_587	Tsu
+MAKE_city_588	Toba
+MAKE_city_589	Nabari
+MAKE_city_590	Hisai
+MAKE_city_591	Matsusaka
+MAKE_city_592	Yokkaichi
+MAKE_city_593	Shiga
+MAKE_city_594	Omihachiman
+MAKE_city_595	Otsu
+MAKE_city_596	Kusatsu
+MAKE_city_597	Koka
+MAKE_city_598	Konan
+MAKE_city_599	Takashima
+MAKE_city_600	Nagahama
+MAKE_city_601	Higashiomi
+MAKE_city_602	Hikone
+MAKE_city_603	Maibara
+MAKE_city_604	Moriyama
+MAKE_city_605	Yasu
+MAKE_city_606	Yokaichi
+MAKE_city_607	Ritto
+MAKE_city_608	Kyoto
+MAKE_city_609	Ayabe
+MAKE_city_610	Uji
+MAKE_city_611	Kameoka
+MAKE_city_612	Kyotanabe
+MAKE_city_613	Kyotango
+MAKE_city_614	Ukyo
+MAKE_city_615	Kamigyo
+MAKE_city_616	Kita
+MAKE_city_617	Sakyo
+MAKE_city_618	Shimogyo
+MAKE_city_619	Nakagyo
+MAKE_city_620	Nishikyo
+MAKE_city_621	Higashiyama
+MAKE_city_622	Fushimi
+MAKE_city_623	Minami
+MAKE_city_624	Yamashina
+MAKE_city_625	Joyo
+MAKE_city_626	Nagaokakyo
+MAKE_city_627	Nantan
+MAKE_city_628	Fukuchiyama
+MAKE_city_629	Maizuru
+MAKE_city_630	Miyazu
+MAKE_city_631	Muko
+MAKE_city_632	Yawata
+MAKE_city_633	Osaka
+MAKE_city_634	Ikeda
+MAKE_city_635	Izumi
+MAKE_city_636	Izumiotsu
+MAKE_city_637	Izumisano
+MAKE_city_638	Ibaraki
+MAKE_city_639	Asahi
+MAKE_city_640	Abeno
+MAKE_city_641	Ikuno
+MAKE_city_642	Kita
+MAKE_city_643	Konohana
+MAKE_city_644	Joto
+MAKE_city_645	Suminoe
+MAKE_city_646	Sumiyoshi
+MAKE_city_647	Taisho
+MAKE_city_648	Chuo
+MAKE_city_649	Tsurumi
+MAKE_city_650	Tennoji
+MAKE_city_651	Naniwa
+MAKE_city_652	Nishi
+MAKE_city_653	Nishinari
+MAKE_city_654	Nishiyodogawa
+MAKE_city_655	Higashisumiyoshi
+MAKE_city_656	Higashinari
+MAKE_city_657	Higashiyodogawa
+MAKE_city_658	Hirano
+MAKE_city_659	Fukushima
+MAKE_city_660	Minato
+MAKE_city_661	Miyakojima
+MAKE_city_662	Yodogawa
+MAKE_city_663	Osakasayama
+MAKE_city_664	Kaizuka
+MAKE_city_665	Kashiwara
+MAKE_city_666	Katano
+MAKE_city_667	Kadoma
+MAKE_city_668	Kawachinagano
+MAKE_city_669	Kishiwada
+MAKE_city_670	Sakai
+MAKE_city_671	Shijonawate
+MAKE_city_672	Suita
+MAKE_city_673	Settsu
+MAKE_city_674	Sennan
+MAKE_city_675	Daito
+MAKE_city_676	Takaishi
+MAKE_city_677	Takatsuki
+MAKE_city_678	Toyonaka
+MAKE_city_679	Tondabayashi
+MAKE_city_680	Neyagawa
+MAKE_city_681	Habikino
+MAKE_city_682	Hannan
+MAKE_city_683	Higashiosaka
+MAKE_city_684	Hirakata
+MAKE_city_685	Fujiidera
+MAKE_city_686	Matsubara
+MAKE_city_687	Mino
+MAKE_city_688	Moriguchi
+MAKE_city_689	Yao
+MAKE_city_690	Hyogo
+MAKE_city_691	Aioi
+MAKE_city_692	Akashi
+MAKE_city_693	Ako
+MAKE_city_694	Asago
+MAKE_city_695	Ashiya
+MAKE_city_696	Amagasaki
+MAKE_city_697	Awaji
+MAKE_city_698	Itami
+MAKE_city_699	Ono
+MAKE_city_700	Kakogawa
+MAKE_city_701	Kasai
+MAKE_city_702	Kato
+MAKE_city_703	Kawanishi
+MAKE_city_704	Kita
+MAKE_city_705	Kobe
+MAKE_city_706	Suma
+MAKE_city_707	Tarumi
+MAKE_city_708	Chuo
+MAKE_city_709	Nagata
+MAKE_city_710	Nada
+MAKE_city_711	Nishi
+MAKE_city_712	Higashinada
+MAKE_city_713	Sasayama
+MAKE_city_714	Sanda
+MAKE_city_715	Shiso
+MAKE_city_716	Sumoto
+MAKE_city_717	Takasago
+MAKE_city_718	Takarazuka
+MAKE_city_719	Tatsuno
+MAKE_city_720	Tatsuno
+MAKE_city_721	Tanba
+MAKE_city_722	Toyooka
+MAKE_city_723	Nishinomiya
+MAKE_city_724	Nishiwaki
+MAKE_city_725	Himeji
+MAKE_city_726	Miki
+MAKE_city_727	Minamiawaji
+MAKE_city_728	Yabu
+MAKE_city_729	Nara
+MAKE_city_730	Ikoma
+MAKE_city_731	Uda
+MAKE_city_732	Kashiba
+MAKE_city_733	Kashihara
+MAKE_city_734	Katsuragi
+MAKE_city_735	Gojo
+MAKE_city_736	Gose
+MAKE_city_737	Sakurai
+MAKE_city_738	Tenri
+MAKE_city_739	Yamatokoriyama
+MAKE_city_740	Yamatotakada
+MAKE_city_741	Wakayama
+MAKE_city_742	Arida
+MAKE_city_743	Iwade
+MAKE_city_744	Kainan
+MAKE_city_745	Kinokawa
+MAKE_city_746	Gobo
+MAKE_city_747	Shingu
+MAKE_city_748	Tanabe
+MAKE_city_749	Hashimoto
+MAKE_city_750	Tottori
+MAKE_city_751	Kurayoshi
+MAKE_city_752	Sakaiminato
+MAKE_city_753	Yonago
+MAKE_city_754	Shimane
+MAKE_city_755	Izumo
+MAKE_city_756	Unnan
+MAKE_city_757	Ota
+MAKE_city_758	Gotsu
+MAKE_city_759	Hamada
+MAKE_city_760	Hirata
+MAKE_city_761	Masuda
+MAKE_city_762	Matsue
+MAKE_city_763	Yasugi
+MAKE_city_764	Okayama
+MAKE_city_765	Akaiwa
+MAKE_city_766	Asakuchi
+MAKE_city_767	Ibara
+MAKE_city_768	Kasaoka
+MAKE_city_769	Kurashiki
+MAKE_city_770	Setouchi
+MAKE_city_771	Soja
+MAKE_city_772	Takahashi
+MAKE_city_773	Tamano
+MAKE_city_774	Tsuyama
+MAKE_city_775	Niimi
+MAKE_city_776	Bizen
+MAKE_city_777	Maniwa
+MAKE_city_778	Mimasaka
+MAKE_city_779	Hiroshima
+MAKE_city_780	Akitakata
+MAKE_city_781	Innoshima
+MAKE_city_782	Etajima
+MAKE_city_783	Otake
+MAKE_city_784	Onomichi
+MAKE_city_785	Kure
+MAKE_city_786	Shobara
+MAKE_city_787	Takehara
+MAKE_city_788	Hatsukaichi
+MAKE_city_789	Higashihiroshima
+MAKE_city_790	Aki
+MAKE_city_791	Asakita
+MAKE_city_792	Asaminami
+MAKE_city_793	Saeki
+MAKE_city_794	Naka
+MAKE_city_795	Nishi
+MAKE_city_796	Higashi
+MAKE_city_797	Minami
+MAKE_city_798	Fukuyama
+MAKE_city_799	Fuchu
+MAKE_city_800	Mihara
+MAKE_city_801	Miyoshi
+MAKE_city_802	Yamaguchi
+MAKE_city_803	Iwakuni
+MAKE_city_804	Ube
+MAKE_city_805	Onoda
+MAKE_city_806	Kudamatsu
+MAKE_city_807	Sanyoonoda
+MAKE_city_808	Shimonoseki
+MAKE_city_809	Shunan
+MAKE_city_810	Shinnanyo
+MAKE_city_811	Tokuyama
+MAKE_city_812	Nagato
+MAKE_city_813	Hagi
+MAKE_city_814	Hikari
+MAKE_city_815	Hofu
+MAKE_city_816	Mine
+MAKE_city_817	Yanai
+MAKE_city_818	Tokushima
+MAKE_city_819	Anan
+MAKE_city_820	Awa
+MAKE_city_821	Komatsushima
+MAKE_city_822	Naruto
+MAKE_city_823	Mima
+MAKE_city_824	Miyoshi
+MAKE_city_825	Yoshinogawa
+MAKE_city_826	Kagawa
+MAKE_city_827	Kanonji
+MAKE_city_828	Sakaide
+MAKE_city_829	Sanuki
+MAKE_city_830	Zentsuji
+MAKE_city_831	Takamatsu
+MAKE_city_832	Higashikagawa
+MAKE_city_833	Marugame
+MAKE_city_834	Mitoyo
+MAKE_city_835	Ehime
+MAKE_city_836	Imabari
+MAKE_city_837	Iyo
+MAKE_city_838	Iyomishima
+MAKE_city_839	Uwajima
+MAKE_city_840	Ozu
+MAKE_city_841	Kawanoe
+MAKE_city_842	Saijo
+MAKE_city_843	Shikokuchuo
+MAKE_city_844	Seiyo
+MAKE_city_845	Toon
+MAKE_city_846	Toyo
+MAKE_city_847	Niihama
+MAKE_city_848	Hojo
+MAKE_city_849	Matsuyama
+MAKE_city_850	Yawatahama
+MAKE_city_851	Kochi
+MAKE_city_852	Aki
+MAKE_city_853	Kami
+MAKE_city_854	Konan
+MAKE_city_855	Shimanto
+MAKE_city_856	Sukumo
+MAKE_city_857	Susaki
+MAKE_city_858	Tosa
+MAKE_city_859	Tosashimizu
+MAKE_city_860	Nakamura
+MAKE_city_861	Nankoku
+MAKE_city_862	Muroto
+MAKE_city_863	Fukuoka
+MAKE_city_864	Amami
+MAKE_city_865	Amagi
+MAKE_city_866	Iizuka
+MAKE_city_867	Ukiha
+MAKE_city_868	Okawa
+MAKE_city_869	Onojo
+MAKE_city_870	Omuta
+MAKE_city_871	Ogori
+MAKE_city_872	Kasuga
+MAKE_city_873	Kama
+MAKE_city_874	Kitakyushu
+MAKE_city_875	Kokurakita
+MAKE_city_876	Kokuraminami
+MAKE_city_877	Tobata
+MAKE_city_878	Moji
+MAKE_city_879	Yahatanishi
+MAKE_city_880	Yahatahigashi
+MAKE_city_881	Wakamatsu
+MAKE_city_882	Kurume
+MAKE_city_883	Koga
+MAKE_city_884	Tagawa
+MAKE_city_885	Dazaifu
+MAKE_city_886	Chikugo
+MAKE_city_887	Chikushino
+MAKE_city_888	Nakama
+MAKE_city_889	Nogata
+MAKE_city_890	Sawara
+MAKE_city_891	Jonan
+MAKE_city_892	Chuo
+MAKE_city_893	Nishi
+MAKE_city_894	Hakata
+MAKE_city_895	Higashi
+MAKE_city_896	Minami
+MAKE_city_897	Fukutsu
+MAKE_city_898	Buzen
+MAKE_city_899	Maebaru
+MAKE_city_901	Miyakawa
+MAKE_city_902	Munakata
+MAKE_city_903	Yanagawa
+MAKE_city_904	Yamada
+MAKE_city_905	Yame
+MAKE_city_906	Yukuhashi
+MAKE_city_907	Saga
+MAKE_city_908	Imari
+MAKE_city_909	Ureshino
+MAKE_city_910	Ogi
+MAKE_city_911	Kashima
+MAKE_city_912	Karatsu
+MAKE_city_913	Kanzaki
+MAKE_city_914	Taku
+MAKE_city_915	Takeo
+MAKE_city_916	Tosu
+MAKE_city_917	Nagasaki
+MAKE_city_918	Iki
+MAKE_city_919	Isahaya
+MAKE_city_920	Unzen
+MAKE_city_921	Omura
+MAKE_city_922	Goto
+MAKE_city_923	Saikai
+MAKE_city_924	Sasebo
+MAKE_city_925	Shimabara
+MAKE_city_926	Tsushima
+MAKE_city_927	Hirado
+MAKE_city_928	Fukue
+MAKE_city_929	Matsuura
+MAKE_city_930	Minamishimabara
+MAKE_city_931	Kumamoto
+MAKE_city_932	Aso
+MAKE_city_933	Amakusa
+MAKE_city_934	Arao
+MAKE_city_935	Uki
+MAKE_city_936	Ushibuka
+MAKE_city_937	Uto
+MAKE_city_938	Kamiamakusa
+MAKE_city_939	Kikuchi
+MAKE_city_940	Koshi
+MAKE_city_941	Tamana
+MAKE_city_942	Hitoyoshi
+MAKE_city_943	Hondo
+MAKE_city_944	Minamata
+MAKE_city_945	Yatsushiro
+MAKE_city_946	Yamaga
+MAKE_city_947	Oita
+MAKE_city_948	Usa
+MAKE_city_949	Usuki
+MAKE_city_950	Kitsuki
+MAKE_city_951	Kunisaki
+MAKE_city_952	Saeki
+MAKE_city_953	Taketa
+MAKE_city_954	Tsukumi
+MAKE_city_955	Nakatsu
+MAKE_city_956	Hita
+MAKE_city_957	Bungoono
+MAKE_city_958	Bungotakada
+MAKE_city_959	Beppu
+MAKE_city_960	Yufu
+MAKE_city_961	Miyazaki
+MAKE_city_962	Ebino
+MAKE_city_963	Kushima
+MAKE_city_964	Kobayashi
+MAKE_city_965	Saito
+MAKE_city_966	Nichinan
+MAKE_city_967	Nobeoka
+MAKE_city_968	Hyuga
+MAKE_city_969	Miyakonojo
+MAKE_city_970	Kagoshima
+MAKE_city_971	Akune
+MAKE_city_972	Minamibousou
+MAKE_city_973	Izumi
+MAKE_city_974	Ichikikushikino
+MAKE_city_975	Ibusuki
+MAKE_city_976	Okuchi
+MAKE_city_977	Kaseda
+MAKE_city_978	Kanoya
+MAKE_city_979	Kirishima
+MAKE_city_980	Kushikino
+MAKE_city_981	Kokubu
+MAKE_city_982	Satsumasendai
+MAKE_city_983	Shibushi
+MAKE_city_984	Sendai
+MAKE_city_985	Soh
+MAKE_city_986	Tarumi
+MAKE_city_987	Naze
+MAKE_city_988	Nishinoomote
+MAKE_city_989	Hioki
+MAKE_city_990	Makurazaki
+MAKE_city_991	Minamisatsuma
+MAKE_city_992	Okinawa
+MAKE_city_993	Ishigaki
+MAKE_city_994	Ishikawa
+MAKE_city_995	Itoman
+MAKE_city_996	Urasoe
+MAKE_city_997	Uruma
+MAKE_city_998	Ginowan
+MAKE_city_999	Gushikawa
+MAKE_city_1000	Tomizuku
+MAKE_city_1001	Nago
+MAKE_city_1002	Naha
+MAKE_city_1003	Nanjo
+MAKE_city_1004	Hirara
+MAKE_city_1005	Miyakojima
+MAKE_city_1006	Abu Dhabi
+MAKE_city_1007	Dubai
+MAKE_city_1008	Teheran
+MAKE_city_1009	Calcutta
+MAKE_city_1010	Madras
+MAKE_city_1011	Delhi
+MAKE_city_1012	Nuova Delhi
+MAKE_city_1013	Bombay
+MAKE_city_1014	Giakarta
+MAKE_city_1015	Semarang
+MAKE_city_1016	Surabaya
+MAKE_city_1017	Tangerang
+MAKE_city_1018	Palembang
+MAKE_city_1019	Bandung
+MAKE_city_1020	Bekasi
+MAKE_city_1021	Bogor
+MAKE_city_1022	Makassar
+MAKE_city_1023	Medan
+MAKE_city_1024	Busan
+MAKE_city_1025	Seoul
+MAKE_city_1026	Suwon
+MAKE_city_1027	Ulsan
+MAKE_city_1028	Gwangju
+MAKE_city_1029	Koyang
+MAKE_city_1030	Jonan
+MAKE_city_1031	Incheon
+MAKE_city_1032	Ota
+MAKE_city_1033	Taegu
+MAKE_city_1034	Buchon
+MAKE_city_1035	Gedda
+MAKE_city_1036	Riad
+MAKE_city_1037	Singapore
+MAKE_city_1038	Chiang Mai
+MAKE_city_1039	Nakhon Ratchasima
+MAKE_city_1040	Bangkok
+MAKE_city_1041	Caloocan
+MAKE_city_1042	Quezon
+MAKE_city_1043	Cebu
+MAKE_city_1044	Davao
+MAKE_city_1045	Manila
+MAKE_city_1046	Hanoi
+MAKE_city_1047	Ho Chih Minh
+MAKE_city_1048	Ipoh
+MAKE_city_1049	Kuala Lumpur
+MAKE_city_1050	Kuching
+MAKE_city_1051	Klang
+MAKE_city_1052	Johor Bahru
+MAKE_city_1053	Petaling Jaya
+MAKE_city_1054	Yangon
+MAKE_city_1055	Shanghai
+MAKE_city_1056	Dalian
+MAKE_city_1057	Pechino
+MAKE_city_1058	Hong Kong
+MAKE_city_1059	Anshan
+MAKE_city_1060	Keelung
+MAKE_city_1061	Canton
+MAKE_city_1062	Kaohsiung
+MAKE_city_1063	Jinan
+MAKE_city_1064	Chongqing
+MAKE_city_1065	Changhua
+MAKE_city_1066	Hsinchu
+MAKE_city_1067	Chengdu
+MAKE_city_1068	Xi'an
+MAKE_city_1069	Qingdao
+MAKE_city_1070	T'aichung
+MAKE_city_1071	T'ainan
+MAKE_city_1072	Taipei
+MAKE_city_1073	Chang Chun
+MAKE_city_1074	Tianjin
+MAKE_city_1075	Dongguan
+MAKE_city_1076	T'aoyuan
+MAKE_city_1077	Nanjing
+MAKE_city_1078	Fushun
+MAKE_city_1079	Wuhan
+MAKE_city_1080	Xiamen
+MAKE_city_1081	Haerbin
+MAKE_city_1082	Shenyang
+MAKE_city_1083	Cork
+MAKE_city_1084	Dublino
+MAKE_city_1085	Armagh
+MAKE_city_1086	Aberdeen
+MAKE_city_1087	Ipswich
+MAKE_city_1088	Ely
+MAKE_city_1089	Inverness
+MAKE_city_1090	Wigan
+MAKE_city_1091	Winchester
+MAKE_city_1092	Worcester
+MAKE_city_1093	Wakefield
+MAKE_city_1094	Wells
+MAKE_city_1095	West Bromwich
+MAKE_city_1096	Wolverhampton
+MAKE_city_1097	Exeter
+MAKE_city_1098	Edinburgh
+MAKE_city_1099	Oxford
+MAKE_city_1100	Kirkcaldy
+MAKE_city_1101	Cardiff
+MAKE_city_1102	Carlisle
+MAKE_city_1103	Canterbury
+MAKE_city_1104	Glasgow
+MAKE_city_1105	Crystal Palace
+MAKE_city_1106	Crewe
+MAKE_city_1107	Gloucester
+MAKE_city_1108	Cambridge
+MAKE_city_1109	Coventry
+MAKE_city_1110	Southampton
+MAKE_city_1111	Salford
+MAKE_city_1112	Sunderland
+MAKE_city_1113	Sheffield
+MAKE_city_1114	Gilligham
+MAKE_city_1115	Swansea
+MAKE_city_1116	Stirling
+MAKE_city_1117	Stoke On Trent
+MAKE_city_1118	St. Albans
+MAKE_city_1119	St. Davids
+MAKE_city_1120	Salisbury
+MAKE_city_1121	Derby
+MAKE_city_1122	Durham
+MAKE_city_1123	Dundee
+MAKE_city_1124	Chester
+MAKE_city_1125	Chichester
+MAKE_city_1126	Truro
+MAKE_city_1127	Newcastle
+MAKE_city_1128	Newport
+MAKE_city_1129	Newry
+MAKE_city_1130	Norwich
+MAKE_city_1131	Nottingham
+MAKE_city_1132	Perth
+MAKE_city_1133	Birmingham
+MAKE_city_1134	Burnley
+MAKE_city_1135	Bath
+MAKE_city_1136	Hull
+MAKE_city_1137	Bangor
+MAKE_city_1138	Peterborough
+MAKE_city_1139	Falkirk
+MAKE_city_1140	Brighton
+MAKE_city_1141	Blackburn
+MAKE_city_1142	Bradford
+MAKE_city_1143	Bristol
+MAKE_city_1144	Plymouth
+MAKE_city_1145	Preston
+MAKE_city_1146	Belfast
+MAKE_city_1147	Hereford
+MAKE_city_1148	Portsmouth
+MAKE_city_1149	Bolton
+MAKE_city_1150	Motherwell
+MAKE_city_1151	Manchester
+MAKE_city_1152	Middlesborough
+MAKE_city_1153	York
+MAKE_city_1154	Lancaster
+MAKE_city_1155	Leeds
+MAKE_city_1156	Lisburne
+MAKE_city_1157	Liverpool
+MAKE_city_1158	Ripon
+MAKE_city_1159	Lincoln
+MAKE_city_1160	Luton
+MAKE_city_1161	Leicester
+MAKE_city_1162	Redding
+MAKE_city_1163	Renfrew
+MAKE_city_1164	Rotherham
+MAKE_city_1165	Londra
+MAKE_city_1166	Londonderry
+MAKE_city_1167	Watford
+MAKE_city_1168	Aosta
+MAKE_city_1169	Ascoli
+MAKE_city_1170	Avellino
+MAKE_city_1171	Arezzo
+MAKE_city_1172	Ancona
+MAKE_city_1173	Vicenza
+MAKE_city_1174	Venezia
+MAKE_city_1175	Verona
+MAKE_city_1176	Udine
+MAKE_city_1177	Empoli
+MAKE_city_1178	Catania
+MAKE_city_1179	Catanzaro
+MAKE_city_1180	Cagliari
+MAKE_city_1181	Campobasso
+MAKE_city_1182	Cremona
+MAKE_city_1183	Crotone
+MAKE_city_1184	Cosenza
+MAKE_city_1185	Como
+MAKE_city_1186	Salerno
+MAKE_city_1187	Siena
+MAKE_city_1188	Genova
+MAKE_city_1189	Cesena
+MAKE_city_1190	Terni
+MAKE_city_1191	Trieste
+MAKE_city_1192	Torino
+MAKE_city_1193	Trento
+MAKE_city_1194	Napoli
+MAKE_city_1195	Bari
+MAKE_city_1196	Parma
+MAKE_city_1197	Palermo
+MAKE_city_1198	Piacenza
+MAKE_city_1199	Firenze
+MAKE_city_1200	Brescia
+MAKE_city_1201	Pescara
+MAKE_city_1202	Perugia
+MAKE_city_1203	Bergamo
+MAKE_city_1204	Potenza
+MAKE_city_1205	Bologna
+MAKE_city_1206	Mantova
+MAKE_city_1207	Milano
+MAKE_city_1208	Messina
+MAKE_city_1209	Modena
+MAKE_city_1210	L'Aquila
+MAKE_city_1211	Livorno
+MAKE_city_1212	Rimini
+MAKE_city_1213	Reggio Calabria
+MAKE_city_1214	Lecce
+MAKE_city_1215	Leffe
+MAKE_city_1216	Roma
+MAKE_city_1217	Kiev
+MAKE_city_1218	Vienna
+MAKE_city_1219	Arnhem
+MAKE_city_1220	Eindhoven
+MAKE_city_1221	Apeldoorn
+MAKE_city_1222	Amsterdam
+MAKE_city_1223	Alkmaar
+MAKE_city_1224	Almere
+MAKE_city_1225	Almelo
+MAKE_city_1226	Waalwijk
+MAKE_city_1227	Emmen
+MAKE_city_1228	Enschede
+MAKE_city_1229	Oss
+MAKE_city_1230	Kerkrade
+MAKE_city_1231	Sittard
+MAKE_city_1232	Zwolle
+MAKE_city_1233	Tilburg
+MAKE_city_1234	Deventer
+MAKE_city_1235	Denhaag
+MAKE_city_1236	Denbosch
+MAKE_city_1237	Doetinchem
+MAKE_city_1238	Dordrecht
+MAKE_city_1239	Nimega
+MAKE_city_1240	Haarlem
+MAKE_city_1241	Veendam
+MAKE_city_1242	Velsen
+MAKE_city_1243	Venlo
+MAKE_city_1244	Volendam
+MAKE_city_1245	Breda
+MAKE_city_1246	Groninga
+MAKE_city_1247	Heerenveen
+MAKE_city_1248	Helmont
+MAKE_city_1249	Maastricht
+MAKE_city_1250	Utrecht
+MAKE_city_1251	Leeuwarden
+MAKE_city_1252	Roosendaal
+MAKE_city_1253	Rotterdam
+MAKE_city_1254	Atene
+MAKE_city_1255	Alessandropoli
+MAKE_city_1256	Ioannina
+MAKE_city_1257	Iraklion
+MAKE_city_1258	Komotini
+MAKE_city_1259	Salonicco
+MAKE_city_1260	Patrasso
+MAKE_city_1261	Pireo
+MAKE_city_1262	Boros
+MAKE_city_1263	Larissa
+MAKE_city_1264	Zagabria
+MAKE_city_1265	Spalato
+MAKE_city_1266	Ginevra
+MAKE_city_1267	Zurigo
+MAKE_city_1268	Basilea
+MAKE_city_1269	Berna
+MAKE_city_1270	Losanna
+MAKE_city_1271	Gavle
+MAKE_city_1272	Kalmar
+MAKE_city_1273	Stoccolma
+MAKE_city_1274	Halmstad
+MAKE_city_1275	Boras
+MAKE_city_1276	Vaxjo
+MAKE_city_1277	Helsingborg
+MAKE_city_1278	Malmo
+MAKE_city_1279	Goteborg
+MAKE_city_1280	Alicante
+MAKE_city_1281	Albacete
+MAKE_city_1282	Almeria
+MAKE_city_1283	Vigo
+MAKE_city_1284	Huelva
+MAKE_city_1285	Eibar
+MAKE_city_1286	El Ejido
+MAKE_city_1287	Elche
+MAKE_city_1288	Gasteiz
+MAKE_city_1289	Castellon
+MAKE_city_1290	Cadiz
+MAKE_city_1291	Cordoba
+MAKE_city_1292	Saragozza
+MAKE_city_1293	Salamanca
+MAKE_city_1294	San Sebastian
+MAKE_city_1295	Santander
+MAKE_city_1296	Sevilla
+MAKE_city_1297	Soria
+MAKE_city_1298	Tarragona
+MAKE_city_1299	Tenerife
+MAKE_city_1300	Terrassa
+MAKE_city_1301	Valladolid
+MAKE_city_1302	Barcellona
+MAKE_city_1303	Valencia
+MAKE_city_1304	Pamplona
+MAKE_city_1305	Villarreal
+MAKE_city_1306	Vitria
+MAKE_city_1307	Gijon
+MAKE_city_1308	Bilbao
+MAKE_city_1309	Ferrol
+MAKE_city_1310	Getafe
+MAKE_city_1311	Jerez
+MAKE_city_1312	Pontevedra
+MAKE_city_1313	Maiorca
+MAKE_city_1314	Madrid
+MAKE_city_1315	Malaga
+MAKE_city_1316	Murcia
+MAKE_city_1317	La Coruna
+MAKE_city_1318	Las Palmas
+MAKE_city_1319	Lleida
+MAKE_city_1320	Lorca
+MAKE_city_1321	Maribor
+MAKE_city_1322	Lubiana
+MAKE_city_1323	Belgrado
+MAKE_city_1324	Ostrava
+MAKE_city_1325	Hradec Kralove'
+MAKE_city_1326	Praga
+MAKE_city_1327	Pilsen
+MAKE_city_1328	Bruna
+MAKE_city_1329	Esbjerg
+MAKE_city_1330	Aalborg
+MAKE_city_1331	Copenhaghen
+MAKE_city_1332	Aachen
+MAKE_city_1333	Ahlen
+MAKE_city_1334	Aue
+MAKE_city_1335	Wolfsburg
+MAKE_city_1336	Unterhaching
+MAKE_city_1337	Karlsruhe
+MAKE_city_1338	Kaiserslautern
+MAKE_city_1339	Gelsenkirchen
+MAKE_city_1340	Colonia
+MAKE_city_1341	Cottbus
+MAKE_city_1342	Saarbrucken
+MAKE_city_1343	Siegen
+MAKE_city_1344	Stoccarda
+MAKE_city_1345	Duisburg
+MAKE_city_1346	Dortmund
+MAKE_city_1347	Dresda
+MAKE_city_1348	Norimberga
+MAKE_city_1349	Paderborn
+MAKE_city_1350	Hannover
+MAKE_city_1351	Amburgo
+MAKE_city_1352	Bielefeld
+MAKE_city_1353	Furth
+MAKE_city_1354	Friburgo
+MAKE_city_1355	Braunschweig
+MAKE_city_1356	Francoforte
+MAKE_city_1357	Burghausen
+MAKE_city_1358	Brema
+MAKE_city_1359	Berlino
+MAKE_city_1360	Bochum
+MAKE_city_1361	Meinz
+MAKE_city_1362	Monaco
+MAKE_city_1363	Moenchengladbach
+MAKE_city_1364	Leverkusen
+MAKE_city_1365	Rostock
+MAKE_city_1366	Ankara
+MAKE_city_1367	Istanbul
+MAKE_city_1368	Izmir
+MAKE_city_1369	Oslo
+MAKE_city_1370	Kristiansand
+MAKE_city_1371	Stavanger
+MAKE_city_1372	Tromso
+MAKE_city_1373	Trondheim
+MAKE_city_1374	Frederikstad
+MAKE_city_1375	Bergen
+MAKE_city_1376	Lillestrom
+MAKE_city_1377	Ajaccio
+MAKE_city_1378	Amiens
+MAKE_city_1379	Istres
+MAKE_city_1380	Auxerre
+MAKE_city_1381	Caen
+MAKE_city_1382	Guingamp
+MAKE_city_1383	Gueugnon
+MAKE_city_1384	Grenoble
+MAKE_city_1385	Clermont-Ferrand
+MAKE_city_1386	Saint-E'tienne
+MAKE_city_1387	Chateauroux
+MAKE_city_1388	Strasburgo
+MAKE_city_1389	Sedan
+MAKE_city_1390	Se'te
+MAKE_city_1391	Digione
+MAKE_city_1392	Tolosa
+MAKE_city_1393	Troyes
+MAKE_city_1394	Nancy
+MAKE_city_1395	Nantes
+MAKE_city_1396	Nizza
+MAKE_city_1397	Bastia
+MAKE_city_1398	Valence
+MAKE_city_1399	Parigi
+MAKE_city_1400	Brest
+MAKE_city_1401	Bordeaux
+MAKE_city_1402	Marsiglia
+MAKE_city_1403	Metz
+MAKE_city_1404	Monaco
+MAKE_city_1405	Montbeliard
+MAKE_city_1406	Montpellier
+MAKE_city_1407	Laval
+MAKE_city_1408	Lens
+MAKE_city_1409	Lille
+MAKE_city_1410	Lione
+MAKE_city_1411	Le Havre
+MAKE_city_1412	Le Mans
+MAKE_city_1413	Rennes
+MAKE_city_1414	Lorient
+MAKE_city_1415	Sofia
+MAKE_city_1416	Bruxelles
+MAKE_city_1417	Bruges
+MAKE_city_1418	Liegi
+MAKE_city_1419	Cracovia
+MAKE_city_1420	Zabrze
+MAKE_city_1421	Chorzow
+MAKE_city_1422	Varsavia
+MAKE_city_1423	Oporto
+MAKE_city_1424	Lisbona
+MAKE_city_1425	Bucarest
+MAKE_city_1426	San Pietroburgo
+MAKE_city_1427	Mosca
+MAKE_city_1428	Luanda
+MAKE_city_1429	Alessandria
+MAKE_city_1430	Il Cairo
+MAKE_city_1431	Giza
+MAKE_city_1432	Accra
+MAKE_city_1433	Douala
+MAKE_city_1434	Yaounde'
+MAKE_city_1435	Abidjan
+MAKE_city_1436	Yamoussoukro
+MAKE_city_1437	Dakar
+MAKE_city_1438	Tunisi
+MAKE_city_1439	Lome'
+MAKE_city_1440	Abuja
+MAKE_city_1441	Ibadan
+MAKE_city_1442	Enugu
+MAKE_city_1443	Kano
+MAKE_city_1444	Lagos
+MAKE_city_1445	Citta' del Capo
+MAKE_city_1447	Pretoria
+MAKE_city_1449	Johannesburg
+MAKE_city_1450	Casablanca
+MAKE_city_1451	Rabat
+MAKE_city_1452	Chicago
+MAKE_city_1453	New York
+MAKE_city_1454	Los Angeles
+MAKE_city_1455	Washington
+MAKE_city_1456	Ottawa
+MAKE_city_1457	Toronto
+MAKE_city_1458	Montreal
+MAKE_city_1459	Alajuela
+MAKE_city_1460	San Jose
+MAKE_city_1461	Kingston
+MAKE_city_1462	Port of Spain
+MAKE_city_1463	Torreon
+MAKE_city_1464	Citta' del Messico
+MAKE_city_1465	Cordoba
+MAKE_city_1466	Santa Fe
+MAKE_city_1467	Buenos Aires
+MAKE_city_1468	Rosario
+MAKE_city_1469	Montevideo
+MAKE_city_1470	Quito
+MAKE_city_1471	Guayaquil
+MAKE_city_1472	Riobamba
+MAKE_city_1473	Cali'
+MAKE_city_1474	Bogota'
+MAKE_city_1475	Medellin
+MAKE_city_1476	Santiago
+MAKE_city_1477	Asuncion
+MAKE_city_1478	Curitiba
+MAKE_city_1479	Goiania
+MAKE_city_1480	Salvador
+MAKE_city_1481	Santos
+MAKE_city_1482	San Paolo
+MAKE_city_1483	Fortaleza
+MAKE_city_1484	Brasilia
+MAKE_city_1485	Bele'm
+MAKE_city_1486	Belo Horizonte
+MAKE_city_1487	Porto Alegre
+MAKE_city_1488	Manaus
+MAKE_city_1489	Rio de Janeiro
+MAKE_city_1490	Recife
+MAKE_city_1491	Santa Cruz
+MAKE_city_1492	La Paz
+MAKE_city_1493	Adelaide
+MAKE_city_1494	Wollongong
+MAKE_city_1495	Canberra
+MAKE_city_1496	Sydney
+MAKE_city_1497	Perth
+MAKE_city_1498	Brisbane
+MAKE_city_1499	Melbourne
+MAKE_city_1500	Wellington
+MAKE_city_1501	Auckland
+MAKE_city_1502	Christchurch
+INF_INFO_button_0000	OK
+INF_RESULT_message_0011	Quarti di finale persi
+INF_RESULT_message_0012	Semifinali perse
+INF_RESULT_message_0013	Semifinali
+INF_RESULT_message_0014	Campioni
+INF_RESULT_message_0020	Quarti di finale 
+INF_RESULT_message_0021	Semifinali 
+INF_RESULT_message_0022	Finale
+INF_TITLE_message_0001	Dopo la vittoria in Campionato, e' stata aggiunta\nuna stella sul distintivo della squadra.
+INF_TITLE_message_0002	I tifosi sono in delirio per la tua vittoria.\nE vedrai che salira' anche il morale dei giocatori.
+INF_GOLDEN_contents_0000	Premi partita:
+INF_GOLDEN_contents_0002	$%d00
+INF_DEFENDING_contents_0002	Da giocare: %d
+INF_DEFENDING_contents_0005	$%d00
+INF_DEFENDING_contents_0008	$%d00
+INF_LEAGUE_ranking_0000	Campioni
+INF_LEAGUE_ranking_0001	Semifinali
+INF_ENTRY_title_0000	Pre-Season Cup
+INF_ENTRY_title_0001	Enterprise Cup
+INF_ENTRY_title_0002	King's Club Cup
+INF_ENTRY_title_0003	National Super Cup
+INF_ENTRY_title_0005	Continental Cup
+INF_ENTRY_title_0006	Continental Super Cup
+INF_ENTRY_title_0007	Champions Trophy
+INF_ENTRY_title_0008	International Club Championship
+INF_ENTRY_title_0009	%s Championship
+INF_ENTRY_title_0022	Japan Trophy
+INF_ENTRY_result_0000	Campioni
+INF_ENTRY_result_0001	Semifinali
+INF_SPONSOR_choices_0003	Si'
+INF_SPONSOR_choices_0004	No
+INF_SPO_rank_0003	mondiale
+INF_SPO_rank_0004	leader nel paese
+INF_SPO_category_0000	Ditta di elettronica
+INF_SPO_category_0001	Azienda di bibite
+INF_SPO_category_0002	Azienda alimentare
+INF_SPO_category_0003	Azienda automobilistica
+INF_SPO_category_0004	Compagnia di comunicazioni
+INF_SPO_category_0005	Compagnia finanziaria
+INF_SPO_category_0006	Emittente radiotelevisiva
+INF_SPO_category_0007	Compagnia aerea
+INF_SPO_category_0008	Ditta di videogiochi
+INF_SPO_name_0014	New Century Oil
+INF_CONTRACT_message_0000	La dirigenza, in riconoscimento delle tue capacita',\nvuole estendere il tuo contratto.
+INF_OFFER_message_0004	Vuoi terminare quello che avevi iniziato, eh?\nSiamo felici che tu abbia deciso di restare con noi.
+INF_OFFER_contents_0002	Citta' di provenienza:
+INF_OFFER_choices_0004	Si'
+INF_OFFER_choices_0005	No
+INF_STADIUMR_message_0007	Scegli il manto erboso.
+INF_STADIUMR_message_0008	Scegli i riflettori.
+INF_STADIUMR_message_0010	Scegli il tipo di tettoia.
+INF_STADIUMR_message_0013	Scegli la tipologia di cupola.
+INF_STADIUMR_message_0014	I lavori inizieranno dopo la prossima partita.
+INF_STADIUMR_contents_0027	Curvo
+INF_STADIUMF_message_0000	Lo stadio e' stato rinnovato.
+INF_STADIUMF_message_0008	I tifosi aspettano con impazienza\nla prossima partita in casa.
+INF_BIRTHDAY_message_0000	Tanti auguri,\n%s!
+INF_BIRTHDAY_message_0001	Tutti i giocatori vogliono regalarti\nuna vittoria per il tuo compleanno.
+INF_SCOUT_message_0002	Questo giocatore potrebbe rivelarsi\nindispensabile per la tua squadra.
+INF_CRISIS_message_0001	I giocatori sono preoccupati\nper le finanze della squadra.
+INF_CRISIS_contents_0002	$%d00
+INF_BONUS_message_0000	Di recente le tue finanze sono in crescita.\nOffri un premio all'impegno dei giocatori.
+INF_INJURY_message_0002	Sono arrivate alcune informazioni\nsugli infortuni dei giocatori.
+INF_COACH_country_0000	Inghilterra
+INF_COACH_country_0001	Spagna
+INF_COACH_country_0002	Italia
+INF_COACH_country_0003	Germania
+INF_COACH_country_0004	Francia
+INF_COACH_country_0005	Olanda
+INF_COACH_country_0006	Brasile
+INF_COACH_country_0007	Argentina
+INF_COACH_country_0011	Giappone
+INF_SUPPORTER_message_0000	Sembra che i tifosi abbiano trovato \nun soprannome per la squadra.
+INF_CLUBHOUSER_contents_0000	Il campo di gioco
+INF_CLUBHOUSER_message_0015	I lavori inizieranno dopo la prossima partita.
+INF_WEEKLYCHAMPION_area_0001	KANTO
+INF_WEEKLYCHAMPION_area_0003	CHUBU
+INF_WEEKLYCHAMPION_area_0004	TOKAI
+INF_WEEKLYCHAMPION_area_0005	KINKI
+INF_WEEKLYCHAMPION_area_0006	CHU-SHIKOKU
+INF_WEEKLYCHAMPION_area_0007	KYUSHU
+INF_FANEVENT_contents_0000	Premi partita:
+INF_FANEVENT_contents_0002	$%d00
+INF_LASTWEEKLY_contents_0002	%do posto
+INF_LASTWEEKLY_contents_0004	%do posto
+INF_057_contents_0002	1o Turno perso
+INF_057_contents_0003	2o Turno perso
+INF_057_contents_0004	3o Turno perso
+INF_057_contents_0008	Semifinali
+INF_059_contents_0006	Semifinali
+INF_070_contents_0005	Semifinali
+INF_072_contents_0005	Semifinali
+MAN_MENU_button_0000	OK
+MAN_MENU_time_0001	all'inizio della partita
+MAN_PRIZE_value_0002	Circolare
+MAN_TICKER_message_0004	Avversario scelto
+MAN_TICKER_contents_0000	Finale
+MAN_TICKER_contents_0001	Semifinali 
+MAN_TICKER_contents_0002	Quarti di finale 
+MAN_MAP_header_0001	Il campo di gioco
+MAN_MAP_explain_0004	Fissa un incontro
+MAN_MAP_explain_0005	Pagella giocatori
+MAN_MAP_explain_0006	Dati della squadra
+MAN_MAP_explain_0007	Dati giocatore
+MAN_MAP_explain_0008	Dati allenatore
+MAN_MAP_explain_0009	Rinuncia
+MAN_MENU_header_0002	Il campo di gioco
+MAN_MENU_header_0009	Allenamenti
+MAN_MENU_header_0012	Pagella giocatori
+MAN_MENU_facilities_0000	Il campo di gioco
+MAN_MENU_facilities_0005	Allenamenti
+MAN_MENU_facilities_0008	Pagella giocatori
+MAN_FACILITIES_message_0003	Sta per iniziare la partita.
+MAN_MENU_action_0001	Fissa un incontro
+MAN_MENU_action_0002	Dati della squadra
+MAN_MENU_action_0003	Dati giocatore
+MAN_MENU_action_0004	Dati allenatore
+MAN_MENU_action_0005	Rinuncia
+MAN_ACTION_message_0016	Scegli un avversario da sfidare.
+MAN_ENTRY_contents_0002	Possesso p.
+MAN_ENTRY_contents_0007	Possesso p.
+MAN_ENTRY_message_0000	Disponi le carte di gioco.
+MAN_ENTRY_message_0002	Anche con giocatori di prima classe, le tue finanze\nsono stabili. Puoi dormire sonni tranquilli.
+MAN_ENTRY_message_0003	Hai alcuni dei giocatori migliori nella tua squadra.\nCerca di guadagnare abbastanza per mantenerti a galla.
+MAN_ENTRY_message_0004	Hai molte star tra i tuoi giocatori. \nPunta ai premi partita se ti vuoi mantenere a galla.
+MAN_APPLICATION_seat_0004	Non disponibile
+MAN_APPLICATION_seat_0005	Non disponibile
+MAN_APPLICATION_seat_0006	Non disponibile
+MAN_APPLICATION_seat_0012	Avversario scelto
+MAN_APPLICATION_action_0000	Cancella la scelta
+MAN_APPLICATION_message_0000	Annullata la sfida con l'avversario.
+MAN_APPLICATION_message_0001	Accettata la sfida con l'avversario.
+MAN_APPLICATION_message_0002	Scegli un avversario.\nVerra' data la priorita' agli incontri amichevoli.
+MAN_APPLICATION_message_0003	Scegli e sfida un avversario. Non appena si sara'\nregistrato, la partita avra' inizio.
+MAN_APPLICATION_message_0004	Sfida un tuo avversario. Scegline uno gia'\nregistrato per dare inizio alla partita.
+MAN_TEAM_header_0001	Premi partita:
+MAN_TEAM_header_0002	Risultati:
+MAN_TEAM_header_0003	Record vittorie consecutive:
+MAN_TEAM_header_0012	Posto
+MAN_TEAM_contents_0004	%d 
+MAN_TEAM_contents_0005	0
+MAN_TEAM_contents_0028	%d volte
+MAN_TEAM_contents_0033	%do posto
+MAN_TEAM_contents_0039	Campioni
+MAN_TEAM_contents_0040	Semifinali
+MAN_TEAM_contents_0043	(A fine stagione)
+MAN_TEAM_contents_0044	%d
+MAN_TEAM_contents_0048	Reti segnate
+MAN_TEAM_contents_0055	%d/%d
+MAN_TEAM_contents_0056	0
+MAN_TEAM_contents_0057	%d 
+MAN_TEAM_contents_0058	Avanza in Finale
+MAN_TEAM_contents_0059	Avanza alle Semifinali
+MAN_PLAYER_header_0000	Giocatori registrati
+MAN_PLAYER_header_0004	Partite giocate in torneo 
+MAN_MANAGER_header_0001	Classifica Nazionale Allenatori:
+MAN_MANAGER_header_0002	Stipendio annuo:
+MAN_MANAGER_header_0003	Carriera:
+MAN_MANAGER_header_0004	Vittorie consecutive:
+MAN_MANAGER_header_0007	Archivio risultati in Regular League
+MAN_MANAGER_header_0013	Stagione
+MAN_MANAGER_contents_0006	%d 
+MAN_MANAGER_contents_0008	%do posto
+MAN_0506LICENSE_header_0003	Record vittorie consecutive:
+MAN_0506LICENSE_contents_0005	%d 
+MAN_RETIRE_choices_0000	Si'
+MAN_RETIRE_choices_0001	No
+MAN_COOPERATION_header_0000	Coppie di gioco
+MAN_CONT_message_0000	Attendi il termine di tutte le partite.
+MAN_CONT_message_0001	Ritira la Player card.
+MAN_CONT_message_0002	Continui?
+MAN_CONT_message_0003	Si'
+MAN_CONT_message_0004	No
+MAN_END_header_0000	Risultati
+MAN_END_header_0001	Sal. prec.
+MAN_END_header_0002	Salario
+MAN_DATA_header_0014	Classifica Nazionale Allenatori:
+MAN_DATA_header_0015	Stipendio annuo:
+MAN_DATA_header_0017	Risultati:
+MAN_DATA_header_0018	Giocatori registrati
+MAN_DATA_contents_0009	VITT.%d SCO.%d PAR.%d
+MAN_DATA_wtdata_0005	Avanza alle Semifinali
+MAN_DATA_wtdata_0006	Avanza in Finale
+MAN_DATA_wtdata_0012	2o Turno perso
+MAN_DATA_wtdata_0013	Quarti di finale persi
+MAN_DATA_wtdata_0014	Semifinali
+MAN_DATA_wtdata_0015	Campioni
+MAN_DATA_wtdata_0022	Semifinali perse
+MAN_TOP_menu_0002	Comunicazione
+MAN_COM_menu_0000	Il campo di gioco
+MAN_DATA_menu_0000	Dati della squadra
+MAN_DATA_menu_0001	Dati giocatore
+MAN_DATA_menu_0002	Dati allenatore
+MAN_Regist_menu_0001	Fissa un incontro
+MAN_Regist_menu_0004	Rinuncia
+MAN_TOP_message_0001	Sta per iniziare la partita.
+MAN_TRADE_window_0011	Si'
+MAN_TRADE_window_0012	No
+TRA_MENU_menu_0000	Riposo
+TRA_MENU_menu_0005	Speciale
+TRA_THEME_menu_0001	Attacco
+TRA_THEME_menu_0002	Difesa
+TRA_THEME_menu_0003	Passaggi
+TRA_THEME_menu_0004	Possesso p.
+TRA_THEME_menu_0005	Velocita'
+TRA_THEME_menu_0006	Potenza
+TRA_THEME_menu_0016	Partita
+TRA_THEME_menu_0037	Il Catenaccio
+TRA_THEME_menu_0038	I Tocca e Via
+TRA_THEME_Raremenu_0001	Coach
+TRA_SCENE_state_0001	Non c'e' che dire. Sembrano aver assimilato\nquesta tecnica alla perfezione.
+TRA_SCENE_state_0002	Stanno dando il 110% e anche di piu'.\nCi stanno mettendo l'anima.
+TRA_SCENE_state_0003	Se la stanno cavando piu' che bene.\nSono entrati nello spirito giusto.
+TRA_SCENE_state_0004	Si stanno impegnando abbastanza.
+TRA_SCENE_state_0005	Non stanno giocando bene.\nE' come se non capissero cosa ci si aspetta da loro.
+TRA_SCENE_state_0006	I giocatori tornano a casa sorridendo.
+TRA_RESULT_message_0106	Il clima tra i giocatori e' improvvisamente mutato.\nLa sfilza di sconfitte potrebbe terminare qui.
+TRA_RESULT_message_0107	I giocatori sono ansiosi di interrompere la serie\ndi sconfitte. Cosa ci riservera' la prossima partita?
+TRA_RESULT_message_0023	Attualmente l'attacco e' ai valori minimi.\nDevi cercare di farli migliorare.
+TRA_TOP_menu_0001	Speciale
+TRA_TOP_menu_0002	Riposo
+INF_COACHTRAINING_choices_0004	Si'
+INF_COACHTRAINING_choices_0005	No
+COM_ROLE_answer_0002	Dovrebbe riuscire a far funzionare bene le cose.\nLa squadra si compattera' in men che non si dica.
+COM_ROLE_answer_0003	Sembra sicuro di se' nell'assumere il nuovo ruolo.\nSara' in grado di gestire al meglio le cose.
+COM_ROLE_answer_0004	Sembra che non desiderasse altro.\nE' piu' determinato che mai.
+COM_ROLE_answer_0006	E' felice di essersi guadagnato la tua fiducia.\nPuntera' al gol ogni volta che ne avra' la chance.
+COM_ROLE_answer_0007	Sembra entusiasta per un incarico cosi' importante.\nSara' decisivo nel momento del bisogno.
+COM_ROLE_answer_0008	Non si dovrebbe cambiare cosi' facilmente capitano.\nSembra che tu abbia perso la sua fiducia.
+COM_ROLE_answer_0009	Non sembra desiderasse diventare capitano.\nSi sente gia' sotto pressione.
+COM_ROLE_answer_0011	Non sembra essere stata la scelta giusta.\nRiuscira' a compattare la squadra?
+COM_ROLE_answer_0014	Non sembra capire la ragione della tua scelta.\nNon sembra d'accordo con te.
+COM_ROLE_answer_0015	E' nervoso per l'incarico di rigorista.\nSembra un peso troppo grande per lui.
+COM_ROLE_answer_0016	Lui e' gia' il capitano. Il fatto che te\nlo sia scordato e' stato un duro colpo.
+COM_ROLE_answer_0017	Il portiere come rigorista? Un bel rischio.\nSi rifiuta di prendersi la responsabilita'.
+COM_ROLE_answer_0019	Da' l'idea che sarebbe stato scontento comunque.\nHai fatto bene a sostituirlo.
+COM_ROLE_answer_0020	Sembra che dovesse sopportare un peso eccessivo.\nE' felice che tu glielo abbia tolto dalle spalle.
+COM_ROLE_answer_0021	Sembra frustrato per il poco apprezzamento\nche mostri verso le sue capacita'.
+COM_ROLE_answer_0022	Non comprende il perche' della sua sostituzione.\nE' molto deluso dalla tua decisione.
+COM_ROLE_answer_0024	Il morale di %s e' crollato\nper non essere piu' il capitano della squadra.
+COM_ROLE_answer_0025	Il morale di %s e' crollato\nper non essere piu' il primo cannoniere.
+COM_ROLE_answer_0026	Il morale dei giocatori e' in calo per la poca\nfiducia riposta nel nuovo capitano.
+COM_ROLE_answer_0038	Non si dovrebbe cambiare cosi' facilmente capitano.\nSembra che tu abbia perso la sua fiducia.
+COM_ROLE_answer_0039	Non sembra desiderasse diventare capitano.\nSi sente gia' sotto pressione.
+COM_ROLE_answer_0041	Non sembra essere stata la scelta giusta.\nRiuscira' a compattare la squadra?
+COM_ROLE_answer_0044	Non sembra capire la ragione della tua scelta.\nNon sembra d'accordo con te.
+COM_ROLE_answer_0045	E' nervoso per l'incarico di rigorista.\nSembra un peso troppo grande per lui.
+COM_ROLE_answer_0046	Lui e' gia' il capitano. Il fatto che te\nlo sia scordato e' stato un duro colpo.
+COM_ROLE_answer_0047	Il portiere come rigorista? Un bel rischio.\nSi rifiuta di prendersi la responsabilita'.
+COM_ROLE_answer_0048	Il morale di %s e' crollato\nper non essere piu' il capitano della squadra.
+COM_ROLE_answer_0049	Il morale di %s e' crollato\nper non essere piu' il primo cannoniere.
+COM_ROLE_answer_0050	Il morale dei giocatori e' in calo per la poca\nfiducia riposta nel nuovo capitano.
+COM_TRAINING_choices_0001	Difesa
+COM_TRAINING_choices_0003	Potenza
+COM_TRAINING_choices_0007	Difesa
+COM_TRAINING_choices_0009	Potenza
+COM_TRAINING_choices_0015	Lezioni di calcio
+COM_TRAINING_choices_0016	Interviste
+COM_TRAINING_choices_0017	Apparizioni in TV
+COM_TRAINING_choices_0038	Ti scusi
+COM_TRAINING_choices_0039	Lo aduli
+COM_TRAINING_choices_0040	Parli dei tuoi sogni
+COM_TRAINING_answer_0046	Le tue scuse sembra gli abbiano migliorato l'umore.
+COM_TRAINING_answer_0047	Non sembra che le tue scuse abbiano funzionato.
+COM_TRAINING_answer_0048	Hai fatto bene ad adularlo.\nSembra essere di buon umore adesso.
+COM_TRAINING_answer_0049	L'adulazione non sembra funzionare stavolta.
+COM_TRAINING_answer_0050	I tuoi sogni lo hanno impressionato.\nLo hai fatto sentire meglio.
+COM_MEETING_choices_0008	Lezioni di calcio
+COM_MEETING_choices_0009	Interviste
+COM_MEETING_choices_0010	Apparizioni in TV
+COM_MEETING_choices_0019	Gliela spieghi
+COM_MEETING_choices_0020	Lo fai riflettere
+COM_MEETING_choices_0021	Gli dai un libro
+COM_MEETING_answer_0027	Sembra che ti abbia capito molto bene.
+COM_MEETING_answer_0028	Non sembra che ti abbia capito.
+COM_MEETING_answer_0029	Sembra aver trovato da solo la risposta\nche cercava. Non c'e' piu' da preoccuparsi.
+COM_MEETING_answer_0030	Non ha senso farlo riflettere su qualcosa che\nnon capisce. Sembra piu' confuso di prima.
+COM_MEETING_answer_0031	Terra' il libro con se per un po'. Adesso dovrebbe\nessere in grado di capire le tue strategie.
+COM_MEETING_answer_0032	Pensa che tu faccia troppo affidamento sui libri.\nAdesso ha meno rispetto per te.
+COM_DISCONTENT_choices_0012	Quale numero gli dai?
+COM_DISCONTENT_choices_0018	Lo ignori
+COM_DISCONTENT_choices_0025	Lo ascolti
+COM_DISCONTENT_choices_0027	Chiedi cosa fare
+COM_DISCONTENT_choices_0028	Lo fai giocare
+COM_DISCONTENT_choices_0029	Non lo fai giocare
+COM_DISCONTENT_choices_0030	Dai dei buffetti  
+COM_DISCONTENT_choices_0031	Lo incoraggi
+COM_DISCONTENT_choices_0032	Lo sgridi
+COM_DISCONTENT_choices_0033	Chiedi cosa non va
+COM_DISCONTENT_choices_0034	Ci penserai
+COM_DISCONTENT_choices_0035	Rifiuti
+COM_DISCONTENT_choices_0036	Lo inviti a uscire
+COM_DISCONTENT_choices_0037	Ci penserai
+COM_DISCONTENT_choices_0038	Rifiuti
+COM_DISCONTENT_choices_0039	Lo inviti a uscire
+COM_DISCONTENT_choices_0040	Ci penserai
+COM_DISCONTENT_choices_0041	Rifiuti
+COM_DISCONTENT_choices_0042	Lo togli dal gruppo
+COM_DISCONTENT_choices_0043	Rifiuti
+COM_DISCONTENT_choices_0044	Accetti
+COM_DISCONTENT_choices_0045	Lo insulti
+COM_DISCONTENT_choices_0046	Ci vai
+COM_DISCONTENT_choices_0047	Non ci vai
+COM_DISCONTENT_choices_0048	Lo raggiungi dopo
+COM_DISCONTENT_choices_0049	Lo penso anch'io
+COM_DISCONTENT_choices_0050	No, non direi
+COM_DISCONTENT_choices_0051	Ci pensero'
+COM_DISCONTENT_choices_0052	Ci penserai
+COM_DISCONTENT_choices_0053	Rifiuti
+COM_DISCONTENT_choices_0054	Lo togli dal gruppo
+COM_DISCONTENT_choices_0055	Ci pensi su
+COM_DISCONTENT_choices_0056	Rifiuti
+COM_DISCONTENT_choices_0057	Lo fai attendere
+COM_DISCONTENT_answer_0009	Sembra che il nuovo numero gli piaccia.\nSe n'e' andato con un sorriso stampato in faccia.
+COM_DISCONTENT_answer_0010	E' il numero giusto per lui.\nDa adesso dovrebbe giocare meglio.
+COM_DISCONTENT_answer_0011	Ha sentito la fiducia che riponi in lui.\nAspettati grandi prestazioni d'ora in poi.
+COM_DISCONTENT_answer_0012	Sembra felice, ha il numero di maglia che voleva.\nE' pronto piu' che mai per la prossima partita.
+COM_DISCONTENT_answer_0013	Sembra felice di avere un nuovo numero di maglia.\nHai dato una rinfrescata anche al suo morale.
+COM_DISCONTENT_answer_0014	A %s sembra piacere il suo\nnuovo numero di maglia.
+COM_DISCONTENT_answer_0015	Il suo attuale numero sembra significasse qualcosa\nper lui. E' triste che tu glielo abbia cambiato.
+COM_DISCONTENT_answer_0016	Non sembra troppo interessato al nuovo mumero.\nDovresti dare piu' peso ai suoi reali desideri.
+COM_DISCONTENT_answer_0017	Non sembra apprezzare il suo nuovo numero di\nmaglia. Il cambio non lo ha messo a suo agio.
+COM_DISCONTENT_answer_0018	Sembrava soddisfatto del suo precedente numero\ndi maglia. E' triste che tu gliel'abbia cambiato.
+COM_DISCONTENT_answer_0019	Non capisce perche' tu gli abbia cambiato il numero.\nNon sembra d'accordo con la scelta.
+COM_DISCONTENT_answer_0020	Il cambiamento del numero di maglia sembra aver\nin qualche modo scontentato %s.
+COM_DISCONTENT_answer_0021	E' sconvolto dal fatto che tu non ricordi\nil suo numero di maglia.
+COM_DISCONTENT_answer_0022	Avere il numero cambiato in continuazione\nnon farebbe piacere a nessuno.
+COM_DISCONTENT_answer_0023	%s se n'e' andato deluso per\nnon aver ricevuto nessun tipo di indicazione.
+COM_DISCONTENT_answer_0049	Sembra felice che tu ascolti i tuoi giocatori.\nSembra anche aver compreso la tua tattica.
+COM_DISCONTENT_answer_0053	Sembra felice che tu dia importanza alle sue idee.\nSei ruscito a creare un ponte tra voi due.
+COM_DISCONTENT_answer_0055	Sembra felicissimo che tu l'abbia scelto\nper giocare la partita.
+COM_DISCONTENT_answer_0057	Sembra aver acquisito nuova fiducia in se stesso.\nSi allenera' col massimo dell'impegno d'ora in poi.
+COM_DISCONTENT_answer_0059	Sembra leggermente imbarazzato, ma felice.
+COM_DISCONTENT_answer_0061	I tuoi incoraggiamenti sembrano aver funzionato.
+COM_DISCONTENT_answer_0063	Sembra che tu abbia ottenuto l'effetto\nvoluto. Si sente un altro uomo adesso.
+COM_DISCONTENT_answer_0065	Sembra felice che ti sia preoccupato per lui.
+COM_DISCONTENT_answer_0067	Sembra felice che tu gli dia fiducia.\nSarebbe una buona idea affidargli il ruolo.
+COM_DISCONTENT_answer_0069	La tua risposta netta gli ha fatto molto effetto.\nOra in allenamento si impegnera' come non mai.
+COM_DISCONTENT_answer_0071	Sembra divertito dalla tua imprevedibilita'.\nQuando non puoi rispondere direttamente, bluffa.
+COM_DISCONTENT_answer_0073	Sembra felice che tu gli dia fiducia.\nSarebbe una buona idea affidargli il ruolo.
+COM_DISCONTENT_answer_0075	La tua risposta netta gli ha fatto molto effetto.\nOra in allenamento si impegnera' come non mai.
+COM_DISCONTENT_answer_0077	Sembra divertito dalla tua imprevedibilita'.\nQuando non puoi rispondere direttamente, bluffa.
+COM_DISCONTENT_answer_0079	Sembra felice che tu abbia trovato il tempo di\nascoltarlo. Hai fatto la scelta giusta.
+COM_DISCONTENT_answer_0081	Sembra aver compreso.\nIl calcio, in fondo, e' un gioco di squadra.
+COM_DISCONTENT_answer_0083	Sembra volere a tutti i costi quella posizione,\nanche come sostituto. Hai avuto un ottimo intuito.
+COM_DISCONTENT_answer_0085	Sembra aver compreso quanto sia importante per la\nsquadra. Non e' il momento per lui di abbandonare.
+COM_DISCONTENT_answer_0087	Sembra felice che ti preoccupi per lui.\nPotrebbe cambiare idea.
+COM_DISCONTENT_answer_0089	Sembra capire che vuoi condividere le sue ansie.\nPotrebbe rimanere e risollevare le finanze.
+COM_DISCONTENT_answer_0091	Sembra felice che tu abbia accettato di unirti a lui.
+COM_DISCONTENT_answer_0093	Non sembra che dicesse sul serio.\nHai fatto bene a non accettare.
+COM_DISCONTENT_answer_0097	Sembra contento che la pensi come lui.
+COM_DISCONTENT_answer_0101	Sembra sollevato nel vedere\nche l'hai preso sul serio.
+COM_DISCONTENT_answer_0103	Sembra felice che tu abbia trovato il tempo di\nascoltarlo. Hai fatto la scelta giusta.
+COM_DISCONTENT_answer_0109	Sembra felice che tu abbia accettato. Chiunque\nvorrebbe giocare con il suo numero preferito.
+COM_DISCONTENT_answer_0111	Ha compreso il significato che ha il suo numero.\nSei riuscito a trasmettergli le tue convinzioni.
+COM_DISCONTENT_answer_0113	Sembra felice che tu abbia deciso di ascoltarlo.\nNon vede l'ora di ricevere il suo nuovo numero.
+COM_COOPERATION_question_0003	Senza di loro, la squadra andrebbe praticamente\na fondo. Che cosa gli dici?
+COM_COOPERATION_question_0004	Hanno delle difficolta' nel gioco di coppia.\nChe cosa fai?
+COM_COOPERATION_choices_0008	Lezioni di calcio
+COM_COOPERATION_choices_0009	Interviste
+COM_COOPERATION_choices_0010	Apparizioni in TV
+COM_COOPERATION_choices_0017	Gli parli
+COM_COOPERATION_choices_0019	Gli parli
+COM_COOPERATION_choices_0022	Presentali
+COM_COOPERATION_choices_0023	Falli presentare
+COM_COOPERATION_choices_0024	Presentati
+COM_COOPERATION_choices_0026	Allontanali
+COM_COOPERATION_choices_0027	Scoppia a piangere
+COM_COOPERATION_choices_0028	Della loro forza
+COM_COOPERATION_choices_0029	Della debolezza
+COM_COOPERATION_choices_0030	Dei loro hobby
+COM_COOPERATION_choices_0031	Di gioco di coppia
+COM_COOPERATION_choices_0032	Gioco individuale
+COM_COOPERATION_choices_0033	Di tendenze d'oggi
+COM_COOPERATION_choices_0034	Ripassa le tattiche
+COM_COOPERATION_choices_0035	Usa video partite
+COM_COOPERATION_choices_0036	Girate in macchina
+COM_COOPERATION_choices_0037	Il campo di gioco
+COM_COOPERATION_choices_0038	Un ristorante
+COM_COOPERATION_choices_0039	Un bar
+COM_COOPERATION_choices_0040	Ti infervori
+COM_COOPERATION_choices_0041	Parli con calma
+COM_COOPERATION_choices_0042	Fai lo spiritoso
+COM_COOPERATION_choices_0043	Molto buono
+COM_COOPERATION_choices_0044	Deve migliorare 
+COM_COOPERATION_choices_0045	Li ignori
+COM_COOPERATION_choices_0049	Cucina cinese
+COM_COOPERATION_choices_0050	Pizzeria
+COM_COOPERATION_choices_0051	Vegetariano
+COM_COOPERATION_answer_0021	Non sembra che allenamenti aggiuntivi funzionino.\nForse non e' questo che riuscira' ad avvicinarli.
+COM_COOPERATION_answer_0023	Non sembrano avere argomenti di discussione.\nCome se ci fosse un limite alla loro comunicazione.
+COM_COOPERATION_answer_0025	Sembrano preoccupati del fatto che tu vada con loro.\nVolevano conoscerti solo professionalmente.
+COM_COOPERATION_answer_0035	Sembra che non si conoscano ancora troppo bene.\nQuesto dovrebbe rafforzare il loro legame.
+COM_COOPERATION_answer_0036	Non e' facile parlare di se' cosi', tutt'a un tratto.\nSembrano ancora piu' a disagio tra loro.
+COM_COOPERATION_answer_0037	Sembrano condividere un senso di rispetto per te.\nDa adesso la loro relazione dovrebbe migliorare.
+COM_COOPERATION_answer_0038	Presentarti non sembra abbia funzionato.\nForse era meglio semplicemente presentarli tra loro.
+COM_COOPERATION_answer_0039	E' sempre bene parlare di quello che si ha dentro.\nAdesso sembra che tutti si sentano meglio.
+COM_COOPERATION_answer_0041	Certe volte dividere i giocatori e' salutare.\nQuesto li aiutera' a calmarsi.
+COM_COOPERATION_answer_0042	Non sembra fosse quello che volevano.\nAllontanarli non risolvera' la situazione.
+COM_COOPERATION_answer_0043	Sembrano aver compreso che ti proccupi per loro.\nAlle volte e' importante mostrare le emozioni.
+COM_COOPERATION_answer_0044	Non dovresti mostrare cosi' facilmente il tuo lato\nemotivo. Le tue lacrime non li convincono.
+COM_COOPERATION_answer_0045	Sembrano aver capito che il loro partner e' una\nbrava persona. Adesso si vorranno conoscere meglio.
+COM_COOPERATION_answer_0046	Sembra sia stata una manovra troppo prevedibile.\nParlare della loro forza non li avvicinera'.
+COM_COOPERATION_answer_0047	Sembrano sollevati che tu ne abbia parlato al loro\nposto. Ora hanno davanti a se' una nuova partenza.
+COM_COOPERATION_answer_0048	Non sembra essere stata una buona idea.\nLa cosa ha finito con l'imbarazzarli.
+COM_COOPERATION_answer_0049	E' bene che i giocatori si conoscano personalmente.\nQuesto li aiutera' a comprendersi a vicenda.
+COM_COOPERATION_answer_0050	Non dovresti rivelare informazioni cosi' personali.\nE' meglio concentrarsi su cose utili a entrambi.
+COM_COOPERATION_answer_0051	Hanno afferrato l'importanza del gioco di coppia.\nQuesto li fara' maturare come giocatori.
+COM_COOPERATION_answer_0052	Non sembra fossero pronti a una discussione cosi'.\nEra meglio un approccio iniziale piu' generale.
+COM_COOPERATION_answer_0053	Hanno compreso che il gioco individuale non basta\nper vincere. La loro collaborazione migliorera'.
+COM_COOPERATION_answer_0056	Discorsi del genere quando si e' cosi' impegnati.\nPensa a qualcosa di meglio per la prossima volta.
+COM_COOPERATION_answer_0058	Sembra che ne sapessero gia' a sufficienza.\nNon c'era bisogno di riaffrontare il tema.
+COM_COOPERATION_answer_0059	Adesso capiscono cosa hanno sbagliato nell'ultima\npartita. Collaboreranno di piu'.
+COM_COOPERATION_answer_0060	Non hanno trovato niente da migliorare.\nNon sembra che la seduta gli sia stata utile.
+COM_COOPERATION_answer_0062	Non sembrano particolarmente interessati.\nNon siamo qui per parlare di calcio?
+COM_COOPERATION_answer_0063	Approfondire il gioco di coppia richiede pratica.\nSi e' rivelata la strategia giusta.
+COM_COOPERATION_answer_0065	Non si puo' giocare a stomaco vuoto.\nSara' una buona occasione per conoscersi meglio.
+COM_COOPERATION_answer_0066	Non sembrano avere troppa fame.\nSi direbbe che sia tu l'unico a voler mangiare.
+COM_COOPERATION_answer_0068	Non c'e' tempo per gli svaghi. Devi prima\nfare in modo che il loro rapporto migliori.
+COM_COOPERATION_answer_0070	Non sembrano aver afferrato il punto. Pensa bene a\ncosa dire prima di parlare la prossima volta.
+COM_COOPERATION_answer_0071	Mantenere la calma e' fondamentale per il gioco di\nsquadra. Hanno imparato qualcosa di prezioso.
+COM_COOPERATION_answer_0072	Come se gli fosse entrato da un'orecchio e uscito\ndall'altro. Se ne vanno perplessi.
+COM_COOPERATION_answer_0075	Sembrano molto felici. Questo li incoraggera'\na impegnarsi ancora piu' a fondo.
+COM_COOPERATION_answer_0078	Sembravano sicuri della loro prestazione.\nLi hai in qualche modo delusi.
+COM_COOPERATION_answer_0079	Hanno capito che hai altre priorita'. D'ora in poi\nsi concentreranno solo sugli allenamenti.
+COM_COOPERATION_answer_0080	E' stato un brutto colpo non ricevere una risposta.\nCerca di dargliene una il prima possibile.
+COM_COOPERATION_answer_0087	Sembrano proprio avere voglia di cibo cinese.\nStasera starete da incanto.
+COM_COOPERATION_answer_0088	Non sembra che avessero voglia di cinese.\nLi hai scontentati.
+COM_COOPERATION_answer_0089	Sembra proprio avessero voglia di pizza.\nQuesto gli dara' la forza per allenarsi duramente.
+COM_COOPERATION_answer_0090	Non sembra che avessero voglia di pizza.\nLi hai scontentati.
+COM_COOPERATION_answer_0092	Una mangiata prima di una partita non e' l'ideale.\nAssicurati che la loro digestione non ne risenta.
+COM_COOPERATION_answer_0107	Sembra che non si conoscano ancora troppo bene.\nQuesto dovrebbe rafforzare il loro legame.
+COM_COOPERATION_answer_0108	Non e' facile parlare di se' cosi', tutt'a un tratto.\nSembrano ancora piu' a disagio tra loro.
+COM_COOPERATION_answer_0109	Sembrano condividere un senso di rispetto per te.\nDa adesso la loro relazione dovrebbe migliorare.
+COM_COOPERATION_answer_0110	Presentarti non sembra abbia funzionato.\nForse era meglio semplicemente presentarli tra loro.
+COM_COOPERATION_answer_0111	E' sempre bene parlare di quello che si ha dentro.\nAdesso sembra che tutti si sentano meglio.
+COM_COOPERATION_answer_0113	Certe volte dividere i giocatori e' salutare.\nQuesto li aiutera' a calmarsi.
+COM_COOPERATION_answer_0114	Non sembra fosse quello che volevano.\nAllontanarli non risolvera' la situazione.
+COM_COOPERATION_answer_0115	Sembrano aver compreso che ti proccupi per loro.\nAlle volte e' importante mostrare le emozioni.
+COM_COOPERATION_answer_0116	Non dovresti mostrare cosi' facilmente il tuo lato\nemotivo. Le tue lacrime non li convincono.
+COM_COOPERATION_answer_0117	Sembrano aver capito che il loro partner e' una\nbrava persona. Adesso si vorranno conoscere meglio.
+COM_COOPERATION_answer_0118	Sembra sia stata una manovra troppo prevedibile.\nParlare della loro forza non li avvicinera'.
+COM_COOPERATION_answer_0119	Sembrano sollevati che tu ne abbia parlato al loro\nposto. Ora hanno davanti a se' una nuova partenza.
+COM_COOPERATION_answer_0120	Non sembra essere stata una buona idea.\nLa cosa ha finito con l'imbarazzarli.
+COM_COOPERATION_answer_0121	E' bene che i giocatori si conoscano personalmente.\nQuesto li aiutera' a comprendersi a vicenda.
+COM_COOPERATION_answer_0122	Non dovresti rivelare informazioni cosi' personali.\nE' meglio concentrarsi su cose utili a entrambi.
+COM_COOPERATION_answer_0123	Hanno afferrato l'importanza del gioco di coppia.\nQuesto li fara' maturare come giocatori.
+COM_COOPERATION_answer_0124	Non sembra fossero pronti a una discussione cosi'.\nEra meglio un approccio iniziale piu' generale.
+COM_COOPERATION_answer_0125	Hanno compreso che il gioco individuale non basta\nper vincere. La loro collaborazione migliorera'.
+COM_COOPERATION_answer_0128	Discorsi del genere quando si e' cosi' impegnati.\nPensa a qualcosa di meglio per la prossima volta.
+COM_COOPERATION_answer_0130	Sembra che ne sapessero gia' a sufficienza.\nNon c'era bisogno di riaffrontare il tema.
+COM_COOPERATION_answer_0131	Adesso capiscono cosa hanno sbagliato nell'ultima\npartita. Collaboreranno di piu'.
+COM_COOPERATION_answer_0132	Non hanno trovato niente da migliorare.\nNon sembra che la seduta gli sia stata utile.
+COM_COOPERATION_answer_0134	Non sembrano particolarmente interessati.\nNon siamo qui per parlare di calcio?
+COM_COOPERATION_answer_0135	Approfondire il gioco di coppia richiede pratica.\nSi e' rivelata la strategia giusta.
+COM_COOPERATION_answer_0137	Non si puo' giocare a stomaco vuoto.\nSara' una buona occasione per conoscersi meglio.
+COM_COOPERATION_answer_0138	Non sembrano avere troppa fame.\nSi direbbe che sia tu l'unico a voler mangiare.
+COM_COOPERATION_answer_0140	Non c'e' tempo per gli svaghi. Devi prima\nfare in modo che il loro rapporto migliori.
+COM_COOPERATION_answer_0142	Non sembrano aver afferrato il punto. Pensa bene a\ncosa dire prima di parlare la prossima volta.
+COM_COOPERATION_answer_0143	Mantenere la calma e' fondamentale per il gioco di\nsquadra. Hanno imparato qualcosa di prezioso.
+COM_COOPERATION_answer_0144	Come se gli fosse entrato da un'orecchio e uscito\ndall'altro. Se ne vanno perplessi.
+COM_COOPERATION_answer_0147	Sembrano molto felici. Questo li incoraggera'\na impegnarsi ancora piu' a fondo.
+COM_COOPERATION_answer_0150	Sembravano sicuri della loro prestazione.\nLi hai in qualche modo delusi.
+COM_COOPERATION_answer_0151	Hanno capito che hai altre priorita'. D'ora in poi\nsi concentreranno solo sugli allenamenti.
+COM_COOPERATION_answer_0152	E' stato un brutto colpo non ricevere una risposta.\nCerca di dargliene una il prima possibile.
+COM_COOPERATION_answer_0164	Una mangiata prima di una partita non e' l'ideale.\nAssicurati che la loro digestione non ne risenta.
+COM_STAMINA_question_0005	Sembra che tutto vada per il meglio.\nDi che gli parli?
+COM_STAMINA_choices_0000	Lo incoraggi
+COM_STAMINA_choices_0001	Lo sgridi
+COM_STAMINA_choices_0002	Chiedi cosa non va
+COM_STAMINA_choices_0003	Lo fai riposare
+COM_STAMINA_choices_0015	Della sua vita
+COM_STAMINA_choices_0016	Della partita
+COM_STAMINA_choices_0017	Del passato
+COM_STAMINA_answer_0001	I tuoi incoraggiamenti sembrano aver funzionato.
+COM_STAMINA_answer_0002	I tuoi incoraggiamenti non sembrano aver funzionato.
+COM_STAMINA_answer_0003	Sembra che tu abbia ottenuto l'effetto\nvoluto. Si sente un altro uomo adesso.
+COM_STAMINA_answer_0005	Sembra felice che ti sia preoccupato per lui.
+COM_STAMINA_answer_0008	L'aver capito che dovra' riposare\nsembra solo aver peggiorato le cose.
+COM_STAMINA_answer_0009	Questo lo fara' sentire meglio.
+COM_STAMINA_answer_0012	Non sembra aver funzionato. Ha lasciato la stanza\nin condizioni ancora peggiori.
+COM_STAMINA_answer_0031	Il tuo chiacchierare spensierato\nsembra gli sia andato molto a genio.
+COM_STAMINA_answer_0033	Sembra essere pronto piu' che mai\nper il prossimo incontro.
+COM_STAMINA_answer_0034	Parlare della partita sembra averlo infastidito.\nI tuoi giocatori devono pur rilassarsi ogni tanto.
+COM_STAMINA_answer_0035	Sembra molto toccato dalla tua storia.\nConservera' per te il massimo rispetto.
+COM_STAMINA_answer_0036	Gli hai fatto tornare in mente un brutto ricordo\ndel passato. Sembra essersi irritato.
+COM_INJURY_choices_0000	Lo tranquillizzi
+COM_INJURY_choices_0001	Gli dai una cura
+COM_INJURY_choices_0002	Tocchi la gamba
+COM_INJURY_answer_0000	Si riposera' in clinica.
+COM_INJURY_answer_0002	Ci penseranno alla clinica.
+COM_INJURY_answer_0003	Ci vorra' un po' di tempo prima che guarisca.
+COM_INJURY_answer_0005	Non funziona. Continua a soffrire molto.
+COM_MEETINGBAD_choices_0002	. . .
+COM_NEW_GROUND_choice_0001_00	Ti scusi
+COM_NEW_GROUND_choice_0001_02	Lo abbracci
+COM_NEW_GROUND_choice_0006_01	Difesa
+COM_NEW_GROUND_choice_0006_03	Potenza
+COM_NEW_GROUND_choice_0008_00	Ti scusi
+COM_NEW_GROUND_choice_0008_02	Lo abbracci
+COM_NEW_GROUND_choice_0012_01	Difesa
+COM_NEW_GROUND_choice_0012_03	Potenza
+COM_NEW_GROUND_choice_0013_01	Difesa
+COM_NEW_GROUND_choice_0013_03	Potenza
+COM_NEW_GROUND_choice_0028_01	Difesa
+COM_NEW_GROUND_choice_0028_03	Potenza
+COM_NEW_GROUND_choice_0029_01	Difesa
+COM_NEW_GROUND_choice_0029_03	Potenza
+COM_NEW_MEDIC_choices_0012_02	Mercoledi'
+COM_NEW_MEDIC_choices_0013_02	Mercoledi'
+COM_NEW_LOUNGE_choices_0002_00	Lo incoraggi
+COM_NEW_LOUNGE_choices_0002_01	Lo tranquillizzi
+COM_NEW_LOUNGE_choices_0002_02	Non dici niente
+COM_NEW_LOUNGE_choices_0006_00	Li fai allenare
+COM_NEW_LOUNGE_choices_0007_00	Li fai allenare
+COM_NEW_LOUNGE_choices_0010_00	Gioco individuale
+COM_NEW_LOUNGE_choices_0010_01	Di gioco di coppia
+COM_NEW_LOUNGE_choices_0011_00	Gioco individuale
+COM_NEW_LOUNGE_choices_0011_01	Di gioco di coppia
+COM_NEW_LOUNGE_choices_0012_00	Della loro forza
+COM_NEW_LOUNGE_choices_0012_01	Della debolezza
+COM_NEW_LOUNGE_choices_0013_00	Della loro forza
+COM_NEW_LOUNGE_choices_0013_01	Della debolezza
+COM_MAX_MTG_choices_0001_01	Lo tranquillizzi
+COM_MAX_MTG_choices_0001_02	Non dici niente
+GAM_OROGINAL_stadium_0000	Stadio Roma
+GAM_OROGINAL_stadium_0001	Stadio Grands Montes
+GAM_OROGINAL_stadium_0002	Stadio Napoli 
+GAM_OROGINAL_stadium_0003	Stadio Firenze
+GAM_OROGINAL_stadium_0004	Estadio El Salvatore
+GAM_OROGINAL_stadium_0005	Estadio Valencia
+GAM_OROGINAL_stadium_0006	Estadio la Coruna
+GAM_OROGINAL_stadium_0007	Estadio Valladolid
+GAM_OROGINAL_stadium_0008	London Stadium
+GAM_OROGINAL_stadium_0009	Manchester Stadium
+GAM_OROGINAL_stadium_0010	Liverpool Stadium
+GAM_OROGINAL_stadium_0011	Leeds Stadium
+GAM_OROGINAL_stadium_0012	Berlin Stadion
+GAM_OROGINAL_stadium_0013	Bremen Stadion
+GAM_OROGINAL_stadium_0014	Hamburg Stadion
+GAM_OROGINAL_stadium_0015	Dortmund Stadion
+GAM_OROGINAL_stadium_0016	Stade du Monaco
+GAM_OROGINAL_stadium_0017	Stade du Triomphe
+GAM_OROGINAL_stadium_0018	Parc Marseilles
+GAM_OROGINAL_stadium_0019	Parc de Lyon
+GAM_OROGINAL_stadium_0020	Stade du Bordeaux
+GAM_OROGINAL_stadium_0021	Diamant Arena
+GAM_OROGINAL_stadium_0022	Amsterdam Stadion
+GAM_OROGINAL_stadium_0023	Eindhoven Arena
+GAM_OROGINAL_stadium_0024	Rotterdam Stadion
+GAM_OROGINAL_stadium_0025	Utrecht Stadion
+GAM_OROGINAL_stadium_0026	Estadio Rio de Janeiro
+GAM_OROGINAL_stadium_0028	Estadio Santos
+GAM_OROGINAL_stadium_0029	Estadio San Paolo
+GAM_OROGINAL_stadium_0030	Estadio Bel Horizonte
+GAM_OROGINAL_stadium_0031	Estadio El Armando
+GAM_OROGINAL_stadium_0032	Estadio Buenos Aires
+GAM_OROGINAL_stadium_0033	Estadio Santa Fe
+GAM_OROGINAL_stadium_0034	Estadio Cordoba
+GAM_OROGINAL_stadium_0035	Estadio Rosario
+GAM_OROGINAL_stadium_0036	Blossom Bowl
+GAM_OROGINAL_stadium_0037	Chicago Lane
+GAM_OROGINAL_stadium_0038	Bartholdy Stadium
+GAM_OROGINAL_stadium_0039	Angel Field
+GAM_OROGINAL_stadium_0040	President Memorial Park
+GAM_OROGINAL_stadium_0056	Snow White 2002
+GAM_OROGINAL_stadium_0061	Rose Park Stadium
+GAM_OROGINAL_stadium_0063	Coimbra Memorial Stadium
+GAM_OROGINAL_stadium_0065	Gunma Field
+GAM_OROGINAL_stadium_0066	Diamond Stadium 2005
+GAM_OROGINAL_stadium_0068	Emperor's Stadium
+GAM_OROGINAL_stadium_0069	SSS Football Park
+GAM_OROGINAL_stadium_0070	Infinity Stadium
+GAM_OROGINAL_stadium_0071	Mountainstreet Field
+GAM_OROGINAL_stadium_0072	White Lake Dome
+GAM_OROGINAL_stadium_0076	Volcano Stadium
+GAM_OROGINAL_stadium_0077	Nagano Stadium
+GAM_OROGINAL_stadium_0079	Shizuoka Green Park
+GAM_OROGINAL_stadium_0080	Iwata Joy Stadium
+GAM_OROGINAL_stadium_0084	Phoenix Park Stadium
+GAM_OROGINAL_stadium_0085	Big Octopus
+GAM_OROGINAL_stadium_0091	Okayama Wing Arch
+GAM_OROGINAL_stadium_0098	Kyushu Stadium
+GAM_OROGINAL_stadium_0099	Saga Flower Circle
+GAM_OROGINAL_stadium_0101	Frame Stadium 
+GAM_OROGINAL_stadium_0102	Ooita Tripleta
+GAM_OROGINAL_stadium_0106	National Rainbow Stadium
+GAM_OROGINAL_stadium_0107	Northwhite Stadium
+GAM_OROGINAL_stadium_0108	Southyellow Stadium
+GAM_OROGINAL_stadium_0109	Eastred Stadium
+GAM_OROGINAL_stadium_0110	Westblue Stadium
+GAM_OROGINAL_stadium_0111	Galactic Stadium
+GAM_OROGINAL_stadium_0112	Saint Springs Stadium
+GAM_OROGINAL_stadium_0113	Moon Summer Stadium
+GAM_OROGINAL_stadium_0114	Autumn Star Stadium
+GAM_OROGINAL_stadium_0115	Winter Earth Stadium
+GAM_REAL_stadium_0003	Allianz Arena
+GAM_OPENING_status_0003	Premi partita
+GAM_OPENING_status_0005	$%d00
+GAM_OPENING_status_0007	Forza 
+GAM_OPENING_status_0010	%do posto
+GAM_OPENING_announce_0000	Commento: Michael Rhys
+GAM_HALF_timer_0000	fino al secondo tempo
+GAM_HALF_message_0017	Adesso iniziera' il secondo tempo.
+GAM_RESULT_score_0001	Rig.
+GAM_RESULT_states_0007	Reti segnate
+GAM_RESULT_states_0014	VITTORIA
+GAM_RESULT_states_0015	SCONFITTA
+GAM_PRIZE_states_0003	$%d00
+GAM_PRIZE_states_0004	Premio vittoria
+GAM_PRIZE_states_0006	$%d00
+GAM_PRIZE_states_0007	Totale Premi partita
+GAM_PRIZE_states_0009	$%d00
+GAM_PRIZE_states_0010	Partite rimaste:
+GAM_PRIZE_states_0011	Da giocare: %d
+GAM_PRIZE_states_0014	$%d00
+GAM_SALARY_states_0003	$%d00
+GAM_SALARY_states_0006	$%d00
+GAM_SALARY_states_0007	Stipendio annuo
+GAM_SALARY_states_0009	$%d00
+GAM_SALARY_states_0010	Partite rimaste:
+GAM_SALARY_states_0011	Da giocare: %d
+GAM_CONTINUE_states_0000	Reti segnate
+GAM_CONTINUE_states_0001	1st 
+GAM_CONTINUE_states_0002	2nd 
+GAM_CONTINUE_states_0003	Attacco
+GAM_CONTINUE_states_0005	Possesso palla
+GAM_CONTINUE_states_0006	Fuorigioco
+GAM_CONTINUE_states_0007	Falli
+GAM_CONTINUE_states_0008	Batt. d'angolo
+GAM_CONTINUE_states_0009	Rig.
+GAM_CONTINUE_states_0010	Avviso
+GAM_CONTINUE_states_0011	Cartellini rossi
+GAM_COMMON_result_0000	VITTORIA
+GAM_COMMON_result_0001	SCONFITTA
+GAM_COMMON_result_0002	PAREGGIO
+GAM_COMMON_result_0003	1o 
+GAM_COMMON_result_0004	2o 
+GAM_COMMON_result_0005	3o 
+GAM_COMMON_result_0006	4o 
+GAM_COMMON_result_0007	5o 
+GAM_COMMON_result_0008	6o 
+GAM_COMMON_result_0009	7o 
+GAM_COMMON_result_0010	8o 
+GAM_COMMON_result_0029	1o Turno perso
+GAM_COMMON_result_0031	2o Turno perso
+GAM_COMMON_result_0033	Quarti di finale persi
+GAM_COMMON_result_0034	Avanza alle Semifinali
+GAM_COMMON_result_0035	Semifinali perse
+GAM_COMMON_result_0036	Avanza in Finale
+GAM_COMMON_result_0037	Semifinali
+GAM_COMMON_result_0038	Campioni
+GAM_STA_grow_0000	Campo di calcio di %s
+GAM_STA_grow_0001	Campo di %s
+GAM_STA_grow_0002	Campo sportivo di %s
+GAM_STA_grow_0003	Stadio di calcio di %s
+GAM_STA_grow_0004	Stadio di %s
+GAM_STA_grow_0005	Stadio di calcio di %s
+GAM_STA_grow_0006	Stadio di %s
+GAM_STA_grow_0007	Parco di %s
+GAM_STA_grow_0008	Campo di %s
+GAM_STA_grow_0009	Campo sportivo di %s
+GAM_STA_grow_0010	Via %s
+GAM_STA_grow_0011	Corso %s
+GAM_STA_grow_0012	Centro sportivo %s
+GAM_STA_grow_0013	Anfiteatro di %s
+GAM_STA_grow_0014	Stadion di %s
+GAM_STA_grow_0015	Arena di %s
+GAM_STA_grow_0016	Estadio di %s
+GAM_STA_grow_0017	Parco di %s
+GAM_STA_grow_0018	Stade di %s
+GAM_STA_grow_0019	Parco di %s
+GAM_STA_grow_0020	Estadio di %s
+GAM_STA_grow_0021	Stadion di %s
+GAM_STA_grow_0022	Stadio di %s
+GAM_FINR_title_001	Premi partita
+GAM_FINR_title_002	Sal. prec.
+GAM_FINR_vod_000	VITT.
+GAM_FINR_vod_001	SCO.
+GAM_FINR_vod_002	PAR.
+GAM_FINR_regular_002	PAR.
+GAM_FINR_prize_002	Circolare
+GAM_FINR_start_001	Circolare
+GAM_HALF_button_0000	OK
+GAM_HALF_order_0007	???
+GAM_HALF_order_0008	???
+GAM_HALF_order_0009	???
+SYS_SYS_warning_0005	Ritira la Player card.
+SYS_SYS_warning_0006	Tempo scaduto.\nClub Card rifiutata.
+SYS_SYS_warning_0007	Contratto scaduto. Inserisci la vecchia\ne la nuova carta insieme per trasferire\ni dati allenatore dall'una all'altra.
+SYS_SYS_warning_0009	La Club Card e' scaduta.\n\nIn questo momento non puoi\nusare una Club Card scaduta.
+SYS_SYS_warning_0011	I dati dell'allenatore sono stati\ntrasferiti da questa Club Card.\n\nIn questo momento non puoi\nusare una Club Card scaduta.
+SYS_SYS_warning_0016	La Club Card potrebbe essere danneggiata.\nCard rifiutata.
+SYS_ADV_compe_0006	Club Card scaduta utilizzabile
+SYS_ADV_compe_0007	Club Card scaduta inutilizzabile
+SYS_ADV_compe_0009	Ritiro
+SYS_ADV_compe_0010	Torna alla schermata d'inizio
+SYS_ADV_normal_0000	INSERT COIN(S)\n
+SYS_ADV_normal_0001	PREMI IL PULSANTE START\n
+SYS_ADV_normal_0002	INSERISCI LA CLUB CARD\n
+SYS_CARD_warning_0000	Alcuni giocatori non ancora registrati. Continui?
+SYS_CARD_warning_0001	Vuoi cancellare i dati dei giocatori sostituiti?
+SYS_CARD_warning_0016	Giocatore escluso
+SYS_CARD_warning_0017	Nuovo giocatore
+SYS_TEAM_style_0167	I Carriarmati
+SYS_TEAM_style_0271	Il Catenaccio
+SYS_TEAM_style_0275	L'Invincibile Armata
+SYS_COACH_title_0001	I Tesori
+SYS_COACH_title_0002	S+
+SYS_COACH_title_0003	S+
+SYS_COACH_title_0004	S+
+SYS_COACH_title_0005	S+
+SYS_COACH_title_0006	S+
+SYS_COACH_title_0007	S+
+SYS_COACH_title_0008	S+
+SYS_COACH_title_0009	I Prodigi
+SYS_COACH_title_0010	S+
+SYS_COACH_title_0011	S+
+SYS_COACH_title_0012	I Maestri
+SYS_COACH_title_0013	S+
+SYS_COACH_title_0016	S+
+SYS_COACH_title_0017	S+
+SYS_COACH_title_0018	S+
+SYS_COACH_title_0019	Gli Eroi
+SYS_COACH_title_0020	S+
+SYS_COACH_title_0021	S+
+SYS_COACH_title_0032	I Tirati su
+SYS_COACH_title_0037	I Campioni
+SYS_COACH_title_0040	I Re
+SYS_COACH_title_0047	I Conquistatori
+SYS_COACH_oldlevel_0000	E-
+SYS_COACH_oldlevel_0001	E
+SYS_COACH_oldlevel_0002	E+
+SYS_COACH_oldlevel_0003	D-
+SYS_COACH_oldlevel_0004	D
+SYS_COACH_oldlevel_0005	D+
+SYS_COACH_oldlevel_0006	C-
+SYS_COACH_oldlevel_0007	C
+SYS_COACH_oldlevel_0008	C+
+SYS_COACH_oldlevel_0009	B-
+SYS_COACH_oldlevel_0010	B
+SYS_COACH_oldlevel_0011	B+
+SYS_COACH_oldlevel_0012	A-
+SYS_COACH_oldlevel_0013	A
+SYS_COACH_oldlevel_0014	A+
+SYS_COACH_oldlevel_0015	S-
+SYS_COACH_oldlevel_0016	S-
+SYS_COACH_oldlevel_0017	S-
+SYS_COACH_oldlevel_0018	S
+SYS_COACH_oldlevel_0019	S+
+SYS_COACH_oldlevel_0020	S+
+SYS_COACH_oldlevel_0021	Gli Eroi
+SYS_COACH_oldlevel_0022	S+
+SYS_COACH_oldlevel_0023	S+
+SYS_COACH_oldlevel_0024	S+
+SYS_COACH_oldlevel_0025	I Maestri
+SYS_COACH_oldlevel_0026	S+
+SYS_COACH_oldlevel_0027	S+
+SYS_COACH_oldlevel_0028	S+
+SYS_COACH_oldlevel_0029	S+
+SYS_COACH_oldlevel_0030	S+
+SYS_COACH_oldlevel_0031	S+
+SYS_COACH_oldlevel_0032	I Prodigi
+SYS_COACH_oldlevel_0033	S+
+SYS_COACH_oldlevel_0034	S+
+SYS_COACH_oldlevel_0035	S+
+SYS_COACH_oldlevel_0036	S+
+SYS_COACH_oldlevel_0037	I Tesori
+SYS_COMP_competitiontype_0008	Title Match
+SYS_COMP_continue_0002	Si'
+SYS_COMP_continue_0003	No
+PRO_PRO_title_0000	Friendly Match
+PRO_PRO_title_0002	Regular League
+PRO_PRO_title_0004	Pre-Season Cup
+PRO_PRO_title_0006	Enterprise Cup
+PRO_PRO_title_0008	King's Club Cup
+PRO_PRO_title_0010	National Super Cup
+PRO_PRO_title_0014	Continental Cup
+PRO_PRO_title_0016	Continental Super Cup
+PRO_PRO_title_0018	Champions Trophy
+PRO_PRO_title_0020	International Club Championship
+PRO_PRO_title_0024	Club Championship
+PRO_PRO_title_0026	%s Championship
+PRO_PRO_title_0032	Japan Trophy
+PRO_PRO_title_0042	Japan Winner's Championship
+PRO_PRO_title_0050	KANTO
+PRO_PRO_title_0054	CHUBU
+PRO_PRO_title_0056	TOKAI
+PRO_PRO_title_0058	KINKI
+PRO_PRO_title_0060	CHU-SHIKOKU
+PRO_PRO_title_0062	KYUSHU
+PRO_PRO_explanation_0002	Prossima partita: %s
+PRO_PRO_explanation_0005	Commento: Michael Rhys
+PRO_PRO_explanation_0007	$%d00
+PRO_PRO_explanation_0010	$%d%04d00
+PRO_PRO_form_0007	Title Match
+PRO_PRO_condition_0006	Nessuna
+PRO_PRO_condition_0007	Nessuna
+PRO_PRO_condition_0011	Guadagnati $ 10.000.000 o piu'
+PRO_PRO_condition_0017	Regole per accedere
+PRO_PRO_seat_0000	Non disponibile
+PRO_PRO_seat_0002	Non disponibile
+PRO_PRO_seat_0004	Avanza a:
+PRO_PRO_seat_0005	Perse
+PRO_PRO_round_0010	Quarti di finale 
+PRO_PRO_round_0012	Semifinali 
+PRO_PRO_round_0014	Finale
+PRO_PRO_round_0023	%do posto
+PRO_PRO_round_0052	Friendly Match
+PRO_PRO_round_0066	Quarti di finale persi
+PRO_PRO_round_0067	Avanza alle Semifinali
+PRO_PRO_round_0068	Semifinali perse
+PRO_PRO_round_0069	Avanza in Finale
+PRO_PRO_game_0010	1st 
+PRO_PRO_game_0012	MP
+PRO_PRO_game_0015	2nd 
+PRO_PRO_game_0017	TP
+PRO_PRO_ranking_0003	Allenatore
+PRO_PRO_ranking_0004	Squadra
+PRO_PRO_ranking_0005	Stipendio annuo
+PRO_PRO_ranking_0009	Campioni
+PRO_PRO_ranking_0010	Semifinali
+PRO_PRO_ranking_0011	%do posto
+PRO_PRO_ranking_0018	Posto
+NET_TWIT_week_0001	Lunedi'
+NET_TWIT_week_0002	Martedi'
+NET_TWIT_week_0003	Mercoledi'
+NET_TWIT_week_0004	Giovedi'
+NET_TWIT_week_0005	Venerdi'
+NET_TWIT_week_0006	Sabato

@@ -1,11 +1,12 @@
 //! SETUP.exe - the kit's window (2026-10-09; before, a console that ran setup.py, and ENGLISH.exe beside it).
 //!   GAME FOLDER  set up / repair (scripts\setup.py GAME) and undo (setup.py undo GAME); the folder is typed, picked,
 //!                dropped on the window or on SETUP.exe, and remembered by setup.py in data\settings.json
-//!   LANGUAGE     the game in English (scripts\english.py on) or Sega's Japanese back (english.py off)
+//!   LANGUAGE     the game in English (scripts\english.py on), in Italian (english.py on it) or Sega's Japanese back
+//!                (english.py off)
 //!   UPDATE       the kit's GitHub releases and test builds (pre-releases): the chosen one's kit ZIP is downloaded,
 //!                unzipped into data\update and copied over the kit folder - data\ (club cards, keys, settings, logs)
 //!                is never written, and nothing is copied while the game or a kit tool runs.  Files the old kit
-//!                shipped (files.txt) that the new one does not are removed; then setup runs again, and English if on.
+//!                shipped (files.txt) that the new one does not are removed; then setup runs again, and the language if on.
 //! The scripts' output fills the window.  "SETUP.exe GAME" and "SETUP.exe undo" start that at once.
 //!
 //! The download and the unzip are Windows' own curl.exe and tar.exe (in System32 since Windows 10 1803): HTTPS with
@@ -74,11 +75,13 @@ const ID_NOTES: i32 = 20;
 const ID_STATUS: i32 = 21;
 const ID_BAR: i32 = 22;
 const ID_LOG: i32 = 23;
-const BUTTONS: [i32; 7] = [
+const ID_ITALIAN: i32 = 24;
+const BUTTONS: [i32; 8] = [
     ID_BROWSE,
     ID_SETUP,
     ID_UNDO,
     ID_ENGLISH,
+    ID_ITALIAN,
     ID_JAPANESE,
     ID_UPDATE,
     ID_NOTES,
@@ -402,6 +405,28 @@ fn english_on(kit: &Kit) -> bool {
         .is_some_and(|v| v.as_object().is_some_and(|o| !o.is_empty()) || v.as_array().is_some_and(|a| !a.is_empty()))
 }
 
+/// The language english.py has in place, as kit_common.game_language reads it: "en" or "it" (its language.txt;
+/// English before that file existed), "" for Sega's Japanese.
+fn game_language(kit: &Kit) -> String {
+    if !english_on(kit) {
+        return String::new();
+    }
+    let file = kit.dir().join("data").join("english_backup").join("language.txt");
+    match fs::read_to_string(file).map(|t| t.trim().to_owned()) {
+        Ok(lang) if !lang.is_empty() => lang,
+        _ => "en".to_owned(),
+    }
+}
+
+/// english.py's arguments that put `lang` ("en" or "it") in place.
+fn language_on(lang: &str) -> Vec<OsString> {
+    if lang == "it" {
+        vec!["on".into(), "it".into()]
+    } else {
+        vec!["on".into()]
+    }
+}
+
 /// The game folder setup.py remembered.
 fn remembered_game(kit: &Kit) -> String {
     fs::read_to_string(kit.dir().join("data").join("settings.json"))
@@ -608,10 +633,10 @@ fn refresh(hwnd: HWND) {
     set_text(
         hwnd,
         ID_LANGUAGE,
-        if english_on(&kit) {
-            t().english_is_on
-        } else {
-            t().japanese_is_on
+        match game_language(&kit).as_str() {
+            "" => t().japanese_is_on,
+            "it" => t().italian_is_on,
+            _ => t().english_is_on,
         },
     );
     // SAFETY: controls of our own window; every string is NUL-terminated and copied by the control.
@@ -653,16 +678,16 @@ fn refresh(hwnd: HWND) {
             s.changed = true;
         }
         let game = get_text(hwnd, ID_FOLDER);
-        let english = english_on(&kit);
-        let question = if english {
-            t().after_update_english
-        } else {
-            t().after_update
+        let lang = game_language(&kit);
+        let question = match lang.as_str() {
+            "" => t().after_update,
+            "it" => t().after_update_italian,
+            _ => t().after_update_english,
         };
         if !game.is_empty() && ask(hwnd, question) {
             let mut steps = vec![Step::Script("setup.py", vec![game.into()])];
-            if english {
-                steps.push(Step::Script("english.py", vec!["on".into()]));
+            if !lang.is_empty() {
+                steps.push(Step::Script("english.py", language_on(&lang)));
             }
             start(steps);
         }
@@ -684,7 +709,8 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wp: WPARAM, lp: LPARAM) 
                         start(vec![Step::Script("setup.py", vec!["undo".into(), game])]);
                     }
                 }
-                ID_ENGLISH => start(vec![Step::Script("english.py", vec!["on".into()])]),
+                ID_ENGLISH => start(vec![Step::Script("english.py", language_on("en"))]),
+                ID_ITALIAN => start(vec![Step::Script("english.py", language_on("it"))]),
                 ID_JAPANESE => start(vec![Step::Script("english.py", vec!["off".into()])]),
                 ID_UPDATE => update_clicked(hwnd),
                 ID_NOTES => open_notes(hwnd),
@@ -826,9 +852,10 @@ fn main() {
         child(w!("BUTTON"), tx.set_up, WS_TABSTOP, ID_SETUP, 124, 84, 170, 28);
         child(w!("BUTTON"), tx.undo, WS_TABSTOP, ID_UNDO, 302, 84, 166, 28);
         child(w!("STATIC"), tx.game_text, 0, 0, 12, 128, 110, 20);
-        child(w!("BUTTON"), tx.english, WS_TABSTOP, ID_ENGLISH, 124, 122, 110, 28);
-        child(w!("BUTTON"), tx.japanese, WS_TABSTOP, ID_JAPANESE, 242, 122, 110, 28);
-        child(w!("STATIC"), "", 0, ID_LANGUAGE, 362, 128, 206, 20);
+        child(w!("BUTTON"), tx.english, WS_TABSTOP, ID_ENGLISH, 124, 122, 92, 28);
+        child(w!("BUTTON"), tx.italian, WS_TABSTOP, ID_ITALIAN, 222, 122, 92, 28);
+        child(w!("BUTTON"), tx.japanese, WS_TABSTOP, ID_JAPANESE, 320, 122, 92, 28);
+        child(w!("STATIC"), "", 0, ID_LANGUAGE, 420, 128, 148, 20);
         child(w!("STATIC"), "", SS_ETCHEDHORZ, 0, 12, 162, 556, 2);
         child(w!("STATIC"), "", 0, ID_HEADING, 12, 172, 556, 20);
         let list_style = (LBS_NOTIFY | LBS_USETABSTOPS) as u32 | WS_VSCROLL | WS_TABSTOP;

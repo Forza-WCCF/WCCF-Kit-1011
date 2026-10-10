@@ -6,6 +6,14 @@ game is not included. Newest first; each date is the day that kit was built.
 
 ## Unreleased
 
+### Added
+- ITALIANO in SETUP.exe's GAME LANGUAGE (and `english.py on it`): the game in Italian. Each line comes from this kit's
+  Italian (`italian\screen_text.tsv`, 4,477 lines), else Sega's own Italian of the older European WCCF
+  (`italian\sega_rstring.tsv`, 2,705 lines with the same Japanese), else the kit's English - never Japanese. The
+  game's font has no accented letters, so the Italian writes them with an apostrophe (perche', citta'). Player and
+  CPU team names are the English ones; money stays in dollars. The team stats and buttons in pictures are in Italian
+  too (ATTACCO, DIFESA, VELOCITÀ, ...). The SETTINGS panel still offers only ENGLISH and JAPANESE.
+
 ### Fixed
 - English: the players' full names (the card name, e.g. Mahamadou DIARRA) were still in katakana; they now use
   Sega's own Latin spelling, accents dropped, like the short names. The second katakana full name stays: the game

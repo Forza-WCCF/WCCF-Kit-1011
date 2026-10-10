@@ -1,16 +1,16 @@
-program	offset	length	sega_sha256	english	where
-client	0x63B4D8	12	D89FC29A7812311EF65F175FF52FD77B8E367967C8511C2B37AF10389360BDC7	Next match: 	projector information banner (seen on screen 2026-10-05), first piece
-client	0x63B4B8	31	FFC41765CF31A50E6D617664C21CD40B2BB994DEB43EF64810CD3C7D5E1C90BE	. Please register your entry.	projector information banner, last piece
-client	0x6132C4	12	6DFFB7A7805B5A6598AFEC2C97645AA427434B55384D3F19024D96D9ED15CFA4	%d/%d/%d	dates on seat 1 (manager license "DATE ISSUED"), like the other dates on that screen
-client	0x6251A8	8	D3DBEA2BB5A1D9002FFEECF7AB6C62F8B0F80AF7130F5283D53DEB1FB3FF303F		money (docs\research\MONEY-2010-11.md 9.2): "0000man-yen" piece -> nothing: "$2 million" alone when the rest is 0 (fan event, golden age, after-match total)
-client	0x625F90	13	F5400CF2B98243511A6AD0EC074C3D6D4366EDB1F8E8CDFF6306D233C6946939	%s %s	money: coach data salary, rest 0 - "Your Salary: $1 million"
-client	0x626234	8	3F3CC854B882953EE33D6ECAD371BA999E263A3AD193A59C717778730F3EA3A5	$%d%04d00	money: golden-age piece, exact digits
-client	0x626240	4	ECD1E63E3AB37C2FA83A4021A2EC9A387F4293507A981A159F79F758F569FD28	$%d00	money: golden-age piece
-client	0x627C04	6	29E98913BE097957A2B9A2E17A64CBE0B02B6E784730E1B815F7DFC8BD58F45D		money: "0000man" piece -> nothing: "$3 million" alone (coach room, license card, match offer, data confirmation, crisis)
-client	0x65F078	6	5B3011AF4AB16E02DC4C10BBEC773C5B9338CD67BF638CAF01CECB5AA9D9C059		money: contract end, the rest-0 box stays empty
-client	0x65F080	10	2D29C98E36BBB219E227B288A9BE0F3829647866C425A79CBC592137797E8AA0	$%d,000,000	money: contract end "Previous" - "$2,000,000"
-client	0x661914	12	EE7BB5EA775389F1F99996507FDEE4A19394B249B510531FE1B14A4D48F76264	$%d,000,000	money: after-match Match Prize (the player's "2oku0000man-yen", 2026-10-06) and its kickoff box - "$2,000,000"
-client	0x661924	10	F58FD43089B8AEC4CB7A30B108D92B4CB4CB8D8E0072E0931164C92F9CC8CAFB	$%d%04d00	money: after-match Match Prize with a rest - "$2299000" (exact; commas need the overlay)
-client	0x62ADB4	4	7743275201FB16A5BDDB4492E97CDEB94FECA09EDC96E1E85A5EA8E269DAB00E	$%d%s	money: contract-end parts and the zero cases get "$" (its 8 users are all money functions, checked 2026-10-06)
-client	0x638F04	12	C38DFC14262903EA682EC2308C1134BB5196952FAC742ED1C56E4C0DB6007D45	Local Shop	the shop's name when the network gives none - the client's own default (FUN_006171a0), like PRO_PRO_ranking_0029
-server	0x1ADBB8	12	C38DFC14262903EA682EC2308C1134BB5196952FAC742ED1C56E4C0DB6007D45	Local Shop	the shop name the server sends when the network gives none (FUN_0045f860): the projector's "%s Awards" title (seen 2026-10-06 as Japanese)
+program	offset	length	sega_sha256	english	italiano	where
+client	0x63B4D8	12	D89FC29A7812311EF65F175FF52FD77B8E367967C8511C2B37AF10389360BDC7	Next match: 	Prossima: 	projector information banner (seen on screen 2026-10-05), first piece
+client	0x63B4B8	31	FFC41765CF31A50E6D617664C21CD40B2BB994DEB43EF64810CD3C7D5E1C90BE	. Please register your entry.	. Registra i tuoi giocatori.	projector information banner, last piece
+client	0x6132C4	12	6DFFB7A7805B5A6598AFEC2C97645AA427434B55384D3F19024D96D9ED15CFA4	%d/%d/%d		dates on seat 1 (manager license "DATE ISSUED"), like the other dates on that screen
+client	0x6251A8	8	D3DBEA2BB5A1D9002FFEECF7AB6C62F8B0F80AF7130F5283D53DEB1FB3FF303F			money (docs\research\MONEY-2010-11.md 9.2): "0000man-yen" piece -> nothing: "$2 million" alone when the rest is 0 (fan event, golden age, after-match total)
+client	0x625F90	13	F5400CF2B98243511A6AD0EC074C3D6D4366EDB1F8E8CDFF6306D233C6946939	%s %s		money: coach data salary, rest 0 - "Your Salary: $1 million"
+client	0x626234	8	3F3CC854B882953EE33D6ECAD371BA999E263A3AD193A59C717778730F3EA3A5	$%d%04d00		money: golden-age piece, exact digits
+client	0x626240	4	ECD1E63E3AB37C2FA83A4021A2EC9A387F4293507A981A159F79F758F569FD28	$%d00		money: golden-age piece
+client	0x627C04	6	29E98913BE097957A2B9A2E17A64CBE0B02B6E784730E1B815F7DFC8BD58F45D			money: "0000man" piece -> nothing: "$3 million" alone (coach room, license card, match offer, data confirmation, crisis)
+client	0x65F078	6	5B3011AF4AB16E02DC4C10BBEC773C5B9338CD67BF638CAF01CECB5AA9D9C059			money: contract end, the rest-0 box stays empty
+client	0x65F080	10	2D29C98E36BBB219E227B288A9BE0F3829647866C425A79CBC592137797E8AA0	$%d,000,000		money: contract end "Previous" - "$2,000,000"
+client	0x661914	12	EE7BB5EA775389F1F99996507FDEE4A19394B249B510531FE1B14A4D48F76264	$%d,000,000		money: after-match Match Prize (the player's "2oku0000man-yen", 2026-10-06) and its kickoff box - "$2,000,000"
+client	0x661924	10	F58FD43089B8AEC4CB7A30B108D92B4CB4CB8D8E0072E0931164C92F9CC8CAFB	$%d%04d00		money: after-match Match Prize with a rest - "$2299000" (exact; commas need the overlay)
+client	0x62ADB4	4	7743275201FB16A5BDDB4492E97CDEB94FECA09EDC96E1E85A5EA8E269DAB00E	$%d%s		money: contract-end parts and the zero cases get "$" (its 8 users are all money functions, checked 2026-10-06)
+client	0x638F04	12	C38DFC14262903EA682EC2308C1134BB5196952FAC742ED1C56E4C0DB6007D45	Local Shop	Negozio	the shop's name when the network gives none - the client's own default (FUN_006171a0), like PRO_PRO_ranking_0029
+server	0x1ADBB8	12	C38DFC14262903EA682EC2308C1134BB5196952FAC742ED1C56E4C0DB6007D45	Local Shop	Negozio	the shop name the server sends when the network gives none (FUN_0045f860): the projector's "%s Awards" title (seen 2026-10-06 as Japanese)

@@ -215,6 +215,15 @@ ENGLISH (optional)
   The English comes from this kit's translation, from Sega's own English that the game files already hold, and
   from Sega's European English of the older WCCF (lines with the same Japanese).
 
+ITALIANO (optional)
+  ITALIANO (in SETUP.exe, GAME LANGUAGE) does what ENGLISH does, in Italian: each line is this kit's Italian, else
+  Sega's own Italian of the older European WCCF (lines with the same Japanese), else the English - never Japanese.
+  The game's font has no accented letters, so they are written with an apostrophe (perche', citta'). The pictures
+  with the team stats and OK / TORNA are in Italian too. Names of players, CPU teams and supporters' nicknames
+  stay as in English (the game puts a nickname's adjective first, which Italian cannot follow); money stays in
+  dollars. JAPANESE puts Sega's files back, ENGLISH switches to English. The SETTINGS panel in the game offers
+  only ENGLISH and JAPANESE for now.
+
 WHAT SETUP CHANGES   (UNDO SETUP in SETUP.exe takes all of it back out)
   game folder     adds winmm.dll (the kit's hook) and winmm_orig.dll (a copy of your Windows' own winmm.dll)
                   (the hook also keeps the server from starting Sega's logowin.exe, which opens a white window
