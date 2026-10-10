@@ -48,6 +48,12 @@ jobs:
         working-directory: source/launcher
         run: rustup show
 
+      # the crates and the launcher's own build, kept between runs: clippy, test and the release build each compiled
+      # every crate again (about 25 s of a 2-minute run); keyed by the toolchain and Cargo.lock
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: source/launcher -> target
+
       - name: Launchers - format, lint, tests
         working-directory: source/launcher
         run: |
