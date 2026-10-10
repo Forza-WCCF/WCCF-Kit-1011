@@ -48,14 +48,21 @@ if ($LASTEXITCODE) { $failed += 'logs: the run before last zipped, the archive k
 & $py -I (Join-Path $PSScriptRoot 'test_wallet_transferred.py')
 if ($LASTEXITCODE) { $failed += 'a transferred card: listed as such, never played again' }
 
-& $py -I (Join-Path $PSScriptRoot 'test_seat_desk_game.py') | Select-Object -Last 1
-if ($LASTEXITCODE) { $failed += 'the seat desk: never a seat that is in the game' }
-
-& $py -I (Join-Path $PSScriptRoot 'test_hold_projector.py') | Select-Object -Last 1
-if ($LASTEXITCODE) { $failed += 'the projector box: held until a player is in' }
-
-& $py -I (Join-Path $PSScriptRoot 'test_send_logs.py') | Select-Object -Last 1
-if ($LASTEXITCODE) { $failed += 'SEND LOGS: packed, sent, kept - and refused when it must be' }
+# The checks that wait on their own servers (the seat desk, SEND LOGS) run side by side, beside the panel's
+# self-tests below (each on its own ports); their last line and exit code are read once they end (2026-10-10: one
+# after another they took 16 of check.ps1's 35 s in CI)
+function Start-Check([string]$what, [string]$script) {
+    $out = Join-Path ([IO.Path]::GetTempPath()) "wccf-check-$PID-$([IO.Path]::GetFileNameWithoutExtension($script)).txt"
+    $p = Start-Process -FilePath $py -ArgumentList '-I', "`"$(Join-Path $PSScriptRoot $script)`"" -PassThru -NoNewWindow `
+        -RedirectStandardOutput $out -RedirectStandardError "$out.err"
+    $null = $p.Handle                        # kept open, so the exit code can be read after the end
+    [pscustomobject]@{ What = $what; Process = $p; Out = $out }
+}
+$side = @(
+    Start-Check 'the seat desk: never a seat that is in the game' 'test_seat_desk_game.py'
+    Start-Check 'the projector box: held until a player is in' 'test_hold_projector.py'
+    Start-Check 'SEND LOGS: packed, sent, kept - and refused when it must be' 'test_send_logs.py'
+)
 
 $t = Join-Path ([IO.Path]::GetTempPath()) "wccfpanel-check-$PID"
 Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
@@ -90,6 +97,18 @@ try {
     'WCCF_RELAY_PORT', 'WCCFPANEL_ROLE', 'WCCFPANEL_DRYKEYS', 'WCCFPANEL_FULLSCREEN', 'WCCF_DATA', 'WCCF_KEYS', 'WCCFPANEL_MONEYTEST',
     'WCCFPANEL_RELAYTEST', 'WCCFPANEL_DEALTEST' | ForEach-Object { Remove-Item "env:$_" -ErrorAction SilentlyContinue }
     Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
+}
+
+foreach ($c in $side) {
+    $c.Process.WaitForExit()
+    $text = @(Get-Content $c.Out -ErrorAction SilentlyContinue)
+    if ($c.Process.ExitCode) {
+        $text + @(Get-Content "$($c.Out).err" -ErrorAction SilentlyContinue) | Select-Object -Last 20 | ForEach-Object { Write-Host "  $_" }
+        $failed += $c.What
+    } else {
+        $text | Select-Object -Last 1
+    }
+    Remove-Item $c.Out, "$($c.Out).err" -ErrorAction SilentlyContinue
 }
 
 if ($failed) { throw "FAILED: $($failed -join ', ')" }
