@@ -9,7 +9,8 @@ text and fingerprints (SHA-256) of Sega's files.
 
 What changes, in the game's extracted\ folder (seat 1 reads the same files through setup's folder links):
   data\string\string_list.bin + .hf       the screen text: about 7,200 lines in English
-  prog_data\player_data\player_data.bin   player names in Sega's own Latin spelling (accents dropped) + skill names
+  prog_data\player_data\player_data.bin   player names, short and full, in Sega's own Latin spelling (accents dropped) +
+                                          skill names
   prog_data\cpu_team\cpu_0..251.dat       the CPU teams' names
   client_Release.exe (the projector's) and seat1\client_Release.exe (seat 1's own patched copy)
                                           text inside the program: the "Next match: ..." ticker, dates as 2026/10/5
@@ -65,6 +66,9 @@ SWITCHED_ON = ("SYS_TEAM", "PRO_PRO", "GAM_OROGINAL", "GAM_REAL", "GAM_STA", "IN
 FMT = re.compile(r"%[-+ 0#]*(?:\*|[0-9]+)?(?:\.(?:\*|[0-9]+))?(?:hh|h|ll|l|L|I32|I64|I|w)?[cCdiouxXeEfgGaAnpsSZ%]")
 REC = 0x328                                          # player_data.bin: one player
 SHORT_KANA, SHORT_LATIN, SKILL_EN, SKILL_JP, FIELD = 0x8C, 0xCC, 0x1B7, 0x1F7, 0x40
+# the full name: Sega's Latin one (UTF-16) goes over the card name (katakana; the client's CARD_NAME, read only by the
+# screens).  The other katakana full name at 0x177 stays: it is the key into partnership.bin (client FUN_004e3ea0)
+FULL_LATIN, CARD_NAME = 0x0C, 0x4C
 NAME_AT, NAME_END = 0x144, 0x17C                     # cpu_N.dat: the team name field
 FOLD = {"Ø": "O", "ø": "o", "Æ": "AE", "æ": "ae", "ß": "SS", "Ł": "L", "ł": "l", "Đ": "D", "đ": "d", "Œ": "OE",
         "œ": "oe", "ı": "i", "Þ": "TH", "ð": "d"}
@@ -240,6 +244,11 @@ def build_strings(game):
     note = "%d lines in English (%s)" % (len(pos), ", ".join("%s %d" % kv for kv in sorted(by.items())))
     if sega_bad:
         note += "; %d of Sega's own English lines unusable, left Japanese" % sega_bad
+    # lines a player can meet that are still Japanese ("check" shows them; the debug menus are left out on purpose)
+    left = sorted(k for k, (_, nums) in keys.items() if k not in pos and not blocked(k) and any(c >= 0x80 for c in at(
+        nums[0])) and family(k) not in ("SYS_DEBUG", "COM_debug"))
+    if left:
+        note += "; %d still Japanese (%s%s)" % (len(left), ", ".join(left[:3]), ", ..." if len(left) > 3 else "")
     return {BIN: new_bin, HF: b"".join(new_hf)}, note
 
 
@@ -276,6 +285,10 @@ def build_names(game):
                 name = ini + name
         pd[r + SHORT_KANA:r + SHORT_KANA + FIELD] = put_field(bytes(pd[r + SHORT_KANA:r + SHORT_KANA + FIELD]),
                                                               name.encode("ascii"), FIELD)
+        full = fold(bytes(pd[r + FULL_LATIN:r + FULL_LATIN + FIELD]).decode("utf-16-le", "replace").split("\0")[0].strip())
+        if full:
+            pd[r + CARD_NAME:r + CARD_NAME + FIELD] = put_field(bytes(pd[r + CARD_NAME:r + CARD_NAME + FIELD]),
+                                                                full.encode("ascii"), FIELD)
         sk = bytes(pd[r + SKILL_EN:r + SKILL_EN + FIELD]).split(b"\0")[0]
         if sk and all(32 <= c < 127 for c in sk) and b"%" not in sk:
             pd[r + SKILL_JP:r + SKILL_JP + FIELD] = put_field(bytes(pd[r + SKILL_JP:r + SKILL_JP + FIELD]), sk, FIELD)
