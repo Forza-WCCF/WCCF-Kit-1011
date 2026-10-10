@@ -74,6 +74,7 @@ Build-C 'hook\wccfk.c' "$kit\programs\wccfk.dll" "the kit's hook in the game: st
 Build-C 'card_table\fpr_emu.c' "$kit\programs\FPR_Emu.exe" "the card table's stand-in" @() @('user32.lib')
 Build-C 'panel\wccfpanel.c' "$kit\programs\wccfpanel.dll" "the kit's on-screen panel" @('/LD') @('d3d9.lib', 'gdi32.lib', 'user32.lib', 'ole32.lib', 'windowscodecs.lib')
 Build-C 'panel\fakegame.c' "$obj\fakegame.exe" '' @() @('d3d9.lib', 'user32.lib')
+Build-C 'hook\test_wholemsg.c' "$obj\test_wholemsg.exe" ''
 
 # the launchers: the toolchain is pinned by source\launcher\rust-toolchain.toml, every crate by Cargo.lock, the static
 # runtime by source\launcher\.cargo\config.toml - rustup and cargo read those two from the CURRENT folder: build there

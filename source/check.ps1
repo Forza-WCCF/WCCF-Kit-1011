@@ -112,6 +112,9 @@ if ($LASTEXITCODE) { $failed += 'English pictures: added to the archive, taken b
 & $py -I (Join-Path $PSScriptRoot 'test_italian_tables.py')
 if ($LASTEXITCODE) { $failed += 'the Italian tables: keys, font and codes' }
 
+& (Join-Path $PSScriptRoot 'build\test_wholemsg.exe')
+if ($LASTEXITCODE) { $failed += 'whole messages: a batch in pieces waits for its rest, bytes that are no batch are skipped' }
+
 $t = Join-Path ([IO.Path]::GetTempPath()) "wccfpanel-check-$PID"
 Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force (Join-Path $t 'data') | Out-Null

@@ -7,6 +7,12 @@ game is not included. Newest first; each date is the day that kit was built.
 ## Unreleased
 
 ### Changed
+- Hosting a server: the server program now gets the players' messages only whole. Over the internet a message can
+  arrive in pieces, and Sega's code for putting pieces back together is broken - the most likely cause of the server
+  crash that cuts every player ("WCCF CONTROL NOT FOUND", Error 3000). The kit's hook (wccfk.dll) now holds the
+  pieces and hands the server each message only once all of it is there; bytes that cannot be a message are skipped,
+  and nobody is disconnected for them. WCCF_WHOLEMSG=0 turns it off. The crash was not reproduced on purpose, so this
+  is the likely cause removed, not a proven fix; the keeper's restart stays the safety net.
 - Simpler folders. The kit's Python is in `code\` (was `scripts\`); every program, the panel included, is in
   `programs\` (was `bin\` and `overlay\`); the panel's picture is in `art\`; the English tables are in `languages\english\` (one folder per language); the catalogue and card pictures SETUP
   makes from your game are in `data\cache\`. Updating from an older kit and pressing set up moves your catalogue and
@@ -75,7 +81,6 @@ game is not included. Newest first; each date is the day that kit was built.
   can use CLUB CARD), and your unreadable file is kept safe as a `.bad` copy so it can be recovered. Before, the game
   would simply fail to start, with nothing on screen to say why.
   (The card reader now has an automated test for both - `source\test_icc_reader.py`.)
-
 
 ## Kit 5.5.1 - 2026-10-10
 
