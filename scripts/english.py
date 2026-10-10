@@ -15,12 +15,15 @@ What changes, in the game's extracted\ folder (seat 1 reads the same files throu
   client_Release.exe (the projector's) and seat1\client_Release.exe (seat 1's own patched copy)
                                           text inside the program: the "Next match: ..." ticker, dates as 2026/10/5
   control_Release.exe (the server)        the shop name it sends when the network gives none ("Local Shop")
+  data\wccf_data.xaf                      pictures with writing (english\pictures.tsv: the six team stats, OK / BACK),
+                                          redrawn in Windows' Arial Bold and ADDED at the archive's end; only their
+                                          table-of-contents entries change, and "off" cuts the added end away again
 The first "on" COPIES Sega's files to data\english_backup\ - only files whose fingerprint shows they are Sega's Rev D
 originals; later runs build from that backup again.  Each game file is then replaced in ONE step ("off" too), so a
 switch stopped half way (a crash, a kill, a full disk) leaves every file in place - some English, some not - and
 never a missing one: a missing exe would keep the game from starting (2026-10-06).  Kept in Japanese on purpose: country and prefecture names (the
-game finds its weather table by them; English ones crashed the server) and the network-ranking areas.  Pictures with
-writing in them are not changed.
+game finds its weather table by them; English ones crashed the server) and the network-ranking areas.  Other pictures
+with writing in them are not changed.
 Where the English comes from: english\screen_text.tsv (this kit's translation), Sega's own English that the game files
 already hold (a second language column), and english\sega_rstring.tsv (lines from Sega's European English of the
 older WCCF, matched by identical Japanese).
@@ -30,13 +33,17 @@ import bisect
 import collections
 import csv
 import hashlib
+import io
 import json
 import os
 import re
+import struct
 import sys
 import unicodedata
 
+import cards
 import kit_common as K
+import ys_lzw
 
 ENG = os.path.join(K.KIT, "english")
 BACK = os.path.join(K.DATA, "english_backup")
@@ -350,6 +357,163 @@ def build_exe(game):
         n_client, ", and %d in the server" % n_server if n_server else "")
 
 
+# ---------------------------------------------------------------- writing in pictures (data\wccf_data.xaf)
+# The game reads data\... only from the archive (client FUN_00424570: no loose file is looked at), so each English
+# picture is ADDED at the archive's end and its table-of-contents entry pointed at it; no byte of Sega's is written
+# over.  "off" puts the old entries back and cuts the file to its old length - no copy of the 1.4 GB file is needed.
+# The archive has no checksum (FUN_00913e20) and the texture loader takes any DDS format (FUN_00765f30); 2026-10-10.
+XAF = os.path.join("data", "wccf_data.xaf")
+XAF_STATE = os.path.join(BACK, "wccf_data.xaf.json")
+SECTOR, ENTRY, TOC_AT = 2048, 0xB0, 0x100
+# the writing's colour, its halo (colour + strength, or none) and the halo's width, as Sega drew each picture
+STYLES = {"glow": ((242, 228, 150), (223, 198, 57, 200), 4), "outline": ((240, 240, 245), (18, 17, 17, 220), 2),
+          "grey": ((80, 80, 80), None, 0), "white": ((255, 255, 255), None, 0)}
+
+
+def arial_bold():
+    p = os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "Fonts", "arialbd.ttf")
+    return p if os.path.isfile(p) else None
+
+
+def draw_label(im, box, text, style, font_path):
+    """Sega's writing in box cleared, the English drawn in its place: as tall as the box allows, squeezed to fit"""
+    from PIL import Image, ImageDraw, ImageFilter, ImageFont
+    core, halo, spread = STYLES[style]
+    x0, y0, x1, y1 = box
+    im.paste((0, 0, 0, 0), (x0, y0, x1 + 1, y1 + 1))
+    s = 4                                                # drawn 4x larger, then made small: smooth edges
+    w, h = (x1 - x0 + 1 - 2 * spread) * s, (y1 - y0 + 1 - 2 * spread) * s
+    font = ImageFont.truetype(font_path, int(h * 0.92))
+    l, t, r, b = font.getbbox(text)
+    m = Image.new("L", (r - l, b - t))
+    ImageDraw.Draw(m).text((-l, -t), text, font=font, fill=255)
+    mw, mh = max(1, round(m.width * min(1.0, w / m.width) / s)), max(1, round(m.height / s))
+    mask = Image.new("L", im.size)
+    mask.paste(m.resize((mw, mh), Image.LANCZOS), (x0 + (x1 - x0 + 1 - mw) // 2, y0 + (y1 - y0 + 1 - mh) // 2))
+    if halo:
+        g = mask.filter(ImageFilter.MaxFilter(2 * (spread // 2) + 1)).filter(ImageFilter.GaussianBlur(spread / 2))
+        im.alpha_composite(Image.merge("RGBA", Image.new("RGB", im.size, halo[:3]).split() +
+                                       (g.point(lambda v: min(255, v * halo[3] // 160)),)))
+    im.alpha_composite(Image.merge("RGBA", Image.new("RGB", im.size, core).split() + (mask,)))
+
+
+def dds_argb(im):
+    """an uncompressed A8R8G8B8 DDS, the header as Sega's own (e.g. club_make\\CL_Base\\Button.dds)"""
+    w, h = im.size
+    return (struct.pack("<4s7I44x8I5I", b"DDS ", 124, 0x81007, h, w, w * h * 4, 0, 0,
+                        32, 0x41, 0, 32, 0xFF0000, 0xFF00, 0xFF, 0xFF000000, 0x1000, 0, 0, 0, 0)
+            + im.tobytes("raw", "BGRA"))
+
+
+def load_state():
+    try:
+        with open(XAF_STATE, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
+
+
+def build_pictures(game):
+    """{archive path: (entry number, English DDS)} from Sega's pictures, each checked against english\\pictures.tsv"""
+    from PIL import Image
+    font = arial_bold()
+    if not font:
+        return {}, "pictures stay Japanese: Windows' Arial Bold (Fonts\\arialbd.ttf) is missing"
+    xaf, state = where(game, XAF), load_state() or {"entries": {}}
+    ents = {e["path"]: e for e in cards.xaf_toc(xaf) if e["is_file"]}
+    out, labels = {}, 0
+    with open(xaf, "rb") as f:
+        for row in sheet("pictures.tsv"):
+            for p in row["files"].split():
+                if p not in ents:
+                    raise Failed("the archive has no %s" % p)
+                e = ents[p]
+                raw = bytes.fromhex(state["entries"][str(e["i"])]) if str(e["i"]) in state["entries"] else None
+                if raw:                                   # English on: Sega's picture is still where it was
+                    size, stored = struct.unpack_from("<II", raw, 0x94)
+                    e = dict(e, size=size, stored=stored, offset=struct.unpack_from("<I", raw, 0xA0)[0] * SECTOR)
+                f.seek(e["offset"])
+                data = f.read(e["stored"])
+                data = ys_lzw.decompress(data, e["size"]) if e["stored"] < e["size"] else data
+                if sha(data) != row["sega_sha256"]:
+                    raise Failed("%s in the archive is not Sega's Rev D picture" % p)
+                im = Image.open(io.BytesIO(data)).convert("RGBA")
+                boxes = [[int(v) for v in lab.split("=")[0].split(",")] for lab in row["labels"].split(";")]
+                if any(a[0] <= b[2] and b[0] <= a[2] and a[1] <= b[3] and b[1] <= a[3]
+                       for i, a in enumerate(boxes) for b in boxes[i + 1:]):
+                    raise Failed("english\\pictures.tsv: two boxes of %s overlap - one would clear the other" % p)
+                for lab in row["labels"].split(";"):
+                    box, text = lab.split("=")
+                    draw_label(im, [int(v) for v in box.split(",")], text, row["style"], font)
+                    labels += 1
+                out[p] = (e["i"], dds_argb(im))
+    return out, "%d pictures with their writing in English (%d words)" % (len(out), labels)
+
+
+def pictures_off(game):
+    """Sega's table-of-contents entries and header back, the added pictures cut off; nothing to do if none"""
+    state = load_state()
+    if not state:
+        return 0
+    with open(where(game, XAF), "r+b") as f:
+        for i, raw in state["entries"].items():
+            f.seek(TOC_AT + int(i) * ENTRY)
+            f.write(bytes.fromhex(raw))
+        f.seek(0x18)
+        f.write(bytes.fromhex(state["header"]))
+        f.flush()
+        os.fsync(f.fileno())
+        f.truncate(state["length"])
+    os.remove(XAF_STATE)
+    return len(state["entries"])
+
+
+def pictures_on(game, pics):
+    pictures_off(game)                                   # from Sega's archive every time: never stacked twice
+    if not pics:
+        return
+    with open(where(game, XAF), "r+b") as f:
+        hdr = f.read(TOC_AT)
+        length = f.seek(0, 2)
+        if hdr[:4] != b"xaf0" or length % SECTOR or struct.unpack_from("<Q", hdr, 0x18)[0] * SECTOR != length:
+            raise Failed("data\\wccf_data.xaf is not as Sega made it (its length) - pictures left as they are")
+        state = {"length": length, "header": hdr[0x18:0x30].hex(), "entries": {}}
+        for p, (i, _) in pics.items():
+            f.seek(TOC_AT + i * ENTRY)
+            state["entries"][str(i)] = f.read(ENTRY).hex()
+        os.makedirs(BACK, exist_ok=True)                 # the way back is saved before the first byte is written
+        with open(XAF_STATE + ".tmp", "w", encoding="utf-8") as s:
+            json.dump(state, s, indent=1)
+        os.replace(XAF_STATE + ".tmp", XAF_STATE)
+        pos, entries = length, {}
+        for p, (i, blob) in pics.items():                # 1: the pictures added (an interruption leaves only an end
+            f.seek(pos)                                  #    that "off" cuts away)
+            f.write(blob + bytes(-len(blob) % SECTOR))
+            e = bytearray.fromhex(state["entries"][str(i)])
+            e[0x81] = e[0x82] = 0                        # not packed (FUN_00913850 unpacks only with one of these)
+            struct.pack_into("<II", e, 0x94, len(blob), len(blob))
+            struct.pack_into("<I", e, 0xA0, pos // SECTOR)
+            entries[i] = bytes(e)
+            pos += len(blob) + (-len(blob) % SECTOR)
+        f.flush()
+        os.fsync(f.fileno())
+        added = (pos - length) // SECTOR                 # 2: the entries pointed at them, the header's sizes grown
+        total, toc_sectors, data_sectors = struct.unpack_from("<3Q", hdr, 0x18)
+        f.seek(0x18)
+        f.write(struct.pack("<3Q", total + added, toc_sectors, data_sectors + added))
+        for i, e in entries.items():
+            f.seek(TOC_AT + i * ENTRY)
+            f.write(e)
+        f.flush()
+        os.fsync(f.fileno())
+        for p, (i, blob) in pics.items():                # read back: each entry, each picture
+            f.seek(TOC_AT + i * ENTRY)
+            e = f.read(ENTRY)
+            f.seek(struct.unpack_from("<I", e, 0xA0)[0] * SECTOR)
+            if e != entries[i] or f.read(len(blob)) != blob:
+                raise Failed("%s did not write correctly - press JAPANESE in SETUP.exe" % p)
+
+
 def build_all(game):
     files, notes = {}, []
     for fn in (build_strings, build_names, build_exe):
@@ -474,14 +638,17 @@ def main(argv):
                 raise Failed("the game is running - close its window first, then run this again")
             print("  NOTE  the game is running: \"on\" and \"off\" will refuse until it is closed")
         if mode == "off":
-            if not load_manifest():
+            if not load_manifest() and not load_state():
                 print("  English is not on - nothing to do.")
                 return 0
+            p = pictures_off(game)
             n = turn_off(game)
-            print("  ok    Sega's Japanese files are back (%d files)." % n)
+            print("  ok    Sega's Japanese files are back (%d files, %d pictures)." % (n, p))
             return 0
         print("  building from your game files ...", flush=True)
         files, notes = build_all(game)
+        pics, note = build_pictures(game)
+        notes.append(note)
         for n in notes:
             print("  ok    " + n)
         if mode == "check":
@@ -490,8 +657,9 @@ def main(argv):
                   % (len(files), sum(1 for r in files if r not in man)))
             return 0
         turn_on(game, files)
-        print("  ok    %d files in place, each read back.  Sega's are in data\\english_backup (JAPANESE in "
-              "SETUP.exe puts them back)." % len(files))
+        pictures_on(game, pics)
+        print("  ok    %d files in place and %d pictures in the archive, each read back.  Sega's are in "
+              "data\\english_backup (JAPANESE in SETUP.exe puts them back)." % (len(files), len(pics)))
     except Failed as ex:
         print("  FAIL  %s" % ex)
         return 1

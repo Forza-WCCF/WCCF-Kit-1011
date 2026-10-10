@@ -199,8 +199,10 @@ ONLINE (play with others on one server)
 ENGLISH (optional)
   ENGLISH (in SETUP.exe, GAME LANGUAGE) puts the game into English: about 7,200 lines of screen text, the players'
   names, short and full (Sega's own Latin spelling, e.g. M.DIARRA and Mahamadou DIARRA) and skill names, the CPU
-  teams' names, the projector's "Next match" ticker, the dates on seat 1 (e.g. 2026/10/5 on the manager license), money in dollars, and the shop's name on the
-  projector's awards ("Local Shop" - also inside the server program, the only change ENGLISH makes to it).
+  teams' names, the six team stats around the hexagon and the OK / BACK button names (pictures), the projector's
+  "Next match" ticker, the dates on seat 1 (e.g. 2026/10/5 on the manager license), money in dollars, and the
+  shop's name on the projector's awards ("Local Shop" - also inside the server program, the only change ENGLISH
+  makes to it).
   Awards the game saved before English was on keep the names they were saved with (e.g. the CPU's Best Eleven
   team, in Japanese, on the projector's MVP and Best Eleven awards).
   With English on, the panel also writes money as one amount with commas ($3,982,700) on seat 1 and the projector.
@@ -209,7 +211,7 @@ ENGLISH (optional)
   It is built on your PC from your own game files and every line is checked; the kit holds only the English text.
   Sega's files are kept in data\english_backup, and JAPANESE puts them back. Close the game first.
   Still Japanese: country and prefecture names (the game finds its weather table by them, and English ones crash
-  the server), the network-ranking areas, and writing that is part of a picture (logos, some titles and buttons).
+  the server), the network-ranking areas, and most writing that is part of a picture (logos, titles).
   The English comes from this kit's translation, from Sega's own English that the game files already hold, and
   from Sega's European English of the older WCCF (lines with the same Japanese).
 

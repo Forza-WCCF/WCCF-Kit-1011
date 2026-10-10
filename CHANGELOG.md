@@ -14,6 +14,11 @@ game is not included. Newest first; each date is the day that kit was built.
   (W, L, D), the weekdays Monday to Saturday, and 12 supporter-group words (Heroes, Stars, Samurai, Tigers, ...).
   7,200 lines are now in English; only the debug menus stay Japanese.
 - `english.py check` names the screen lines still in Japanese, so a gap shows without a survey.
+- English: the six team stats around the hexagon (OFFENCE, DEFENCE, SPEED, POWER, CONTROL, TACKLING) and the OK /
+  BACK names under the buttons were pictures with Japanese writing. ENGLISH now redraws them from your game's own
+  pictures in Windows' Arial Bold and adds them at the end of `data\wccf_data.xaf`, pointing the archive's table of
+  contents at them; Sega's bytes are not written over, and JAPANESE puts the old entries back and cuts the added
+  end away (the 1.4 GB archive is never copied). check.ps1 checks both ways on a scratch archive.
 
 ## Kit 5.5.1 - 2026-10-10
 
