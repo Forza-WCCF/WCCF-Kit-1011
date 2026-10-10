@@ -22,18 +22,58 @@ cmd /c "`"$vcvars`" x86 >nul && set" | ForEach-Object {
     if ($_ -match '^([^=]+)=(.*)$') { Set-Item -Path "env:$($Matches[1])" -Value $Matches[2] }
 }
 
-# the runtime linked in (/MT): no Visual C++ runtime needed on the player's PC; /Brepro: the same source, the same file
-function Build-C([string]$source, [string]$out, [string[]]$compile = @(), [string[]]$link = @()) {
+# the runtime linked in (/MT): no Visual C++ runtime needed on the player's PC; /Brepro: the same source, the same file.
+# $what: the program's version information (as source\launcher\build.rs gives PLAY.exe and SETUP.exe), what a file's
+# Properties show. Kit 5.5's winmm.dll, nameless and unsigned, was quarantined as "Trojan:Win32/Posilod.CA!cl" when it
+# was unzipped (2026-10-10); source\package.ps1 refuses a kit whose programs lack it
+$version = (Select-String -Path (Join-Path $src 'launcher\Cargo.toml') -Pattern '^version = "(.+)"$').Matches[0].Groups[1].Value
+function Build-C([string]$source, [string]$out, [string]$what, [string[]]$compile = @(), [string[]]$link = @()) {
     $name = [IO.Path]::GetFileNameWithoutExtension($out)
+    $file = [IO.Path]::GetFileName($out)
+    $comma = (($version.Split('.') + '0', '0', '0') | Select-Object -First 4) -join ','
+    $type = if ($file -like '*.dll') { '0x2' } else { '0x1' }
+    $res = @()
+    if ($what) {
+        @"
+1 VERSIONINFO
+FILEVERSION $comma
+PRODUCTVERSION $comma
+FILEOS 0x40004
+FILETYPE $type
+BEGIN
+BLOCK "StringFileInfo"
+BEGIN
+BLOCK "040904b0"
+BEGIN
+VALUE "CompanyName", "Forza-WCCF community"
+VALUE "FileDescription", "WCCF 2010-11 kit - ${file}: $what"
+VALUE "FileVersion", "$version"
+VALUE "InternalName", "$name"
+VALUE "LegalCopyright", "Community-made tools for your own copy of the game; the game is not included"
+VALUE "OriginalFilename", "$file"
+VALUE "ProductName", "WCCF 2010-11 kit"
+VALUE "ProductVersion", "$version"
+END
+END
+BLOCK "VarFileInfo"
+BEGIN
+VALUE "Translation", 0x409, 1200
+END
+END
+"@ | Set-Content -Encoding ascii "$obj\$name.rc"
+        & rc /nologo /fo "$obj\$name.res" "$obj\$name.rc"
+        if ($LASTEXITCODE) { throw "rc failed for $source" }
+        $res = @("$obj\$name.res")
+    }
     & cl /nologo /O2 /MT /W3 /Brepro /D_CRT_SECURE_NO_WARNINGS @compile (Join-Path $src $source) "/Fo$obj\" "/Fe$out" `
-        /link /Brepro "/IMPLIB:$obj\$name.lib" "/PDB:$obj\$name.pdb" @link
+        /link /Brepro "/IMPLIB:$obj\$name.lib" "/PDB:$obj\$name.pdb" @res @link
     if ($LASTEXITCODE) { throw "cl failed for $source" }
     Write-Host "built $out"
 }
-Build-C 'hook\wccfk.c' "$kit\programs\wccfk.dll" @('/LD')
-Build-C 'card_table\fpr_emu.c' "$kit\programs\FPR_Emu.exe" @() @('user32.lib')
-Build-C 'panel\wccfpanel.c' "$kit\programs\wccfpanel.dll" @('/LD') @('d3d9.lib', 'gdi32.lib', 'user32.lib', 'ole32.lib', 'windowscodecs.lib')
-Build-C 'panel\fakegame.c' "$obj\fakegame.exe" @() @('d3d9.lib', 'user32.lib')
+Build-C 'hook\wccfk.c' "$kit\programs\wccfk.dll" "the kit's hook in the game: stands in for the cabinet's hardware" @('/LD')
+Build-C 'card_table\fpr_emu.c' "$kit\programs\FPR_Emu.exe" "the card table's stand-in" @() @('user32.lib')
+Build-C 'panel\wccfpanel.c' "$kit\programs\wccfpanel.dll" "the kit's on-screen panel" @('/LD') @('d3d9.lib', 'gdi32.lib', 'user32.lib', 'ole32.lib', 'windowscodecs.lib')
+Build-C 'panel\fakegame.c' "$obj\fakegame.exe" '' @() @('d3d9.lib', 'user32.lib')
 
 # the launchers: the toolchain is pinned by source\launcher\rust-toolchain.toml, every crate by Cargo.lock, the static
 # runtime by source\launcher\.cargo\config.toml - rustup and cargo read those two from the CURRENT folder: build there
