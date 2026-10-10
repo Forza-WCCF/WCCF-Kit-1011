@@ -438,6 +438,10 @@ def build_pictures(game):
                 if sha(data) != row["sega_sha256"]:
                     raise Failed("%s in the archive is not Sega's Rev D picture" % p)
                 im = Image.open(io.BytesIO(data)).convert("RGBA")
+                boxes = [[int(v) for v in lab.split("=")[0].split(",")] for lab in row["labels"].split(";")]
+                if any(a[0] <= b[2] and b[0] <= a[2] and a[1] <= b[3] and b[1] <= a[3]
+                       for i, a in enumerate(boxes) for b in boxes[i + 1:]):
+                    raise Failed("english\\pictures.tsv: two boxes of %s overlap - one would clear the other" % p)
                 for lab in row["labels"].split(";"):
                     box, text = lab.split("=")
                     draw_label(im, [int(v) for v in box.split(",")], text, row["style"], font)
