@@ -285,7 +285,8 @@ def build_names(game):
                 name = ini + name
         pd[r + SHORT_KANA:r + SHORT_KANA + FIELD] = put_field(bytes(pd[r + SHORT_KANA:r + SHORT_KANA + FIELD]),
                                                               name.encode("ascii"), FIELD)
-        full = fold(bytes(pd[r + FULL_LATIN:r + FULL_LATIN + FIELD]).decode("utf-16-le", "replace").split("\0")[0].strip())
+        full = bytes(pd[r + FULL_LATIN:r + FULL_LATIN + FIELD]).decode("utf-16-le", "replace").split("\0")[0].strip()
+        full = fold(full)
         if full:
             pd[r + CARD_NAME:r + CARD_NAME + FIELD] = put_field(bytes(pd[r + CARD_NAME:r + CARD_NAME + FIELD]),
                                                                 full.encode("ascii"), FIELD)
