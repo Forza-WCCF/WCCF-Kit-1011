@@ -4,6 +4,16 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
+## Unreleased
+
+### Changed
+- Hosting a server: the server program now gets the players' messages only whole. Over the internet a message can
+  arrive in pieces, and Sega's code for putting pieces back together is broken - the most likely cause of the server
+  crash that cuts every player ("WCCF CONTROL NOT FOUND", Error 3000). The kit's winmm.dll now holds the pieces and
+  hands the server each message only once all of it is there; bytes that cannot be a message are skipped, and nobody
+  is disconnected for them. WCCF_WHOLEMSG=0 turns it off. The crash was not reproduced on purpose, so this is the
+  likely cause removed, not a proven fix; the keeper's restart stays the safety net.
+
 ## Kit 5.5.1 - 2026-10-10
 
 ### Fixed
