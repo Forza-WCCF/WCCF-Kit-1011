@@ -4,6 +4,17 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
+## Unreleased
+
+### Fixed
+- English: the players' full names (the card name, e.g. Mahamadou DIARRA) were still in katakana; they now use
+  Sega's own Latin spelling, accents dropped, like the short names. The second katakana full name stays: the game
+  looks player partnerships up by it (`partnership.bin`).
+- English: the last 22 Japanese lines a player can meet - the win/loss/draw marks on the manager's career record
+  (W, L, D), the weekdays Monday to Saturday, and 12 supporter-group words (Heroes, Stars, Samurai, Tigers, ...).
+  7,200 lines are now in English; only the debug menus stay Japanese.
+- `english.py check` names the screen lines still in Japanese, so a gap shows without a survey.
+
 ## Kit 5.5.1 - 2026-10-10
 
 ### Fixed
