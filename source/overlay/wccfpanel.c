@@ -119,7 +119,8 @@ static ULONGLONG ft_q(FILETIME t) { return ((ULONGLONG)t.dwHighDateTime << 32) |
 // the kit's version (2026-10-09, the player: "a version number near the ping, so that we can know ... what the issues
 // they get and on what version"): version.txt at the kit's top, written by source\package.ps1 - kit-5.5,
 // kit-5.5-test2, or CI's commit (SETUP.exe's update reads the same file); shown without "kit-" ("KIT 5.5").  A kit
-// built by hand has none and shows "dev".  Drawn under the ping meter (ping_draw), online or not.
+// built by hand has none and shows "dev".  Drawn under the ping meter (ping_draw), online or not, and beside the
+// SETTINGS panel's title (2026-10-10, the player: "we should have version in settings menu").
 static char g_kitver[48] = "dev";
 
 static void kit_version(void)
@@ -3582,6 +3583,9 @@ static void set_draw(IDirect3DDevice9 *dev)
     if (!g_font_tex) return;
     set_picture(dev, g_font_tex, 1);
     put_str(dev, g.x0 + 24.0f * s, 14.0f * s, 0.85f * s, orange, "SETTINGS");
+    _snprintf(v, sizeof v, "KIT %s", g_kitver); v[sizeof v - 1] = 0;             // the version beside the title (2026-10-10)
+    put_str(dev, g.x0 + 24.0f * s + str_w("SETTINGS", 0.85f * s) + 18.0f * s,
+            14.0f * s + (float)g_cellh * (0.85f - 0.5f) * s, 0.5f * s, grey, v);
     put_str(dev, g.x0 + 24.0f * s, 58.0f * s, 0.42f * s, grey,
             "NOW: what the game's hidden windows used to tell, read live.  NEXT START: what PLAY.exe does next time.");
     put_str(dev, g.x0 + 24.0f * s, 76.0f * s, 0.42f * s, grey, "Esc closes this.  NEXT START waits for the next start; "
