@@ -12,6 +12,8 @@
 #   the firewall rule written to a scratch file)
 #   SEND LOGS: packed without the club card, names taken out, kept by the log inbox - which refuses junk, too big, not
 #   a ZIP and too many (source\test_send_logs.py: a scratch kit, inboxes on 127.0.0.1:20952 and 20953)
+#   English in the game's pictures: added at the archive's end, taken back out byte for byte
+#   (source\test_english_pictures.py: a scratch archive with one picture)
 #   the panel's money, relay and dealt-card self-tests (wccfpanel.dll loaded by source\build\fakegame.exe, in a
 #   scratch folder; the relay test plays two seats through scripts\_relay.py on 127.0.0.1:20941 - the C side and
 #   the Python side of the match relay checked against each other)
@@ -56,6 +58,9 @@ if ($LASTEXITCODE) { $failed += 'the projector box: held until a player is in' }
 
 & $py -I (Join-Path $PSScriptRoot 'test_send_logs.py') | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'SEND LOGS: packed, sent, kept - and refused when it must be' }
+
+& $py -I (Join-Path $PSScriptRoot 'test_english_pictures.py')
+if ($LASTEXITCODE) { $failed += 'English pictures: added to the archive, taken back out byte for byte' }
 
 $t = Join-Path ([IO.Path]::GetTempPath()) "wccfpanel-check-$PID"
 Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
