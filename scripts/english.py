@@ -4,6 +4,7 @@ with Sega's files kept; "off" puts Sega's back.  Nothing of Sega's ships with th
 text and fingerprints (SHA-256) of Sega's files.
 
     python english.py on       (SETUP.exe: ENGLISH)   build, check, then put the English files in place
+    python english.py on it    (SETUP.exe: ITALIANO)  the same in Italian: italian\ first, the English where a line has none
     python english.py off      (SETUP.exe: JAPANESE)  Sega's Japanese files back
     python english.py check                           say what "on" would do; changes nothing
 
@@ -45,8 +46,9 @@ import cards
 import kit_common as K
 import ys_lzw
 
-ENG = os.path.join(K.KIT, "english")
 BACK = os.path.join(K.DATA, "english_backup")
+LANGS = {"en": "English", "it": "Italian"}         # "on it": Italian, with the English wherever a line has none
+LANG_FILE = os.path.join(BACK, "language.txt")    # the language that is on (kit_common.game_language reads it)
 MANIFEST = os.path.join(BACK, "manifest.json")
 BIN, HF = os.path.join("data", "string", "string_list.bin"), os.path.join("data", "string", "string_list.hf")
 PLAYERS = os.path.join("prog_data", "player_data", "player_data.bin")
@@ -89,8 +91,8 @@ def sha(data):
     return hashlib.sha256(data).hexdigest().upper()
 
 
-def sheet(name):
-    with open(os.path.join(ENG, name), encoding="utf-8", newline="") as fh:
+def sheet(name, folder="english"):
+    with open(os.path.join(K.KIT, folder, name), encoding="utf-8", newline="") as fh:
         return list(csv.DictReader(fh, delimiter="\t", quoting=csv.QUOTE_NONE))
 
 
@@ -109,7 +111,7 @@ def sega_file(game, rel):
 
 
 # ---------------------------------------------------------------- the screen text
-def build_strings(game):
+def build_strings(game, lang="en"):
     raw, hf_raw = sega_file(game, BIN), sega_file(game, HF)
     if sha(raw) != SEGA[BIN] or sha(hf_raw) != SEGA[HF]:
         raise Failed("data\\string\\string_list.* are not Sega's Rev D files - the English is made for those only")
@@ -145,49 +147,56 @@ def build_strings(game):
             english[k] = (s2.decode("ascii"), "SEGA second column")
         elif k in rstring:
             english[k] = (rstring[k], "SEGA European English")
+    # each line's choices, best first: Italian (the kit's, then Sega's European Italian) before the English, which
+    # stays the fallback - a line with no usable Italian is English, never Japanese
+    choices = {k: [v] for k, v in english.items()}
+    if lang == "it":
+        for name, src in (("sega_rstring.tsv", "SEGA European Italian"), ("screen_text.tsv", "kit Italian")):
+            for r in sheet(name, "italian"):
+                if (r.get("italiano") or "").strip():
+                    choices.setdefault(r["key"], []).insert(0, (r["italiano"].strip("\r"), src))
 
-    bad, enc, sega_bad = [], {}, 0
-    for k, (text, src) in sorted(english.items()):
-        mine = src == "kit"
+    def encoded(jp, text):
+        """the line as the game's bytes, or None and what is wrong with it"""
+        if text.strip() == "<empty>":
+            if FMT.findall(jp) or "$c" in jp or "$p" in jp:
+                return None, "<empty> would drop the Japanese line's codes"
+            return b"", None
+        en = text.replace("\\n", "\n")
+        if FMT.findall(jp) != FMT.findall(en):
+            return None, "codes %s, the game's line has %s" % (FMT.findall(en), FMT.findall(jp))
+        if FMT.sub("", en).count("%") > FMT.sub("", jp).count("%"):
+            return None, "a % sign that is no printf code - the game would show junk or stop"
+        if jp.count("$c[") != en.count("$c[") or jp.count("$c") != en.count("$c"):
+            return None, "colour codes differ from the game's line"
+        try:
+            b = en.encode("cp932")
+        except UnicodeEncodeError:
+            return None, "a letter the game's font cannot show"
+        b = b.replace(b"\n", nl) if nl != b"\n" else b
+        if b"\0" in b:
+            return None, "holds an end byte"
+        return b, None
+
+    bad, enc, used, sega_bad = [], {}, {}, 0
+    for k, options in sorted(choices.items()):
         if k not in keys:
-            if mine:
-                bad.append("%s: no such line in the game" % k)
+            bad += ["%s: no such line in the game" % k for _, src in options if src.startswith("kit")]
             continue
         if blocked(k):
             continue
         jp = at(keys[k][1][0]).decode("cp932", "replace")
-        problem = None
-        if text.strip() == "<empty>":
-            if FMT.findall(jp) or "$c" in jp or "$p" in jp:
-                problem = "<empty> would drop the Japanese line's codes"
-            else:
-                enc[k] = b""
-                continue
-        en = text.replace("\\n", "\n")
-        if not problem and FMT.findall(jp) != FMT.findall(en):
-            problem = "codes %s, the game's line has %s" % (FMT.findall(en), FMT.findall(jp))
-        if not problem and FMT.sub("", en).count("%") > FMT.sub("", jp).count("%"):
-            problem = "a % sign that is no printf code - the game would show junk or stop"
-        if not problem and (jp.count("$c[") != en.count("$c[") or jp.count("$c") != en.count("$c")):
-            problem = "colour codes differ from the game's line"
-        b = b""
-        if not problem:
-            try:
-                b = en.encode("cp932")
-            except UnicodeEncodeError:
-                problem = "a letter the game's font cannot show"
-        b = b.replace(b"\n", nl) if nl != b"\n" else b
-        if not problem and b"\0" in b:
-            problem = "holds an end byte"
-        if problem:
-            if mine:
+        for text, src in options:
+            b, problem = encoded(jp, text)
+            if not problem:
+                enc[k], used[k] = b, src
+                break
+            if src.startswith("kit"):
                 bad.append("%s: %s" % (k, problem))
             else:
                 sega_bad += 1
-            continue
-        enc[k] = b
     if bad:
-        raise Failed("the kit's English has %d problem(s), e.g. %s" % (len(bad), "; ".join(bad[:3])))
+        raise Failed("the kit's text has %d problem(s), e.g. %s" % (len(bad), "; ".join(bad[:3])))
 
     # free space: a translated line's old Japanese, if nothing else points at it or inside it; then the zero padding
     refs = collections.defaultdict(set)
@@ -247,10 +256,10 @@ def build_strings(game):
                 wrong += 1
     if wrong or len(new_bin) != len(raw) or new_hf[0] != hf_lines[0]:
         raise Failed("the built screen text does not read back as intended (%d places) - nothing changed" % wrong)
-    by = collections.Counter(english[k][1] for k in pos)
-    note = "%d lines in English (%s)" % (len(pos), ", ".join("%s %d" % kv for kv in sorted(by.items())))
+    by = collections.Counter(used[k] for k in pos)
+    note = "%d lines in %s (%s)" % (len(pos), LANGS[lang], ", ".join("%s %d" % kv for kv in sorted(by.items())))
     if sega_bad:
-        note += "; %d of Sega's own English lines unusable, left Japanese" % sega_bad
+        note += "; %d of Sega's own lines unusable, the next choice taken" % sega_bad
     # lines a player can meet that are still Japanese ("check" shows them; the debug menus are left out on purpose)
     left = sorted(k for k, (_, nums) in keys.items() if k not in pos and not blocked(k) and any(c >= 0x80 for c in at(
         nums[0])) and family(k) not in ("SYS_DEBUG", "COM_debug"))
@@ -320,7 +329,7 @@ def build_names(game):
 
 # ---------------------------------------------------------------- text inside the programs (both client copies; the
 # server only for its own rows - "server" in exe_text.tsv's program column, 2026-10-06: the shop name it sends)
-def build_exe(game):
+def build_exe(game, lang="en"):
     sheet_rows, files = sheet("exe_text.tsv"), {}
     for rel, program, what in ((PROJECTOR, "client", "the projector's client_Release.exe (Sega's Rev D)"),
                                (SEAT_EXE, "client", "seat 1's client_Release.exe (the copy SETUP.exe makes)"),
@@ -333,7 +342,8 @@ def build_exe(game):
             raise Failed("%s is not the expected file - run SETUP.exe first" % what)
         size = len(d)
         for r in rows:
-            o, n, en = int(r["offset"], 16), int(r["length"]), r["english"]
+            o, n = int(r["offset"], 16), int(r["length"])
+            en = (r.get("italiano") or r["english"]) if lang == "it" else r["english"]
             if sha(bytes(d[o:o + n])) != r["sega_sha256"] or d[o + n] != 0:
                 raise Failed("%s at %s is not the text the kit expects" % (what, r["offset"]))
             room = n + 1
@@ -413,7 +423,7 @@ def load_state():
         return None
 
 
-def build_pictures(game):
+def build_pictures(game, lang="en"):
     """{archive path: (entry number, English DDS)} from Sega's pictures, each checked against english\\pictures.tsv"""
     from PIL import Image
     font = arial_bold()
@@ -442,12 +452,13 @@ def build_pictures(game):
                 if any(a[0] <= b[2] and b[0] <= a[2] and a[1] <= b[3] and b[1] <= a[3]
                        for i, a in enumerate(boxes) for b in boxes[i + 1:]):
                     raise Failed("english\\pictures.tsv: two boxes of %s overlap - one would clear the other" % p)
-                for lab in row["labels"].split(";"):
+                words = row["italiano"].split(";") if lang == "it" and row.get("italiano") else None
+                for n, lab in enumerate(row["labels"].split(";")):
                     box, text = lab.split("=")
-                    draw_label(im, [int(v) for v in box.split(",")], text, row["style"], font)
+                    draw_label(im, [int(v) for v in box.split(",")], words[n] if words else text, row["style"], font)
                     labels += 1
                 out[p] = (e["i"], dds_argb(im))
-    return out, "%d pictures with their writing in English (%d words)" % (len(out), labels)
+    return out, "%d pictures with their writing in %s (%d words)" % (len(out), LANGS[lang], labels)
 
 
 def pictures_off(game):
@@ -514,10 +525,10 @@ def pictures_on(game, pics):
                 raise Failed("%s did not write correctly - press JAPANESE in SETUP.exe" % p)
 
 
-def build_all(game):
+def build_all(game, lang="en"):
     files, notes = {}, []
     for fn in (build_strings, build_names, build_exe):
-        f, n = fn(game)
+        f, n = fn(game, lang) if fn is not build_names else fn(game)
         files.update(f)
         notes.append(n)
     return files, notes
@@ -624,14 +635,15 @@ def main(argv):
     except (AttributeError, ValueError):
         pass
     mode = (argv[0].lower() if argv else "on")
-    if mode not in ("on", "off", "check"):
+    lang = argv[1].lower() if len(argv) > 1 else "en"
+    if mode not in ("on", "off", "check") or lang not in LANGS:
         print(__doc__)
         return 1
     game = K.find_game(K.load_settings().get("game"))
     if not game:
         print("The game is not set up yet - run SETUP.exe first.")
         return 2
-    print("WCCF 2010-11 kit - English %s - game: %s" % (mode, game))
+    print("WCCF 2010-11 kit - %s %s - game: %s" % (LANGS[lang], mode, game))
     try:
         if K.game_processes(game):
             if mode != "check":
@@ -643,11 +655,14 @@ def main(argv):
                 return 0
             p = pictures_off(game)
             n = turn_off(game)
+            if os.path.isfile(LANG_FILE):
+                os.remove(LANG_FILE)
+                os.rmdir(BACK)                           # empty now: turn_off took everything else out
             print("  ok    Sega's Japanese files are back (%d files, %d pictures)." % (n, p))
             return 0
         print("  building from your game files ...", flush=True)
-        files, notes = build_all(game)
-        pics, note = build_pictures(game)
+        files, notes = build_all(game, lang)
+        pics, note = build_pictures(game, lang)
         notes.append(note)
         for n in notes:
             print("  ok    " + n)
@@ -658,6 +673,8 @@ def main(argv):
             return 0
         turn_on(game, files)
         pictures_on(game, pics)
+        with open(LANG_FILE, "w", encoding="ascii") as f:
+            f.write(lang + "\n")
         print("  ok    %d files in place and %d pictures in the archive, each read back.  Sega's are in "
               "data\\english_backup (JAPANESE in SETUP.exe puts them back)." % (len(files), len(pics)))
     except Failed as ex:
@@ -666,7 +683,7 @@ def main(argv):
     except OSError as ex:
         print("  FAIL  %s" % ex)
         return 1
-    print("English is on. Start the game with PLAY.exe.")
+    print("%s is on. Start the game with PLAY.exe." % LANGS[lang])
     return 0
 
 

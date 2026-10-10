@@ -39,7 +39,7 @@ the panel helper (_kit_helper.py: RESTART NOW).
 Only the game's own windows open (since 2026-10-06): the server's two windows and every script's start hidden,
 unless "debug".
 The SETTINGS panel in seat 1's window writes data\panel.txt (2026-10-06): "play_on=this_pc" or "play_on=online" with
-"server=ADDRESS" - what a plain start does - and "english=on" / "english=off", a request done at the next start
+"server=ADDRESS" - what a plain start does - and "english=on" / "english=it" / "english=off", a request done at the next start
 (by english.py, while nothing runs) and then taken out of the file.
 "remote" next to a server started on this PC with "server" uses that server's scene service and keeps its logs
 (the cabinets' logs of the run before are then not kept); if such a start fails, everything on this PC is stopped,
@@ -364,17 +364,18 @@ def drop_panel_line(name, path=None):
 
 
 def apply_english_request():
-    """the SETTINGS panel's "english=on" / "english=off": done now, before anything starts (english.py refuses while
-    the game runs), then taken out of the file - a request, not a lasting setting, so SETUP.exe's ENGLISH still works"""
+    """the SETTINGS panel's "english=on" / "english=it" / "english=off": done now, before anything starts (english.py
+    refuses while the game runs), then taken out of the file - a request, not a lasting setting, so SETUP.exe's GAME
+    LANGUAGE still works"""
     want = read_panel().get("english", "").lower()
-    if want not in ("on", "off"):
+    if want not in K.TEXT_LANGUAGE:
         return
-    if (want == "on") != K.english_on():
-        say("  the game's text %s, as the SETTINGS panel asked - this takes a moment ..." % (
-            "into English" if want == "on" else "back to Sega's Japanese"))
+    name = {"on": "English", "it": "Italian", "off": "Sega's Japanese"}[want]
+    if K.TEXT_LANGUAGE[want] != K.game_language():
+        say("  the game's text into %s, as the SETTINGS panel asked - this takes a moment ..." % name)
         try:            # english.py swaps each file in one step, so even a stop half way leaves every file in place
-            r = subprocess.run([PY, os.path.join(K.SCRIPTS, "english.py"), want], capture_output=True, text=True,
-                               encoding="utf-8", errors="replace", timeout=600)
+            r = subprocess.run([PY, os.path.join(K.SCRIPTS, "english.py")] + (["on", "it"] if want == "it" else [want]),
+                               capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=600)
             lines = [ln.strip() for ln in (r.stdout or "").splitlines() if ln.strip()]
             why = "" if r.returncode == 0 else (lines[-1] if lines else "english.py exit %d" % r.returncode)
         except (OSError, subprocess.TimeoutExpired) as ex:
@@ -382,7 +383,7 @@ def apply_english_request():
         if why:
             say("  the text could not be switched (%s) - the game starts as it is" % why)
         else:
-            say("  done: the game's text is %s" % ("English" if want == "on" else "Sega's Japanese"))
+            say("  done: the game's text is %s" % name)
     drop_panel_line("english")
 
 
@@ -553,8 +554,8 @@ def play(debug, mode="local", ip=None, seat_no=None):
     beside_server = bool(running)            # only "remote" gets here with something running: a server on this PC
     if beside_server:
         os.makedirs(os.path.join(K.LOGS, "hook"), exist_ok=True)     # its logs are open: no rotation
-        if read_panel().get("english", "").lower() in ("on", "off"):
-            say("  (the SETTINGS panel's English change waits: the server on this PC uses the same game files)")
+        if read_panel().get("english", "").lower() in K.TEXT_LANGUAGE:
+            say("  (the SETTINGS panel's language change waits: the server on this PC uses the same game files)")
     else:
         rotate_logs()
         apply_english_request()
@@ -876,7 +877,7 @@ def cabinet_restart_fits():
         return False
     panel = read_panel()
     want = panel.get("english", "").lower()
-    if want in ("on", "off") and (want == "on") != K.english_on():
+    if want in K.TEXT_LANGUAGE and K.TEXT_LANGUAGE[want] != K.game_language():
         return False
     online = panel.get("play_on", "").lower() == "online"
     if info["mode"] == "remote":

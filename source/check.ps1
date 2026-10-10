@@ -14,6 +14,7 @@
 #   a ZIP and too many (source\test_send_logs.py: a scratch kit, inboxes on 127.0.0.1:20952 and 20953)
 #   English in the game's pictures: added at the archive's end, taken back out byte for byte
 #   (source\test_english_pictures.py: a scratch archive with one picture)
+#   the Italian tables: each key once, the game's font, the kit's English codes (source\test_italian_tables.py)
 #   the panel's money, relay and dealt-card self-tests (wccfpanel.dll loaded by source\build\fakegame.exe, in a
 #   scratch folder; the relay test plays two seats through scripts\_relay.py on 127.0.0.1:20941 - the C side and
 #   the Python side of the match relay checked against each other)
@@ -61,6 +62,9 @@ if ($LASTEXITCODE) { $failed += 'SEND LOGS: packed, sent, kept - and refused whe
 
 & $py -I (Join-Path $PSScriptRoot 'test_english_pictures.py')
 if ($LASTEXITCODE) { $failed += 'English pictures: added to the archive, taken back out byte for byte' }
+
+& $py -I (Join-Path $PSScriptRoot 'test_italian_tables.py')
+if ($LASTEXITCODE) { $failed += 'the Italian tables: keys, font and codes' }
 
 $t = Join-Path ([IO.Path]::GetTempPath()) "wccfpanel-check-$PID"
 Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue

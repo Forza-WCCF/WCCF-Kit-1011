@@ -72,6 +72,22 @@ def english_on():
         return False
 
 
+# the game's text as SETTINGS / panel.txt name it ("english=on|it|off") -> the language english.py has in place
+TEXT_LANGUAGE = {"on": "en", "it": "it", "off": ""}
+
+
+def game_language():
+    """'en' or 'it' while english.py has the game translated (its language.txt; English before that file existed),
+    '' for Sega's Japanese"""
+    if not english_on():
+        return ""
+    try:
+        with open(os.path.join(DATA, "english_backup", "language.txt"), encoding="ascii") as f:
+            return f.read().strip() or "en"
+    except (OSError, ValueError):
+        return "en"
+
+
 # ---- the club card: is a session open? (2026-10-06) ------------------------------------------------------------
 # The game marks a session open on the card itself: at START it writes USER_INJUSTICE_FLAG = 1 (and counts the
 # session in USER_INJUSTICE_NUM if the last one never closed), and the locker-room save after each match writes 0.
