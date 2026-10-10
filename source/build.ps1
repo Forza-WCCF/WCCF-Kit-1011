@@ -34,6 +34,7 @@ Build-C 'mxhook\mxhook.c' "$kit\bin\winmm.dll" @('/LD')
 Build-C 'fpr_emu\fpr_emu.c' "$kit\bin\FPR_Emu.exe" @() @('user32.lib')
 Build-C 'overlay\wccfpanel.c' "$kit\overlay\wccfpanel.dll" @('/LD') @('d3d9.lib', 'gdi32.lib', 'user32.lib', 'ole32.lib', 'windowscodecs.lib')
 Build-C 'overlay\fakegame.c' "$obj\fakegame.exe" @() @('d3d9.lib', 'user32.lib')
+Build-C 'mxhook\test_wholemsg.c' "$obj\test_wholemsg.exe"
 
 # the launchers: the toolchain is pinned by source\launcher\rust-toolchain.toml, every crate by Cargo.lock, the static
 # runtime by source\launcher\.cargo\config.toml - rustup and cargo read those two from the CURRENT folder: build there

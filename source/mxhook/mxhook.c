@@ -27,7 +27,9 @@
  *    "logowin" below (2026-10-09; before, the kit put a stand-in exe there);
  *  - loads the kit's overlay (WCCF_PANEL, wccfpanel.dll) once the game's
  *    window is up, for seat 1 and the projector (2026-10-09; before, the
- *    kit's inject.exe wrote it into the game from outside).
+ *    kit's inject.exe wrote it into the game from outside);
+ *  - gives the server (control_Release) the players' messages only whole
+ *    (2026-10-11): a message in pieces crashed it - see "whole messages".
  *
  * Load method : winmm.dll proxy in the game folder (no process injection).
  * Hook method : IAT patch of the game module's imports (in-process), by name
@@ -1042,6 +1044,167 @@ static BOOL WINAPI hook_CreateProcessA(LPCSTR app, LPSTR cmd, LPSECURITY_ATTRIBU
     return TRUE;
 }
 
+/* ---- whole messages for the server (2026-10-11) -------------------------
+ * control_Release only, the players' connections only (the ones it accepts on port 20002): recv gives the server
+ * whole batches and nothing else - see wholemsg.h for why (a batch in pieces crashed the server, cutting every
+ * player). A batch whose rest has not come yet: "nothing more right now" (WSAEWOULDBLOCK) - the server's own
+ * FUN_004123e0 simply waits on that, and as the hook has read everything that was there, the socket's read event
+ * comes again with the rest. Bytes that cannot be a batch are skipped; nobody is disconnected for them.
+ * WCCF_WHOLEMSG=0 turns it off. */
+
+#include "wholemsg.h"
+#pragma comment(lib, "ws2_32.lib")
+
+#define WM_PORT  20002                  /* the players' port: CONTROL port in the kit's settings */
+#define WM_SOCKS 64
+#define WM_CAP   (WM_MAX_BATCH * 2)     /* never full: an unfinished batch is under WM_MAX_BATCH, and it is read
+                                           only when no whole one is waiting */
+
+typedef SOCKET (WINAPI *pfn_accept)(SOCKET, struct sockaddr *, int *);
+typedef int    (WINAPI *pfn_recv)(SOCKET, char *, int, int);
+typedef int    (WINAPI *pfn_closesocket)(SOCKET);
+static pfn_accept      real_accept;
+static pfn_recv        real_recv;
+static pfn_closesocket real_closesocket;
+
+typedef struct {
+    SOCKET         s;
+    char           who[24];
+    unsigned char *buf;                 /* read from the player, not given to the server yet; NULL = a free slot */
+    unsigned       have;
+    unsigned long  given, waits, skipped, largest;
+} wm_sock;
+
+static wm_sock          g_wm[WM_SOCKS];
+static CRITICAL_SECTION g_wm_lock;
+
+static wm_sock *wm_find(SOCKET s)
+{
+    wm_sock *w = NULL;
+    int i;
+    EnterCriticalSection(&g_wm_lock);
+    for (i = 0; i < WM_SOCKS && !w; i++)
+        if (g_wm[i].buf && g_wm[i].s == s)
+            w = &g_wm[i];
+    LeaveCriticalSection(&g_wm_lock);
+    return w;
+}
+
+static SOCKET WINAPI hook_accept(SOCKET ls, struct sockaddr *addr, int *alen)
+{
+    SOCKET s = real_accept(ls, addr, alen);
+    struct sockaddr_in me;
+    int n = sizeof(me), i;
+    unsigned char *b;
+    if (s == INVALID_SOCKET || getsockname(ls, (struct sockaddr *)&me, &n) != 0 || me.sin_family != AF_INET
+            || ntohs(me.sin_port) != WM_PORT)
+        return s;
+    b = (unsigned char *)HeapAlloc(GetProcessHeap(), 0, WM_CAP);
+    EnterCriticalSection(&g_wm_lock);
+    for (i = 0; b && i < WM_SOCKS && g_wm[i].buf; i++)
+        ;
+    if (b && i < WM_SOCKS) {
+        ZeroMemory(&g_wm[i], sizeof(g_wm[i]));
+        g_wm[i].s = s;
+        if (addr && alen && *alen >= (int)sizeof(struct sockaddr_in) && addr->sa_family == AF_INET)
+            _snprintf(g_wm[i].who, sizeof(g_wm[i].who) - 1, "%s:%u", inet_ntoa(((struct sockaddr_in *)addr)->sin_addr),
+                      ntohs(((struct sockaddr_in *)addr)->sin_port));
+        else
+            lstrcpyA(g_wm[i].who, "a player");
+        g_wm[i].buf = b;
+        b = NULL;
+    }
+    LeaveCriticalSection(&g_wm_lock);
+    if (b) {
+        HeapFree(GetProcessHeap(), 0, b);
+        logline("whole messages: no room to follow one more connection - it is read as before");
+    }
+    return s;
+}
+
+static int WINAPI hook_recv(SOCKET s, char *buf, int len, int flags)
+{
+    wm_sock *w = (flags == 0 && len >= WM_MAX_BATCH) ? wm_find(s) : NULL;  /* the server's call: recv(s, b, 0x80000, 0) */
+    unsigned n, skip;
+    int r, err;
+    if (!w)
+        return real_recv(s, buf, len, flags);
+    for (;;) {
+        n = wm_whole(w->buf, w->have, (unsigned)len, &skip);
+        if (skip) {
+            w->skipped += skip;
+            logline("whole messages: %s: %u byte(s) that cannot be a message skipped - the player stays connected",
+                    w->who, skip);
+            w->have -= skip;
+            memmove(w->buf, w->buf + skip, w->have);
+        }
+        if (n) {
+            memcpy(buf, w->buf, n);
+            w->have -= n;
+            memmove(w->buf, w->buf + n, w->have);
+            w->given++;
+            if (n > w->largest)
+                w->largest = n;
+            return (int)n;
+        }
+        r = real_recv(s, (char *)w->buf + w->have, (int)(WM_CAP - w->have), 0);
+        if (r > 0) {
+            w->have += (unsigned)r;
+            continue;
+        }
+        if (r == 0) {                   /* the player's side closed: an unfinished batch goes with it, as before */
+            w->have = 0;
+            return 0;
+        }
+        err = WSAGetLastError();
+        if (err == WSAEWOULDBLOCK && w->have)
+            w->waits++;                 /* a batch in pieces: held until its rest comes */
+        else if (err != WSAEWOULDBLOCK)
+            w->have = 0;
+        WSASetLastError(err);
+        return SOCKET_ERROR;
+    }
+}
+
+static int WINAPI hook_closesocket(SOCKET s)
+{
+    wm_sock *w = wm_find(s);
+    if (w) {
+        logline("whole messages: %s closed - %lu times given whole batches, %lu times a batch waited for its rest, "
+                "%lu byte(s) skipped, largest %lu bytes", w->who, w->given, w->waits, w->skipped, w->largest);
+        EnterCriticalSection(&g_wm_lock);
+        HeapFree(GetProcessHeap(), 0, w->buf);
+        w->buf = NULL;
+        LeaveCriticalSection(&g_wm_lock);
+    }
+    return real_closesocket(s);
+}
+
+static void install_wholemsg(HMODULE exe)
+{
+    char v[8], me[MAX_PATH], *base;
+    DWORD n = GetEnvironmentVariableA("WCCF_WHOLEMSG", v, sizeof(v));
+    me[0] = 0;
+    GetModuleFileNameA(NULL, me, MAX_PATH);
+    base = strrchr(me, '\\');
+    base = base ? base + 1 : me;
+    if (lstrcmpiA(base, "control_Release.exe") != 0)
+        return;
+    if (n == 1 && v[0] == '0') {
+        logline("whole messages: OFF (WCCF_WHOLEMSG=0) - the server reads the players' batches as Sega wrote it");
+        return;
+    }
+    InitializeCriticalSection(&g_wm_lock);
+    /* ws2_32 ordinals: 3 closesocket, 1 accept, 16 recv - in this order, so a recv is followed only once the other
+     * two are in place (a hook that cannot follow a connection reads it as before) */
+    real_closesocket = (pfn_closesocket)patch_iat_any(exe, "ws2_32.dll", NULL, 3, hook_closesocket);
+    real_accept = real_closesocket ? (pfn_accept)patch_iat_any(exe, "ws2_32.dll", NULL, 1, hook_accept) : NULL;
+    real_recv = real_accept ? (pfn_recv)patch_iat_any(exe, "ws2_32.dll", NULL, 16, hook_recv) : NULL;
+    logline("whole messages: %s (closesocket=%d accept=%d recv=%d) - the server gets the players' batches on port %d "
+            "only whole", real_recv ? "ON" : "NOT installed", real_closesocket != 0, real_accept != 0, real_recv != 0,
+            WM_PORT);
+}
+
 static void install_hooks(void)
 {
     HMODULE exe = GetModuleHandleW(NULL);
@@ -1079,6 +1242,7 @@ static void install_hooks(void)
             logline("network address: this PC is presented to the game as %s (MXHOOK_NET_IP)", g_net_ip);
         }
     }
+    install_wholemsg(exe);
     logline("hooks installed: CreateFileW=%d CreateFileA=%d CreateFileMappingA=%d OpenFileMappingA=%d DeviceIoControl=%d  IpRelease=%d IpRenew=%d  CreateProcessA=%d  gethostbyname=%d inet_addr=%d",
             real_CreateFileW != 0, real_CreateFileA != 0, real_CreateFileMappingA != 0,
             real_OpenFileMappingA != 0, real_DeviceIoControl != 0,
