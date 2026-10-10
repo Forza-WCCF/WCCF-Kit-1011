@@ -25,6 +25,13 @@ game is not included. Newest first; each date is the day that kit was built.
   kit by hand.
 
 ### Fixed
+- English: the players' full names (the card name, e.g. Mahamadou DIARRA) were still in katakana; they now use
+  Sega's own Latin spelling, accents dropped, like the short names. The second katakana full name stays: the game
+  looks player partnerships up by it (`partnership.bin`).
+- English: the last 22 Japanese lines a player can meet - the win/loss/draw marks on the manager's career record
+  (W, L, D), the weekdays Monday to Saturday, and 12 supporter-group words (Heroes, Stars, Samurai, Tigers, ...).
+  7,200 lines are now in English; only the debug menus stay Japanese.
+- `english.py check` names the screen lines still in Japanese, so a gap shows without a survey.
 - The game no longer refuses to start just because the card CATALOGUE has not been built. The catalogue is only the
   panel's card browser; now the game starts and only the catalogue is empty (SETUP rebuilds it).
 - The card-overwrite switch (SW1) no longer has a key by default. On Sega's card-recovery screen SW1 means "write

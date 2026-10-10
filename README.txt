@@ -198,8 +198,8 @@ ONLINE (play with others on one server)
 
 ENGLISH (optional)
   ENGLISH (in SETUP.exe, GAME LANGUAGE) puts the game into English: about 7,200 lines of screen text, the players'
-  names (Sega's own Latin spelling, e.g. M.DIARRA) and skill names, the CPU teams' names, the projector's "Next match"
-  ticker, the dates on seat 1 (e.g. 2026/10/5 on the manager license), money in dollars, and the shop's name on the
+  names, short and full (Sega's own Latin spelling, e.g. M.DIARRA and Mahamadou DIARRA) and skill names, the CPU
+  teams' names, the projector's "Next match" ticker, the dates on seat 1 (e.g. 2026/10/5 on the manager license), money in dollars, and the shop's name on the
   projector's awards ("Local Shop" - also inside the server program, the only change ENGLISH makes to it).
   Awards the game saved before English was on keep the names they were saved with (e.g. the CPU's Best Eleven
   team, in Japanese, on the projector's MVP and Best Eleven awards).
