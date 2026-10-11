@@ -757,6 +757,9 @@ def main(argv):
                     print("  t+%5.1fs child gone: %s pid %d" % (now, cname, cpid))
             kids = cur
         if not k.WaitForDebugEvent(ctypes.byref(de), 250):
+            # nothing waiting: the game runs, so writing the buffer now holds nothing up.  A stop kills this
+            # launcher, and what was only in the buffer was lost (2026-10-11: seat 1's side of an Error 3000)
+            dbg_file.flush()
             continue
         t_ev = time.perf_counter()
         now = time.time() - t0
