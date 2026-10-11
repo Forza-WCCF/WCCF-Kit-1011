@@ -3,8 +3,8 @@ r"""play.py - start (and stop) WCCF 2010-11 on this PC: Sega's server, the proje
 player cabinet (seat 1) with the overlay and your keyboard.  PLAY.exe runs it; run SETUP.exe first.
 
     python play.py            start everything on this PC - or, when the SETTINGS panel chose ONLINE, the cabinets
-                              on its server (as "remote ADDRESS"), and this PC if that server does not answer; it
-                              runs up to 12 hours; closing a game window ends it sooner
+                              on its server (as "remote ADDRESS"), and this PC if that server does not answer;
+                              closing a game window ends the run (there is no fixed time limit any more)
     python play.py local      everything on this PC, whatever the SETTINGS panel chose
     python play.py server     only the server side (scene service, server, its 4 match engines): for the PC or
                               cloud machine that hosts the game for others - its TCP port 20002 must be open to them;
@@ -63,9 +63,12 @@ import kit_common as K
 CONTROL_PORT = 20002
 RELAY_PORT = 20040                                    # UDP, the server's match relay (_relay.py)
 SERVER_ROLES = ("scene service", "server launcher", "seat desk", "match relay", "log inbox")
-LIFE = 12 * 3600
 SERVER_LIFE = 32 * 24 * 3600      # "play.py server" (2026-10-07): a month and a day - a server for others stays up
                                   # all month; a keeper task on that machine restarts it whenever it stops
+LIFE = SERVER_LIFE                # the player side: a BACKSTOP only (A3, 2026-10-11). A player's run really ends when
+                                  # its game window is closed (source\launcher\src\watch.rs ends the whole run then);
+                                  # the old 12-hour limit killed a long session mid-match, costing the card a bad
+                                  # ending - so there is no short limit any more, only this far-off safety net
 PY = sys.executable
 ICC_PIPE, JVS_PIPE = r"\\.\pipe\wccf_icc_seat1", r"\\.\pipe\wccf_jvs_seat1"
 KEYS_INPUT = os.path.join(K.SCRIPTS, "_jvs_seat1_input.txt")     # _keys_seat1.py writes it beside itself

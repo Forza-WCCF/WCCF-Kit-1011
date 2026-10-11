@@ -7,6 +7,8 @@ game is not included. Newest first; each date is the day that kit was built.
 ## Unreleased
 
 ### Fixed
+- A long game is no longer force-closed. Before, any session was killed after 12 hours even in the middle of a
+  match, which costs your club card a bad ending. Now a run ends only when you close the game window.
 - Your club card can no longer be lost to a busy file. When the card cannot be saved to disk because something else
   (an antivirus scan, a backup tool, a search indexer) is holding the file, the kit now keeps your newest card in
   memory and tries again - the card on disk stays your last good one. Before, it would write the card straight over
