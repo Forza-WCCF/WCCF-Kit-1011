@@ -826,6 +826,7 @@ static HWND g_scwnd = NULL, g_devwnd = NULL;
 static int  g_sc_fail = 0;                       // could not be made: old path, window stays windowed
 static long g_sc_frames = 0;                     // frames shown through it
 static int  g_in_present = 0;                    // re-entry guard (logged if it ever fires)
+static DWORD g_sent_maxa[16];                    // TEXTURES: the max anisotropy each sampler has (0 = unknown)
 
 static void free_sc(void)
 {
@@ -872,6 +873,7 @@ static HRESULT WINAPI hook_reset(IDirect3DDevice9 *dev, D3DPRESENT_PARAMETERS *p
     free_gametex();                 // DEFAULT-pool resources must be gone before a device reset
     free_sc();                      // and our extra swap chain
     g_sc_fail = 0;                  // a reset is a fresh start: try the swap chain again
+    ZeroMemory(g_sent_maxa, sizeof g_sent_maxa);   // TEXTURES: every sampler state is back at its default
     if (pp) logline("device reset (game back-buffer %ux%u)", pp->BackBufferWidth, pp->BackBufferHeight);
     return g_orig_reset(dev, pp);
 }
@@ -3016,6 +3018,7 @@ struct SetStatus { int link; char peer[16]; int card, bad, nback, english; ULONG
 static struct SetStatus g_st;            // refreshed by the board thread about once a second while the panel is open
 static char g_data_dir[MAX_PATH], g_panel_path[MAX_PATH], g_panel_tmp[MAX_PATH];
 static int  g_set = 0;                   // the SETTINGS panel is open
+static int  g_gfx = 0;                   // ... showing its GRAPHICS page (2026-10-11)
 static int  g_on_online = 0;             // play_on: 0 this PC, 1 online
 static char g_server[64];                // server= as the file holds it (checked before use)
 static char g_addr[16];                  // the address box while typing
@@ -3023,6 +3026,8 @@ static int  g_typing = 0;                // the address box has the keyboard
 static int  g_eng_req = -1;              // english=: -1 no request, 0 off (Japanese), 1 on
 static char g_card_req[64] = "";         // card=: the CLUB CARD panel's choice for the next start ("" none, "new")
 static int  g_fix_req = 0;               // card_fix=bad_endings: CLEAR BAD ENDINGS, done by play.py at the next start
+static volatile LONG g_aniso = 0;        // textures=: 0 the game's own filters, else 4 / 8 / 16x anisotropic (VIEW)
+static const int ANISO[4] = { 0, 4, 8, 16 };
 static volatile LONG g_set_dirty = 1;    // the status must be read again now
 // RESTART NOW (the player, 2026-10-06: "a button that goes to the next start"): a first click arms it for 8 s, a second
 // writes data\restart.request; _kit_helper.py (outside the game - seat 1's debugger would kill a restart the game
@@ -3059,7 +3064,7 @@ static int valid_ipv4(const char *s)     // = play.py valid_ipv4: four numbers 0
 static void set_load_locked(void)
 {
     FILE *f = fopen(g_panel_path, "rb"); char line[256];
-    g_on_online = 0; g_server[0] = 0; g_eng_req = -1; g_card_req[0] = 0; g_fix_req = 0; g_compact = 0;
+    g_on_online = 0; g_server[0] = 0; g_eng_req = -1; g_card_req[0] = 0; g_fix_req = 0; g_compact = 0; g_aniso = 0;
     if (!f) return;
     while (fgets(line, sizeof line, f)) {
         char *p = strchr(line, '#'), *eq, *name, *val;
@@ -3073,6 +3078,7 @@ static void set_load_locked(void)
         else if (!_stricmp(name, "card")) lstrcpynA(g_card_req, val, sizeof g_card_req);
         else if (!_stricmp(name, "card_fix")) g_fix_req = !_stricmp(val, "bad_endings");
         else if (!_stricmp(name, "layout")) g_compact = !_stricmp(val, "compact");
+        else if (!_stricmp(name, "textures")) { int a = atoi(val); g_aniso = a == 4 || a == 8 || a == 16 ? a : 0; }
     }
     fclose(f);
 }
@@ -3089,6 +3095,7 @@ static int set_save_locked(void)
     if (g_card_req[0]) n += _snprintf(text + n, sizeof text - n, "card=%s\n", g_card_req);
     if (g_fix_req) n += _snprintf(text + n, sizeof text - n, "card_fix=bad_endings\n");
     if (g_compact) n += _snprintf(text + n, sizeof text - n, "layout=compact\n");     // the VIEW: kept, not a request
+    if (g_aniso) n += _snprintf(text + n, sizeof text - n, "textures=%ld\n", (long)g_aniso);
     f = fopen(g_panel_tmp, "wb");
     if (!f) { logline("settings: could not write %s", g_panel_tmp); return 0; }
     k = (int)fwrite(text, 1, (size_t)n, f) == n;
@@ -3096,10 +3103,10 @@ static int set_save_locked(void)
     if (!k) { logline("settings: could not write %s", g_panel_tmp); return 0; }
     for (k = 0; k < 40; k++) {
         if (MoveFileExA(g_panel_tmp, g_panel_path, MOVEFILE_REPLACE_EXISTING)) {
-            logline("settings: saved play_on=%s server=%s english=%s%s%s%s layout=%s", g_on_online ? "online" : "this_pc",
+            logline("settings: saved play_on=%s server=%s english=%s%s%s%s layout=%s textures=%ld", g_on_online ? "online" : "this_pc",
                     g_server[0] ? g_server : "-", g_eng_req < 0 ? "-" : g_eng_req ? "on" : "off",
                     g_card_req[0] ? " card=" : "", g_card_req, g_fix_req ? " card_fix=bad_endings" : "",
-                    g_compact ? "compact" : "cabinet");
+                    g_compact ? "compact" : "cabinet", (long)g_aniso);
             return 1;
         }
         Sleep(5);
@@ -3125,7 +3132,7 @@ static void set_init(void)               // the init thread: where data\ is, and
     LeaveCriticalSection(&g_board_cs);
     logline("settings: %s (%s)", g_panel_path, GetFileAttributesA(g_panel_path) != INVALID_FILE_ATTRIBUTES
                                                ? "read" : "no file yet - this PC, no request");
-    logline("view: layout %s", g_compact ? "compact" : "cabinet");
+    logline("view: layout %s, textures %s", g_compact ? "compact" : "cabinet", g_aniso ? "anisotropic" : "game");
 }
 
 // ---- reading the status (the board thread; no lock held while it reads files)
@@ -3492,8 +3499,9 @@ static void fmt_when(char *out, size_t cap, ULONGLONG t)   // a file time as the
 
 // the panel's parts, in canvas pixels over the middle column: title + help + X; "NOW" with six rows; "NEXT START"
 // with two rows of choices (THIS PC / ONLINE + the address box, ENGLISH / JAPANESE) and RESTART NOW; "VIEW" with the
-// LAYOUT (CABINET / COMPACT, 2026-10-06), which changes at once
-struct SGeo { float x0, x1, lx, vx, rowh, ynow, ynext, yview; RECT close, pc, online, addr, eng, jap, restart, cab, cmp, logs; };
+// LAYOUT (CABINET / COMPACT, 2026-10-06), which changes at once, and the GRAPHICS page's button (2026-10-11)
+struct SGeo { float x0, x1, lx, vx, rowh, ynow, ynext, yview; RECT close, pc, online, addr, eng, jap, restart, cab, cmp,
+              gfx, logs; };
 
 static void set_geo(struct SGeo *g)
 {
@@ -3516,6 +3524,7 @@ static void set_geo(struct SGeo *g)
     y = g->yview + 36.0f * s;
     g->cab = RC(g->vx, y, g->vx + 130.0f * s, y + 36.0f * s);
     g->cmp = RC(g->vx + 140.0f * s, y, g->vx + 270.0f * s, y + 36.0f * s);
+    g->gfx = RC(g->vx + 300.0f * s, y, g->vx + 470.0f * s, y + 36.0f * s);    // GRAPHICS: its own page
     y += 36.0f * s + 30.0f * s;                            // under LAYOUT's note: LOGS - SEND LOGS (2026-10-09)
     g->logs = RC(g->vx, y, g->vx + 270.0f * s, y + 38.0f * s);
 }
@@ -3532,6 +3541,133 @@ static void set_chip(IDirect3DDevice9 *dev, RECT r, const char *label, int on, f
     }
 }
 
+// ---------------------------------------------------------------- the GRAPHICS page (2026-10-11)
+// The owner: "graphics options like flycast" - an emulator's video settings, for the game itself.  SETTINGS > VIEW >
+// GRAPHICS shows this page in SETTINGS' place (BACK returns; X and Esc close both).  AT ONCE: what the panel changes in
+// the running game.  NEXT START: what the game's winmm.dll sets before the game draws (play.py passes data\panel.txt
+// on), with RESTART NOW.  Each row: its name, its chips, a note under them.
+struct GGeo { float x0, x1, lx, vx, yonce, ynext; RECT close, back, tex[4], restart; };
+static void set_open(HWND h, int open);   // (below: the panel's input)
+
+static RECT chip_at(float vx, float y, int i, float s)    // the i-th small chip of a row
+{
+    return RC(vx + (float)i * 70.0f * s, y, vx + (float)i * 70.0f * s + 60.0f * s, y + 36.0f * s);
+}
+
+static void gfx_geo(struct GGeo *g)
+{
+    float s = g_s, y; int i;
+    g->x0 = g_mx0; g->x1 = g_mx1;
+    g->lx = g->x0 + 24.0f * s; g->vx = g->x0 + 230.0f * s;
+    g->close = RC(g->x1 - 58.0f * s, 12.0f * s, g->x1 - 18.0f * s, 50.0f * s);
+    g->back = RC(g->x1 - 178.0f * s, 12.0f * s, g->x1 - 68.0f * s, 50.0f * s);
+    g->yonce = 104.0f * s;
+    y = g->yonce + 36.0f * s;
+    for (i = 0; i < 4; i++) g->tex[i] = chip_at(g->vx, y, i, s);
+    g->ynext = y + 36.0f * s + 52.0f * s;
+    y = g->ynext + 36.0f * s;
+    g->restart = RC(g->vx, y, g->vx + 270.0f * s, y + 38.0f * s);
+}
+
+static void gfx_row(IDirect3DDevice9 *dev, float lx, RECT r, const char *name, DWORD col, const char *note)
+{
+    float s = g_s, y = (float)r.top + ((float)(r.bottom - r.top) - (float)g_cellh * 0.44f * s) * 0.5f;
+    put_str(dev, lx + 12.0f * s, y, 0.44f * s, D3DCOLOR_ARGB(255, 150, 156, 170), name);
+    put_str(dev, (float)r.left, (float)r.bottom + 8.0f * s, 0.40f * s, col, note);
+}
+
+static void gfx_draw(IDirect3DDevice9 *dev)
+{
+    static const char *TEXL[4] = { "GAME", "4x", "8x", "16x" };
+    struct GGeo g; float s = g_s; int i, armed; DWORD now = GetTickCount();
+    DWORD white = D3DCOLOR_ARGB(255, 240, 240, 245), grey = D3DCOLOR_ARGB(255, 150, 156, 170);
+    DWORD orange = D3DCOLOR_ARGB(255, 255, 138, 42), red = D3DCOLOR_ARGB(255, 255, 110, 90);
+    EnterCriticalSection(&g_board_cs);
+    gfx_geo(&g);
+    armed = g_rs_armed && (LONG)(g_rs_armed - now) > 0;
+    set_flat(dev);
+    fill_rect(dev, g.x0, 0.0f, g.x1 - g.x0, g_ch, D3DCOLOR_ARGB(242, 13, 14, 19));               // over the game
+    fill_rect(dev, g.x0, 0.0f, g.x1 - g.x0, 4.0f * s, orange);
+    fill_rect(dev, (float)g.close.left, (float)g.close.top, (float)(g.close.right - g.close.left),
+              (float)(g.close.bottom - g.close.top), D3DCOLOR_ARGB(255, 70, 75, 88));
+    fill_rect(dev, g.lx, g.yonce + 22.0f * s, g.x1 - g.x0 - 48.0f * s, 2.0f * s, D3DCOLOR_ARGB(255, 60, 52, 44));
+    fill_rect(dev, g.lx, g.ynext + 22.0f * s, g.x1 - g.x0 - 48.0f * s, 2.0f * s, D3DCOLOR_ARGB(255, 60, 52, 44));
+    set_chip(dev, g.back, "< BACK", 0, s);
+    for (i = 0; i < 4; i++) set_chip(dev, g.tex[i], TEXL[i], g_aniso == ANISO[i], s);
+    set_chip(dev, g.restart, g_rs_sent ? "RESTARTING ..." : armed ? "CLICK AGAIN TO RESTART" : "RESTART NOW",
+             armed || g_rs_sent, s);
+    if (g_font_tex) {
+        set_picture(dev, g_font_tex, 1);
+        put_str(dev, g.x0 + 24.0f * s, 14.0f * s, 0.85f * s, orange, "GRAPHICS");
+        put_str(dev, g.x0 + 24.0f * s, 58.0f * s, 0.42f * s, grey,
+                "Like an emulator's video settings, for the game itself.  Saved at once in data\\panel.txt.");
+        put_str(dev, g.x0 + 24.0f * s, 76.0f * s, 0.42f * s, grey,
+                "AT ONCE changes the running game.  NEXT START waits for the next start - RESTART NOW does it now.");
+        put_str(dev, g.lx, g.yonce, 0.46f * s, orange, "AT ONCE");
+        put_str(dev, g.lx, g.ynext, 0.46f * s, orange, "NEXT START");
+        put_in_rect(dev, g.close, 0.8f * s, white, "X");
+        gfx_row(dev, g.lx, g.tex[0], "TEXTURES", grey, g_aniso
+                ? "anisotropic filtering: the pitch's lines and far grass stay sharp at a slant"
+                : "GAME: the game's own filtering.  4x-16x: sharper pitch lines and far grass at a slant");
+        gfx_row(dev, g.lx, g.restart, "APPLY NOW", g_st.card == CS_OPEN ? red : grey, g_st.card == CS_OPEN
+                ? "not during a card session - after the locker-room save"
+                : "the game closes and opens again with these NEXT START settings");
+        if (g_bmsg[0] && (LONG)(g_bmsg_until - now) > 0) {                                      // the last change
+            RECT nr = RC(g.x0 + (g.x1 - g.x0) * 0.2f, g_ch - 70.0f * s, g.x1 - (g.x1 - g.x0) * 0.2f, g_ch - 22.0f * s);
+            set_flat(dev);
+            fill_rect(dev, (float)nr.left, (float)nr.top, (float)(nr.right - nr.left), (float)(nr.bottom - nr.top),
+                      D3DCOLOR_ARGB(240, 24, 26, 33));
+            set_picture(dev, g_font_tex, 1);
+            put_in_rect(dev, nr, 0.62f * s, g_bmsg_col, g_bmsg);
+        }
+    }
+    LeaveCriticalSection(&g_board_cs);
+}
+
+// RESTART NOW, on either page: a first click arms it for 8 s, a second asks _kit_helper.py.  g_board_cs held.
+static void restart_click_locked(void)
+{
+    DWORD now = GetTickCount(), yellow = D3DCOLOR_ARGB(255, 255, 214, 40);
+    DWORD green = D3DCOLOR_ARGB(255, 120, 230, 120), red = D3DCOLOR_ARGB(255, 255, 110, 90);
+    if (g_rs_sent) {
+        note_locked(yellow, "already asked - the game closes and opens again");
+    } else if (g_st.card == CS_OPEN) {                  // the card rule, said here before anything starts
+        note_locked(red, "not during a card session - after the locker-room save");
+        logline("settings: restart refused - a card session is open");
+    } else if (!g_rs_armed || (LONG)(g_rs_armed - now) <= 0) {
+        g_rs_armed = now + 8000;             // 4 s ran out between the player's two clicks once (2026-10-06)
+        note_locked(yellow, "click RESTART NOW again to restart the game now");
+        logline("settings: restart armed");
+    } else {
+        g_rs_armed = 0;
+        if (restart_request()) {
+            g_rs_sent = now;
+            note_locked(green, "restarting - the game closes and opens again (about a minute)");
+            logline("settings: restart requested");
+        } else note_locked(red, "could not ask for the restart - close the game, then PLAY.exe");
+    }
+}
+
+static void gfx_click(HWND h, int x, int y)                     // a press on the GRAPHICS page
+{
+    struct GGeo g; DWORD green = D3DCOLOR_ARGB(255, 120, 230, 120), red = D3DCOLOR_ARGB(255, 255, 110, 90); int i;
+    EnterCriticalSection(&g_board_cs);
+    gfx_geo(&g);
+    if (in_rect(&g.close, x, y)) { LeaveCriticalSection(&g_board_cs); set_open(h, 0); return; }
+    if (in_rect(&g.back, x, y)) { g_gfx = 0; g_bmsg[0] = 0; logline("graphics: back to SETTINGS"); }
+    else if (in_rect(&g.restart, x, y)) restart_click_locked();
+    else for (i = 0; i < 4; i++) {
+        if (!in_rect(&g.tex[i], x, y)) continue;                 // TEXTURES: at once (aniso_tick), and kept
+        g_aniso = ANISO[i];
+        if (!set_save_locked()) note_locked(red, "could not save data\\panel.txt - changed for now");
+        else if (i) note_locked(green, "TEXTURES: %dx anisotropic filtering", ANISO[i]);
+        else note_locked(green, "TEXTURES: the game's own filtering");
+        logline("graphics: textures %d", ANISO[i]);
+        break;
+    }
+    LeaveCriticalSection(&g_board_cs);
+}
+
 static void set_draw(IDirect3DDevice9 *dev)
 {
     struct SGeo g; struct SetStatus st; float s = g_s, y; int i; char v[160], w2[64]; DWORD now = GetTickCount(), col;
@@ -3541,6 +3677,7 @@ static void set_draw(IDirect3DDevice9 *dev)
     static const char *LABEL[6] = { "SERVER", "CLUB CARD", "BAD ENDINGS", "LAST SAVED", "LATEST BACKUP", "GAME TEXT" };
     if (!g_set) return;
     if (!g_font_tex) build_font(dev);
+    if (g_gfx) { gfx_draw(dev); return; }
     EnterCriticalSection(&g_board_cs);
     set_geo(&g); st = g_st;
     set_flat(dev);
@@ -3575,6 +3712,7 @@ static void set_draw(IDirect3DDevice9 *dev)
     }
     set_chip(dev, g.cab, "CABINET", !g_compact, s);
     set_chip(dev, g.cmp, "COMPACT", g_compact, s);
+    set_chip(dev, g.gfx, "GRAPHICS >", 0, s);
     {
         int armed = g_lg_armed && (LONG)(g_lg_armed - now) > 0, busy = g_lg_sent || !strcmp(g_lg_res, "sending");
         set_chip(dev, g.logs, busy ? "SENDING ..." : armed ? "CLICK AGAIN TO SEND" : "SEND LOGS", armed || busy, s);
@@ -3703,7 +3841,7 @@ static RECT set_button(void)             // "SETTINGS" on the canvas (the left s
 static void set_open(HWND h, int open)
 {
     EnterCriticalSection(&g_board_cs);
-    g_set = open; g_typing = 0;
+    g_set = open; g_typing = 0; g_gfx = 0;
     if (open) { g_bmsg[0] = 0; set_load_locked(); }          // the file again: PLAY may have done a request since
     LeaveCriticalSection(&g_board_cs);
     if (open) { InterlockedExchange(&g_set_dirty, 1); SetPropA(h, "WCCF_TYPING", (HANDLE)1); }   // keys are not buttons
@@ -3748,6 +3886,7 @@ static void set_key(HWND h, WPARAM wp, LPARAM lp)
 static void set_click(HWND h, int x, int y)                     // a press inside the open panel (the middle column)
 {
     struct SGeo g; DWORD green = D3DCOLOR_ARGB(255, 120, 230, 120), red = D3DCOLOR_ARGB(255, 255, 110, 90);
+    if (g_gfx) { gfx_click(h, x, y); return; }
     EnterCriticalSection(&g_board_cs);
     set_geo(&g);
     if (in_rect(&g.close, x, y)) { LeaveCriticalSection(&g_board_cs); set_open(h, 0); return; }
@@ -3790,6 +3929,9 @@ static void set_click(HWND h, int x, int y)                     // a press insid
                 else note_locked(green, "CABINET: the cabinet's buttons are back around the game");
                 logline("settings: layout %s", want ? "compact" : "cabinet");
             }
+        } else if (in_rect(&g.gfx, x, y)) {                   // GRAPHICS: its own page in this one's place
+            g_gfx = 1; g_bmsg[0] = 0;
+            logline("settings: the GRAPHICS page");
         } else if (in_rect(&g.logs, x, y)) {                  // SEND LOGS: click twice
             DWORD now = GetTickCount(), yellow = D3DCOLOR_ARGB(255, 255, 214, 40);
             if (g_lg_sent || !strcmp(g_lg_res, "sending")) {
@@ -3808,26 +3950,7 @@ static void set_click(HWND h, int x, int y)                     // a press insid
                     logline("settings: send logs asked (to %s)", g_server);
                 } else note_locked(red, "could not ask for it - try again");
             }
-        } else if (in_rect(&g.restart, x, y)) {
-            DWORD now = GetTickCount(), yellow = D3DCOLOR_ARGB(255, 255, 214, 40);
-            if (g_rs_sent) {
-                note_locked(yellow, "already asked - the game closes and opens again");
-            } else if (g_st.card == CS_OPEN) {                  // the card rule, said here before anything starts
-                note_locked(red, "not during a card session - after the locker-room save");
-                logline("settings: restart refused - a card session is open");
-            } else if (!g_rs_armed || (LONG)(g_rs_armed - now) <= 0) {
-                g_rs_armed = now + 8000;             // 4 s ran out between the player's two clicks once (2026-10-06)
-                note_locked(yellow, "click RESTART NOW again to restart the game now");
-                logline("settings: restart armed");
-            } else {
-                g_rs_armed = 0;
-                if (restart_request()) {
-                    g_rs_sent = now;
-                    note_locked(green, "restarting - the game closes and opens again (about a minute)");
-                    logline("settings: restart requested");
-                } else note_locked(red, "could not ask for the restart - close the game, then PLAY.exe");
-            }
-        }
+        } else if (in_rect(&g.restart, x, y)) restart_click_locked();
     }
     LeaveCriticalSection(&g_board_cs);
 }
@@ -4592,6 +4715,110 @@ static void ask_fullscreen(int on)
     if (!PostMessageA(g_hwnd, WM_WCCF_FS, (WPARAM)on, 0)) g_fs_msg_pending = 0;
 }
 
+// ---------------------------------------------------------------- sharper textures (2026-10-11)
+// SETTINGS > VIEW > TEXTURES: GAME / 4x / 8x / 16x anisotropic filtering, the "texture filtering" Flycast offers for old
+// games.  The engine binds each texture's filters itself through one state cache (0x761E40; the kit's setup.py makes
+// its POINT a LINEAR); the pitch's lines and grass, seen at a slant, blur into mush with plain LINEAR.  So the game
+// device's SetSamplerState (vtable slot 69: the game calls through the vtable each time) is replaced on the first
+// frame: the game's values are kept per pixel sampler, and with a level chosen a LINEAR minify filter goes out as
+// ANISOTROPIC, with the maximum anisotropy raised to the level (the engine sends its own 1 once, at start-up, and its
+// cache never again: a raised filter alone would stay plain LINEAR).  GAME sends the game's values as they are.  The
+// cache only re-sends what changed, so a new choice sends the game's last values again, translated: it applies at
+// once (a sampler not set since the hook went in changes with the game's next texture there).  The panel's own
+// drawing (inside hook_present, undone by its state block) passes straight through and is not kept.
+typedef HRESULT (WINAPI *SetSamplerFn)(IDirect3DDevice9 *, DWORD, D3DSAMPLERSTATETYPE, DWORD);
+static SetSamplerFn g_orig_sampler = NULL;
+static int   g_aniso_max = 0;                    // what this card can do (D3DCAPS9.MaxAnisotropy; 0 = not at all)
+static int   g_aniso_failed = 0;                 // the card has none, or the slot could not be written: never again
+static LONG  g_aniso_sent = 0;                   // the choice the samplers have now
+static DWORD g_minf[16], g_maxa[16];             // the game's own MINFILTER / MAXANISOTROPY per pixel sampler,
+static DWORD g_seen_minf = 0, g_seen_maxa = 0;   // once seen (a pure device cannot be asked: GetSamplerState fails)
+
+static int aniso_now(void) { int a = (int)g_aniso; return a > g_aniso_max ? g_aniso_max : a; }
+
+// the game's value for one state, kept and sent through the choice (also the replay of a new choice)
+static HRESULT sampler_game(IDirect3DDevice9 *dev, DWORD smp, D3DSAMPLERSTATETYPE t, DWORD v)
+{
+    DWORD f, gm, m; int a = aniso_now();
+    if (smp >= 16 || (t != D3DSAMP_MINFILTER && t != D3DSAMP_MAXANISOTROPY)) return g_orig_sampler(dev, smp, t, v);
+    if (t == D3DSAMP_MINFILTER) { g_minf[smp] = v; g_seen_minf |= 1u << smp; }
+    else { g_maxa[smp] = v; g_seen_maxa |= 1u << smp; }
+    f = g_seen_minf & (1u << smp) ? g_minf[smp] : D3DTEXF_POINT;
+    gm = g_seen_maxa & (1u << smp) ? g_maxa[smp] : 1;
+    if (a && f == D3DTEXF_LINEAR) f = D3DTEXF_ANISOTROPIC;
+    m = a && f == D3DTEXF_ANISOTROPIC && gm < (DWORD)a ? (DWORD)a : gm;
+    if (m != g_sent_maxa[smp]) { g_orig_sampler(dev, smp, D3DSAMP_MAXANISOTROPY, m); g_sent_maxa[smp] = m; }
+    return t == D3DSAMP_MINFILTER ? g_orig_sampler(dev, smp, t, f) : D3D_OK;
+}
+
+static HRESULT WINAPI hook_sampler(IDirect3DDevice9 *dev, DWORD smp, D3DSAMPLERSTATETYPE t, DWORD v)
+{
+    if (g_in_present) return g_orig_sampler(dev, smp, t, v);     // the panel's own drawing
+    return sampler_game(dev, smp, t, v);
+}
+
+static void aniso_tick(IDirect3DDevice9 *dev)    // the render thread, every frame (hook_present)
+{
+    LONG want = g_aniso; DWORD i;
+    if (!g_orig_sampler) {
+        D3DCAPS9 caps; void **vt = *(void ***)dev; DWORD old;
+        if (g_aniso_failed) { g_aniso = 0; return; }
+        g_aniso_failed = 1;
+        ZeroMemory(&caps, sizeof caps);
+        if (SUCCEEDED(IDirect3DDevice9_GetDeviceCaps(dev, &caps)) && (caps.TextureFilterCaps & D3DPTFILTERCAPS_MINFANISOTROPIC))
+            g_aniso_max = (int)caps.MaxAnisotropy;
+        if (g_aniso_max < 2) { logline("textures: this graphics card has no anisotropic filtering - the game's own"); g_aniso = 0; return; }
+        if (!VirtualProtect(&vt[69], sizeof(void *), PAGE_READWRITE, &old)) { logline("textures: vtable not writable - the game's own"); g_aniso = 0; return; }
+        g_orig_sampler = (SetSamplerFn)vt[69];
+        vt[69] = (void *)hook_sampler;
+        VirtualProtect(&vt[69], sizeof(void *), old, &old);
+        g_aniso_failed = 0;
+        logline("textures: SetSamplerState replaced (card max %dx)", g_aniso_max);
+    }
+    if (want == g_aniso_sent) return;
+    g_aniso_sent = want;
+    for (i = 0; i < 16; i++)                     // the game's last filters through the new choice
+        if (g_seen_minf & (1u << i)) sampler_game(dev, i, D3DSAMP_MINFILTER, g_minf[i]);
+    logline("textures: %s", want ? "anisotropic" : "the game's own filters");
+}
+
+// WCCFPANEL_TEXTEST=1 (the tests; fakegame's device is not pure, so it can be asked): with a level, a LINEAR sampler reads
+// back ANISOTROPIC with that maximum - also where the game never sent a maximum (the real engine sends its 1 only at
+// start-up) - and a POINT one stays; with GAME the first is LINEAR again at the game's own maximum.  The panel's own
+// drawing passes untouched.  The calls stand for the game's, so they are made as if outside the Present hook.
+static void tex_check(const char *name, DWORD got, DWORD want)
+{
+    logline("texture test: %s  %s -> %lu%s", got == want ? "PASS" : "FAIL", name, (unsigned long)got,
+            got == want ? "" : " (wanted another value)");
+}
+
+static void tex_selftest(IDirect3DDevice9 *dev)
+{
+    LONG keep = g_aniso; int inp = g_in_present; DWORD v = 0;
+    aniso_tick(dev);
+    if (!g_orig_sampler) { logline("texture test: skipped - no anisotropic filtering here"); return; }
+    g_in_present = 0;
+    g_aniso = 16; aniso_tick(dev);
+    IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_MAXANISOTROPY, 1);
+    IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+    IDirect3DDevice9_SetSamplerState(dev, 1, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+    IDirect3DDevice9_SetSamplerState(dev, 2, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);      // no maximum from the game
+    IDirect3DDevice9_GetSamplerState(dev, 0, D3DSAMP_MINFILTER, &v);    tex_check("16x: LINEAR", v, D3DTEXF_ANISOTROPIC);
+    IDirect3DDevice9_GetSamplerState(dev, 0, D3DSAMP_MAXANISOTROPY, &v); tex_check("16x: max", v, (DWORD)aniso_now());
+    IDirect3DDevice9_GetSamplerState(dev, 1, D3DSAMP_MINFILTER, &v);    tex_check("16x: POINT", v, D3DTEXF_POINT);
+    IDirect3DDevice9_GetSamplerState(dev, 2, D3DSAMP_MAXANISOTROPY, &v); tex_check("16x: max never sent", v, (DWORD)aniso_now());
+    g_in_present = 1;                                                    // the panel drawing: not raised, not kept
+    IDirect3DDevice9_SetSamplerState(dev, 3, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+    IDirect3DDevice9_GetSamplerState(dev, 3, D3DSAMP_MINFILTER, &v);    tex_check("16x: the panel's own", v, D3DTEXF_LINEAR);
+    tex_check("16x: the panel's own not kept", (g_seen_minf >> 3) & 1, 0);
+    g_in_present = 0;
+    g_aniso = 0; aniso_tick(dev);
+    IDirect3DDevice9_GetSamplerState(dev, 0, D3DSAMP_MINFILTER, &v);    tex_check("GAME: LINEAR", v, D3DTEXF_LINEAR);
+    IDirect3DDevice9_GetSamplerState(dev, 0, D3DSAMP_MAXANISOTROPY, &v); tex_check("GAME: max", v, 1);
+    IDirect3DDevice9_GetSamplerState(dev, 2, D3DSAMP_MAXANISOTROPY, &v); tex_check("GAME: max never sent", v, 1);
+    g_aniso = keep; g_in_present = inp;
+}
+
 // ---------------------------------------------------------------- the Present hook
 static HRESULT WINAPI hook_present(IDirect3DDevice9 *dev, const RECT *src, const RECT *dst, HWND wnd, const RGNDATA *dirty)
 {
@@ -4605,6 +4832,8 @@ static HRESULT WINAPI hook_present(IDirect3DDevice9 *dev, const RECT *src, const
     g_frames++;
     if (g_frames == 1) logline("Present hook is live (first frame)");
     frame_stats_tick();
+    if (g_frames == 3) { char e[8]; if (GetEnvironmentVariableA("WCCFPANEL_TEXTEST", e, sizeof e) > 0) tex_selftest(dev); }
+    aniso_tick(dev);
 
     // release a held key once its minimum hold has elapsed and the mouse is up
     if (g_held_vk && !g_mouse_down && (GetTickCount() - g_down_tick) >= 140) {

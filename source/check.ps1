@@ -12,7 +12,7 @@
 #   the firewall rule written to a scratch file)
 #   SEND LOGS: packed without the club card, names taken out, kept by the log inbox - which refuses junk, too big, not
 #   a ZIP and too many (source\test_send_logs.py: a scratch kit, inboxes on 127.0.0.1:20952 and 20953)
-#   the panel's money, relay and dealt-card self-tests (wccfpanel.dll loaded by source\build\fakegame.exe, in a
+#   the panel's money, relay, dealt-card and TEXTURES self-tests (wccfpanel.dll loaded by source\build\fakegame.exe, in a
 #   scratch folder; the relay test plays two seats through scripts\_relay.py on 127.0.0.1:20941 - the C side and
 #   the Python side of the match relay checked against each other)
 # The panel's frame-wait test (WCCFPANEL_LIMITERTEST) measures milliseconds and stays out: a busy machine fails it.
@@ -69,6 +69,7 @@ $env:WCCF_KEYS = Join-Path $t 'data\keys.txt'
 $env:WCCFPANEL_MONEYTEST = '1'
 $env:WCCFPANEL_RELAYTEST = '1'
 $env:WCCFPANEL_DEALTEST = '1'             # the dealt card's odds
+$env:WCCFPANEL_TEXTEST = '1'              # VIEW > TEXTURES on a real device (none on CI: no lines, not a failure)
 $env:WCCF_RELAY_PORT = '20941'
 $relay = Start-Process -FilePath $py -ArgumentList '-I', "`"$(Join-Path $kit 'scripts\_relay.py')`"", '60' -PassThru -WindowStyle Hidden
 try {
@@ -88,7 +89,7 @@ try {
 } finally {
     if (-not $relay.HasExited) { Stop-Process -Id $relay.Id -Force }
     'WCCF_RELAY_PORT', 'WCCFPANEL_ROLE', 'WCCFPANEL_DRYKEYS', 'WCCFPANEL_FULLSCREEN', 'WCCF_DATA', 'WCCF_KEYS', 'WCCFPANEL_MONEYTEST',
-    'WCCFPANEL_RELAYTEST', 'WCCFPANEL_DEALTEST' | ForEach-Object { Remove-Item "env:$_" -ErrorAction SilentlyContinue }
+    'WCCFPANEL_RELAYTEST', 'WCCFPANEL_DEALTEST', 'WCCFPANEL_TEXTEST' | ForEach-Object { Remove-Item "env:$_" -ErrorAction SilentlyContinue }
     Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
 }
 
