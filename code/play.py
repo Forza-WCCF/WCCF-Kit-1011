@@ -28,14 +28,14 @@ player cabinet (seat 1) with the overlay and your keyboard.  PLAY.exe runs it; r
     python play.py status     what is running
     python play.py show       show the server's hidden windows again: its console (the round-by-round log) and its
                               settings window - to look at; they are hidden again at the next start
-    python play.py restart    what the panels' RESTART NOW runs, through _kit_helper.py, in a window of its own: when a
+    python play.py restart    what the panels' RESTART NOW runs, through panel.py, in a window of its own: when a
                               plain start would play the same way (same THIS PC / ONLINE server, no English switch) -
                               a club card switch, say - only the cabinet restarts and the projector keeps running;
                               otherwise stop (the card rule), then a plain start
 
 Order, each step waiting for the one before: scene service -> server (and its 4 match engines) -> projector ->
 the cabinet's stand-ins (keychip and network, card reader, I/O board) -> seat 1 -> the overlay -> the key driver ->
-the panel helper (_kit_helper.py: RESTART NOW).
+the panel helper (panel.py: RESTART NOW).
 Only the game's own windows open (since 2026-10-06): the server's two windows and every script's start hidden,
 unless "debug".
 The SETTINGS panel in seat 1's window writes data\panel.txt (2026-10-06): "play_on=this_pc" or "play_on=online" with
@@ -676,7 +676,7 @@ def play(debug, mode="local", ip=None, seat_no=None):
                  90, p, "run_server.txt")
         ctl = games("control_release.exe")
         if ctl:     # a click in the server's console window would freeze it (text-selection mode): switch that off
-            subprocess.run([PY, os.path.join(K.SCRIPTS, "_no_quickedit.py"), str(ctl[0][0])], capture_output=True,
+            subprocess.run([PY, os.path.join(K.SCRIPTS, "helpers", "console.py"), str(ctl[0][0])], capture_output=True,
                            timeout=15)
             if not debug:       # it starts hidden; a window it shows by itself later is hidden here
                 K.hide_windows(ctl[0][0])
@@ -727,7 +727,7 @@ def play(debug, mode="local", ip=None, seat_no=None):
     # (wccfpanel.c is_projector - no panels, nothing else); its hook (wccfk.dll) loads it (WCCF_PANEL above), and it plays on
     # as before if it does not load (data\logs\wccfpanel_projector.log)
 
-    h = start("_kit_helper.py", [LIFE], "run_helper.txt", env)      # the panels' RESTART NOW (from outside the game)
+    h = start(os.path.join("helpers", "panel.py"), [LIFE], "run_helper.txt", env)      # the panels' RESTART NOW (from outside the game)
     roles[h.pid] = "panel helper"
     write_running(roles, mode, ip, seat_no)
     say("")

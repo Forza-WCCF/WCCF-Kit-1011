@@ -2966,13 +2966,13 @@ static char g_card_req[64] = "";         // card=: the CLUB CARD panel's choice 
 static int  g_fix_req = 0;               // card_fix=bad_endings: CLEAR BAD ENDINGS, done by play.py at the next start
 static volatile LONG g_set_dirty = 1;    // the status must be read again now
 // RESTART NOW (the player, 2026-10-06: "a button that goes to the next start"): a first click arms it for 8 s, a second
-// writes data\restart.request; _kit_helper.py (outside the game - seat 1's debugger would kill a restart the game
+// writes data\restart.request; panel.py (outside the game - seat 1's debugger would kill a restart the game
 // started) opens "PLAY.exe restart".  Not during a card session.  Not taken in 3 s = no helper: removed, and said.
 static DWORD g_rs_armed = 0;             // armed until this tick
 static DWORD g_rs_sent = 0;              // when the request was written (0 = none waiting)
 // SEND LOGS (2026-10-09, the player: "add a button in the settings to send logs to the server, so people can send us
 // their logs from their own game"): a first click arms it for 8 s, a second writes data\sendlogs.request (the server's
-// address); _kit_helper.py packs the logs (send_logs.py, never the club card) and sends them to that server's log
+// address); panel.py packs the logs (send_logs.py, never the club card) and sends them to that server's log
 // inbox, and writes data\sendlogs.result: "sending", then "ok CODE" or "fail WHY" - shown under the button.  Not taken
 // in 5 s = no helper: removed, and said.
 static DWORD g_lg_armed = 0;             // armed until this tick
@@ -3786,8 +3786,8 @@ static void set_click(HWND h, int x, int y)                     // a press insid
 
 // ---------------------------------------------------------------- the CLUB CARD panel (2026-10-06)
 // the player: "a button like we did with the settings, but called club card manager".  Read-only for now.  The overlay
-// cannot run Python, so it shows data\club_view.txt, which _kit_helper.py writes with club_view.py and
-// decode_club_card.py (the reader the website and server will use) whenever the card changes.  Lines "kind|...":
+// cannot run Python, so it shows data\club_view.txt, which panel.py writes with view.py and
+// decode.py (the reader the website and server will use) whenever the card changes.  Lines "kind|...":
 // state | head | row (label, value, colour w g y r o d) | squad (no, name, position, apps, goals, assists,
 // condition, injury) | backup.
 #define CLUB_X0 14.0f                    // the CLUB CARD button on the design sheet (measure_skin.js)
@@ -3802,7 +3802,7 @@ static char g_cbak[8][24], g_cstate[16], g_creason[128];
 static int  g_ncl = 0, g_ncsq = 0, g_ncbak = 0, g_club = 0;
 // YOUR CARDS (the player, 2026-10-06: "multiple cards ... create a new club card"; switched "with a restart"): the view's
 // "wallet|FILE|CLUB|SUMMARY" lines; a choice writes card=FILE (or card=new) into data\panel.txt and asks for
-// RESTART NOW; play.py switches the files while nothing runs (club_wallet.py).  Not during a card session.
+// RESTART NOW; play.py switches the files while nothing runs (wallet.py).  Not during a card session.
 struct CWal { char file[64], club[40], summary[48]; int dead; };   // dead: transferred, the game will not play it
 #define MAXWAL  16                        // other clubs read from the view (2026-10-08: was 8)
 #define WAL_NEW 99                        // g_wal_armed / a pick: NEW CLUB CARD (was 8 - a 9th card would have been it)

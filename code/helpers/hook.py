@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-r"""patch_hook_import.py - rename the game's import of Windows' winmm.dll to the kit's own hook name, so the kit's
+r"""hook.py - rename the game's import of Windows' winmm.dll to the kit's own hook name, so the kit's
 hook DLL is loaded under an HONEST name instead of sitting beside the game as a fake "winmm.dll". A file with a
 Windows system name, placed next to a program so the program loads it instead of Windows' own and passing the calls
 on, is exactly the DLL side-loading pattern Windows Defender flagged (Trojan:Win32/Posilod); an own-named DLL is not.

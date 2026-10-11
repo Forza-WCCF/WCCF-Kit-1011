@@ -44,7 +44,7 @@ def fix(pid):
 
 def main(argv):
     if not argv or not all(a.isdigit() for a in argv):
-        print("usage: python _no_quickedit.py PID [PID ...]")
+        print("usage: python console.py PID [PID ...]")
         return 2
     results = []
     k.FreeConsole()                                    # a process can sit in one console at a time

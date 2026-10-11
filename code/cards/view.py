@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 r"""view.py - the club card as the game reads it, written out for the CLUB CARD panel in seat 1's window.
-wccfpanel.dll cannot run Python, so _kit_helper.py writes this view whenever the card file changes.
+wccfpanel.dll cannot run Python, so panel.py writes this view whenever the card file changes.
 
 The card is read by decode.py: the research decoder, shipped UNCHANGED beside this file, built from the
 exe's own field tables (docs\research\CLUB-CARD-2010-11.md) - the same reader the website and server will use, so a
@@ -217,7 +217,7 @@ def build(card=CARD, catalogue=CATALOGUE, backups=BACKUPS, running=RUNNING, card
 def write(lines, path=VIEW):
     """the view whole: a temporary file, then one swap (the panel never reads half of it)"""
     text = ("# WCCF 2010-11 kit - the club card as the game reads it, for the CLUB CARD panel in seat 1. Written by\n"
-            "# _kit_helper.py with decode.py whenever the card changes. Read-only, never edit.\n" +
+            "# panel.py with decode.py whenever the card changes. Read-only, never edit.\n" +
             "\n".join(lines) + "\n")
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="ascii", errors="replace", newline="\n") as f:

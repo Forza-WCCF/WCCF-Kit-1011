@@ -9,7 +9,7 @@
  * other Sega boards.
  *
  * It is loaded ONLY by the game's programs: SETUP renames their import of
- * WINMM.dll to wccfk.dll (code\patch_hook_import.py), and this DLL passes the
+ * WINMM.dll to wccfk.dll (code\helpers\hook.py), and this DLL passes the
  * three timer functions on to Windows' own winmm. It touches no other process. What it does:
  *  - logs every device open / file-mapping / DeviceIoControl, passing each
  *    straight through (observation);

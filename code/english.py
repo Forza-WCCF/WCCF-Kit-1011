@@ -36,7 +36,7 @@ import sys
 import unicodedata
 
 import kit_common as K
-import patch_hook_import as H
+from helpers import hook as H
 
 ENG = os.path.join(K.LANGUAGES, "english")
 BACK = os.path.join(K.DATA, "english_backup")

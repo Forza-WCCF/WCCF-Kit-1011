@@ -9,7 +9,7 @@ import sys
 
 KIT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(KIT, "code"))
-import patch_hook_import as P  # noqa: E402
+from helpers import hook as P  # noqa: E402
 
 fails = []
 

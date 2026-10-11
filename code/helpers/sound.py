@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-r"""sound_defaults.py - the game's starting volumes (the player, 2026-10-06: "the projector starts muted, and the normal game
+r"""sound.py - the game's starting volumes (the player, 2026-10-06: "the projector starts muted, and the normal game
 starts with very low volume just like if i lowered it in volume mixer on windows ... but as a default").
 
-Windows keeps a volume for each program that plays sound - the Volume Mixer's sliders.  _kit_helper.py calls apply()
+Windows keeps a volume for each program that plays sound - the Volume Mixer's sliders.  panel.py calls apply()
 for the projector and seat 1 once each, when each has first opened its sound after a start: the projector muted,
 seat 1 at GAME_VOLUME.  Nothing is set again afterwards, so a change made in the Volume Mixer while playing stays.
 Only these two programs are touched, found by their full path (the game folder's extracted\ and seat1\).
 
-    python sound_defaults.py --list      every program's sound on this PC: process, volume, muted (changes nothing)
+    python sound.py --list      every program's sound on this PC: process, volume, muted (changes nothing)
 
 Windows' Core Audio calls (IMMDeviceEnumerator -> each active playback device -> IAudioSessionManager2 -> its sessions:
 IAudioSessionControl2 for the process, ISimpleAudioVolume for the level and mute), through ctypes.

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-r"""_kit_helper.py - does what the in-game panels ask for and cannot do from inside the game.  play.py starts it
+r"""panel.py - does what the in-game panels ask for and cannot do from inside the game.  play.py starts it
 (hidden) with the cabinets; the end of the run ends it with everything else.
-    python _kit_helper.py SECONDS [DATA PLAY_EXE [hidden]]        (DATA, PLAY_EXE, hidden: tests only)
+    python panel.py SECONDS [DATA PLAY_EXE [hidden]]        (DATA, PLAY_EXE, hidden: tests only)
 
 RESTART NOW (the SETTINGS panel, 2026-10-06): the panel writes data\restart.request; this helper takes the file away
 and opens "PLAY.exe restart" in a window of its own: a stop by the card rule (during a card session it explains
@@ -18,7 +18,7 @@ SEND LOGS (the SETTINGS panel, 2026-10-09): the panel writes data\sendlogs.reque
 helper takes it away, packs and sends the logs (online\send_logs.py) in a thread of its own, and writes data\sendlogs.result
 for the panel: "sending", then "ok CODE" or "fail WHY".  An old request at the start is removed, never sent.
 
-THE STARTING VOLUMES (2026-10-06): sound_defaults.py - the projector muted, seat 1 very low - set once for each, as
+THE STARTING VOLUMES (2026-10-06): sound.py - the projector muted, seat 1 very low - set once for each, as
 soon as it has opened its sound (looked for every 0.5 s for 10 minutes after the start); never again, so a change in
 the Volume Mixer stays.  The game folder comes from play.py (WCCF_GAME); without it nothing is set.  Like the view, it
 never stops the helper.
@@ -29,6 +29,8 @@ import subprocess
 import sys
 import threading
 import time
+
+import kit_common as K
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CREATE_NEW_CONSOLE, CREATE_NO_WINDOW = 0x10, 0x08000000
@@ -138,8 +140,8 @@ class SendLogs:
 
 
 class SoundDefaults:
-    """the projector muted and seat 1 at sound_defaults.GAME_VOLUME, each set once, when it has first opened its
-    sound; mod: sound_defaults, or a stand-in (the tests)"""
+    """the projector muted and seat 1 at sound.GAME_VOLUME, each set once, when it has first opened its
+    sound; mod: helpers.sound, or a stand-in (the tests)"""
     LOOK, FOR = 0.5, 600.0
 
     def __init__(self, game, now, mod=None):
@@ -157,8 +159,8 @@ class SoundDefaults:
         self.next = now + self.LOOK
         try:
             if self.mod is None:
-                import sound_defaults
-                self.mod = sound_defaults
+                from helpers import sound
+                self.mod = sound
             s = self.mod
             for pid, path, _level, _muted in s.sessions():
                 role = self.targets.get(os.path.normcase(path or ""))
@@ -184,8 +186,8 @@ def main(argv):
         print(__doc__)
         return 2
     life = int(argv[0])
-    data = argv[1] if len(argv) > 1 else os.path.join(os.path.dirname(HERE), "data")
-    play = argv[2] if len(argv) > 2 else os.path.join(os.path.dirname(HERE), "PLAY.exe")
+    data = argv[1] if len(argv) > 1 else K.DATA
+    play = argv[2] if len(argv) > 2 else os.path.join(K.KIT, "PLAY.exe")
     flags = CREATE_NO_WINDOW if argv[3:] == ["hidden"] else CREATE_NEW_CONSOLE
     req = os.path.join(data, "restart.request")
     if os.path.exists(req):

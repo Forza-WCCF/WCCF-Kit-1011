@@ -33,6 +33,7 @@ try:
     K.KIT, K.SCRIPTS, K.CACHE = t, os.path.join(t, "code"), os.path.join(t, "data", "cache")
     touch("code", "play.py")
     touch("scripts", "play.py")                      # the old copy of code\play.py
+    touch("scripts", "_icc_reader.py")               # renamed in kit 6 (hardware\card_reader.py): found by its old name
     touch("scripts", "__pycache__", "play.cpython-313.pyc")
     touch("scripts", "_jvs_seat1_input.txt")         # written beside the old scripts while the kit ran
     touch("scripts", "_dbg_control.txt")

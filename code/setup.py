@@ -30,7 +30,7 @@ import sys
 
 from cards import catalogue
 import kit_common as K
-import patch_hook_import as H
+from helpers import hook as H
 
 SEGA_CLIENT = "AEF9998D8A77B4DD7A0CFF3753A11FC8689A6700E133265D6681EF28D3E9CEA4"
 PATCHED_CLIENT = "6243C394E9A57B33C23519326EF8A77B0992873A0033B5892A9155C5B827E20A"
@@ -118,7 +118,7 @@ def copy_if_different(src, dst, what):
 
 
 def norm_sha(path):
-    """SHA-256 of a game program with its hook import renamed back to WINMM.dll (patch_hook_import.normalized) - so a
+    """SHA-256 of a game program with its hook import renamed back to WINMM.dll (hook.normalized) - so a
     fingerprint is the same whether or not setup has already renamed the import to the kit's own wccfk.dll. Any file
     that is not a PE / does not import the hook hashes as-is."""
     try:
@@ -334,8 +334,14 @@ def setup_seat(game):
 # data\cache\ were overlay\, languages\english\ was english\.  An update removes the old kit's files but not their
 # folders, and never the catalogue and card pictures setup made; a kit unzipped by hand over an old one keeps all of
 # it.  Only the old kit's own files go; anything else stays, and so does its folder.  A folder name (a str) = the old
-# copies of the files that folder of this kit holds now; a tuple = those files by name.
-OLD_LAYOUT = {"scripts": "code", "english": os.path.join("languages", "english"),
+# copies of the files that folder of this kit holds now; a tuple = those files by name.  scripts\: every file name
+# kits 5 to 5.5.1 shipped there (git ls-tree of each kit-* tag) - kit 6 renamed them, so "is it in code\" no longer finds them.
+OLD_SCRIPTS = ("_debug_launch.py", "_icc_reader.py", "_jvs_board.py", "_keys_seat1.py", "_kit_helper.py",
+               "_log_inbox.py", "_no_quickedit.py", "_relay.py", "_ringedge_services.py", "_seat_broker.py",
+               "_seat_lease.py", "_xscn_watch.py", "boards.py", "cards.py", "club_card_schema.py", "club_view.py",
+               "club_wallet.py", "codes_inferred.py", "decode_club_card.py", "edit_club_card.py", "english.py",
+               "kit_common.py", "play.py", "send_logs.py", "setup.py", "sound_defaults.py", "ys_lzw.py")
+OLD_LAYOUT = {"scripts": OLD_SCRIPTS, "english": os.path.join("languages", "english"),
               "bin": ("winmm.dll", "winmm_orig.dll", "wccfk.dll", "FPR_Emu.exe", "logowin.exe"),
               "overlay": ("wccfpanel.dll", "skin.tex", "inject.exe")}
 # what an older kit wrote beside its scripts while it ran: the key driver's and I/O board's files, server debug logs
@@ -365,8 +371,9 @@ def tidy_old_layout():
             continue
         if isinstance(files, str):
             now = os.path.join(K.KIT, files)
-            files = [n for n in os.listdir(d) if os.path.isfile(os.path.join(now, n)) or OLD_RUNTIME.match(n)]
-            shutil.rmtree(os.path.join(d, "__pycache__"), ignore_errors=True)
+            files = [n for n in os.listdir(d) if os.path.isfile(os.path.join(now, n))]
+        files = list(files) + [n for n in os.listdir(d) if OLD_RUNTIME.match(n)]
+        shutil.rmtree(os.path.join(d, "__pycache__"), ignore_errors=True)
         for n in files:
             try:
                 os.remove(os.path.join(d, n))
