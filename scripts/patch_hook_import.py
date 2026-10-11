@@ -6,42 +6,22 @@ on, is exactly the DLL side-loading pattern Windows Defender flagged (Trojan:Win
 
 The game imports only three winmm functions (timeBeginPeriod/timeEndPeriod/timeGetTime), all by name, and "winmm"
 appears exactly once in each exe - the import-table name string. So the whole change is a 9-byte overwrite of that
-string, plus recomputing the PE checksum. The exes have no bound-import table and are unsigned, so nothing else
-breaks (verified in .work\research\mxrename\DESIGN.md). Reversible: rename wccfk.dll back to winmm.dll.
+one string. The exes have no bound-import table and are unsigned, and Windows does not verify a user exe's PE
+checksum, so nothing else needs touching (verified in .work\research\mxrename\DESIGN.md) - which also keeps the
+change a PURE, perfectly reversible swap: rename wccfk.dll back to winmm.dll gives the exact original bytes, so SETUP
+can re-run and fingerprint the exe either way.
 
 Used by setup.py. Pure bytes in, bytes out - no files touched here, so it is easy to test.
 """
 import struct
 
-HOOK_DLL = b"wccfk.dll"          # the kit's hook under its own name (<= 9 chars: it replaces "winmm.dll" in place)
-SYS_DLL = b"winmm.dll"
+HOOK_DLL = b"wccfk.dll"          # the kit's hook under its own name (<= 9 chars: it replaces the import in place)
+SYS_DLL = b"WINMM.dll"           # exactly as Sega's Rev D exes import it (uppercase WINMM) - so renaming back is
+                                 # byte-exact. Detection is case-insensitive anyway (_import_name_offset).
 
 
 class PatchError(Exception):
     pass
-
-
-def pe_checksum(data):
-    """the PE OptionalHeader checksum of `data` (with the checksum field itself counted as 0), the standard algorithm:
-    sum of 16-bit words folded to 16 bits, plus the file length."""
-    if data[:2] != b"MZ":
-        raise PatchError("not a PE file (no MZ)")
-    pe = struct.unpack_from("<I", data, 0x3C)[0]
-    if data[pe:pe + 4] != b"PE\0\0":
-        raise PatchError("not a PE file (no PE signature)")
-    csum = pe + 24 + 64             # OptionalHeader + 64 = the 4-byte CheckSum field
-    total, n, i = 0, len(data), 0
-    while i + 1 < n:
-        if i == csum or i == csum + 2:          # the checksum field counts as 0
-            i += 2
-            continue
-        total += data[i] | (data[i + 1] << 8)
-        i += 2
-    if n & 1:
-        total += data[n - 1]
-    while total >> 16:
-        total = (total & 0xFFFF) + (total >> 16)
-    return (total + n) & 0xFFFFFFFF
 
 
 def _import_name_offset(data, dll):
@@ -77,8 +57,8 @@ def _import_name_offset(data, dll):
 
 
 def rename_import(data, frm=SYS_DLL, to=HOOK_DLL):
-    """return `data` with its import of `frm` renamed to `to` (in place, same length or shorter) and the PE checksum
-    recomputed. Raises PatchError if `frm` is not imported, or `to` is longer than `frm`."""
+    """return `data` with its import of `frm` renamed to `to` (in place, same length or shorter). A pure byte swap: no
+    other field changes, so renaming back is exact. Raises PatchError if `frm` is not imported, or `to` is longer."""
     data = bytearray(data)
     if len(to) > len(frm):
         raise PatchError("the new name %r is longer than %r - cannot overwrite in place" % (to, frm))
@@ -89,12 +69,13 @@ def rename_import(data, frm=SYS_DLL, to=HOOK_DLL):
         raise PatchError("this program does not import %r" % frm.decode())
     end = data.index(b"\0", s)
     data[s:end] = to + b"\0" * (len(frm) - len(to))     # overwrite the name, pad with NULs to the old length
-    # recompute the checksum: zero the field, compute, write it back
-    pe = struct.unpack_from("<I", data, 0x3C)[0]
-    csum = pe + 24 + 64
-    struct.pack_into("<I", data, csum, 0)
-    struct.pack_into("<I", data, csum, pe_checksum(data))
     return bytes(data)
+
+
+def normalized(data):
+    """`data` with the hook import renamed back to winmm.dll if it was renamed (else unchanged) - the Sega-original
+    bytes, so a fingerprint is the same whether or not SETUP has applied the rename yet (idempotency)."""
+    return rename_import(data, frm=HOOK_DLL, to=SYS_DLL) if imports_hook(data) else bytes(data)
 
 
 def imports_hook(data):
