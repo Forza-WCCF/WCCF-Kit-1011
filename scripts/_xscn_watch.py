@@ -70,11 +70,6 @@ def scene_index():
     return out
 
 
-def launcher_running():
-    out = os.popen('tasklist /FI "IMAGENAME eq Launcher1011.exe" /NH').read()
-    return "Launcher1011.exe" in out
-
-
 class Board:
     """The 0x5CC-byte xscnWatch::ComBuf, read and written as dwords through a mapped view."""
 
@@ -109,9 +104,6 @@ def main(argv):
     index = scene_index()
     log("xscnWatch stand-in: %d scenes in %s (%s), for %d s" % (
         len(index), XSCN_DIR, ", ".join(str(n) for n in sorted(index)), seconds))
-    if launcher_running():
-        log("REFUSED: Launcher1011.exe is running - it serves the scenes itself")
-        return 2
     marker = k.CreateMutexW(None, False, "WCCF::xscnWatchStandIn")
     if not marker or ctypes.GetLastError() == ERROR_ALREADY_EXISTS:
         log("REFUSED: another copy of this stand-in is running")

@@ -6,6 +6,12 @@ game is not included. Newest first; each date is the day that kit was built.
 
 ## Unreleased
 
+### Changed
+- Fewer things that look suspicious to antivirus: the panel no longer writes screenshots of the game to disk
+  (`wccfpanel_frame.bmp`, `wccfpanel_atlas.bmp`), the scene helper no longer runs `tasklist`, and SETUP now also
+  removes the two old files Windows Defender flagged (`overlay\inject.exe`, `bin\logowin.exe`) when you unzip a new
+  kit by hand.
+
 ### Fixed
 - The game no longer refuses to start just because the card CATALOGUE has not been built. The catalogue is only the
   panel's card browser; now the game starts and only the catalogue is empty (SETUP rebuilds it).

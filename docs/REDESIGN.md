@@ -95,7 +95,7 @@ Status: [ ] not started  [~] in progress  [x] done (PR #)
 - [~] A10 smaller lock-outs: [x] catalogue-missing no longer blocks a start (`setup_state`, `source\test_setup_state.py`). Left: the 17th club (wccfpanel.c panel reads <=16 clubs), SEND LOGS to the right server (folds into D3), UPDATE SHA-256 check (Rust launcher), the projector-box hold-file edge (server)
 
 ### Phase 2 - cheap antivirus wins (small, mostly conflict-free)
-- [ ] B2e remove the screenshot-to-disk dumps; B9 remove the dead tasklist; B2a trampoline execute-only; B11 add the two flagged names to LEGACY
+- [x] B2e removed the screenshot-to-disk dumps (wccfpanel_frame.bmp, wccfpanel_atlas.bmp); B9 removed the dead tasklist in _xscn_watch.py; B11 added overlay\inject.exe + bin\logowin.exe to SETUP's LEGACY cleanup. Panel builds clean. LEFT: B2a (Present/Reset trampoline execute-only, not RWX)
 - [ ] B1g version info in winmm.dll / wccfpanel.dll / FPR_Emu.exe (build.ps1 + package.ps1 check) - may already be in flight
 - [ ] B3  run cabinets and the projector without the debugger; keep it for control only
 - [~] B(4) stop impersonating winmm: ship the hook as wccfk.dll, patch the import in the game exes (DESIGN at `.work\research\mxrename\DESIGN.md`). DONE: `scripts\patch_hook_import.py` (rename import + recompute PE checksum, reversible) + `source\test_patch_hook_import.py` (11, synthetic PE) + proven on all 3 real Sega exes (`.work\research\mxrename\prove_on_real_exes.py`). LEFT: ship the DLL as wccfk.dll (3 forwarders to real winmm, drop winmm_orig) in build.ps1; setup.py patches the game exes + places wccfk.dll; play.py ensure_hook -> wccfk.dll

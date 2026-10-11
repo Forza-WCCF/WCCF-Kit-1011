@@ -567,26 +567,6 @@ static void build_font(IDirect3DDevice9 *dev)
             IDirect3DTexture9_UnlockRect(g_font_tex, 0);
         }
     }
-    // diagnostic: write the atlas's BLUE channel (what becomes the glyph alpha) as a grayscale BMP
-    {
-        char p2[MAX_PATH], dr[MAX_PATH], *sl; GetModuleFileNameA(NULL, dr, MAX_PATH);
-        sl = strrchr(dr, '\\'); if (sl) *sl = 0; _snprintf(p2, MAX_PATH, "%s\\wccfpanel_atlas.bmp", dr);
-        FILE *af = fopen(p2, "wb");
-        if (af) {
-            int W = g_atlasw, H = g_atlash; UINT rowsz = (W * 3 + 3) & ~3u; DWORD imgsz = rowsz * H;
-            BITMAPFILEHEADER fh; ZeroMemory(&fh, sizeof fh); BITMAPINFOHEADER ih; ZeroMemory(&ih, sizeof ih);
-            fh.bfType = 0x4D42; fh.bfOffBits = sizeof(fh) + sizeof(ih); fh.bfSize = fh.bfOffBits + imgsz;
-            ih.biSize = sizeof ih; ih.biWidth = W; ih.biHeight = H; ih.biPlanes = 1; ih.biBitCount = 24; ih.biCompression = BI_RGB;
-            fwrite(&fh, sizeof fh, 1, af); fwrite(&ih, sizeof ih, 1, af);
-            BYTE *row = (BYTE *)malloc(rowsz);
-            for (int y = H - 1; y >= 0; y--) {
-                DWORD *s = (DWORD *)bits + (size_t)y * W; ZeroMemory(row, rowsz);
-                for (int x = 0; x < W; x++) { BYTE g = (BYTE)(s[x] & 0xFF); row[x*3]=g; row[x*3+1]=g; row[x*3+2]=g; }
-                fwrite(row, rowsz, 1, af);
-            }
-            free(row); fclose(af);
-        }
-    }
     SelectObject(dc, ob); DeleteObject(dib);
     SelectObject(dc, of); DeleteObject(fnt); DeleteDC(dc);
     logline("font atlas %dx%d cell %dx%d tex=%p", g_atlasw, g_atlash, g_cellw, g_cellh, (void *)g_font_tex);
@@ -654,61 +634,6 @@ static void draw_text(IDirect3DDevice9 *dev)
     }
 }
 
-// ---------------------------------------------------------------- frame dump (proof of what the window shows)
-// Writes the picture to wccfpanel_frame.bmp beside the game's exe: once per canvas size, after that size has held
-// for 10 frames - so the dump comes after a fullscreen switch has settled, and F11 back to the window dumps again.
-static void dump_surface(IDirect3DDevice9 *dev, IDirect3DSurface9 *src)
-{
-    IDirect3DSurface9 *sys = NULL;
-    D3DSURFACE_DESC d; D3DLOCKED_RECT lr;
-    char path[MAX_PATH], dir[MAX_PATH], *slash;
-    IDirect3DSurface9_GetDesc(src, &d);
-    if (d.Format != D3DFMT_X8R8G8B8 && d.Format != D3DFMT_A8R8G8B8) {
-        logline("surface format 0x%X not 32-bit; skip dump", d.Format); return;
-    }
-    HRESULT ho = IDirect3DDevice9_CreateOffscreenPlainSurface(dev, d.Width, d.Height, d.Format, D3DPOOL_SYSTEMMEM, &sys, NULL);
-    HRESULT hg = (SUCCEEDED(ho) && sys) ? IDirect3DDevice9_GetRenderTargetData(dev, src, sys) : ho;
-    HRESULT hl = SUCCEEDED(hg) ? IDirect3DSurface9_LockRect(sys, &lr, NULL, D3DLOCK_READONLY) : hg;
-    if (FAILED(hl)) logline("frame dump failed hr=0x%08lX", (unsigned long)hl);
-    if (SUCCEEDED(hl)) {
-        GetModuleFileNameA(NULL, dir, MAX_PATH); slash = strrchr(dir, '\\'); if (slash) *slash = 0;
-        _snprintf(path, MAX_PATH, "%s\\wccfpanel_frame.bmp", dir);
-        FILE *f = fopen(path, "wb");
-        if (f) {
-            UINT W = d.Width, H = d.Height, rowsz = (W * 3 + 3) & ~3u; DWORD imgsz = rowsz * H;
-            BITMAPFILEHEADER fh; ZeroMemory(&fh, sizeof fh);
-            BITMAPINFOHEADER ih; ZeroMemory(&ih, sizeof ih);
-            fh.bfType = 0x4D42; fh.bfOffBits = sizeof(fh) + sizeof(ih); fh.bfSize = fh.bfOffBits + imgsz;
-            ih.biSize = sizeof ih; ih.biWidth = (LONG)W; ih.biHeight = (LONG)H; ih.biPlanes = 1;
-            ih.biBitCount = 24; ih.biCompression = BI_RGB; ih.biSizeImage = imgsz;
-            fwrite(&fh, sizeof fh, 1, f); fwrite(&ih, sizeof ih, 1, f);
-            BYTE *row = (BYTE *)malloc(rowsz);
-            if (row) {
-                for (int y = (int)H - 1; y >= 0; y--) {
-                    BYTE *s = (BYTE *)lr.pBits + (size_t)y * lr.Pitch; ZeroMemory(row, rowsz);
-                    for (UINT x = 0; x < W; x++) { BYTE *p = s + x * 4; row[x*3] = p[0]; row[x*3+1] = p[1]; row[x*3+2] = p[2]; }
-                    fwrite(row, rowsz, 1, f);
-                }
-                free(row);
-            }
-            fclose(f); logline("wrote wccfpanel_frame.bmp (%ux%u)", W, H);
-        }
-        IDirect3DSurface9_UnlockRect(sys);
-    }
-    if (sys) IDirect3DSurface9_Release(sys);
-}
-
-static UINT g_dump_w = 0, g_dump_h = 0, g_hold_w = 0, g_hold_h = 0;
-static int  g_hold_n = 0;
-
-static void maybe_dump(IDirect3DDevice9 *dev, IDirect3DSurface9 *src, UINT w, UINT h)
-{
-    if (w == g_hold_w && h == g_hold_h) g_hold_n++; else { g_hold_w = w; g_hold_h = h; g_hold_n = 0; }
-    if (g_frames >= 30 && g_hold_n >= 10 && (w != g_dump_w || h != g_dump_h)) {
-        g_dump_w = w; g_dump_h = h;
-        dump_surface(dev, src);
-    }
-}
 
 // ---------------------------------------------------------------- the baked skin (designed in HTML -> texture)
 static IDirect3DTexture9 *g_skin = NULL;
@@ -4551,7 +4476,6 @@ static int present_composed(IDirect3DDevice9 *dev, HWND wnd, HRESULT *phr)
             IDirect3DDevice9_SetDepthStencilSurface(dev, NULL);    // the game's depth buffer is smaller than ours
             layout((UINT)cr.right, (UINT)cr.bottom);
             compose(dev, 1);
-            maybe_dump(dev, scbb, (UINT)cr.right, (UINT)cr.bottom);
             IDirect3DDevice9_SetRenderTarget(dev, 0, oldrt);           // state blocks do not hold these two
             IDirect3DDevice9_SetDepthStencilSurface(dev, oldds);
             ok = 1;
@@ -4587,7 +4511,6 @@ static void compose_into_game_bb(IDirect3DDevice9 *dev)
         int lb = ensure_gametex(dev, desc.Width, desc.Height) &&
                  SUCCEEDED(IDirect3DDevice9_StretchRect(dev, bb, NULL, g_gamesurf, NULL, D3DTEXF_LINEAR));
         compose(dev, lb);
-        maybe_dump(dev, bb, desc.Width, desc.Height);
         IDirect3DSurface9_Release(bb);
     }
     IDirect3DDevice9_SetViewport(dev, &vp);
