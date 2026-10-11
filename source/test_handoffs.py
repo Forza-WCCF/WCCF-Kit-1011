@@ -9,7 +9,7 @@ import sys
 
 KIT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FOLDERS = ["art", "code", "code/cards", "code/hardware", "code/helpers", "code/online", "code/server", "docs",
-           "languages", "languages/english", "python", "source", "source/card_table", "source/hook",
+           "languages", "languages/english", "languages/italian", "python", "source", "source/card_table", "source/hook",
            "source/launcher", "source/panel"]
 WHOLE = {"python"}                          # Python itself: its HANDOFF names what matters, not each of its files
 SKIP = {"HANDOFF.md"}

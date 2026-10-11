@@ -274,7 +274,8 @@ FOLDERS
              server), server\ (running one for others), helpers\ (the panel's helper, sound, the hook)
   languages\ one folder per language. english\: screen_text.tsv (the translation), sega_rstring.tsv (Sega's
              European English), cpu_names.tsv (team names), exe_text.tsv (the ticker, the dates, money, the
-             shop's name) - text and fingerprints only
+             shop's name), pictures.tsv (writing in the game's pictures); italian\: the Italian, with Sega's
+             Italian where the Japanese is the same - text and fingerprints only
   source\    the source of every program in programs\ (C) and of PLAY and SETUP.exe (Rust,
              source\launcher) - source\README.txt: how they were built
   python\    Python 3.13 (python.org's embeddable build) with Pillow

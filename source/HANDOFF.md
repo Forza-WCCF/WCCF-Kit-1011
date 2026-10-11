@@ -10,10 +10,12 @@ The source of every compiled program the kit ships, the scripts that build, chec
 | `package.ps1` | makes the kit ZIP the way players get it, in `dist\` |
 | `test_card_fix.py` | a missing club-card helper file never stops a start |
 | `test_ended.py` | play.py's choice when a game window's launcher ends (a closed window stops the rest) |
+| `test_english_pictures.py` | English writing in the game's pictures: added at the archive's end, taken back out byte for byte (peakx, #29) |
 | `test_handoffs.py` | every folder has a HANDOFF.md that names every file in it |
 | `test_hold_projector.py` | the seat desk keeps the projector box out of the game until a player is in it |
 | `test_icc_reader.py` | the card reader's saving and recovery (a busy file never half-writes the card) |
 | `test_imports.py` | every file in `code\` imports the way the launchers run it |
+| `test_italian_tables.py` | the Italian keeps every printf and colour code of the English, in the game's font (peakx, #30) |
 | `test_log_archive.py` | the run before last is zipped into the archive, never just deleted |
 | `test_old_layout.py` | a kit updated from before kit 6 is tidied: old folders, catalogue moved |
 | `test_patch_hook_import.py` | the game's import renamed to `wccfk.dll` and back (the antivirus fix) |
