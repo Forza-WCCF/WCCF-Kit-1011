@@ -31,7 +31,10 @@ import threading
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-LIVE = os.path.join(HERE, "_jvs_seat1_input.txt")
+# the live files shared with the I/O board stand-in, in the kit's data\ (not in code\, 2026-10-11).  play.KEYS_INPUT
+# names the same file: its stop guard reads the card state from it (check.ps1 asserts the two agree)
+RUN = os.path.join(os.path.dirname(HERE), "data")
+LIVE = os.path.join(RUN, "_jvs_seat1_input.txt")
 
 # THE KEYS (2026-10-05: the KEYS panel in seat 1's window can change them).  Every action: its name in keys.txt, the
 # default key (virtual-key code), the cabinet input it holds - (line, byte, bit), or None for CARD and COIN, which are
@@ -259,7 +262,7 @@ apply_keys(DEFAULTS)
 # waits for a card (start screen, and ~5.6 s after each eject; off while a card is in use - _jvs_seat1_log.txt).
 # Seen on WITH our card in = the game has let it go -> take it out. Margins: not in the first EJECT_GRACE s
 # after an insert, and the signal must hold EJECT_HOLD s (the game re-reads a held card ~0.7 s later).
-OUTPUTS = os.path.join(HERE, "_jvs_seat1_outputs.txt")
+OUTPUTS = os.path.join(RUN, "_jvs_seat1_outputs.txt")       # _jvs_board.py writes it beside LIVE
 AUTO_EJECT = True
 EJECT_BYTE, EJECT_BIT = 1, 0x08
 EJECT_GRACE, EJECT_HOLD = 2.5, 0.25

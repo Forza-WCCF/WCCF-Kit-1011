@@ -71,7 +71,7 @@ LIFE = SERVER_LIFE                # the player side: a BACKSTOP only (A3, 2026-1
                                   # ending - so there is no short limit any more, only this far-off safety net
 PY = sys.executable
 ICC_PIPE, JVS_PIPE = r"\\.\pipe\wccf_icc_seat1", r"\\.\pipe\wccf_jvs_seat1"
-KEYS_INPUT = os.path.join(K.SCRIPTS, "_jvs_seat1_input.txt")     # _keys_seat1.py writes it beside itself
+KEYS_INPUT = os.path.join(K.DATA, "_jvs_seat1_input.txt")        # = _keys_seat1.LIVE; the board's outputs beside it
 CARD = os.path.join(K.SAVE, "seat1_club.bin")
 RUNNING = os.path.join(K.DATA, "running.json")
 PANEL = os.path.join(K.DATA, "panel.txt")         # the SETTINGS panel's choices (wccfpanel.dll writes it)

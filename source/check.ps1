@@ -32,6 +32,11 @@ if ($LASTEXITCODE) { $failed += 'code compile' }
 & $py -I -c "import os, kit_common, play, setup, english, club_wallet; d = os.path.basename(os.path.dirname(kit_common.__file__)); assert d == 'code', d; print('imports: found in code\\ through python313._pth')"
 if ($LASTEXITCODE) { $failed += 'the kit''s modules import through python313._pth (code\), as the launchers run them' }
 
+# the key driver's live file is where play.py's stop guard reads the card state, and the I/O board's outputs file is
+# beside it (_jvs_board.py derives it): if they ever disagree, the stop guard reads "card out" with a card in
+& $py -I -c "import os, play, _keys_seat1 as k; n = os.path.normcase; assert n(play.KEYS_INPUT) == n(k.LIVE), (play.KEYS_INPUT, k.LIVE); assert n(k.OUTPUTS) == n(k.LIVE[:-len('_input.txt')] + '_outputs.txt'); assert os.path.basename(os.path.dirname(k.LIVE)) == 'data'; print('key driver files: in data\\, the same for play.py and the I/O board')"
+if ($LASTEXITCODE) { $failed += 'the key driver, the I/O board and play.py name the same live files in data\' }
+
 # Kit 5.5 reused the name PANEL for wccfpanel.dll: a plain start read the dll as data\panel.txt and never went online
 & $py -I -c "import sys; sys.path.insert(0, sys.argv[1]); import play; assert play.PANEL.endswith('panel.txt'), play.PANEL; print('play.py: PANEL is panel.txt')" (Join-Path $kit 'code')
 if ($LASTEXITCODE) { $failed += 'play.py PANEL' }
