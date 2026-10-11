@@ -1,8 +1,6 @@
-# Made on a player's PC by the kit: settings, keys, logs and the club cards - never commit a save.
+# Made on a player's PC by the kit: settings, keys, logs, the club cards, and data\cache\ (the catalogue and card
+# pictures SETUP.exe makes from the player's own game files) - never commit a save.
 /data/
-# Made by SETUP.exe from the player's own game files.
-/overlay/catalogue.tsv
-/overlay/cards/
 
 # Built from source\ by source\build.ps1 (and by CI into the kit ZIP) - git holds the source, not the programs.
 /PLAY.exe
@@ -11,7 +9,6 @@
 /version.txt
 /files.txt
 /programs/
-/overlay/wccfpanel.dll
 /source/build/
 /source/launcher/target/
 /dist/

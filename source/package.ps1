@@ -19,7 +19,7 @@ if ($LASTEXITCODE) { throw 'tar failed' }
 Remove-Item $tar
 
 $built = 'PLAY.exe', 'SETUP.exe', 'programs\wccfk.dll', 'programs\FPR_Emu.exe',
-         'overlay\wccfpanel.dll'
+         'programs\wccfpanel.dll'
 foreach ($f in $built) {
     $from = Join-Path $kit $f
     if (-not (Test-Path $from)) { throw "$f is missing - run source\build.ps1 first" }

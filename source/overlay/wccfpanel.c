@@ -46,8 +46,8 @@
 #pragma comment(lib, "advapi32.lib")     // the controllers' names (the registry), KEYS panel
 #pragma comment(lib, "ws2_32.lib")       // the match relay
 
-// ---- file paths: NONE fixed (the kit is unpacked anywhere).  Our own files sit beside this DLL: skin.tex, cards\,
-// catalogue.tsv.  The game's card table and fpr_panel.py's saved formation sit in the GAME's folder (seat1\):
+// ---- file paths: NONE fixed (the kit is unpacked anywhere).  Our own files come from play.py (WCCF_SKIN = art\skin.tex,
+// WCCF_CATALOGUE / WCCF_CARDS = data\cache\...), else beside this DLL (our_file).  The game's card table and fpr_panel.py's saved formation sit in the GAME's folder (seat1\):
 // fpr_table0.txt, fpr_panel_state.json.  g_dlldir is set in DllMain from this module's own path.
 static char  g_dlldir[MAX_PATH];
 static char  g_skin_path[MAX_PATH], g_cat_path[MAX_PATH];
@@ -136,6 +136,18 @@ static void kit_version(void)
     logline("kit version: %s", g_kitver);
 }
 
+// our own data file: the path in env var `var` (play.py sets WCCF_SKIN / WCCF_CATALOGUE for the new layout, where the
+// skin is in art\ and the catalogue in data\cache\), or - if the var is unset - beside this DLL (the old layout and a
+// test, where skin.tex / catalogue.tsv sit next to wccfpanel.dll).
+static void our_file(char *out, const char *var, const char *name)
+{
+    DWORD n = GetEnvironmentVariableA(var, out, MAX_PATH);
+    if (n == 0 || n >= MAX_PATH) {
+        _snprintf(out, MAX_PATH, "%s\\%s", g_dlldir, name);
+        out[MAX_PATH - 1] = 0;
+    }
+}
+
 static void board_paths(void)
 {
     char exe[MAX_PATH], dir[MAX_PATH], *sl;
@@ -147,15 +159,19 @@ static void board_paths(void)
     // fpr_panel.py's saved formation lives beside the table, in the game's own folder: the real seat 1 keeps the real
     // one, a test (fakegame in its own folder) keeps its own - no path to configure, nothing a test can reach by mistake
     _snprintf(g_state_path, MAX_PATH, "%s\\fpr_panel_state.json", dir);
-    _snprintf(g_skin_path, MAX_PATH, "%s\\skin.tex", g_dlldir);
-    _snprintf(g_cat_path, MAX_PATH, "%s\\catalogue.tsv", g_dlldir);
+    our_file(g_skin_path, "WCCF_SKIN", "skin.tex");
+    our_file(g_cat_path, "WCCF_CATALOGUE", "catalogue.tsv");
     {
         WCHAR wd[MAX_PATH];
-        if (!MultiByteToWideChar(CP_ACP, 0, g_dlldir, -1, wd, MAX_PATH)) wd[0] = 0;
-        _snwprintf(g_cards_dirw, MAX_PATH, L"%s\\cards", wd);
+        DWORD n = GetEnvironmentVariableW(L"WCCF_CARDS", g_cards_dirw, MAX_PATH);
+        if (n == 0 || n >= MAX_PATH) {
+            if (!MultiByteToWideChar(CP_ACP, 0, g_dlldir, -1, wd, MAX_PATH)) wd[0] = 0;
+            _snwprintf(g_cards_dirw, MAX_PATH, L"%s\\cards", wd);
+        }
         g_cards_dirw[MAX_PATH - 1] = 0;
     }
-    logline("board: table %s ; fpr_panel state %s ; our files in %s", g_table_path, g_state_path, g_dlldir);
+    logline("board: table %s ; fpr_panel state %s ; skin %s ; catalogue %s", g_table_path, g_state_path,
+            g_skin_path, g_cat_path);
     kit_version();
 }
 

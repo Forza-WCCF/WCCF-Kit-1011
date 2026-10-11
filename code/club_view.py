@@ -36,7 +36,7 @@ CARD = os.path.join(K.SAVE, "seat1_club.bin")
 BACKUPS = os.path.join(K.SAVE, "backup")
 VIEW = os.path.join(K.DATA, "club_view.txt")
 RUNNING = os.path.join(K.DATA, "running.json")
-CATALOGUE = os.path.join(K.OVERLAY, "catalogue.tsv")
+CATALOGUE = os.path.join(K.CACHE, "catalogue.tsv")
 POS_ORDER = {"GK": 0, "DF": 1, "MF": 2, "FW": 3}
 
 # katakana -> romaji (Hepburn), for names typed in kana (the overlay's font is ASCII); hiragana is turned into

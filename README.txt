@@ -255,17 +255,17 @@ GOOD TO KNOW
     it evenly.
 
 FOLDERS
-  bin\       winmm.dll (the hook), FPR_Emu.exe (card-table helper)
-  overlay\   wccfpanel.dll (the panel; the game's winmm.dll loads it into seat 1, and into the projector for its money
-             with commas only), skin.tex (its picture);
-             setup adds catalogue.tsv and cards\
-  code\   setup, play, english, the card maker, the launcher, and stand-ins for the arcade's hardware
+  programs\  wccfk.dll (the hook), wccfpanel.dll (the panel; the hook loads it into seat 1, and into the projector
+             for its money with commas only), FPR_Emu.exe (card-table helper)
+  art\       skin.tex (the panel's picture)
+  code\      setup, play, english, the card maker, the launcher, and stand-ins for the arcade's hardware
              (keychip and network, card reader, I/O board, scene service) and the key driver
   english\   the kit's English: screen_text.tsv (the translation), sega_rstring.tsv (Sega's European English),
              cpu_names.tsv (team names), exe_text.tsv (the ticker, the dates, money, the shop's name) - text and
              fingerprints only
-  source\    the source of every program in bin\ and overlay\ (C) and of PLAY and SETUP.exe (Rust,
+  source\    the source of every program in programs\ (C) and of PLAY and SETUP.exe (Rust,
              source\launcher) - source\README.txt: how they were built
   python\    Python 3.13 (python.org's embeddable build) with Pillow
   data\      made on your PC: settings (panel.txt), your club card (save\, with backup\ and your other clubs in
-             cards\), your keys (keys.txt), logs
+             cards\), your keys (keys.txt), logs, and cache\ (the catalogue and card pictures setup makes from
+             your game - made again if deleted)

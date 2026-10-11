@@ -13,11 +13,11 @@ source gives the same file, and keeps the compiler's leftovers in source\build\)
 The C source of every program the kit ships. Each was built with Microsoft's C compiler for 32-bit x86
 (Visual Studio Build Tools, "vcvarsall.bat x86"), the runtime linked in (/MT), so no Visual C++ runtime is needed.
 
-  bin\winmm.dll        mxhook\mxhook.c (+ winmm_fwd.h: forwards all 192 winmm functions to winmm_orig.dll)
-                       cl /nologo /LD /O2 /MT /W3 /D_CRT_SECURE_NO_WARNINGS mxhook.c /Fe:winmm.dll
-  bin\FPR_Emu.exe      fpr_emu\fpr_emu.c
+  programs\wccfk.dll   mxhook\mxhook.c (+ winmm_fwd.h: forwards the game's 3 timer functions to Windows' winmm)
+                       cl /nologo /LD /O2 /MT /W3 /D_CRT_SECURE_NO_WARNINGS mxhook.c /Fe:wccfk.dll
+  programs\FPR_Emu.exe fpr_emu\fpr_emu.c
                        cl /nologo /O2 /MT /W3 /D_CRT_SECURE_NO_WARNINGS fpr_emu.c /Fe:FPR_Emu.exe /link user32.lib
-  overlay\wccfpanel.dll   overlay\wccfpanel.c
+  programs\wccfpanel.dll   overlay\wccfpanel.c
                        cl /nologo /LD /O2 /MT /W3 /D_CRT_SECURE_NO_WARNINGS wccfpanel.c /Fe:wccfpanel.dll
                           /link d3d9.lib gdi32.lib user32.lib ole32.lib windowscodecs.lib
   overlay\fakegame.c   not shipped: a stand-in for seat 1's game window to see the panel without the game (its
@@ -30,7 +30,7 @@ PLAY.exe, SETUP.exe   launcher\ (Rust; Cargo.lock pins every crate)
                        The C runtime is linked in (launcher\.cargo\config.toml); checks: cargo fmt --check,
                        cargo clippy --all-targets -- -D warnings, cargo test
 
-overlay\skin.tex is a picture (the panel's art, 1728x1080, BGRA) rendered from the project's skin page; it has no
+art\skin.tex is a picture (the panel's art, 1728x1080, BGRA) rendered from the project's skin page; it has no
 source here.
 
 What each does, in short:

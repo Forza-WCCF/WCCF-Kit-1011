@@ -231,10 +231,10 @@ def is_cabinet_role(role):
     return role in CABINET_ROLES or bool(re.fullmatch(r"seat \d+ launcher", role or ""))
 
 
-# the overlay (seat 1's panels, the projector's money): the game's winmm.dll (the kit's, mxhook.c) loads it once the
+# the overlay (seat 1's panels, the projector's money): the kit's hook (wccfk.dll, mxhook.c) loads it once the
 # game's window is up, in the game itself - for the two windows whose environment names it, never the server.  Before
 # 2026-10-09 overlay\inject.exe wrote it into the running game from outside, which antivirus programs flag
-PANEL_DLL = os.path.join(K.OVERLAY, "wccfpanel.dll")      # not PANEL: that is data\panel.txt (Kit 5.5 reused the
+PANEL_DLL = os.path.join(K.PROGRAMS, "wccfpanel.dll")     # not PANEL: that is data\panel.txt (Kit 5.5 reused the
                                                           # name, so a plain start read the dll and never went online)
 
 
@@ -242,7 +242,10 @@ def kit_env(game):
     """what every program of a run gets: this PC's environment without an earlier run's MXHOOK_ / WCCF settings, and
     where the game and the logs are"""
     env = {k: v for k, v in os.environ.items() if not k.upper().startswith(("MXHOOK_", "WCCF"))}
-    env.update(WCCF_GAME=game, WCCF_LOGS=K.LOGS, MXHOOK_LOG_DIR=os.path.join(K.LOGS, "hook"))
+    env.update(WCCF_GAME=game, WCCF_LOGS=K.LOGS, MXHOOK_LOG_DIR=os.path.join(K.LOGS, "hook"),
+               # where the panel (wccfpanel.dll, now in programs\) finds its own data, no longer beside the DLL:
+               WCCF_SKIN=os.path.join(K.ART, "skin.tex"), WCCF_CATALOGUE=os.path.join(K.CACHE, "catalogue.tsv"),
+               WCCF_CARDS=os.path.join(K.CACHE, "cards"))
     return env
 
 
@@ -345,7 +348,7 @@ def setup_state():
     if not game or not os.path.isfile(os.path.join(seat, ".wccf-kit")):
         say("Not set up yet - run SETUP.exe first.")
         return None, None
-    if not os.path.isfile(os.path.join(K.OVERLAY, "catalogue.tsv")):   # the panel's card browser only (A10) - not the
+    if not os.path.isfile(os.path.join(K.CACHE, "catalogue.tsv")):     # the panel's card browser only (A10) - not the
         say("  (the card CATALOGUE is not built yet - the panel's catalogue will be empty; SETUP.exe rebuilds it)")
     return game, seat                                                  # game: it must never stop a start
 
@@ -557,7 +560,7 @@ def start_cabinet(debug, env, mode, ip, seat_no, seat, roles):
             return "maximized" in open(olog, encoding="utf-8", errors="replace").read()[skip:]
         except OSError:
             return False
-    # the game itself loads the overlay: its winmm.dll (the kit's) loads WCCF_PANEL 3 s after this window is up.  The
+    # the game itself loads the overlay: its hook (wccfk.dll) loads WCCF_PANEL 3 s after this window is up.  The
     # game runs without it if it does not come - never a reason to take the game away (2026-10-06)
     try:
         wait_for("the overlay", overlay_up, 60)
@@ -706,7 +709,7 @@ def play(debug, mode="local", ip=None, seat_no=None):
 
     start_cabinet(debug, env, mode, ip, seat_no, seat, roles)
     # the projector gets the overlay too (2026-10-06), in its money-only mode: its amounts with commas
-    # (wccfpanel.c is_projector - no panels, nothing else); its winmm.dll loads it (WCCF_PANEL above), and it plays on
+    # (wccfpanel.c is_projector - no panels, nothing else); its hook (wccfk.dll) loads it (WCCF_PANEL above), and it plays on
     # as before if it does not load (data\logs\wccfpanel_projector.log)
 
     h = start("_kit_helper.py", [LIFE], "run_helper.txt", env)      # the panels' RESTART NOW (from outside the game)

@@ -46,7 +46,7 @@ class ClubView:
         self.card, self.backups = os.path.join(save, "seat1_club.bin"), os.path.join(save, "backup")
         self.cards = os.path.join(save, "cards")                       # your other club cards (club_wallet.py)
         self.running, self.out = os.path.join(data, "running.json"), os.path.join(data, "club_view.txt")
-        self.catalogue = os.path.join(os.path.dirname(HERE), "overlay", "catalogue.tsv")
+        self.catalogue = os.path.join(data, "cache", "catalogue.tsv")     # made by SETUP (was overlay\)
         self.seen, self.since, self.done, self.mod, self.said, self.retry_at = None, 0.0, None, None, False, 0.0
 
     def signature(self):

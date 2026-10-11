@@ -15,8 +15,10 @@ What it changes, and nothing else on the PC:
   beside it       seat1\   the player cabinet: links to extracted\'s folders and files, its own patched
                            client_Release.exe (15 changes, checked byte for byte) and its own local\ settings
                   misc\FlatPanelReader_Emulator\exe\FPR_Emu.exe   the card-table helper the game starts
-  in the kit      overlay\catalogue.tsv, overlay\cards\   the catalogue and card pictures, made from YOUR files
+  in the kit      data\cache\catalogue.tsv, data\cache\cards\   the catalogue and card pictures, made from YOUR files
                   data\   settings, your club card (data\save), logs
+                  an older kit's scripts\, bin\ and overlay\ (before kit 6): its own files removed, its catalogue and
+                  card pictures moved to data\cache\ (tidy_old_layout)
 Exit: 0 done; 1 a step failed (the message says which); 2 no usable game folder.
 """
 import json
@@ -328,15 +330,63 @@ def setup_seat(game):
     copy_if_different(os.path.join(K.PROGRAMS, "FPR_Emu.exe"), os.path.join(helper, "FPR_Emu.exe"), "FPR_Emu.exe")
 
 
+# the folders a kit before 6 used (the 2026-10-11 folder move): code\ was scripts\, programs\ was bin\, art\ and
+# data\cache\ were overlay\.  An update removes the old kit's files but not their folders, and never the catalogue
+# and card pictures setup made; a kit unzipped by hand over an old one keeps all of it.  Only the old kit's own files
+# go; anything else stays, and so does its folder.  None = the old copies of what is in code\ now.
+OLD_LAYOUT = {"scripts": None, "bin": ("winmm.dll", "winmm_orig.dll", "wccfk.dll", "FPR_Emu.exe", "logowin.exe"),
+              "overlay": ("wccfpanel.dll", "skin.tex", "inject.exe")}
+
+
+def tidy_old_layout():
+    """move an old overlay\\ catalogue + card pictures into data\\cache\\, remove the old kit's files and then the
+    empty old folders.  Housekeeping: never stops a setup (a file held open just stays, and is said)."""
+    old = os.path.join(K.KIT, "overlay")
+    for name in ("catalogue.tsv", "cards"):          # made from the player's own game: moved, not made again
+        src, dst = os.path.join(old, name), os.path.join(K.CACHE, name)
+        try:
+            if not os.path.exists(src):
+                continue
+            if os.path.exists(dst):                  # already made in the new place: the old copy is spare
+                shutil.rmtree(src) if os.path.isdir(src) else os.remove(src)
+            else:
+                os.makedirs(K.CACHE, exist_ok=True)
+                os.replace(src, dst)
+                ok("%s moved from overlay\\ to data\\cache\\" % name)
+        except OSError as ex:
+            note("overlay\\%s could not be moved (%s) - it is made again in data\\cache\\" % (name, ex))
+    for folder, files in OLD_LAYOUT.items():
+        d = os.path.join(K.KIT, folder)
+        if not os.path.isdir(d):
+            continue
+        if files is None:
+            files = [n for n in os.listdir(d) if os.path.isfile(os.path.join(K.SCRIPTS, n))]
+            shutil.rmtree(os.path.join(d, "__pycache__"), ignore_errors=True)
+        for n in files:
+            try:
+                os.remove(os.path.join(d, n))
+            except FileNotFoundError:
+                pass
+            except OSError as ex:
+                note("%s\\%s (an older kit's) could not be removed: %s" % (folder, n, ex))
+        try:
+            os.rmdir(d)
+            ok("the older kit's %s\\ folder removed (its files are in code\\, programs\\, art\\ and data\\cache\\ now)"
+               % folder)
+        except OSError:
+            note("%s\\ is from an older kit and still holds files that are not the kit's - left as it is" % folder)
+
+
 def setup_cards(game, force=False):
-    print("in the kit's overlay folder:")
-    cat, pics = os.path.join(K.OVERLAY, "catalogue.tsv"), os.path.join(K.OVERLAY, "cards")
+    print("in the kit's data\\cache folder:")
+    os.makedirs(K.CACHE, exist_ok=True)
+    cat, pics = os.path.join(K.CACHE, "catalogue.tsv"), os.path.join(K.CACHE, "cards")
     have = len([n for n in os.listdir(pics) if n.endswith(".png")]) if os.path.isdir(pics) else 0
     if not force and os.path.isfile(cat) and have >= cards.RECORDS:
         ok("catalogue and %d card pictures already made" % have)
         return
     print("  making the catalogue and the card pictures from your game files (about a minute) ...", flush=True)
-    if cards.main([game, K.OVERLAY]) != 0:
+    if cards.main([game, K.CACHE]) != 0:
         raise Failed("the card catalogue could not be made (see above)")
     ok("catalogue and card pictures made")
 
@@ -454,6 +504,8 @@ def main(argv):
         s = K.load_settings()
         s["game"] = game
         K.save_settings(s)
+        print("in the kit's folder:")
+        tidy_old_layout()
         setup_cards(game, force_cards)
     except Failed as ex:
         print("  FAIL  %s" % ex)

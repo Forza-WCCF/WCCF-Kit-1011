@@ -24,21 +24,21 @@ t = tempfile.mkdtemp(prefix="wccf-setup-")
 try:
     game = os.path.join(t, "game")
     seat = os.path.join(t, "seat")
-    overlay = os.path.join(t, "overlay")
-    for d in (game, seat, overlay):
+    cache = os.path.join(t, "cache")
+    for d in (game, seat, cache):
         os.makedirs(d)
     open(os.path.join(seat, ".wccf-kit"), "w").close()        # the "set up" marker
 
     K.find_game = lambda cfg: game                            # a set-up game
     K.seat_dir = lambda g: seat
     K.load_settings = lambda: {"game": game}
-    K.OVERLAY = overlay
+    K.CACHE = cache
 
     # no catalogue.tsv: the start must still go (only a note)
     check(play.setup_state() == (game, seat), "a missing catalogue does NOT stop the start")
 
     # with the catalogue present: also fine
-    open(os.path.join(overlay, "catalogue.tsv"), "w").close()
+    open(os.path.join(cache, "catalogue.tsv"), "w").close()
     check(play.setup_state() == (game, seat), "a built catalogue is fine too")
 
     # a game that is not set up (no .wccf-kit) still stops, clearly

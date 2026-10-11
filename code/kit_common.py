@@ -9,9 +9,10 @@ import os
 
 SCRIPTS = os.path.dirname(os.path.abspath(__file__))
 KIT = os.path.dirname(SCRIPTS)
-PROGRAMS = os.path.join(KIT, "programs")   # the kit's compiled programs (was bin\): the hook, the card-table helper
-OVERLAY = os.path.join(KIT, "overlay")
+PROGRAMS = os.path.join(KIT, "programs")   # the kit's compiled programs (was bin\): the hook, the panel, card-table
+ART = os.path.join(KIT, "art")             # shipped art: skin.tex (was overlay\)
 DATA = os.path.join(KIT, "data")
+CACHE = os.path.join(DATA, "cache")        # made by SETUP from the player's game: catalogue.tsv, cards\ (was overlay\)
 LOGS = os.path.join(DATA, "logs")
 SAVE = os.path.join(DATA, "save")
 SETTINGS = os.path.join(DATA, "settings.json")

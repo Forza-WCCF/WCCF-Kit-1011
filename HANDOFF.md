@@ -15,8 +15,9 @@ files ship.** SETUP builds whatever it needs from the player's own copy of the g
 | Folder | What it holds |
 |---|---|
 | `PLAY.exe` `SETUP.exe` | the launchers (Rust). PLAY starts/stops the game; SETUP sets up the game folder, language, and kit updates |
-| `programs\` | the compiled programs: the in-game hook (`wccfk.dll`) and the card-table helper (`FPR_Emu.exe`). (The panel will move here too; for now it is in `overlay\`.) |
-| `overlay\` | the panel (`wccfpanel.dll`), its art (`skin.tex`), and the catalogue + card pictures SETUP builds from the player's game |
+| `programs\` | the compiled programs: the in-game hook (`wccfk.dll`), the panel (`wccfpanel.dll`) and the card-table helper (`FPR_Emu.exe`) |
+| `art\` | the panel's picture (`skin.tex`) |
+| `data\cache\` | the catalogue + card pictures SETUP makes from the player's own game (made again if deleted) |
 | `english\` | the English translation tables (text + fingerprints of Sega's files; no Sega file) |
 | `python\` | an embedded Python so players install nothing |
 | `code\` | the kit's Python: launching, hardware stand-ins, the card toolset, online, the server, setup |

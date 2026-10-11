@@ -60,6 +60,9 @@ if ($LASTEXITCODE) { $failed += 'log rotation never stops a start when a log fil
 & $py -I (Join-Path $PSScriptRoot 'test_setup_state.py') | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'a missing card catalogue does not stop a start' }
 
+& $py -I (Join-Path $PSScriptRoot 'test_old_layout.py') | Select-Object -Last 1
+if ($LASTEXITCODE) { $failed += 'an older kit''s scripts\ bin\ overlay\ tidied, the catalogue moved to data\cache\' }
+
 & $py -I (Join-Path $PSScriptRoot 'test_patch_hook_import.py')
 if ($LASTEXITCODE) { $failed += 'the hook-import patcher: winmm -> wccfk, valid checksum, reversible' }
 
@@ -91,11 +94,12 @@ $env:WCCFPANEL_MONEYTEST = '1'
 $env:WCCFPANEL_RELAYTEST = '1'
 $env:WCCFPANEL_DEALTEST = '1'             # the dealt card's odds
 $env:WCCF_RELAY_PORT = '20941'
+$env:WCCF_SKIN = Join-Path $kit 'art\skin.tex'      # the panel's art (play.py passes it; no longer beside the panel)
 $relay = Start-Process -FilePath $py -ArgumentList '-I', "`"$(Join-Path $kit 'code\_relay.py')`"", '60' -PassThru -WindowStyle Hidden
 try {
     Start-Sleep -Seconds 1
     $p = Start-Process -FilePath (Join-Path $t 'fakegame.exe') -WorkingDirectory $t -PassThru -Wait -NoNewWindow `
-        -ArgumentList "`"$(Join-Path $kit 'overlay\wccfpanel.dll')`" wait:12000"
+        -ArgumentList "`"$(Join-Path $kit 'programs\wccfpanel.dll')`" wait:12000"
     $log = Get-Content (Join-Path $t 'wccfpanel.log') -ErrorAction SilentlyContinue
     $tests = @($log | Select-String -Pattern ' test: (PASS|FAIL) ')
     $bad = @($tests | Where-Object { $_.Line -match ' test: FAIL ' })
@@ -108,7 +112,7 @@ try {
     }
 } finally {
     if (-not $relay.HasExited) { Stop-Process -Id $relay.Id -Force }
-    'WCCF_RELAY_PORT', 'WCCFPANEL_ROLE', 'WCCFPANEL_DRYKEYS', 'WCCFPANEL_FULLSCREEN', 'WCCF_DATA', 'WCCF_KEYS', 'WCCFPANEL_MONEYTEST',
+    'WCCF_RELAY_PORT', 'WCCF_SKIN', 'WCCFPANEL_ROLE', 'WCCFPANEL_DRYKEYS', 'WCCFPANEL_FULLSCREEN', 'WCCF_DATA', 'WCCF_KEYS', 'WCCFPANEL_MONEYTEST',
     'WCCFPANEL_RELAYTEST', 'WCCFPANEL_DEALTEST' | ForEach-Object { Remove-Item "env:$_" -ErrorAction SilentlyContinue }
     Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
 }

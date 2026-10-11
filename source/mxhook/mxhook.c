@@ -1,16 +1,16 @@
 /*
  * mxhook.c - WCCF RingEdge hardware-emulation shim.
  *
- * A drop-in winmm.dll proxy for the arcade game client_Release.exe. The game
+ * wccfk.dll, the kit's hook for the arcade game client_Release.exe. The game
  * is a 2010-11 Sega RingEdge title; on a real cabinet it talks to cabinet
  * hardware (settings chip, save SRAM, JVS IO board, hwmon) through a set of
  * kernel device drivers that do not exist on a plain PC. This shim is the PC
  * stand-in for that hardware - the same role segatools / TeknoParrot play for
  * other Sega boards.
  *
- * It is loaded ONLY by the game processes we launch (client_Release and
- * control_Release import winmm by name, and winmm is not a protected KnownDLL,
- * so our local copy loads first). It touches no other process. What it does:
+ * It is loaded ONLY by the game's programs: SETUP renames their import of
+ * WINMM.dll to wccfk.dll (code\patch_hook_import.py), and this DLL passes the
+ * three timer functions on to Windows' own winmm. It touches no other process. What it does:
  *  - logs every device open / file-mapping / DeviceIoControl, passing each
  *    straight through (observation);
  *  - blocks DHCP release/renew on the host NIC (it dropped the player's LAN);
@@ -29,7 +29,7 @@
  *    window is up, for seat 1 and the projector (2026-10-09; before, the
  *    kit's inject.exe wrote it into the game from outside).
  *
- * Load method : winmm.dll proxy in the game folder (no process injection).
+ * Load method : the game's renamed import (wccfk.dll in its folder; no process injection).
  * Hook method : IAT patch of the game module's imports (in-process), by name
  *               or by ordinal (ws2_32 functions are imported by ordinal).
  */
@@ -1022,7 +1022,7 @@ static BOOL WINAPI hook_CreateProcessA(LPCSTR app, LPSTR cmd, LPSECURITY_ATTRIBU
     GetLocalTime(&st);
     f = fopen("logowin_messages.txt", "a");
     if (f) {
-        fprintf(f, "%04d-%02d-%02d %02d:%02d:%02d  started by pid %lu  %s  (not run: the kit's winmm.dll)\n",
+        fprintf(f, "%04d-%02d-%02d %02d:%02d:%02d  started by pid %lu  %s  (not run: the kit's hook)\n",
                 st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond,
                 (unsigned long)GetCurrentProcessId(), cmd ? cmd : app);
         fclose(f);
@@ -1087,7 +1087,7 @@ static void install_hooks(void)
 }
 
 /* ---- the kit's overlay (2026-10-09) -------------------------------------
- * WCCF_PANEL = the kit's overlay\wccfpanel.dll. play.py names it only for
+ * WCCF_PANEL = the kit's programs\wccfpanel.dll. play.py names it only for
  * seat 1 and the projector (never the server). 3 s after this game shows a
  * window - when play.py used to inject it - this process loads it itself, a
  * plain LoadLibrary. Before, overlay\inject.exe wrote the path into the game

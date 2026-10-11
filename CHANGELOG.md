@@ -7,6 +7,11 @@ game is not included. Newest first; each date is the day that kit was built.
 ## Unreleased
 
 ### Changed
+- Simpler folders. The kit's Python is in `code\` (was `scripts\`); every program, the panel included, is in
+  `programs\` (was `bin\` and `overlay\`); the panel's picture is in `art\`; the catalogue and card pictures SETUP
+  makes from your game are in `data\cache\`. Updating from an older kit and pressing set up moves your catalogue and
+  card pictures over (no waiting for them to be made again) and removes the old kit's leftover files and folders -
+  anything of yours in those folders stays.
 - The kit's helper no longer gets deleted by antivirus. It used to sit beside the game pretending to be a Windows
   file (`winmm.dll`), which is how some malware sneaks in - so Windows Defender flagged and deleted it, and the game
   would not start. Now the helper has its own honest name (`wccfk.dll`) and SETUP simply points the game at it (a
