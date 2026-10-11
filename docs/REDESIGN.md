@@ -20,13 +20,16 @@ by their audit tags (A1, B3, D10 ...).
   HANDOFF files ship in the player ZIP or are kept out by `.gitattributes` like `docs\`. Default: keep them in the
   repo, out of the ZIP.)
 
-## Coordination (the real constraint)
+## Coordination
 
-As of 2026-10-11 there are 7 open PRs from peakx and this session (#28-#35: English, Italian, settings, CI,
-winmm version info, whole-messages). A whole-repo file move makes all of them un-mergeable. **So the physical move
-(moving/renaming files) waits until those PRs are merged or closed.** Until then we do the work that does NOT move
-files: the player-safety bug fixes (A1-A9), in the current files, each its own PR. Those are also what protects
-players first (the audit's own recommended order).
+Ali's order (2026-10-11): "we can rework peakx's work and make it better, and make it work with the new design,
+this is not a question its an order." So the redesign is NOT blocked on the 7 open PRs (#28-#35). peakx's content
+(English, Italian translations) is kept and folded into the new `assets\english\` layout; the plumbing PRs
+(settings, CI, winmm version info) are reworked onto the new design. The redesign proceeds at full speed.
+
+Still true and non-negotiable: **never break what players and the live server run.** Work stays incremental (one
+module/fix at a time, CI green, real-game test before any release) - that is a safety rule, not a coordination one.
+We start with the most dangerous player bugs (A1-A9) because a half-fixed card bug can destroy a player's club card.
 
 ## Target layout (from the audit's F4, refined as we go)
 
@@ -70,8 +73,8 @@ settings, clubcard, deal, net, money, gamefix.
 Status: [ ] not started  [~] in progress  [x] done (PR #)
 
 ### Phase 1 - player safety, in the current files (no file move, conflict-free)
-- [ ] A1  wrong-size card no longer locks the player out: keep the reason in a real log, name it, start with an empty slot
-- [ ] A2  card save never writes in place; keep the newest image in memory and retry (+ a test, the reader has none)
+- [x] A1  wrong-size card no longer locks the player out: a NEW card is served, the bad file kept as .bad (`open_card`). Still to do: name the log in play.py's failure, keep refusal lines in a real log (play.py side)
+- [x] A2  card save never writes in place; keeps the newest image in memory and retries (`_flush`, `retry_saves`) + `source\test_icc_reader.py` (14 checks) - the reader's first test
 - [ ] A3  player runs need no 12-hour kill (the window-close watch already ends them); keep long life for the server only
 - [ ] A4  seat fallback only on "no broker"; wait longer than the lease's worst case; record the lease process at once
 - [ ] A5  the seat lease reconnects (WANT SEAT n)
@@ -87,7 +90,7 @@ Status: [ ] not started  [~] in progress  [x] done (PR #)
 - [ ] B3  run cabinets and the projector without the debugger; keep it for control only
 - [ ] B(4) stop impersonating winmm: ship the hook as wccfk.dll, patch the import in the game exes (DESIGN at `.work\research\mxrename\DESIGN.md`, mechanism already proven)
 
-### Phase 3 - the physical move (AFTER peakx's PRs land)
+### Phase 3 - the physical move
 - [ ] paths.py, files.py, procs.py, settings.py - the shared foundation; switch call sites one by one
 - [ ] card\ modules; merge the duplicate readers/savers (D1, D2); parity test for the C decoder (D4)
 - [ ] run\, standins\, online\, server\, setup\ - move and merge
@@ -100,4 +103,6 @@ Status: [ ] not started  [~] in progress  [x] done (PR #)
 - C1-C13 (stale docs/comments), E (dead code) - removed as each file is touched.
 
 ## Progress log (newest first)
+- 2026-10-11  A1 + A2 done: the card reader never writes the card in place and never locks the player out on a bad
+  card; `source\test_icc_reader.py` (14 checks) added to check.ps1 - the reader's first test.
 - 2026-10-11 06:11  branch `redesign` cut off main; this plan + root HANDOFF written. Phase 1 next.

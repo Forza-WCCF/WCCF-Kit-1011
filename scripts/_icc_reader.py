@@ -107,6 +107,7 @@ class Card:
         self.path = path
         self.log = None                              # set by main(): reports backups and slow replaces
         self.last_save = 0.0
+        self.pending = None                          # the newest card image not yet safely on disk (A2)
         if path and os.path.exists(path):
             self.load(path)
 
@@ -165,8 +166,11 @@ class Card:
 
     def save(self):
         """The whole card goes to CARDFILE.tmp, is flushed to the disk, then replaces CARDFILE in one step: a kill, a
-        crash or a power cut at any moment leaves the old card or the new one, never a short file (writing CARDFILE in
-        place could: a test killed the old way 150 times and found 83 empty files)."""
+        crash or a power cut at any moment leaves the old card or the new one, never a short file. If the disk write
+        cannot complete (the file stays busy for 1 s - an antivirus scan, a backup tool, an indexer), the newest card
+        is KEPT IN MEMORY and retried later; the card is NEVER written in place, which could leave a short file (a test
+        killed the in-place way 150 times and found 83 empty files). The card on disk then stays the last good one
+        until a retry succeeds."""
         if not self.path:
             return
         now = time.time()
@@ -178,16 +182,19 @@ class Card:
             except OSError as e:
                 self.note("  card backup FAILED (%s) - saving anyway" % e)
         self.last_save = now
-        data = self.image()
+        self.pending = self.image()
+        self._flush()
+
+    def _flush(self):
+        """Write self.pending atomically; on failure keep it for the next try. Never writes the card in place (A2)."""
+        if self.pending is None:
+            return
         try:
-            self.replace_with(data)
-        except Exception as e:                       # never stop the reader over a save: the game is mid-session
-            self.note("  safe save FAILED (%s) - writing the card in place this once" % e)
-            try:
-                with open(self.path, "wb") as f:
-                    f.write(data)
-            except Exception as e2:
-                self.note("  card NOT SAVED (%s) - the reader still holds it in memory" % e2)
+            self.replace_with(self.pending)
+            self.pending = None
+        except Exception as e:                       # the game is mid-session: never stop the reader over a save
+            self.note("  card NOT saved to disk this time (%s) - kept safe in memory; the card on disk is still the "
+                      "last good one, a retry will save it" % e)
 
     def replace_with(self, data):
         tmp = self.path + ".tmp"
@@ -208,6 +215,28 @@ class Card:
 
 class CardFileError(Exception):
     pass
+
+
+def open_card(cardfile, log):
+    """The club card for the reader, or - if the file is unreadable (wrong size) - a NEW blank card so the game still
+    opens and the CLUB CARD panel can switch to or restore one (A1: never lock the player out). The unreadable file is
+    kept as <name>.<time>.bad and never written over."""
+    try:
+        return Card(cardfile)
+    except CardFileError as e:
+        log("CARD FILE REFUSED: %s" % e)
+        if cardfile and os.path.exists(cardfile):
+            bad = "%s.%s.bad" % (cardfile, time.strftime("%Y%m%d-%H%M%S"))
+            try:
+                shutil.copyfile(cardfile, bad)
+                log("  the unreadable file is kept as %s" % bad)
+            except OSError as e2:
+                log("  could not keep a copy of it (%s)" % e2)
+        card = Card()
+        card.path = cardfile
+        log("  a NEW blank card is on the reader so the game still opens - restore your club from data\\save\\backup "
+            "if you have a good copy")
+        return card
 
 
 class Reader:
@@ -269,6 +298,12 @@ class Reader:
         self.second, self.field = sec, field
         if self.card not in field:
             self.card = field[0]
+
+    def retry_saves(self):
+        """A periodic retry of any card whose last save could not reach the disk (A2); called while the port is idle."""
+        for c in (self.main, self.second):
+            if c is not None and c.pending is not None:
+                c._flush()
 
     def answer(self, cmd, data):
         c = self.card
@@ -343,11 +378,7 @@ def main(argv):
             logf.write(line + "\n")
             logf.flush()
 
-    try:
-        card = Card(cardfile)
-    except CardFileError as e:
-        log("CARD FILE REFUSED: %s" % e)
-        return 2
+    card = open_card(cardfile, log)
     card.log = log
     h = k.CreateNamedPipeW(pipe_name, 3, 0, 1, 4096, 4096, 0, None)
     if not h or h == INVALID:
@@ -358,6 +389,7 @@ def main(argv):
         pipe_name, seconds, kind, (" <- %s" % cardfile) if cardfile else "",
         ("; room for a second card (a manager transfer) in %s" % newfile) if newfile else ""))
     reader = Reader(card, log, newfile)
+    last_retry = time.time()                          # throttle for retrying a save that could not reach the disk (A2)
     buf = (ctypes.c_char * 4096)()
     got = w.DWORD()
 
@@ -380,6 +412,9 @@ def main(argv):
                 log("game closed the port")
                 break
             if avail.value == 0:
+                if time.time() - last_retry > 2:      # a save that could not reach the disk earlier: try again (A2)
+                    reader.retry_saves()
+                    last_retry = time.time()
                 time.sleep(0.001)
                 continue
             k.ReadFile(h, buf, min(avail.value, 4096), ctypes.byref(got), None)

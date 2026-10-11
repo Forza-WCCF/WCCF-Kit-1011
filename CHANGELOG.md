@@ -4,6 +4,18 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
+## Unreleased
+
+### Fixed
+- Your club card can no longer be lost to a busy file. When the card cannot be saved to disk because something else
+  (an antivirus scan, a backup tool, a search indexer) is holding the file, the kit now keeps your newest card in
+  memory and tries again - the card on disk stays your last good one. Before, it would write the card straight over
+  the file as a last resort, which could leave a half-written, unusable card.
+- A damaged or wrong-size card file no longer locks you out. The game now still opens with a new blank card (so you
+  can use CLUB CARD), and your unreadable file is kept safe as a `.bad` copy so it can be recovered. Before, the game
+  would simply fail to start, with nothing on screen to say why.
+  (The card reader now has an automated test for both - `source\test_icc_reader.py`.)
+
 ## Kit 5.5.1 - 2026-10-10
 
 ### Fixed
