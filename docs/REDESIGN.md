@@ -78,7 +78,7 @@ Status: [ ] not started  [~] in progress  [x] done (PR #)
 - [x] A3  no 12-hour kill: player `LIFE` is now a 32-day backstop; a run ends when its window closes (watch.rs). play.py docstring updated
 - [x] A4  seat fallback only on "no broker" (`_seat_decision`, tested); waits 25 s (> the lease's 16 s worst case); the lease pid is tracked at once so a stop always cleans it up. `source\test_take_seat.py` (10 checks)
 - [x] A5  the seat lease reconnects and re-claims its seat (WANT SEAT n) after any break; retries through a desk restart. `source\test_seat_lease.py` (4 checks, a fake desk)
-- [ ] A6  the relay ties a seat to a token the desk issued; ignore spoofed "I am seat n"
+- [~] A6  the relay now rejects a seat claim from a different address while the owner is live (`claim`, `source\test_relay.py`, 10 checks) - stops internet hijacking of a live match. THE FULL desk-issued token (also covers the pre-match race and two-behind-one-router) is deferred to the online\ rebuild: it needs the desk, the lease, the overlay (C) and a coordinated client update
 - [ ] A7  one "is a session open" rule, incl. the transfer card, used by the panel too
 - [ ] A8  no default key for SW1/SW2 (the card-overwrite switch)
 - [ ] A9  a log folder that cannot be moved starts a fresh-named one instead of failing

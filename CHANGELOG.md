@@ -7,6 +7,9 @@ game is not included. Newest first; each date is the day that kit was built.
 ## Unreleased
 
 ### Fixed
+- Online: your live match can no longer be hijacked. The match relay now treats a seat as belonging to the address
+  that holds it, so a stranger sending "I am seat n" from somewhere else is ignored while you are playing. Before,
+  anyone could redirect another player's match to themselves and drop them to a CPU game. (`source\test_relay.py`.)
 - Online: a brief network blip no longer loses your seat. The kit now reconnects to the server's seat desk and
   re-claims the same seat; before, one missed reply ended the hold for good and the server freed your seat under
   the running game. (`source\test_seat_lease.py`.)

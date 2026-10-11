@@ -17,6 +17,12 @@ Packets (binary; "WRL1" = 57 52 4C 31):
     relay -> cabinet   "WRL1" "Q" token                         at once with the same token - nothing else is done
 A seat not heard from for 30 s is forgotten; a packet for a seat the relay does not know is dropped (and counted) -
 the game resends lost packets.  It never looks inside a payload.
+
+A live seat belongs to the address that holds it (A6, 2026-10-11): while the owner is still heard from (within 30 s),
+a packet that claims its seat from a DIFFERENT address is rejected, so no one on the internet can send "WRL1R" + a
+seat and redirect another player's match to themselves. Once the owner goes quiet (> 30 s) the seat is free for a new
+address (a player whose public address changed waits at most that long). The stronger tie - a token the seat desk
+gives each PC, carried in the packet - is deferred to the online rebuild (it needs the overlay and a client update).
 """
 import os
 import socket
@@ -40,6 +46,20 @@ def log(msg):
             pass
 
 
+def claim(seats, seat, addr, now, rejects):
+    """Record addr as the owner of `seat`, unless a DIFFERENT address holds it and was heard within FORGET: a live
+    seat cannot be taken over by another address (A6). Returns True when addr owns the seat (so its packet is handled),
+    False when the claim is rejected (a stranger). The owner refreshing, or claiming a free/forgotten seat, is allowed."""
+    known = seats.get(seat)
+    if known and known[0] != addr and now - known[1] <= FORGET:
+        rejects[seat] = rejects.get(seat, 0) + 1
+        return False
+    if not known or known[0] != addr:
+        log("seat %d is at %s:%d" % (seat, addr[0], addr[1]))
+    seats[seat] = [addr, now]
+    return True
+
+
 def main(argv):
     global log_file
     life = float(argv[0]) if argv else 12 * 3600
@@ -53,17 +73,19 @@ def main(argv):
     s.settimeout(1.0)
     log("match relay listening on UDP %d" % PORT)
     seats = {}                          # seat -> [addr, last heard]
-    counts, drops, next_report = {}, {}, time.time() + 30
+    counts, drops, rejects, next_report = {}, {}, {}, time.time() + 30
     end = time.time() + life
     while time.time() < end:
         now = time.time()
         if now >= next_report:
-            if counts or drops:
-                log("last 30 s: %s%s" % (", ".join("%d->%d %d" % (a, b, n) for (a, b), n in sorted(counts.items())) or
-                                         "nothing passed",
-                                         "; dropped (seat not known): %s" % ", ".join(
-                                             "->%d %d" % (b, n) for b, n in sorted(drops.items())) if drops else ""))
-            counts, drops, next_report = {}, {}, now + 30
+            if counts or drops or rejects:
+                log("last 30 s: %s%s%s" % (", ".join("%d->%d %d" % (a, b, n) for (a, b), n in sorted(counts.items())) or
+                                           "nothing passed",
+                                           "; dropped (seat not known): %s" % ", ".join(
+                                               "->%d %d" % (b, n) for b, n in sorted(drops.items())) if drops else "",
+                                           "; rejected (seat held by another address): %s" % ", ".join(
+                                               "seat %d %d" % (b, n) for b, n in sorted(rejects.items())) if rejects else ""))
+            counts, drops, rejects, next_report = {}, {}, {}, now + 30
             for seat in [k for k, v in seats.items() if now - v[1] > FORGET]:
                 log("seat %d (%s:%d) not heard from for %d s - forgotten" % (seat, seats[seat][0][0], seats[seat][0][1],
                                                                           FORGET))
@@ -85,17 +107,11 @@ def main(argv):
                     pass
             continue
         if kind == b"R" and 1 <= data[5] <= 8:
-            seat = data[5]
-            known = seats.get(seat)
-            if not known or known[0] != addr:
-                log("seat %d is at %s:%d" % (seat, addr[0], addr[1]))
-            seats[seat] = [addr, now]
+            claim(seats, data[5], addr, now, rejects)       # a stranger's claim of a live seat is rejected (A6)
         elif kind == b"D" and len(data) >= 7 and 1 <= data[5] <= 8 and 1 <= data[6] <= 8:
             to_seat, from_seat = data[5], data[6]
-            known = seats.get(from_seat)
-            if not known or known[0] != addr:
-                log("seat %d is at %s:%d" % (from_seat, addr[0], addr[1]))
-            seats[from_seat] = [addr, now]
+            if not claim(seats, from_seat, addr, now, rejects):
+                continue                                    # not this seat's owner: drop the packet
             target = seats.get(to_seat)
             if not target or now - target[1] > FORGET:
                 drops[to_seat] = drops.get(to_seat, 0) + 1
