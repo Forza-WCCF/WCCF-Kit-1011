@@ -7,6 +7,10 @@ game is not included. Newest first; each date is the day that kit was built.
 ## Unreleased
 
 ### Fixed
+- Online: two PCs can no longer land on the same seat. If the server's seat desk was slow or gave an odd answer,
+  the kit used to start on seat 1 anyway - so a second PC could take seat 1 and one of them never got into the game.
+  Now it only plays "as before" when a server genuinely has no seat desk; otherwise it stops with a clear message
+  and offers local play. (`source\test_take_seat.py`.)
 - A long game is no longer force-closed. Before, any session was killed after 12 hours even in the middle of a
   match, which costs your club card a bad ending. Now a run ends only when you close the game window.
 - Your club card can no longer be lost to a busy file. When the card cannot be saved to disk because something else

@@ -444,35 +444,51 @@ def apply_board(seat):
         say("  table: left as it is (%s)" % ex)
 
 
+def _seat_decision(got, seat_no, ip):
+    """Pure: the seat lease's answer (a dict) -> ('seat', n, projector) or ('no_broker', n, projector); raises Failed
+    on any other trouble.  Only "no broker" (a server with no seat desk at all) falls back to seat 1 as before; full /
+    taken / refused / no answer must STOP, never take seat 1 - a second PC on seat 1 means one of them never gets into
+    the game, and the relay then mixes their match packets (A4)."""
+    if "seat" in got:
+        return "seat", int(got["seat"]), bool(got.get("projector"))
+    err = got.get("error")
+    detail = got.get("detail") or err or "?"
+    if err == "no broker":
+        s = seat_no or 1
+        return "no_broker", s, (s == 1)
+    raise Failed({
+        "full": "the server at %s is full: 8 cabinets play there now" % ip,
+        "taken": "seat %s is taken on the server at %s - leave the seat number out to get the next free one"
+                 % (seat_no, ip),
+        "no answer": "the server's seat desk at %s did not answer in time (%s) - not started, so this PC cannot land "
+                     "on a seat another player is already holding. Try again, or PLAY.exe local." % (ip, detail),
+    }.get(err, "the server's seat desk at %s would not give a seat (%s)" % (ip, detail)))
+
+
 def take_seat(ip, seat_no, env, roles):
     """remote mode (2026-10-06): this PC's seat on the server at ip, from the server's seat desk (_seat_broker.py,
     TCP 20030) through _seat_lease.py, which keeps holding it while the game runs; seat_no None = the next free seat.
-    Returns (seat, projector?).  A server without the desk: seat_no or 1, the projector with seat 1 - as before."""
+    Returns (seat, projector?).  See _seat_decision for what each answer means."""
     out = os.path.join(K.DATA, "seat_lease.json")
     if os.path.exists(out):
         os.remove(out)
     p = start("_seat_lease.py", [ip, out, LIFE] + ([] if seat_no is None else [seat_no]), "run_seat_lease.txt", env)
-    end = time.time() + 15
-    while time.time() < end and not os.path.exists(out):
+    roles[p.pid] = "seat lease"                       # tracked AT ONCE, so a stop always cleans it up - even a lease
+                                                      # that is slow to answer never keeps a seat untracked (A4)
+    end = time.time() + 25                            # longer than the lease's worst case (6 s connect + 10 s answer)
+    while time.time() < end and not os.path.exists(out) and p.poll() is None:
         time.sleep(0.2)
     try:
         with open(out, encoding="utf-8") as f:
             got = json.load(f)
     except (OSError, ValueError):
-        got = {"error": "no answer", "detail": "the seat lease wrote nothing in 15 s"}
-    if "seat" in got:
-        roles[p.pid] = "seat lease"
-        return int(got["seat"]), bool(got.get("projector"))
-    err = got.get("error")
-    if err == "full":
-        raise Failed("the server at %s is full: 8 cabinets play there now" % ip)
-    if err == "taken":
-        raise Failed("seat %d is taken on the server at %s - leave the seat number out to get the next free one" %
-                     (seat_no, ip))
-    seat_no = seat_no or 1
-    say("  (the server has no seat desk - %s: seat %d%s, as before)" % (got.get("detail") or err, seat_no,
-                                                                        " with the projector" if seat_no == 1 else ""))
-    return seat_no, seat_no == 1
+        got = {"error": "no answer", "detail": "the seat lease wrote nothing in time"}
+    kind, seat_no, projector = _seat_decision(got, seat_no, ip)      # may raise Failed (the lease has exited by then)
+    if kind == "no_broker":
+        del roles[p.pid]                             # the lease exited after writing "no broker" - nothing to clean up
+        say("  (the server at %s has no seat desk - seat %d%s, as before)" %
+            (ip, seat_no, " with the projector" if projector else ""))
+    return seat_no, projector
 
 
 def start_cabinet(debug, env, mode, ip, seat_no, seat, roles):

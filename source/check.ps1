@@ -45,6 +45,9 @@ if ($LASTEXITCODE) { $failed += 'a missing card helper file must not stop a star
 & $py -I (Join-Path $PSScriptRoot 'test_icc_reader.py')
 if ($LASTEXITCODE) { $failed += 'the card reader: a failed save never writes in place; a bad card does not lock out' }
 
+& $py -I (Join-Path $PSScriptRoot 'test_take_seat.py')
+if ($LASTEXITCODE) { $failed += 'the seat decision: only "no broker" falls back to seat 1; other answers stop' }
+
 & $py -I (Join-Path $PSScriptRoot 'test_log_archive.py')
 if ($LASTEXITCODE) { $failed += 'logs: the run before last zipped, the archive kept to its size' }
 
