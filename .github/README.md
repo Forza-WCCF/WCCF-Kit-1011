@@ -4,7 +4,6 @@
 
 <p align="center">
   <a href="https://github.com/Forza-WCCF/WCCF-Kit-1011/actions/workflows/kit.yml"><img alt="Kit build" src="https://github.com/Forza-WCCF/WCCF-Kit-1011/actions/workflows/kit.yml/badge.svg"></a>
-  <a href="https://github.com/Forza-WCCF/WCCF-Kit-1011/releases/latest"><img alt="Latest kit" src="https://img.shields.io/github/v/release/Forza-WCCF/WCCF-Kit-1011?label=kit&color=f47a20"></a>
   <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078d4">
   <img alt="Game: Rev D" src="https://img.shields.io/badge/game-2010--11%20Rev%20D-f47a20">
   <img alt="Python inside the kit" src="https://img.shields.io/badge/Python-inside%20the%20kit-3776ab">
