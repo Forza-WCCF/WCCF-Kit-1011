@@ -199,8 +199,7 @@ ONLINE (play with others on one server)
 ENGLISH (optional)
   ENGLISH (in SETUP.exe, GAME LANGUAGE) puts the game into English: about 7,200 lines of screen text, the players'
   names, short and full (Sega's own Latin spelling, e.g. M.DIARRA and Mahamadou DIARRA) and skill names, the CPU
-  teams' names, the six team stats around the hexagon and the OK / BACK button names (pictures), the projector's
-  "Next match" ticker, the dates on seat 1 (e.g. 2026/10/5 on the manager license), money in dollars, and the
+  teams' names, the projector's "Next match" ticker, the dates on seat 1 (e.g. 2026/10/5 on the manager license), money in dollars, and the
   shop's name on the projector's awards ("Local Shop" - also inside the server program, the only change ENGLISH
   makes to it).
   Awards the game saved before English was on keep the names they were saved with (e.g. the CPU's Best Eleven
@@ -211,15 +210,15 @@ ENGLISH (optional)
   It is built on your PC from your own game files and every line is checked; the kit holds only the English text.
   Sega's files are kept in data\english_backup, and JAPANESE puts them back. Close the game first.
   Still Japanese: country and prefecture names (the game finds its weather table by them, and English ones crash
-  the server), the network-ranking areas, and most writing that is part of a picture (logos, titles).
+  the server), the network-ranking areas, and writing that is part of a picture (logos, titles, the six team stats
+  around the hexagon, OK / BACK - redrawing those stopped the game reading club cards, so it is switched off).
   The English comes from this kit's translation, from Sega's own English that the game files already hold, and
   from Sega's European English of the older WCCF (lines with the same Japanese).
 
 ITALIANO (optional)
   ITALIANO (in SETUP.exe, GAME LANGUAGE) does what ENGLISH does, in Italian: each line is this kit's Italian, else
   Sega's own Italian of the older European WCCF (lines with the same Japanese), else the English - never Japanese.
-  The game's font has no accented letters, so they are written with an apostrophe (perche', citta'). The pictures
-  with the team stats and OK / TORNA are in Italian too. Names of players, CPU teams and supporters' nicknames
+  The game's font has no accented letters, so they are written with an apostrophe (perche', citta'). Names of players, CPU teams and supporters' nicknames
   stay as in English (the game puts a nickname's adjective first, which Italian cannot follow); money stays in
   dollars. JAPANESE puts Sega's files back, ENGLISH switches to English. The SETTINGS panel in the game offers
   only ENGLISH and JAPANESE for now.

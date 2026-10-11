@@ -10,7 +10,8 @@ Japanese.
 
 ## Careful
 - Players', CPU teams' and supporters' names stay as in the English (the game puts a nickname's adjective first,
-  which Italian cannot follow). The pictures' Italian is the second column of `languages\english\pictures.tsv`.
+  which Italian cannot follow). The pictures' Italian is the `italiano` column of `languages\english\pictures.tsv` -
+  switched off with the English pictures (they stopped the game reading club cards; see `languages\english\HANDOFF.md`).
 - `source\test_italian_tables.py` checks each Italian line keeps the same printf and colour codes as the English line
   of that key, in the game's font (a stray `%` shows junk or stops the game); `english.py` checks against the game's
   own Japanese at "on".

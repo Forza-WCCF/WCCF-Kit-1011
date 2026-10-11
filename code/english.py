@@ -48,6 +48,12 @@ from cards import unpack
 from helpers import hook as H
 
 BACK = os.path.join(K.DATA, "english_backup")
+# The writing in the game's pictures (#29) is OFF: with the redrawn pictures in the archive the game no longer read a
+# club card - it gave the card straight back, every time (2026-10-11, a real start on the test game: English text
+# without the pictures read it, Japanese read it, English with the pictures did not).  The code stays for whoever
+# finds why; WCCF_PICTURES=1 turns it on for that test.  Never on by default before a running game reads a card with it.
+PICTURES = os.environ.get("WCCF_PICTURES") == "1"
+PICTURES_OFF = "pictures stay Japanese: their English is switched off (with it the game did not read a club card)"
 LANGS = {"en": "English", "it": "Italian"}         # "on it": Italian, with the English wherever a line has none
 LANG_FILE = os.path.join(BACK, "language.txt")    # the language that is on (kit_common.game_language reads it)
 MANIFEST = os.path.join(BACK, "manifest.json")
@@ -689,7 +695,7 @@ def main(argv):
             return 0
         print("  building from your game files ...", flush=True)
         files, notes = build_all(game, lang)
-        pics, note = build_pictures(game, lang)
+        pics, note = build_pictures(game, lang) if PICTURES else ({}, PICTURES_OFF)
         notes.append(note)
         for n in notes:
             print("  ok    " + n)

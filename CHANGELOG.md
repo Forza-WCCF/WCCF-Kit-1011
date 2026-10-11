@@ -26,11 +26,11 @@ game is not included. Newest first; each date is the day that kit was built.
 
 ### Added
 - ITALIANO in SETUP.exe's GAME LANGUAGE (and `english.py on it`): the game in Italian. Each line comes from this kit's
-  Italian (`italian\screen_text.tsv`, 4,477 lines), else Sega's own Italian of the older European WCCF
-  (`italian\sega_rstring.tsv`, 2,705 lines with the same Japanese), else the kit's English - never Japanese. The
-  game's font has no accented letters, so the Italian writes them with an apostrophe (perche', citta'). Player and
-  CPU team names are the English ones; money stays in dollars. The team stats and buttons in pictures are in Italian
-  too (ATTACCO, DIFESA, VELOCITÀ, ...). The SETTINGS panel still offers only ENGLISH and JAPANESE.
+  Italian (`languages\italian\screen_text.tsv`, 4,477 lines), else Sega's own Italian of the older European WCCF
+  (`languages\italian\sega_rstring.tsv`, 2,705 lines with the same Japanese), else the kit's English - never
+  Japanese. The game's font has no accented letters, so the Italian writes them with an apostrophe (perche',
+  citta'). Player and CPU team names are the English ones; money stays in dollars. The SETTINGS panel still offers
+  only ENGLISH and JAPANESE.
 
 ### Fixed
 - English: the players' full names (the card name, e.g. Mahamadou DIARRA) were still in katakana; they now use
@@ -40,11 +40,10 @@ game is not included. Newest first; each date is the day that kit was built.
   (W, L, D), the weekdays Monday to Saturday, and 12 supporter-group words (Heroes, Stars, Samurai, Tigers, ...).
   7,200 lines are now in English; only the debug menus stay Japanese.
 - `english.py check` names the screen lines still in Japanese, so a gap shows without a survey.
-- English: the six team stats around the hexagon (OFFENCE, DEFENCE, SPEED, POWER, CONTROL, TACKLING) and the OK /
-  BACK names under the buttons were pictures with Japanese writing. ENGLISH now redraws them from your game's own
-  pictures in Windows' Arial Bold and adds them at the end of `data\wccf_data.xaf`, pointing the archive's table of
-  contents at them; Sega's bytes are not written over, and JAPANESE puts the old entries back and cuts the added
-  end away (the 1.4 GB archive is never copied). check.ps1 checks both ways on a scratch archive.
+- Not in this kit yet: the six team stats around the hexagon and OK / BACK redrawn in English (and Italian). The
+  redrawing works, but with the redrawn pictures in the game's archive the game gave every club card straight back
+  instead of reading it - so it is switched off, and those pictures stay Japanese. The code is kept for a fix
+  (`WCCF_PICTURES=1` turns it on to test one).
 - The game no longer refuses to start just because the card CATALOGUE has not been built. The catalogue is only the
   panel's card browser; now the game starts and only the catalogue is empty (SETUP rebuilds it).
 - The card-overwrite switch (SW1) no longer has a key by default. On Sega's card-recovery screen SW1 means "write

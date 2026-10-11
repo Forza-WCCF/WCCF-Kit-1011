@@ -74,4 +74,6 @@ with open(xaf, "r+b") as f:
 assert E.pictures_off(game) == 1 and archive() == sega, "off after an interrupted on gives back Sega's archive"
 
 shutil.rmtree(scratch)
-print("english pictures: 11 checks passed")
+# off by default: with the redrawn pictures in the archive the game did not read a club card (2026-10-11, a real start)
+assert E.PICTURES == (os.environ.get("WCCF_PICTURES") == "1"), "the pictures must stay off unless WCCF_PICTURES=1"
+print("english pictures: 12 checks passed")

@@ -13,6 +13,8 @@
 ## Careful
 - Country and prefecture names stay in Japanese on purpose: the game finds its weather table by them, and English
   ones crashed the server.
-- Text drawn as a picture is changed only where `pictures.tsv` lists it (for example "insert your club team card" at
-  the start stays Japanese). The pictures are written into the game's 1.4 GB archive (added at its end, JAPANESE cuts
-  them away again): peakx's note says "not yet seen in a running game" - check that in a real start before a release.
+- `pictures.tsv` is NOT USED by default (`english.py` PICTURES, off): with the redrawn pictures in the game's archive
+  the game gave the club card straight back instead of reading it (2026-10-11, a real start on the test game - English
+  text alone read the card, Japanese read it, English with the pictures did not, every try). `WCCF_PICTURES=1` turns
+  it on to test a fix; the pictures are added at the archive's end and JAPANESE cuts them away again. The likely
+  place to look: the club screen loads the hexagon picture (`SCM_Parameta*.dds`) right after a card read.
