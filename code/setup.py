@@ -238,7 +238,7 @@ def check_game(game):
 
 def setup_extracted(game):
     print("in %s:" % game)
-    copy_if_different(os.path.join(K.BIN, "wccfk.dll"), os.path.join(game, "wccfk.dll"), "wccfk.dll (the kit's hook)")
+    copy_if_different(os.path.join(K.PROGRAMS, "wccfk.dll"), os.path.join(game, "wccfk.dll"), "wccfk.dll (the kit's hook)")
     for n in ("client_Release.exe", "control_Release.exe", "match_Release.exe"):
         rename_hook_import(os.path.join(game, n), n)
     for old in ("winmm.dll", "winmm_orig.dll"):      # a kit before this one put a fake winmm.dll (a Windows name) here
@@ -314,7 +314,7 @@ def setup_seat(game):
             raise Failed("seat 1's exe did not write correctly")
         ok("client_Release.exe: seat 1's own copy, 15 changes, the tested exe byte for byte")
     rename_hook_import(exe, "seat 1's client_Release.exe")
-    copy_if_different(os.path.join(K.BIN, "wccfk.dll"), os.path.join(seat, "wccfk.dll"), "wccfk.dll (the kit's hook)")
+    copy_if_different(os.path.join(K.PROGRAMS, "wccfk.dll"), os.path.join(seat, "wccfk.dll"), "wccfk.dll (the kit's hook)")
     for old in ("winmm.dll", "winmm_orig.dll"):      # from a kit before this one
         p = os.path.join(seat, old)
         if os.path.isfile(p):
@@ -325,7 +325,7 @@ def setup_seat(game):
     print("in %s:" % K.misc_dir(game))
     helper = os.path.join(K.misc_dir(game), "FlatPanelReader_Emulator", "exe")
     os.makedirs(helper, exist_ok=True)
-    copy_if_different(os.path.join(K.BIN, "FPR_Emu.exe"), os.path.join(helper, "FPR_Emu.exe"), "FPR_Emu.exe")
+    copy_if_different(os.path.join(K.PROGRAMS, "FPR_Emu.exe"), os.path.join(helper, "FPR_Emu.exe"), "FPR_Emu.exe")
 
 
 def setup_cards(game, force=False):

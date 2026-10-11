@@ -9,7 +9,7 @@ import os
 
 SCRIPTS = os.path.dirname(os.path.abspath(__file__))
 KIT = os.path.dirname(SCRIPTS)
-BIN = os.path.join(KIT, "bin")
+PROGRAMS = os.path.join(KIT, "programs")   # the kit's compiled programs (was bin\): the hook, the card-table helper
 OVERLAY = os.path.join(KIT, "overlay")
 DATA = os.path.join(KIT, "data")
 LOGS = os.path.join(DATA, "logs")

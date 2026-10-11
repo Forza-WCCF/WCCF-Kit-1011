@@ -15,8 +15,8 @@ files ship.** SETUP builds whatever it needs from the player's own copy of the g
 | Folder | What it holds |
 |---|---|
 | `PLAY.exe` `SETUP.exe` | the launchers (Rust). PLAY starts/stops the game; SETUP sets up the game folder, language, and kit updates |
-| `bin\` | the compiled C programs: the in-game hook, the panel, the card-table helper |
-| `overlay\` | the panel art (`skin.tex`) and the catalogue + card pictures SETUP builds from the player's game |
+| `programs\` | the compiled programs: the in-game hook (`wccfk.dll`) and the card-table helper (`FPR_Emu.exe`). (The panel will move here too; for now it is in `overlay\`.) |
+| `overlay\` | the panel (`wccfpanel.dll`), its art (`skin.tex`), and the catalogue + card pictures SETUP builds from the player's game |
 | `english\` | the English translation tables (text + fingerprints of Sega's files; no Sega file) |
 | `python\` | an embedded Python so players install nothing |
 | `code\` | the kit's Python: launching, hardware stand-ins, the card toolset, online, the server, setup |
@@ -27,8 +27,9 @@ files ship.** SETUP builds whatever it needs from the player's own copy of the g
 
 `PLAY.exe` -> `code\play.py`. It starts, in order: the scene service, the server or an online seat, the
 projector, the cabinet's stand-ins (keychip, card reader, I/O board), the cabinet (`client_Release.exe`) with the
-hook and the panel, and the key driver. The game loads the hook (`bin\winmm.dll`) because it sits in the game's
-folder; the hook stands in for the cabinet hardware and loads the panel. Closing the game window ends the whole run.
+hook and the panel, and the key driver. The game loads the hook (`programs\wccfk.dll`, placed in the game's folder
+by SETUP, which also renames the game's import to it) - the hook stands in for the cabinet hardware and loads the
+panel. Closing the game window ends the whole run.
 
 ## The redesign
 
