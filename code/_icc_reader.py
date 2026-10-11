@@ -25,7 +25,7 @@ NEWCARDFILE (2026-10-08) gives the reader room for a second card, as Flycast's h
 (its counter's low byte is 1 - the contract ended, or the card's life ran out) a blank card with its own id is put
 beside it in NEWCARDFILE, and the game runs Sega's manager transfer (the manager goes to the new card, a new club is
 made on it, the old card is marked used up: counter 0, its club left on it). At the next card check the old card is
-off the reader and the new one plays; club_wallet.finish_transfer() swaps the two files at the next start. Which cards
+off the reader and the new one plays; wallet.finish_transfer() (wallet.py) swaps the two files at the next start. Which cards
 lie on the reader is decided only at LoadKey, the start of the game's card check - never in the middle of a session.
 Without NEWCARDFILE the reader holds one card, as before.
 """

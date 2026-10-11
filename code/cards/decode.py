@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 """Read-only decoder for WCCF 2010-11 club card files (the kit's card file: a 16-byte header + 256 blocks of 16 bytes).
 
-    python decode_club_card.py CARD.bin                    summary, checks, checksums, squad
-    python decode_club_card.py CARD.bin --all              + every field that is not at its default
-    python decode_club_card.py CARD.bin --all --defaults   + every field, defaults included
-    python decode_club_card.py CARD.bin --json             everything as JSON (for tools / a server)
-    python decode_club_card.py CARD.bin --diff OTHER.bin   the fields that differ between two cards
-    python decode_club_card.py CARD.bin --copy B           decode copy B instead of the copy the game would use
-    python decode_club_card.py --verify-schema [EXE]       re-read the field tables from client_Release.exe and
-                                                           compare them with club_card_schema.py
-    python decode_club_card.py --sram MXSRAM.bin           list the game's own card backups in an mxsram image
+    python code\\cards\\decode.py CARD.bin                    summary, checks, checksums, squad
+    python code\\cards\\decode.py CARD.bin --all              + every field that is not at its default
+    python code\\cards\\decode.py CARD.bin --all --defaults   + every field, defaults included
+    python code\\cards\\decode.py CARD.bin --json             everything as JSON (for tools / a server)
+    python code\\cards\\decode.py CARD.bin --diff OTHER.bin   the fields that differ between two cards
+    python code\\cards\\decode.py CARD.bin --copy B           decode copy B instead of the copy the game would use
+    python code\\cards\\decode.py --verify-schema [EXE]       re-read the field tables from client_Release.exe and
+                                                           compare them with schema.py
+    python code\\cards\\decode.py --sram MXSRAM.bin           list the game's own card backups in an mxsram image
 
 The card file is opened read-only, read in one go and closed at once; nothing is ever written. Exit codes:
 0 = the game would accept this card; 1 = the game would refuse it (or --diff found differences / --verify-schema
@@ -29,19 +29,19 @@ import struct
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
+sys.path.insert(0, os.path.dirname(HERE))   # code\: 'from cards import ...' for a run by hand
 try:
-    from club_card_schema import FIELDS, GROUP_ORDER, EXE_SHA256
-except ImportError:      # an error, never an exit: play.py, the panel helper and boards.py load this module themselves
-    raise ImportError("club_card_schema.py is missing: it must sit beside this file "
+    from cards.schema import FIELDS, GROUP_ORDER, EXE_SHA256
+except ImportError:      # an error, never an exit: play.py, the panel helper and formation.py load this module themselves
+    raise ImportError("cards\\schema.py is missing: it must sit beside this file "
                       "(make it with make_schema_module.py)") from None
 
 CARD_BYTES = 16 + 256 * 16          # the kit's card file (_icc_reader.py CARD_BYTES)
 RAW_BYTES = 256 * 16                # a bare block dump, no header
 COPY_BYTES = 0x690                  # one copy: payload + checksum
 PAYLOAD_BYTES = 0x68C               # 1,676
-DEFAULT_EXE = os.path.join(HERE, "..", "..", "..", "wccf1011-revd", "sbwg", "extracted", "client_Release.exe")
-DEFAULT_CATALOGUE = os.path.join(HERE, "..", "..", "playercards1011", "catalogue.tsv")
+DEFAULT_EXE = os.path.join(HERE, "..", "..", "..", "..", "wccf1011-revd", "sbwg", "extracted", "client_Release.exe")
+DEFAULT_CATALOGUE = os.path.join(HERE, "..", "..", "..", "playercards1011", "catalogue.tsv")
 
 
 class CardError(Exception):
@@ -432,7 +432,7 @@ def verify_schema(exe):
             rows.append((r[0], r[1], r[2], j - i + 1, r[4], r[5], r[6], r[7], r[8], r[9]))
             i = j + 1
     same = rows == [tuple(x) for x in FIELDS]
-    print("schema in club_card_schema.py: %d fields; re-read from %s: %d fields -> %s" % (
+    print("schema in schema.py: %d fields; re-read from %s: %d fields -> %s" % (
         len(FIELDS), exe, len(rows), "IDENTICAL" if same else "DIFFERENT"))
     if not same:
         for x, y in zip(rows, FIELDS):

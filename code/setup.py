@@ -28,7 +28,7 @@ import shutil
 import subprocess
 import sys
 
-import cards
+from cards import catalogue
 import kit_common as K
 import patch_hook_import as H
 
@@ -203,7 +203,7 @@ def patched_client(game):
     data = bytearray(H.normalized(open(sega_client(game), "rb").read()))
     for va, off, old, new, what in PATCHES:
         old, new = bytes.fromhex(old), bytes.fromhex(new)
-        if cards.va_to_offset(data, va) != off or bytes(data[off:off + len(old)]) != old:
+        if catalogue.va_to_offset(data, va) != off or bytes(data[off:off + len(old)]) != old:
             raise Failed("client_Release.exe at 0x%08X is not Sega's Rev D bytes (%s)" % (va, what))
         data[off:off + len(new)] = new
     if K.sha256(data) != PATCHED_CLIENT:
@@ -387,11 +387,11 @@ def setup_cards(game, force=False):
     os.makedirs(K.CACHE, exist_ok=True)
     cat, pics = os.path.join(K.CACHE, "catalogue.tsv"), os.path.join(K.CACHE, "cards")
     have = len([n for n in os.listdir(pics) if n.endswith(".png")]) if os.path.isdir(pics) else 0
-    if not force and os.path.isfile(cat) and have >= cards.RECORDS:
+    if not force and os.path.isfile(cat) and have >= catalogue.RECORDS:
         ok("catalogue and %d card pictures already made" % have)
         return
     print("  making the catalogue and the card pictures from your game files (about a minute) ...", flush=True)
-    if cards.main([game, K.CACHE]) != 0:
+    if catalogue.main([game, K.CACHE]) != 0:
         raise Failed("the card catalogue could not be made (see above)")
     ok("catalogue and card pictures made")
 

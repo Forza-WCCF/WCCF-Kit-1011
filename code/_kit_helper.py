@@ -9,7 +9,7 @@ and asks), then a plain start with the NEXT START settings.  It has to come from
 debugger that follows the programs it starts, so a restart started by the game itself would be killed half way.
 A request that is already there when the helper starts (left by a run that ended) is removed, never carried out.
 
-THE CLUB CARD panel's view (2026-10-06): data\club_view.txt, rewritten by club_view.py (with decode_club_card.py, the
+THE CLUB CARD panel's view (2026-10-06): data\club_view.txt, rewritten by view.py (with decode.py, the
 reader the website will use) whenever the card, its backups or the run change - once the card has held still for a
 second, so the game's bursts of saves are not read half way.  A view that cannot be written is said once and never
 stops the helper: RESTART NOW does not depend on it.
@@ -44,7 +44,7 @@ class ClubView:
     def __init__(self, data):
         save = os.path.join(data, "save")
         self.card, self.backups = os.path.join(save, "seat1_club.bin"), os.path.join(save, "backup")
-        self.cards = os.path.join(save, "cards")                       # your other club cards (club_wallet.py)
+        self.cards = os.path.join(save, "cards")                       # your other club cards (wallet.py)
         self.running, self.out = os.path.join(data, "running.json"), os.path.join(data, "club_view.txt")
         self.catalogue = os.path.join(data, "cache", "catalogue.tsv")     # made by SETUP (was overlay\)
         self.seen, self.since, self.done, self.mod, self.said, self.retry_at = None, 0.0, None, None, False, 0.0
@@ -72,8 +72,8 @@ class ClubView:
             return
         try:
             if self.mod is None:
-                import club_view
-                self.mod = club_view
+                from cards import view
+                self.mod = view
             lines = self.mod.build(card=self.card, catalogue=self.catalogue, backups=self.backups,
                                    running=self.running, cards=self.cards)
             self.mod.write(lines, self.out)

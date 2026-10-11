@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-r"""club_wallet.py - your other club cards, and the card in the slot.  The slot is data\save\seat1_club.bin, the
+r"""wallet.py - your other club cards, and the card in the slot.  The slot is data\save\seat1_club.bin, the
 card the card reader stand-in serves; your other cards wait in data\save\cards\, one file each.
 
 Switching happens at a start, while nothing runs (the player chose "with a restart", 2026-10-06): the CLUB CARD panel
@@ -24,7 +24,7 @@ NEW = os.path.join(K.SAVE, "seat1_club.new.bin")      # the second card of a man
 
 def club_label(card):
     """(the club's name as the panel draws it, or None; a short summary) of a card file - read-only"""
-    import club_view as V                               # here, not at the top: club_view lists the wallet too
+    from cards import view as V                               # here, not at the top: club_view lists the wallet too
     D = V.D
     state, bad = K.card_session(card)
     if state == "none":
@@ -76,7 +76,7 @@ def wallet(folder=None):
 
 
 def move_board(card_from, card_to):
-    """a card's own table (boards.py, 2026-10-08) goes with it: NAME.board beside NAME.bin.  Moved BEFORE its card, so
+    """a card's own table (formation.py, 2026-10-08) goes with it: NAME.board beside NAME.bin.  Moved BEFORE its card, so
     a switch stopped half way finishes the same at the next start; a folder already under the new name (a leftover)
     is kept aside as " (2)" ..., never written over"""
     src, dst = os.path.splitext(card_from)[0] + ".board", os.path.splitext(card_to)[0] + ".board"
@@ -130,7 +130,7 @@ def finish_transfer(slot=None, new=None, folder=None):
     dst = free_path(safe(name or "club card")[:26] + " - transferred", folder)
     move_board(slot, dst)                                # the old club's table goes with it
     os.rename(slot, dst)
-    os.rename(new, slot)                                 # the new club starts with no table of its own (boards.py)
+    os.rename(new, slot)                                 # the new club starts with no table of its own (formation.py)
     new_name, _summary = club_label(slot)
     return True, "manager transfer finished: %s went to your cards (%s, the game will not play it again); %s is in " \
                  "the slot" % (name or "the old club", os.path.basename(dst), new_name or "the new club")
@@ -159,7 +159,7 @@ def switch(request, slot=None, folder=None):
     if os.path.isfile(slot):                             # 1: the card in the slot goes to your cards, by club name
         name, _summary = club_label(slot)
         dst = free_path(safe(name or "club card"), folder)
-        move_board(slot, dst)                            # its cards on the table go with it (boards.py)
+        move_board(slot, dst)                            # its cards on the table go with it (formation.py)
         os.rename(slot, dst)                             # rename: never over an existing file
         put_away = "%s went to your cards (%s)" % (name or "the old card", os.path.basename(dst))
     if target is None:

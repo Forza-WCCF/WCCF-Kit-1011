@@ -10,9 +10,9 @@ import tempfile
 
 KIT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(KIT, "code"))
-import club_view as V  # noqa: E402
-import club_wallet as W  # noqa: E402
-import edit_club_card as E  # noqa: E402
+from cards import view as V  # noqa: E402
+from cards import wallet as W  # noqa: E402
+from cards import edit as E  # noqa: E402
 
 BLOCKS = [bytearray(16) for _ in range(256)]
 BLOCKS[4][8:12] = bytes([0x95, 0x71, 0x66, 0x40])                 # the reader signature (as edit_club_card's self-test)

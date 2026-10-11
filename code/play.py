@@ -426,13 +426,13 @@ def apply_english_request():
 
 def apply_card_request():
     """the CLUB CARD panel's "card=FILE" / "card=new" (2026-10-06): which club card goes into the slot, done now while
-    nothing runs (club_wallet.switch: two renames, no card ever overwritten), then taken out of the file - only
+    nothing runs (wallet.switch: two renames, no card ever overwritten), then taken out of the file - only
     after the switch, so one stopped half way is finished at the next start.  Anything wrong: said, and the game
     starts with the card that is in the slot (never locked out).  First, a finished manager transfer is put away
-    (club_wallet.finish_transfer, 2026-10-08): the new club into the slot, the old card to your cards."""
+    (wallet.finish_transfer, 2026-10-08): the new club into the slot, the old card to your cards."""
     try:
-        import club_wallet
-        _done, what = club_wallet.finish_transfer()
+        from cards import wallet
+        _done, what = wallet.finish_transfer()
     except Exception as ex:                    # e.g. a card file held by another program: both stay, said
         what = "the manager transfer could not be finished now (%s) - both cards stay where they are" % ex
     if what:
@@ -441,8 +441,8 @@ def apply_card_request():
     if not want:
         return
     try:
-        import club_wallet
-        done, what = club_wallet.switch(want)
+        from cards import wallet
+        done, what = wallet.switch(want)
     except Exception as ex:                    # e.g. a card file held by another program: the slot stays as it is
         done, what = False, "the switch could not be done (%s) - the card in the slot stays" % ex
     say("  club card: %s" % what)
@@ -451,7 +451,7 @@ def apply_card_request():
 
 def apply_card_fix():
     """the CLUB CARD panel's "card_fix=bad_endings" (2026-10-08): the slot card's bad endings back to 0
-    (edit_club_card.clear_bad_endings: the game's own checks, the old card into data\\save\\backup first), done now
+    (edit.clear_bad_endings: the game's own checks, the old card into data\\save\\backup first), done now
     while the card reader is not running, then taken out of the file.  Anything wrong: said, and the card stays as it
     was (never a reason not to start)."""
     want = read_panel().get("card_fix", "").lower()
@@ -459,8 +459,8 @@ def apply_card_fix():
         return
     if want == "bad_endings":
         try:
-            import edit_club_card
-            what = edit_club_card.clear_bad_endings(CARD)
+            from cards import edit
+            what = edit.clear_bad_endings(CARD)
         except Exception as ex:
             what = "the bad endings were not cleared (%s) - the card stays as it was" % ex
         say("  club card: %s" % what)
@@ -468,12 +468,12 @@ def apply_card_fix():
 
 
 def apply_board(seat):
-    """the cards on the table follow the club card in the slot (boards.py, 2026-10-08: the player saw another club's
+    """the cards on the table follow the club card in the slot (formation.py, 2026-10-08: the player saw another club's
     formation on the board) - done while nothing reads the table: the card reader, FPR_Emu and the overlay start after
     this.  Anything wrong: said, and the table stays as it is (never a reason not to start)."""
     try:
-        import boards
-        for what in boards.sync(seat):
+        from cards import formation
+        for what in formation.sync(seat):
             say("  table: %s" % what)
     except Exception as ex:
         say("  table: left as it is (%s)" % ex)
@@ -532,8 +532,8 @@ def start_cabinet(debug, env, mode, ip, seat_no, seat, roles):
     (2026-10-07) runs only this: the projector, the scene service, the seat lease and the panel helper keep running."""
     p = start("_ringedge_services.py", [LIFE, "ringedge_log.txt"], "run_ringedge.txt", env)
     roles[p.pid] = "keychip / network stand-in"
-    import club_wallet                         # its NEW: room for a second card, for a manager transfer (2026-10-08)
-    p = start("_icc_reader.py", [ICC_PIPE, LIFE, "icc_log.txt" if debug else "NUL", CARD, club_wallet.NEW],
+    from cards import wallet                   # its NEW: room for a second card, for a manager transfer (2026-10-08)
+    p = start("_icc_reader.py", [ICC_PIPE, LIFE, "icc_log.txt" if debug else "NUL", CARD, wallet.NEW],
               "run_cardreader.txt", env, quiet=not debug)
     roles[p.pid] = "card reader stand-in"
     p = start("_jvs_board.py", [JVS_PIPE, LIFE, "jvs_log.txt", KEYS_INPUT], "run_ioboard.txt", env)
@@ -783,10 +783,10 @@ def ask_yes(question):
 def club_session():
     """(session state, bad endings) of the club in play: the slot card, or during a manager transfer the new card
     beside it (2026-10-08) - an open session on either one is open"""
-    import club_wallet
+    from cards import wallet
     since = run_started()
     sess, bad = K.card_session(CARD, since)
-    new_sess, new_bad = K.card_session(club_wallet.NEW, since)
+    new_sess, new_bad = K.card_session(wallet.NEW, since)
     if new_sess == "open" or (new_sess == "cut" and sess != "open"):
         return new_sess, new_bad
     return sess, bad
@@ -860,9 +860,9 @@ def stop(force, check=False, keep_server=False):
         say("Still running: %s" % ", ".join("%s %d" % (p[2], p[0]) for p in still))
         return 1
     say("Stopped (%d kit processes, %d game processes)." % (len(ours), len(left)))
-    try:                         # the cards on the table kept with their club (boards.py): data\save holds the latest
-        import boards
-        boards.keep(seat)
+    try:                         # the cards on the table kept with their club (formation.py): data\save holds the latest
+        from cards import formation
+        formation.keep(seat)
     except Exception as ex:
         say("  (the cards on the table were not copied to their club: %s)" % ex)
     return 0

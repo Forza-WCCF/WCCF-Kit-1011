@@ -25,6 +25,22 @@ except ImportError as ex:
 code = K.SCRIPTS
 check(os.path.basename(code) == "code", "kit_common comes from code\\ (got %s)" % code)
 
+# a backslash in a normal string ("cards\wallet.py") is a bad escape: a warning now, an error in a later Python
+import warnings  # noqa: E402
+for root, dirs, files in os.walk(code):
+    dirs[:] = [d for d in dirs if d != "__pycache__"]
+    for f in files:
+        if f.endswith(".py"):
+            path = os.path.join(root, f)
+            with open(path, "rb") as fh:
+                src = fh.read()
+            with warnings.catch_warnings():
+                warnings.simplefilter("error", SyntaxWarning)
+                try:
+                    compile(src, path, "exec")
+                except (SyntaxError, SyntaxWarning) as ex:
+                    check(False, "%s: %s" % (os.path.relpath(path, code), ex))
+
 names = []
 for root, dirs, files in os.walk(code):
     dirs[:] = [d for d in dirs if d != "__pycache__"]
@@ -48,7 +64,9 @@ for root, dirs, files in os.walk(code):
         if not f.endswith(".py"):
             continue
         path = os.path.join(root, f)
-        for node in ast.walk(ast.parse(open(path, "rb").read(), path)):
+        with open(path, "rb") as fh:
+            tree = ast.parse(fh.read(), path)
+        for node in ast.walk(tree):
             wanted = []
             if isinstance(node, ast.Import):
                 wanted = [a.name for a in node.names]

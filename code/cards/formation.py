@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-r"""boards.py - every club card keeps its own cards on the table (2026-10-08).
+r"""formation.py - every club card keeps its own cards on the table (2026-10-08).
 
 The table is what the card board shows and FPR_Emu hands the game: fpr_table0.txt, and the board's copy of it,
 fpr_panel_state.json, in the game's seat folder.  A club card does not hold it - so when another card came into the
@@ -7,7 +7,7 @@ slot (a CLUB CARD switch, or the kit put on other game files) the old club's car
 2026-10-08: "why is there a conflict with my formation and the players in the card?").
 
 Each card FILE keeps its table beside it, in a folder of the same name: data\save\seat1_club.board for the card in the
-slot, data\save\cards\NAME.board for NAME.bin among YOUR CARDS (club_wallet.switch moves the two together).  A board
+slot, data\save\cards\NAME.board for NAME.bin among YOUR CARDS (wallet.switch moves the two together).  A board
 folder holds the two files and id.txt, a random id; fpr_board_owner.txt in the seat folder names the board that is
 out.  Not a club's name or players: clubs share names, founding dates and the very same 16 cards (the player's own,
 2026-10-08: Eindhoven United and an AAAA card, FUTBUL and Rosso).
@@ -21,7 +21,7 @@ out.  Not a club's name or players: clubs share names, founding dates and the ve
   - no club in the slot (a new card the game is making a club on): the table is copied back to its board and stays
     out, owned by nobody - the club the game makes from those cards takes it at the next start
 Nothing is ever deleted.  play.py catches anything this raises: the table then stays as it is.
-    python boards.py            what is where (read-only)
+    python code\cards\formation.py            what is where (read-only)
 """
 import datetime
 import json
@@ -73,7 +73,7 @@ def all_boards(save):
 def club_of(card, names=None):
     """(name, squad) of a card file - squad = its registered players [(card number, position)] in the card's order -
     or (None, why): "none" (no file), "new" (no club yet), "unreadable", "refused" (the game would not take it)"""
-    import club_view as V
+    from cards import view as V
     D = V.D
     state, _bad = K.card_session(card)
     if state in ("none", "unreadable", "new"):
@@ -224,7 +224,7 @@ def layout(squad):
 def lay_out(seat, name, squad):
     """the squad's own lay-out written as the table out (the table file and the board's copy, which agree)"""
     cards = layout(squad)
-    _write(os.path.join(seat, FILES[0]), "# laid out by the kit (boards.py) for %s - read by FPR_Emu.exe (table 0)\n" %
+    _write(os.path.join(seat, FILES[0]), "# laid out by the kit (formation.py) for %s - read by FPR_Emu.exe (table 0)\n" %
            name + "".join("%d %d %.3f %.3f\n" % c for c in cards))
     _write(os.path.join(seat, FILES[1]), json.dumps(
         {"placed": [{"slot": s, "no": n, "x": round(x, 3), "y": round(y, 3)} for s, n, x, y in cards], "mirror": False},

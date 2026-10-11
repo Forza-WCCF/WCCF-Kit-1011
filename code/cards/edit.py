@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-r"""edit_club_card.py - change the data on the club card (the kit's card file: a 16-byte header + 256 blocks of
+r"""edit.py - change the data on the club card (the kit's card file: a 16-byte header + 256 blocks of
 16 bytes, normally data\save\seat1_club.bin).
 
-    python code\edit_club_card.py CARD.bin --set FIELD=VALUE [--set FIELD=VALUE ...] [--write] [--force]
-    python code\edit_club_card.py --self-test
+    python code\cards\edit.py CARD.bin --set FIELD=VALUE [--set FIELD=VALUE ...] [--write] [--force]
+    python code\cards\edit.py --self-test
 
 Fields are addressed as GROUP.FIELD - Club.CLUB_GET_PRIZE, Coach.COACH_LAST_TERM, Coach.COACH_NAME,
 UserInfo.USER_INJUSTICE_NUM - or, for the repeated groups, Player0.FIELD ... Player15.FIELD and
@@ -11,8 +11,8 @@ Title0.FIELD ... Title29.FIELD.  A name that is unique on the card may be writte
 A text field (club and manager names) takes the text; SYSTEM_COACH_ID takes hex; an array of numbers takes
 a comma-separated list of exactly the field's length.  Numbers are decimal, or hex with 0x.
 
-The field table is the one decode_club_card.py reads out of client_Release.exe, so list names, lengths and
-limits with:   python code\decode_club_card.py CARD.bin --all --defaults
+The field table is the one decode.py reads out of client_Release.exe, so list names, lengths and
+limits with:   python code\cards\decode.py CARD.bin --all --defaults
 
 Nothing is written without --write.  The changed card is checked with the game's own acceptance rules before
 it is put in place, the old card is kept in backup\ beside it, and the file is replaced in one step (a crash
@@ -30,11 +30,11 @@ import sys
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
+sys.path.insert(0, os.path.dirname(HERE))   # code\: 'from cards import ...' for a run by hand
 try:
-    import decode_club_card as D
+    from cards import decode as D
 except ImportError as e:  # an error, never an exit: play.py loads this module at a start (apply_card_fix)
-    raise ImportError("decode_club_card.py and club_card_schema.py must sit beside this file (%s)" % e) from None
+    raise ImportError("cards\\decode.py and cards\\schema.py must sit beside this file (%s)" % e) from None
 
 BACKUP_KEEP = 20                    # backups kept in backup\ (the same number the card reader keeps)
 
@@ -77,7 +77,7 @@ def resolve(spec):
         else:
             hits = []
     if not hits:
-        raise EditError("no field %r on the card (names are listed by decode_club_card.py --all --defaults)" % spec)
+        raise EditError("no field %r on the card (names are listed by decode.py --all --defaults)" % spec)
     if len(hits) > 1:
         raise EditError("%r is there more than once (%s) - name the instance" % (
             spec, ", ".join("%s%d" % (k[0], k[1]) for k, _r, _b in hits[:8])))
@@ -144,7 +144,7 @@ def read(path):
 
 
 def header_dict(h):
-    """the header as decode_club_card.py reads it (None when the file has no 16-byte header)."""
+    """the header as decode.py reads it (None when the file has no 16-byte header)."""
     if h is None:
         return None
     return {"uid": h[0:4].hex(), "p_type": h[4], "counter": h[5] | h[6] << 8,
@@ -173,7 +173,7 @@ def stamp_copy(header, blocks, copy):
 
 
 def check(raw):
-    """run the game's own acceptance rules over a finished file, as decode_club_card.py does (read-only)."""
+    """run the game's own acceptance rules over a finished file, as decode.py does (read-only)."""
     header, body = (raw[:16], raw[16:]) if len(raw) == D.CARD_BYTES else (None, raw)
     blocks = [body[16 * i: 16 * i + 16] for i in range(256)]
     _a, _b, chosen, verdict = D.game_choice(header_dict(header), blocks)

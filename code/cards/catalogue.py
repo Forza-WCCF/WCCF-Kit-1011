@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-r"""cards.py - make the CATALOGUE's files from your own copy of WCCF 2010-11 (Rev D).  Only READS the game's files.
+r"""catalogue.py - make the CATALOGUE's files from your own copy of WCCF 2010-11 (Rev D).  Only READS the game's files.
 
-    python cards.py GAME OUT
+    python code\cards\catalogue.py GAME OUT
       GAME  the game folder, the one with client_Release.exe in it
       OUT   where catalogue.tsv and cards\ are written (the overlay's folder)
 
@@ -15,7 +15,7 @@ Exit    0 written and every check passed; 1 a check failed (nothing written if i
         2 a game file is missing or OUT cannot be written.
 
 Club, nationality and season names are not stored in the game: they are read off the players who carry each code
-(codes_inferred.py).  The columns and their order are the WCCF project's catalogue's, so the overlay reads them where
+(codes.py).  The columns and their order are the WCCF project's catalogue's, so the overlay reads them where
 it always has; the one column that pointed at the older 2005-06 pack (alt_png_2005_06_build) is kept, empty.
 """
 import collections
@@ -26,8 +26,8 @@ import sys
 
 from PIL import Image
 
-import codes_inferred as CI
-import ys_lzw
+from cards import codes as CI
+from cards import unpack
 
 REC = 0x328                     # record size (the client freads 0x328-byte records)
 RECORDS = 3927                  # Rev D's player_data.bin
@@ -249,7 +249,7 @@ def write_pictures(rows, toc, xaf, folder):
                     e = toc[path]
                     f.seek(e["offset"])
                     raw = f.read(e["stored"])
-                    dds = ys_lzw.decompress(raw, e["size"]) if e["stored"] < e["size"] else raw
+                    dds = unpack.decompress(raw, e["size"]) if e["stored"] < e["size"] else raw
                     if len(dds) != e["size"] or dds[:4] != b"DDS ":
                         raise ValueError("decoded %d bytes, magic %r" % (len(dds), dds[:4]))
                     cache[path] = dds

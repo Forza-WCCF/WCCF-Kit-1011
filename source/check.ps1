@@ -2,7 +2,7 @@
 #   every script in code\ compiles with the kit's own Python (nothing written)
 #   the key driver's self-test (_keys_seat1.py --selftest: a scratch file, nothing live)
 #   play.py's choice when a game window ends: a closed window stops the rest, a crash does not (source\test_ended.py)
-#   the club card editor's self-test (edit_club_card.py --self-test: cards made in memory, no real card)
+#   the club card editor's self-test (cards\edit.py --self-test: cards made in memory, no real card)
 #   a missing club-card helper file never stops a start (source\test_card_fix.py: a scratch panel.txt)
 #   the run before last zipped into data\logs\archive, the archive kept to its size (source\test_log_archive.py)
 #   a transferred card is listed as such and never played again (source\test_wallet_transferred.py: scratch cards)
@@ -47,7 +47,7 @@ if ($LASTEXITCODE) { $failed += 'key driver self-test' }
 & $py -I (Join-Path $PSScriptRoot 'test_ended.py')
 if ($LASTEXITCODE) { $failed += 'play.py ended: a closed window vs a crash' }
 
-& $py -I (Join-Path $kit 'code\edit_club_card.py') --self-test | Select-Object -Last 1
+& $py -I (Join-Path $kit 'code\cards\edit.py') --self-test | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'club card editor self-test' }
 
 & $py -I (Join-Path $PSScriptRoot 'test_card_fix.py')

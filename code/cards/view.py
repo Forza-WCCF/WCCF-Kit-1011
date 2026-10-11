@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-r"""club_view.py - the club card as the game reads it, written out for the CLUB CARD panel in seat 1's window.
+r"""view.py - the club card as the game reads it, written out for the CLUB CARD panel in seat 1's window.
 wccfpanel.dll cannot run Python, so _kit_helper.py writes this view whenever the card file changes.
 
-The card is read by decode_club_card.py: the research decoder, shipped UNCHANGED beside this file, built from the
+The card is read by decode.py: the research decoder, shipped UNCHANGED beside this file, built from the
 exe's own field tables (docs\research\CLUB-CARD-2010-11.md) - the same reader the website and server will use, so a
 club never reads two ways.  Read-only: the card file is opened, read in one go and closed; nothing here writes it.
 
-    python club_view.py          write data\club_view.txt now, and print it
+    python code\cards\view.py          write data\club_view.txt now, and print it
 
 The view (data\club_view.txt) is ASCII lines for the overlay's ASCII font:
   state|ok  /  state|none|why  /  state|new|why  /  state|unreadable|why
@@ -15,7 +15,7 @@ The view (data\club_view.txt) is ASCII lines for the overlay's ASCII font:
   squad|NUMBER|NAME|POSITION|APPS|GOALS|ASSISTS|CONDITION|INJURY
   session|open / closed / cut / new / none / unreadable      the slot's card session (kit_common.card_session)
   backup|WHEN
-  wallet|FILE|CLUB|SUMMARY[|transferred]   your other cards (club_wallet.py), with every state; "transferred": a
+  wallet|FILE|CLUB|SUMMARY[|transferred]   your other cards (wallet.py), with every state; "transferred": a
                                            used-up card the game will not play again (no PLAY THIS CLUB for it)
 Field meanings checked against the game's own CLUB TEAM DATA screen for the test club (2026-10-06): contract left
 (91), salary and prize money in $100 units ($207,500, $3,597,000), record (W7 D2 L0), birthday, and the squad in the
@@ -29,7 +29,7 @@ import time
 import unicodedata
 
 import kit_common as K
-import decode_club_card as D
+from cards import decode as D
 from english import fold                 # accents dropped as the English kit drops them in the game's own names
 
 CARD = os.path.join(K.SAVE, "seat1_club.bin")
@@ -125,7 +125,7 @@ def build(card=CARD, catalogue=CATALOGUE, backups=BACKUPS, running=RUNNING, card
     """the view's lines for this card file and your other cards (never raises for a bad card: it says what is
     wrong).  The other cards and the session line come with every state - an empty or broken slot must still let
     the player switch to another card (never locked out)"""
-    import club_wallet as W                              # here: club_wallet uses this module's names
+    from cards import wallet as W                              # here: club_wallet uses this module's names
     lines = []
     found = sorted((f for f in os.listdir(backups) if f.endswith(".bak")), reverse=True) \
         if os.path.isdir(backups) else []
@@ -217,7 +217,7 @@ def build(card=CARD, catalogue=CATALOGUE, backups=BACKUPS, running=RUNNING, card
 def write(lines, path=VIEW):
     """the view whole: a temporary file, then one swap (the panel never reads half of it)"""
     text = ("# WCCF 2010-11 kit - the club card as the game reads it, for the CLUB CARD panel in seat 1. Written by\n"
-            "# _kit_helper.py with decode_club_card.py whenever the card changes. Read-only, never edit.\n" +
+            "# _kit_helper.py with decode.py whenever the card changes. Read-only, never edit.\n" +
             "\n".join(lines) + "\n")
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="ascii", errors="replace", newline="\n") as f:
