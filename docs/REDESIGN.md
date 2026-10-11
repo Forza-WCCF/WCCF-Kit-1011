@@ -112,7 +112,9 @@ Status: [ ] not started  [~] in progress  [x] done (PR #)
 - [x] `source\` folders named for what they build: `hook\` (mxhook.c -> wccfk.c), `panel\`, `card_table\` (7d9d3f6). The hook still logs "mxhook attached" (setup recognises it) and names its logs mxhook_*.log.
 - [x] A HANDOFF.md in every folder (16 + the root; e9a9cdb): one plain line, one line per file, what is fragile. `source\test_handoffs.py` fails when a folder has none or a file has no line (checked). In git, out of the players' ZIP (`.gitattributes`).
 - [x] Test builds say which kit they lead to: `KIT 6-test-<commit>` (kit.yml `$next = '6'` - Ali: "not 5.6 but kit 6"); a release tagged kit-6 says `KIT 6`. release.rs reads it as a test build of 6 (tests in CI). a77cd41.
-- [ ] merge the duplicates (D1-D22), split wccfpanel.c
+- [x] peakx's six open PRs reworked onto the redesign (his commits replayed, his authorship kept): #28 English full names + last 22 lines, #29 English in the game's pictures, #30 ITALIANO (languages\italian\), #31 version information in wccfk.dll / FPR_Emu.exe / wccfpanel.dll (paths mapped to programs\, the hook's description and the card table's corrected), #32 crates cached in CI + server checks side by side (checked: a failing one still fails the run, by name), #34 the version beside the SETTINGS title. Adapted: english.py reads languages\<folder>\ and imports cards.catalogue / cards.unpack; his tests put code\ on the path. On the way my CHANGELOG resolver dropped ten of our entries (#29) - restored verbatim (f30dd37), the resolver now refuses loose lines on either side. Checked: check.ps1 all green; english.py check builds 7200 lines + 11 pictures in English and in Italian on a real game. NOT YET: the pictures in a running game (peakx's own note). His PRs on GitHub stay open until Ali decides how to close them.
+- [ ] RELEASE: Cargo.toml (and Cargo.lock's own entry) to 6.0.0 - the programs' version information and SETUP read it; tag kit-6
+- [ ] merge the duplicates (D1-D22), split wccfpanel.c - after kit 6
 
 ### Phase 3 (old notes)
 - [ ] paths.py, files.py, procs.py, settings.py - the shared foundation; switch call sites one by one
