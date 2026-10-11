@@ -57,6 +57,9 @@ if ($LASTEXITCODE) { $failed += 'the match relay: a live seat cannot be taken ov
 & $py -I (Join-Path $PSScriptRoot 'test_rotate_logs.py')
 if ($LASTEXITCODE) { $failed += 'log rotation never stops a start when a log file is held open' }
 
+& $py -I (Join-Path $PSScriptRoot 'test_setup_state.py') | Select-Object -Last 1
+if ($LASTEXITCODE) { $failed += 'a missing card catalogue does not stop a start' }
+
 & $py -I (Join-Path $PSScriptRoot 'test_log_archive.py')
 if ($LASTEXITCODE) { $failed += 'logs: the run before last zipped, the archive kept to its size' }
 

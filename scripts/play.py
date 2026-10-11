@@ -342,11 +342,12 @@ def rotate_logs():
 def setup_state():
     game = K.find_game(K.load_settings().get("game"))
     seat = K.seat_dir(game) if game else None
-    if (not game or not os.path.isfile(os.path.join(seat, ".wccf-kit"))
-            or not os.path.isfile(os.path.join(K.OVERLAY, "catalogue.tsv"))):
+    if not game or not os.path.isfile(os.path.join(seat, ".wccf-kit")):
         say("Not set up yet - run SETUP.exe first.")
         return None, None
-    return game, seat
+    if not os.path.isfile(os.path.join(K.OVERLAY, "catalogue.tsv")):   # the panel's card browser only (A10) - not the
+        say("  (the card CATALOGUE is not built yet - the panel's catalogue will be empty; SETUP.exe rebuilds it)")
+    return game, seat                                                  # game: it must never stop a start
 
 
 def write_running(roles, mode, ip, seat_no=1):

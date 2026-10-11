@@ -82,7 +82,7 @@ Status: [ ] not started  [~] in progress  [x] done (PR #)
 - [x] A7  the panel's close warning AND the RESTART gate now check BOTH cards (`any_session_open` in wccfpanel.c), matching play.club_session - no silent bad ending on the manager-transfer club. Panel DLL builds clean; CI runs the panel self-test. (The RESTART hint text at line ~3656 and the club-switch at ~4257 still read the slot card only - fold into D5, one session rule; the panel session logic still has no unit test - G)
 - [x] A8  SW1/SW2 have no default key (both the Python driver ACTIONS and the C KEYS panel g_kact set to 0); KEYS can still give one. Key self-test 96/96 + a new A8 check; panel DLL builds clean
 - [x] A9  log rotation never stops a start: a busy `previous` is set aside with a timestamp, a busy current log is left in place (`rotate_logs`). `source\test_rotate_logs.py` (4 checks)
-- [ ] A10 the smaller lock-outs (catalogue-missing start, 17th club, SEND LOGS address, UPDATE SHA check, hold-file)
+- [~] A10 smaller lock-outs: [x] catalogue-missing no longer blocks a start (`setup_state`, `source\test_setup_state.py`). Left: the 17th club (wccfpanel.c panel reads <=16 clubs), SEND LOGS to the right server (folds into D3), UPDATE SHA-256 check (Rust launcher), the projector-box hold-file edge (server)
 
 ### Phase 2 - cheap antivirus wins (small, mostly conflict-free)
 - [ ] B2e remove the screenshot-to-disk dumps; B9 remove the dead tasklist; B2a trampoline execute-only; B11 add the two flagged names to LEGACY

@@ -7,6 +7,8 @@ game is not included. Newest first; each date is the day that kit was built.
 ## Unreleased
 
 ### Fixed
+- The game no longer refuses to start just because the card CATALOGUE has not been built. The catalogue is only the
+  panel's card browser; now the game starts and only the catalogue is empty (SETUP rebuilds it).
 - The card-overwrite switch (SW1) no longer has a key by default. On Sega's card-recovery screen SW1 means "write
   the backup over your Club Card", and it used to be the `8` key - one stray press could roll your card back. SW1
   and SW2 now have no key unless you set one in KEYS.
