@@ -100,7 +100,15 @@ Status: [ ] not started  [~] in progress  [x] done (PR #)
 - [ ] B3  run cabinets and the projector without the debugger; keep it for control only
 - [x] B(4) stop impersonating winmm - the hook ships as `wccfk.dll` and SETUP renames the game's import to it. DONE and proven: `patch_hook_import.py` (pure reversible swap, `normalized()`); `winmm_fwd.h` 3 forwarders to real winmm; `build.ps1`/`package.ps1` ship `bin\wccfk.dll`; `setup.py` (norm_sha fingerprints, rename client/control/match, place wccfk.dll, undo un-renames, drop winmm_orig); `english.py` (hook preserved through on/off, backups in Sega WINMM space). Tests: `test_patch_hook_import.py` 12 (CI, synthetic PE); local proofs on the REAL Sega exes: `prove_on_real_exes.py`, `prove_setup_rename.py`, `prove_english_hook.py` all GREEN. STILL TO DO before a kit ships: a real game START (test kit `play.py local`, then Ali's kit) confirming the renamed exes launch + Defender clean. (Note: the redesign's mxhook lacks the whole-messages server fix - merge that in when redesign lands.)
 
-### Phase 3 - the physical move
+### Phase 3 - the physical move  (IN PROGRESS, one folder per commit, CI-green each)
+- [x] `scripts\` -> `code\` (commit d4025f6, CI green): Rust launchers, check.ps1, every test, docs updated; kit_common uses __file__ so no path constant changed.
+- [x] `bin\` -> `programs\` (commit 175014c, CI green): the hook + card-table helper build there; build.ps1/package.ps1/kit.yml/.gitignore follow; kit_common constant is PROGRAMS. The PANEL still builds to overlay\ (moves in the overlay step).
+- [ ] **`overlay\` split - THE INTRICATE ONE (not a plain reference rename).** The panel (wccfpanel.c) finds skin.tex, catalogue.tsv and cards\ BESIDE ITS OWN DLL (`g_dlldir`, GetModuleFileNameA at ~line 142-156). So moving the DLL to programs\ while splitting skin->art\ and catalogue/cards->data\cache\ needs the C panel changed to find them via env vars (WCCF_SKIN / WCCF_CATALOGUE / WCCF_CARDS) that play.py sets, then a REBUILD and a REAL GAME START to confirm the panel loads its skin + catalogue from the new places. Do this as its own careful pass, not a sweep. (Simpler alternative if wanted: keep the panel + skin + catalogue + cards together in one folder and just rename/relocate that whole folder.)
+- [ ] `english\` -> `art\english\`
+- [ ] `data\` tidied: own (settings, keys, save, logs) / run\ (runtime state) / cache\ (catalogue, cards, english_backup)
+- [ ] plain module names inside `code\` (procs->running, etc.), merge the duplicates (D1-D22), HANDOFF.md in every folder, split wccfpanel.c
+
+### Phase 3 (old notes)
 - [ ] paths.py, files.py, procs.py, settings.py - the shared foundation; switch call sites one by one
 - [ ] card\ modules; merge the duplicate readers/savers (D1, D2); parity test for the C decoder (D4)
 - [ ] run\, standins\, online\, server\, setup\ - move and merge
