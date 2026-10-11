@@ -11,6 +11,25 @@ WHAT IT IS
   or a game controller's buttons, SETTINGS, and CLUB CARD, your club card and your other clubs.
   The kit holds none of Sega's files. Everything that comes from the game is made by setup from YOUR copy.
 
+NEW IN KIT 6
+  - Your club card is safer: a file held by another program (an antivirus scan, a backup tool) can no longer leave
+    a half-written card, and a damaged card no longer stops the game - you get a fresh card and the old one is kept.
+  - A long session is no longer closed after 12 hours, even mid-match. Closing the game during a manager transfer
+    warns you first. The card-overwrite switch (SW1) has no key unless you give it one in KEYS.
+  - Online: a short network blip no longer loses your seat, two PCs can no longer land on one seat, and nobody can
+    take over your match from somewhere else.
+  - Antivirus: the kit's helper has its own name now (wccfk.dll) instead of posing as a Windows file - that is what
+    Windows Defender deleted. Every program of the kit carries its name and version (right-click, Properties).
+  - ITALIANO in SETUP's language choice (thanks to peakx), and more English: players' full names in Latin letters
+    and the last Japanese lines a player meets.
+  - The kit's version is beside the SETTINGS title too.
+  - Simpler folders: code\, programs\, art\, languages\ and data\ (your cards, keys, settings, logs - kept).
+  - Hosting a server: the server now gets players' messages only whole - the likely cause of "WCCF CONTROL NOT
+    FOUND" removed.
+  - Updating from 5.x: SETUP's UPDATE, then say yes to "set up now?". Unzipping over the old folder works too: the
+    first PLAY sets the game up for the new helper by itself, and the old folders (scripts\, bin\, overlay\,
+    english\) are tidied away - your own files in them stay. Your clubs, keys and settings are never touched.
+
 NEW IN KIT 5.5.1
   - Fixed: Kit 5.5 played on this PC even with ONLINE chosen in SETTINGS (and did not see the club card, English
     and card fix choices there). Update with SETUP.exe's UPDATE, or unzip this kit over the old folder.
