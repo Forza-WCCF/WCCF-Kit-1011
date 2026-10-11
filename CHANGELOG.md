@@ -4,7 +4,7 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
-## Unreleased
+## Kit 6 - 2026-10-11
 
 ### Changed
 - Online: no PC gets the projector any more. The first player to join used to run it as a second window; now every
@@ -46,6 +46,9 @@ game is not included. Newest first; each date is the day that kit was built.
   only ENGLISH and JAPANESE.
 
 ### Fixed
+- A stop no longer loses the end of a cabinet's debug log (`data\logs\_dbg_client_seat1.txt`): the launcher kept it
+  in memory and a stop ends the launcher at once - after an Error 3000 the file was empty. It is now written
+  whenever the game is not waiting on it, so SEND LOGS carries the cabinet's side too.
 - English: the players' full names (the card name, e.g. Mahamadou DIARRA) were still in katakana; they now use
   Sega's own Latin spelling, accents dropped, like the short names. The second katakana full name stays: the game
   looks player partnerships up by it (`partnership.bin`).
