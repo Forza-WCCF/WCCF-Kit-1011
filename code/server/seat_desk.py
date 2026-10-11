@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-r"""_seat_broker.py - hands out cabinet seats on the PC (or cloud machine) that runs the server (2026-10-06): every PC
+r"""seat_desk.py - hands out cabinet seats on the PC (or cloud machine) that runs the server (2026-10-06): every PC
 that plays on this server asks it for a seat before starting its cabinet and gets the lowest free one, 1-8 - and the
 projector (seat 0) when no other PC has it - so nobody types a seat number (two PCs on one seat break the game).
 A seat stays taken while that PC's _seat_lease.py keeps its connection, pinging every 20 s; a PC that stops,
 crashes or goes away frees its seat: its connection closes, or it stays silent for 75 s.
 
-    python _seat_broker.py LIFE_SECONDS [LOG_FILE]          (play.py server starts it)
+    python code\server\seat_desk.py LIFE_SECONDS [LOG_FILE]        (play.py server starts it)
 
 TCP port 20030 (WCCF_BROKER_PORT for the tests).  Lines, ASCII, one per message:
     PC -> "WANT"                broker -> "SEAT n PROJECTOR 1|0"   the lowest free seat; 1 = this PC shows the projector

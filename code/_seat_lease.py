@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-r"""_seat_lease.py - this PC's seat on a server (2026-10-06): asks the server's _seat_broker.py (TCP 20030) for a seat,
+r"""_seat_lease.py - this PC's seat on a server (2026-10-06): asks the server's seat desk (server\seat_desk.py, TCP 20030) for a seat,
 writes the answer for play.py, then HOLDS the seat by pinging every 20 s for as long as the run lasts. If the
 connection breaks (a network blip, or the desk restarting), it RECONNECTS and re-claims the SAME seat (A5,
 2026-10-11) - before, one missed reply ended the lease for good and the desk then freed the seat under the running

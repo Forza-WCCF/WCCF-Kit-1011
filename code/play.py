@@ -61,7 +61,7 @@ import zipfile
 import kit_common as K
 
 CONTROL_PORT = 20002
-RELAY_PORT = 20040                                    # UDP, the server's match relay (_relay.py)
+RELAY_PORT = 20040                                    # UDP, the server's match relay (server\relay.py)
 SERVER_ROLES = ("scene service", "server launcher", "seat desk", "match relay", "log inbox")
 SERVER_LIFE = 32 * 24 * 3600      # "play.py server" (2026-10-07): a month and a day - a server for others stays up
                                   # all month; a keeper task on that machine restarts it whenever it stops
@@ -501,7 +501,7 @@ def _seat_decision(got, seat_no, ip):
 
 
 def take_seat(ip, seat_no, env, roles):
-    """remote mode (2026-10-06): this PC's seat on the server at ip, from the server's seat desk (_seat_broker.py,
+    """remote mode (2026-10-06): this PC's seat on the server at ip, from the server's seat desk (server\\seat_desk.py,
     TCP 20030) through _seat_lease.py, which keeps holding it while the game runs; seat_no None = the next free seat.
     Returns (seat, projector?).  See _seat_decision for what each answer means."""
     out = os.path.join(K.DATA, "seat_lease.json")
@@ -684,7 +684,7 @@ def play(debug, mode="local", ip=None, seat_no=None):
                                                                        len(games("match_release.exe"))))
     if mode == "server":
         # the seat desk (2026-10-06): every player's PC that joins gets the next free seat, the first the projector
-        b = start("_seat_broker.py", [life + 60, os.path.join(K.LOGS, "seat_broker.txt")], "run_seat_broker.txt", env)
+        b = start(os.path.join("server", "seat_desk.py"), [life + 60, os.path.join(K.LOGS, "seat_broker.txt")], "run_seat_broker.txt", env)
         time.sleep(1.5)
         if b.poll() is None:
             roles[b.pid] = "seat desk"
@@ -692,7 +692,7 @@ def play(debug, mode="local", ip=None, seat_no=None):
         else:
             say("     the seat desk did not start (data\\logs\\run_seat_broker.txt) - players then give their seat")
         # the match relay (2026-10-06): a match between two players goes through here - home routers block the direct way
-        m = start("_relay.py", [life + 60, os.path.join(K.LOGS, "match_relay.txt")], "run_match_relay.txt", env)
+        m = start(os.path.join("server", "relay.py"), [life + 60, os.path.join(K.LOGS, "match_relay.txt")], "run_match_relay.txt", env)
         time.sleep(1.0)
         if m.poll() is None:
             roles[m.pid] = "match relay"
@@ -700,7 +700,7 @@ def play(debug, mode="local", ip=None, seat_no=None):
         else:
             say("     the match relay did not start (data\\logs\\run_match_relay.txt) - two players then play the CPU")
         # the log inbox (2026-10-09): the logs players send with SEND LOGS (SETTINGS) are kept in data\player_logs
-        li = start("_log_inbox.py", [life + 60, os.path.join(K.LOGS, "log_inbox.txt")], "run_log_inbox.txt", env)
+        li = start(os.path.join("server", "log_inbox.py"), [life + 60, os.path.join(K.LOGS, "log_inbox.txt")], "run_log_inbox.txt", env)
         time.sleep(1.0)
         if li.poll() is None:
             roles[li.pid] = "log inbox"

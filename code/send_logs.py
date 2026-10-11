@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 r"""send_logs.py - SEND LOGS (the SETTINGS panel, 2026-10-09): this kit's logs in one ZIP, sent to a server's log
-inbox (_log_inbox.py, TCP 20050), so the people who run the server can see what went wrong on this PC.  The panel
+inbox (server\log_inbox.py, TCP 20050), so the people who run the server can see what went wrong on this PC.  The panel
 asks _kit_helper.py, which calls pack() and send(); by hand:
     python send_logs.py ADDRESS
 

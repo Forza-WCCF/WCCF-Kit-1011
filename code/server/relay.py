@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-r"""_relay.py - the match relay on the PC (or cloud machine) that runs the server (2026-10-06).  In a match between
+r"""relay.py - the match relay on the PC (or cloud machine) that runs the server (2026-10-06).  In a match between
 two players the cabinets send their moves to each other directly, over UDP (port 20000 + seat); home routers drop
 that, and the game then falls back to a CPU match.  With the relay each cabinet's overlay (wccfpanel.dll) sends those
 packets here instead, and this passes each one on to the other seat - so every player only ever talks to the server,
 which works through any router, and installs nothing.
 
-    python _relay.py LIFE_SECONDS [LOG_FILE]          (play.py server starts it; UDP port 20040)
+    python code\server\relay.py LIFE_SECONDS [LOG_FILE]        (play.py server starts it; UDP port 20040)
 
 Packets (binary; "WRL1" = 57 52 4C 31):
     cabinet -> relay   "WRL1" "R" seat                          I am seat n: send its packets here (every 5 s - it

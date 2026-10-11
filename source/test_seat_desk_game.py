@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""test_seat_desk_game.py - the seat desk (code\\_seat_broker.py) never gives a seat that is in the game: a scratch
+"""test_seat_desk_game.py - the seat desk (code\\server\\seat_desk.py) never gives a seat that is in the game: a scratch
 "control debug log" is written line by line as the game would, and the real desk answers on a test port (check.ps1
 runs it; nothing of the game runs).  The PCs asking are 127.0.0.1; the cabinets already in the game are 10.0.0.5.
     python source\\test_seat_desk_game.py"""
@@ -41,7 +41,7 @@ tmp = tempfile.mkdtemp(prefix="seatgame_")
 game = os.path.join(tmp, "_dbg_control.txt")
 deskl = os.path.join(tmp, "seat_broker.txt")
 env = dict(os.environ, WCCF_BROKER_PORT=str(PORT), WCCF_BROKER_SILENT="30")
-desk = subprocess.Popen([sys.executable, "-B", os.path.join(KIT, "code", "_seat_broker.py"), "60", deskl], env=env,
+desk = subprocess.Popen([sys.executable, "-B", os.path.join(KIT, "code", "server", "seat_desk.py"), "60", deskl], env=env,
                         stdout=subprocess.DEVNULL)
 socks = []
 try:

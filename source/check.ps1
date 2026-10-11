@@ -13,7 +13,7 @@
 #   SEND LOGS: packed without the club card, names taken out, kept by the log inbox - which refuses junk, too big, not
 #   a ZIP and too many (source\test_send_logs.py: a scratch kit, inboxes on 127.0.0.1:20952 and 20953)
 #   the panel's money, relay and dealt-card self-tests (wccfpanel.dll loaded by source\build\fakegame.exe, in a
-#   scratch folder; the relay test plays two seats through code\_relay.py on 127.0.0.1:20941 - the C side and
+#   scratch folder; the relay test plays two seats through code\server\relay.py on 127.0.0.1:20941 - the C side and
 #   the Python side of the match relay checked against each other)
 # The panel's frame-wait test (WCCFPANEL_LIMITERTEST) measures milliseconds and stays out: a busy machine fails it.
 #
@@ -23,7 +23,7 @@ $kit = Split-Path $PSScriptRoot -Parent
 $py = Join-Path $kit 'python\python.exe'
 $failed = @()
 
-& $py -I -c "import pathlib, sys; [compile(p.read_bytes(), str(p), 'exec') for p in sorted(pathlib.Path(sys.argv[1]).glob('*.py'))]; print('code: all compile')" (Join-Path $kit 'code')
+& $py -I -c "import pathlib, sys; [compile(p.read_bytes(), str(p), 'exec') for p in sorted(pathlib.Path(sys.argv[1]).rglob('*.py'))]; print('code: all compile (every folder)')" (Join-Path $kit 'code')
 if ($LASTEXITCODE) { $failed += 'code compile' }
 
 # the launchers run python\python.exe code\<script>: the kit's modules are found ONLY through python\python313._pth
@@ -106,7 +106,7 @@ $env:WCCFPANEL_RELAYTEST = '1'
 $env:WCCFPANEL_DEALTEST = '1'             # the dealt card's odds
 $env:WCCF_RELAY_PORT = '20941'
 $env:WCCF_SKIN = Join-Path $kit 'art\skin.tex'      # the panel's art (play.py passes it; no longer beside the panel)
-$relay = Start-Process -FilePath $py -ArgumentList '-I', "`"$(Join-Path $kit 'code\_relay.py')`"", '60' -PassThru -WindowStyle Hidden
+$relay = Start-Process -FilePath $py -ArgumentList '-I', "`"$(Join-Path $kit 'code\server\relay.py')`"", '60' -PassThru -WindowStyle Hidden
 try {
     Start-Sleep -Seconds 1
     $p = Start-Process -FilePath (Join-Path $t 'fakegame.exe') -WorkingDirectory $t -PassThru -Wait -NoNewWindow `

@@ -4289,7 +4289,7 @@ static void set_2d_states(IDirect3DDevice9 *dev)
 }
 
 // ---------------------------------------------------------------- the ping meter (2026-10-07)
-// Online (play.py remote sets WCCF_RELAY=ADDRESS:PORT for the cabinet), a thread asks the server's relay (_relay.py,
+// Online (play.py remote sets WCCF_RELAY=ADDRESS:PORT for the cabinet), a thread asks the server's relay (server\relay.py,
 // UDP 20040) for an echo every 2 s - "WRL1" "P" + a number, answered "WRL1" "Q" + the same number - and the round trip
 // is drawn at the top right, above the game's picture: four bars and "80 ms", green under 100 ms, yellow under 200,
 // red from 200, grey "--" when nothing has come back for 6 s.  It travels the way a match's packets do (UDP, through the relay), on
@@ -5242,7 +5242,7 @@ static void money_selftest(void)
 // disconnected. Switching to CPU match.") - seen 2026-10-06 between the player and a friend on the Azure server.  When
 // play.py starts this cabinet on a server it sets WCCF_RELAY=ADDRESS:20040 and WCCF_SEAT=n, and the game's own
 // sendto / recvfrom imports come here: a packet for another player (a public address, port 20001-20008) goes to the
-// server's relay (_relay.py) labelled with both seats; what the relay passes on arrives on the same socket and is
+// server's relay (server\relay.py) labelled with both seats; what the relay passes on arrives on the same socket and is
 // handed to the game as if straight from that player - from the very address the game itself sends to it (else the
 // address the relay saw, port 20000 + its seat).  Every 5 s each socket that played tells the relay "I am seat n",
 // which also keeps the router open for the replies.  Everything else - 127.x (the CPU match's own local channel),
@@ -5411,7 +5411,7 @@ static void relay_install(void)                   // seat 1's cabinet on a serve
 }
 
 // WCCFPANEL_RELAYTEST=1 (the tests): two sockets on this PC play seats 1 and 2 through a relay on 127.0.0.1:20941
-// (the test starts _relay.py there); 127.0.0.2 stands for "another player's address"
+// (the test starts server\relay.py there); 127.0.0.2 stands for "another player's address"
 static void rt_check(const char *name, int ok, const char *detail)
 {
     logline("relay test: %s  %s%s%s", ok ? "PASS" : "FAIL", name, detail && *detail ? "  - " : "", detail ? detail : "");

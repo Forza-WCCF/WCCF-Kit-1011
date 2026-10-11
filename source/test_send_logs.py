@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""test_send_logs.py - SEND LOGS: send_logs.py packs and sends, _log_inbox.py keeps - and refuses what it must (check.ps1
+"""test_send_logs.py - SEND LOGS: send_logs.py packs and sends, server\\log_inbox.py keeps - and refuses what it must (check.ps1
 runs it; nothing of the game runs).  A scratch kit; inboxes on 127.0.0.1:20952 and :20953.
     python source\\test_send_logs.py"""
 import io
@@ -26,7 +26,7 @@ def check(name, ok, detail=""):
 
 def inbox(port, folder, log, **env):
     e = dict(os.environ, WCCF_INBOX_PORT=str(port), **{k: str(v) for k, v in env.items()})
-    p = subprocess.Popen([sys.executable, "-B", os.path.join(KIT, "code", "_log_inbox.py"), "60", log, folder], env=e,
+    p = subprocess.Popen([sys.executable, "-B", os.path.join(KIT, "code", "server", "log_inbox.py"), "60", log, folder], env=e,
                          stdout=subprocess.DEVNULL)
     end = time.time() + 10
     while time.time() < end:

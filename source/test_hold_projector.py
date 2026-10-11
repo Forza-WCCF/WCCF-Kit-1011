@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """test_hold_projector.py - the seat desk keeps the projector box out of the game until a player is in it
-(code\\_seat_broker.py, data\\hold_projector.txt; check.ps1 runs it).  The real desk on 127.0.0.1:20933, a scratch
+(code\\server\\seat_desk.py, data\\hold_projector.txt; check.ps1 runs it).  The real desk on 127.0.0.1:20933, a scratch
 control log written as the game would, and WCCF_HOLD_FW: the firewall rule's on/off goes to a scratch file instead of
 Windows' firewall.  The box is 10.0.0.9; players are 10.0.0.5.
     python source\\test_hold_projector.py"""
@@ -62,7 +62,7 @@ def desk(tmp, port, hold_text, fw):
         with open(os.path.join(tmp, "data", "hold_projector.txt"), "w", encoding="ascii") as f:
             f.write(hold_text)
     env = dict(os.environ, WCCF_BROKER_PORT=str(port), WCCF_HOLD_FW=fw)
-    p = subprocess.Popen([sys.executable, "-B", os.path.join(KIT, "code", "_seat_broker.py"), "60",
+    p = subprocess.Popen([sys.executable, "-B", os.path.join(KIT, "code", "server", "seat_desk.py"), "60",
                           os.path.join(logs, "seat_broker.txt")], env=env, stdout=subprocess.DEVNULL)
     wait_for(lambda: os.path.exists(os.path.join(logs, "seat_broker.txt")), 5)
     time.sleep(0.5)

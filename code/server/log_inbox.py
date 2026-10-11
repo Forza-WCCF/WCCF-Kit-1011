@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-r"""_log_inbox.py - keeps the logs players send with SEND LOGS (the SETTINGS panel), on the PC (or cloud machine) that
+r"""log_inbox.py - keeps the logs players send with SEND LOGS (the SETTINGS panel), on the PC (or cloud machine) that
 runs the server (2026-10-09, the player: "a button in the settings to send logs to the server, so people can send us
 their logs from their own game").  play.py server starts it beside the seat desk.
 
-    python _log_inbox.py LIFE_SECONDS LOG_FILE [FOLDER]
+    python code\server\log_inbox.py LIFE_SECONDS LOG_FILE [FOLDER]
 
 TCP port 20050 (WCCF_INBOX_PORT for the tests).  One upload per connection, from send_logs.py:
     PC -> "WCCFLOGS1 SIZE VERSION\n" then SIZE bytes (a ZIP)
