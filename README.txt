@@ -25,6 +25,8 @@ NEW IN KIT 6
   - The kit's version is beside the SETTINGS title too.
   - Simpler folders: code\, programs\, art\, languages\ and data\ (your cards, keys, settings, logs - kept).
   - Online: your PC runs only your own game - no projector window any more (the first player used to get it).
+  - When something goes wrong online (a crash, Error 3000) the logs reach the server by themselves, with a memory
+    snapshot of a crash - so the cause can be found without asking you. Never your club card. (ONLINE, below.)
   - Hosting a server: the server now gets players' messages only whole - the likely cause of "WCCF CONTROL NOT
     FOUND" removed.
   - Updating from 5.x: SETUP's UPDATE, then say yes to "set up now?". Unzipping over the old folder works too: the
@@ -216,6 +218,11 @@ ONLINE (play with others on one server)
   in SETTINGS. Online, each PC runs only its own cabinet - no projector window; the server does not wait for one
   (PLAY.exe local still has its own projector). The PC that hosts can play too: "PLAY.exe remote"
   with its own local address (ipconfig shows it).
+  When an online game ends badly - the game crashed, or its link to the server was lost (Error 3000) - the kit sends
+  this PC's logs to that server by itself, the same as SEND LOGS: never your club card, and your Windows user name and
+  PC name are blanked out. If the game crashed, a memory snapshot of that moment goes with them, so the cause can be
+  found (data\dumps keeps the newest 5 on your PC). If the server cannot be reached then, the next start sends it.
+  To switch this off: a line auto_logs=0 in data\panel.txt.
 
 ENGLISH (optional)
   ENGLISH (in SETUP.exe, GAME LANGUAGE) puts the game into English: about 7,200 lines of screen text, the players'

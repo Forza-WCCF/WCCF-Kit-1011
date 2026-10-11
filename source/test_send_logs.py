@@ -82,6 +82,26 @@ try:
     check("pack: the Windows user folder is taken out", (not home or home not in text) and "%USERPROFILE%" in text, "")
     check("version: version.txt without kit-", S.version(kit) == "5.5", S.version(kit))
 
+    # crash snapshots (2026-10-11): the newest 3 lean ones go whole, names blanked to the same length; never a full one
+    user = os.environ.get("USERNAME") or "someone"
+    os.makedirs(os.path.join(kit, "data", "dumps"))
+    fake = b"MDMP" + b"\0" * 60 + user.encode("utf-16-le") + b"\0" * 9 + user.encode("utf-8") + b"\0" * 7
+    for i in range(4):
+        with open(os.path.join(kit, "data", "dumps", "2026101%d-120000_client_Release_1_lean.dmp" % i), "wb") as f:
+            f.write(fake)
+    with open(os.path.join(kit, "data", "dumps", "20261013-120000_client_Release_1_full.dmp"), "wb") as f:
+        f.write(fake)
+    z = zipfile.ZipFile(io.BytesIO(S.pack(kit, game=os.path.join(tmp, "nogame"), tail=1000, note="why: a test")[0]))
+    sent = sorted(n for n in z.namelist() if n.startswith("dumps/"))
+    check("pack: the newest 3 lean snapshots, never a full one", sent == ["dumps/2026101%d-120000_client_Release_1_lean.dmp" % i
+                                                                        for i in (1, 2, 3)], str(sent))
+    d = z.read(sent[-1]) if sent else b""
+    check("a snapshot keeps its size and its MDMP head", len(d) == len(fake) and d[:4] == b"MDMP", "%d %r" % (len(d), d[:4]))
+    check("the user name is blanked in a snapshot (UTF-16 and plain)", len(user) < 3 or (
+        user.encode("utf-16-le").lower() not in d.lower() and user.encode("utf-8").lower() not in d.lower()), "")
+    check("the note goes in as report.txt", z.read("report.txt") == b"why: a test", "")
+    shutil.rmtree(os.path.join(kit, "data", "dumps"))
+
     keep, port = os.path.join(tmp, "keep"), 20952
     procs.append(inbox(port, keep, os.path.join(tmp, "inbox.txt"), WCCF_INBOX_PER_HOUR=4))   # junk and too big: not counted
     ok, code = S.send("127.0.0.1", blob, "5.5", port=port)

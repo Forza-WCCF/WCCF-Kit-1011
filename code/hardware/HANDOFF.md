@@ -10,7 +10,7 @@ programs stand in for them; play.py starts each one (data\running.json lists the
 | `keyboard.py` | the key driver: your keyboard and controllers become the cabinet's buttons (keys from `data\keys.txt`, the KEYS panel); takes the card out when the game ejects it |
 | `scenes.py` | the scene service (xscnWatch): loads the game's scene files when it asks |
 | `network.py` | the arcade's background services (keychip and network): answers the game's questions |
-| `debugger.py` | starts one of the game's programs (server, projector, seat 1) with the shared memory in place, ends it when its window closes, and guards the server against a known crash |
+| `debugger.py` | starts one of the game's programs (server, projector, seat 1) with the shared memory in place, ends it when its window closes, and guards the server against a known crash; at any crash it prints where and writes two memory snapshots to `data\dumps` (lean + full, newest 5 each) |
 
 ## Careful
 - `keyboard.py`'s `LIVE`, the outputs file `io_board.py` writes beside it, and play.py's `KEYS_INPUT` must name the

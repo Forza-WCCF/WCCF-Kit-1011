@@ -653,6 +653,7 @@ def play(debug, mode="local", ip=None, seat_no=None):
             raise Failed("the server at %s does not answer on port %d - is it running there (PLAY.exe server), "
                          "and is that port open to this PC? (PLAY.exe local plays on this PC instead)" %
                          (ip, CONTROL_PORT))
+        send_pending_report(env)               # a server answers: the last report it could not take goes now
         seat_no, projector = take_seat(ip, seat_no, env, roles)
         for conf in confs:
             set_control_ip(conf, ip)
@@ -903,6 +904,59 @@ def read_log(name):
         return ""                # unreadable counts as no close: the safe side keeps the rest running
 
 
+REPORT_PENDING = os.path.join(K.DATA, "report.pending")      # a report the server did not take: the next start sends it
+CRASH_SIGNS = ("SECOND-chance / FATAL", "STOP: invalid parameter")       # debugger.py's words at a crash
+
+
+def went_wrong(launcher_logs, read=read_log):
+    """Pure (reads through read): why this run went wrong, [] if it did not - a game window that went without being
+    closed, a crash the launcher recorded (debugger.py: the report and the memory snapshot), the server link lost
+    (wccfpanel.dll's server_link.txt)"""
+    why = ["%s: the game window went by itself, not closed" % n for n in launcher_logs if WINDOW_CLOSED not in read(n)]
+    why += ["%s: a crash recorded (%s)" % (n, s) for n in sorted(set(launcher_logs) | {"run_server.txt"})
+            for s in CRASH_SIGNS if s in read(n)]
+    why += ["server_link.txt: %s" % ln.strip() for ln in read("server_link.txt").splitlines() if " LOST " in ln]
+    return why
+
+
+def report_bad_run(server, why, game=None):
+    """online, after a run that went wrong: this PC's logs go to the server's log inbox by themselves (the owner,
+    2026-10-11: "put something in the server and the game ... like logs so we find out if any issue happened, and
+    what the cause is") - what SEND LOGS sends, never the club card, names on this PC replaced, plus the crash
+    snapshots and why.  The server out of reach (often the very trouble): data\\report.pending, sent by the next start.
+    data\\panel.txt auto_logs=0 turns it off.  Never raises: the end of a run must go on."""
+    if not server or not why or read_panel().get("auto_logs") == "0":
+        return
+    note = "sent by itself at the end of an online run that went wrong:\n" + "\n".join(why) + "\n"
+    try:
+        from online import send_logs
+        blob, _n = send_logs.pack(game=game, note=note)
+        ok, what = send_logs.send(server, blob, send_logs.version())
+    except Exception as ex:                          # noqa: BLE001 - a report must never break the end of a run
+        ok, what = False, repr(ex)
+    if ok:
+        say("This run went wrong (%s) - its logs went to the server at %s by themselves: code %s." % (why[0], server, what))
+        return
+    try:
+        with open(REPORT_PENDING, "w", encoding="utf-8") as f:
+            f.write(server + "\n" + note)
+    except OSError:
+        pass
+    say("This run went wrong (%s) - its logs could not reach the server (%s); the next start sends them." % (why[0], what))
+
+
+def send_pending_report(env):
+    """a report a run could not send (report_bad_run): tried again in the background while the start goes on;
+    send_logs.py removes data\\report.pending only once the server took it, so a failed try leaves it for the next"""
+    try:
+        with open(REPORT_PENDING, encoding="utf-8") as f:
+            server = f.readline().strip()
+    except OSError:
+        return
+    if server:
+        start(os.path.join("online", "send_logs.py"), [server, "--report", REPORT_PENDING], "run_report.txt", env)
+
+
 def ended():
     """a game window closed (2026-10-08; there is no STOP now): PLAY.exe's watcher saw one of the run's cabinet and
     projector launchers end - debugger.py ends the game, and itself, when the game's window is closed - and asks
@@ -925,7 +979,11 @@ def ended():
     say("%s - stopping the rest%s." % ("A game window was closed" if any(pid in alive for pid in launchers) else
                                        "No game window is left", " (the server on this PC keeps running)"
                                        if server_here else ""))
-    return stop(False, keep_server=server_here)
+    info, why = running_info(), went_wrong(sorted(set(launchers.values())))
+    r = stop(False, keep_server=server_here)
+    if info.get("mode") == "remote":                 # online: the server's people get this PC's side of it
+        report_bad_run(info.get("server"), why, game)
+    return r
 
 
 def cabinet_restart_fits():

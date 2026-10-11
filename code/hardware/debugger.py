@@ -367,6 +367,51 @@ ntdll.NtQueryInformationProcess.argtypes = [w.HANDLE, ctypes.c_ulong, c_void_p, 
                                             ctypes.POINTER(ctypes.c_ulong)]
 ntdll.NtQueryInformationProcess.restype = ctypes.c_long
 
+# ---- a memory snapshot at a crash (2026-10-11, the owner: "i dont want later to hear, ohhh i looked at the logs, and
+# there was nothing to show why the crash happened").  The report printed at a crash says WHERE (address, registers,
+# the callers); the snapshot holds what WHY needs.  Two per crash, in data\dumps (beside data\logs, so a start's log
+# rotation never zips them): _lean = every thread's stack and the memory it points to (a cabinet ~1 MB, ~90 KB zipped:
+# SEND LOGS and the automatic report carry it) and _full = also the program's globals (the server 3.5 MB, a cabinet
+# 36 MB: kept on this PC).  The newest DUMPS_KEEP of each kind stay.  Open with Visual Studio or WinDbg (.effmach x86).
+dbghelp = ctypes.WinDLL("dbghelp", use_last_error=True)
+dbghelp.MiniDumpWriteDump.argtypes = [w.HANDLE, DWORD, w.HANDLE, DWORD, c_void_p, c_void_p, c_void_p]
+dbghelp.MiniDumpWriteDump.restype = w.BOOL
+k.CreateFileW.argtypes = [w.LPCWSTR, DWORD, DWORD, c_void_p, DWORD, DWORD, w.HANDLE]
+k.CreateFileW.restype = w.HANDLE
+DUMP_LEAN = 0x1164      # handles, unloaded modules, indirectly referenced memory, process/thread data, thread info
+DUMP_FULL = DUMP_LEAN | 0x1                                                     # + data segments (the globals)
+DUMPS_KEEP = 5
+DUMPS = os.path.join(os.path.dirname(os.environ.get("WCCF_LOGS") or HERE), "dumps")
+
+
+def write_dumps(hproc, pid, name, why, folder=None):
+    """both snapshots of a process the debugger holds stopped -> a line for the log; never raises (a report must not
+    stop the debugger)"""
+    folder = folder or DUMPS
+    try:
+        os.makedirs(folder, exist_ok=True)
+        stem = "%s_%s_%d" % (time.strftime("%Y%m%d-%H%M%S"), os.path.splitext(name)[0], pid)
+        made = []
+        for kind, flags in (("lean", DUMP_LEAN), ("full", DUMP_FULL)):
+            path = os.path.join(folder, "%s_%s.dmp" % (stem, kind))
+            hf = k.CreateFileW(path, 0x40000000, 0, None, 2, 0x80, None)          # GENERIC_WRITE, CREATE_ALWAYS
+            if hf in (None, w.HANDLE(-1).value):
+                made.append("%s: cannot create (%d)" % (kind, ctypes.get_last_error()))
+                continue
+            ok = dbghelp.MiniDumpWriteDump(hproc, pid, hf, flags, None, None, None)
+            err = ctypes.get_last_error()
+            k.CloseHandle(hf)
+            made.append("%s %d KB" % (kind, os.path.getsize(path) // 1024) if ok else "%s: failed 0x%08X" % (
+                kind, err & 0xFFFFFFFF))
+            for old in sorted(n for n in os.listdir(folder) if n.endswith("_%s.dmp" % kind))[:-DUMPS_KEEP]:
+                try:
+                    os.remove(os.path.join(folder, old))
+                except OSError:
+                    pass
+        return "memory snapshot (%s): data\\dumps\\%s_* - %s" % (why, stem, ", ".join(made))
+    except Exception as ex:
+        return "memory snapshot (%s) not written: %r" % (why, ex)
+
 _INDEX_CACHE = {}
 
 
@@ -831,6 +876,7 @@ def main(argv):
                       "with 0xC0000417; the callers below passed the bad value  [thread %d]" % (
                           now, "" if pid == p.pid else "[%s %d] " % (pr.name, pid), tid))
                 pr.dump_thread(tid)
+                print("  t+%5.1fs %s" % (now, write_dumps(pr.hproc, pid, pr.name, "invalid-parameter stop")), flush=True)
                 pr.unarm_watson(tid)
                 status = DBG_CONTINUE
             elif ec in BREAKPOINTS and first:
@@ -865,6 +911,9 @@ def main(argv):
                         detail, tid))
                     if ec == EXCEPTION_ACCESS_VIOLATION or not first:
                         pr.dump_thread(tid)
+                if not first:                                  # the program dies now: keep its memory as it is
+                    print("  t+%5.1fs %s" % (now, write_dumps(pr.hproc, pid, pr.name, "fatal exception 0x%08X at 0x%08X" % (
+                        ec, addr))), flush=True)
                 if ec == EXCEPTION_ACCESS_VIOLATION and first and getattr(pr, "why", ""):
                     print("  t+%5.1fs MSGPARSE guard stepped aside: %s" % (now, pr.why))
                     dbg_file.write("t+%6.2fs MSGPARSE guard stepped aside: %s\n" % (now, pr.why))

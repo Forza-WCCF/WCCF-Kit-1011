@@ -45,6 +45,19 @@ game is not included. Newest first; each date is the day that kit was built.
   citta'). Player and CPU team names are the English ones; money stays in dollars. The SETTINGS panel still offers
   only ENGLISH and JAPANESE.
 
+- Every crash of the game, the server or a match engine leaves two memory snapshots in `data\dumps` (debugger.py):
+  a lean one (every thread's stack and the memory it points to - about 1 MB, 90 KB zipped) and a full one (also the
+  program's globals - 3.5 MB for the server, 36 MB for a cabinet), the newest 5 of each. The report printed at a
+  crash says where; the snapshot holds what is needed to find why. Tested: `source\test_crash_dump.py` crashes a
+  program on purpose under the real launcher.
+- The cabinet's link to the server is watched all the time (wccfpanel.dll): `data\logs\server_link.txt` gets a dated
+  line when it comes up and when it drops - before, nothing recorded the player's side of an Error 3000.
+- Online, a run that ended badly (a crash, or the server link lost) sends this PC's logs to that server's log inbox by
+  itself, with the newest lean snapshots and a `report.txt` saying why - what SEND LOGS sends: never the club card,
+  names on the PC blanked (in a snapshot, with as many underscores, so it still opens). A server out of reach: kept
+  as `data\report.pending` and sent at the next join. `auto_logs=0` in `data\panel.txt` turns it off. Tested on a test
+  server: a killed seat (sent at once), a dropped server (kept, then sent at the next join).
+
 ### Fixed
 - A stop no longer loses the end of a cabinet's debug log (`data\logs\_dbg_client_seat1.txt`): the launcher kept it
   in memory and a stop ends the launcher at once - after an Error 3000 the file was empty. It is now written

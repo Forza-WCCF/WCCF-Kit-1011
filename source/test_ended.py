@@ -28,5 +28,23 @@ assert play.crashed_logs(win, {12, 13}, logs()) == [], "nothing ended (a hand-ru
 assert play.crashed_logs({}, set(), logs()) is None, "no running.json: the rest stops, as before"
 
 with open(os.path.join(KIT, "code", "hardware", "debugger.py"), encoding="utf-8") as f:
-    assert play.WINDOW_CLOSED in f.read(), "debugger.py no longer prints the line play.py looks for"
-print("ended: 9 checks passed")
+    dbg = f.read()
+assert play.WINDOW_CLOSED in dbg, "debugger.py no longer prints the line play.py looks for"
+
+# a run that went wrong (the automatic report, 2026-10-11): a crash, or the server link lost
+seat = ["run_seat1.txt"]
+assert play.went_wrong(seat, logs(run_seat1=CLOSED)) == [], "closed by the player, link fine: nothing to report"
+assert play.went_wrong(seat, logs(run_seat1="  t+ 9.0s process exited\n"))[0].startswith(
+    "run_seat1.txt: the game window went by itself"), "gone without a close: reported"
+why = play.went_wrong(seat, logs(run_seat1=CLOSED + "  SECOND-chance / FATAL exception 0xC0000005\n"))
+assert why == ["run_seat1.txt: a crash recorded (SECOND-chance / FATAL)"], why
+why = play.went_wrong(seat, logs(run_seat1=CLOSED, server_link="2026-10-11 20:01:02 UP 1.2.3.4\n"
+                                 "2026-10-11 20:09:40 LOST (it was up 518 s)\n"))
+assert why == ["server_link.txt: 2026-10-11 20:09:40 LOST (it was up 518 s)"], why
+assert play.went_wrong(seat, logs(run_seat1=CLOSED, run_server="  STOP: invalid parameter\n")) == [
+    "run_server.txt: a crash recorded (STOP: invalid parameter)"], "a crash of the server on this PC counts too"
+for sign in play.CRASH_SIGNS:                                    # the words must stay the launcher's own
+    assert sign in dbg, "debugger.py no longer prints %r" % sign
+with open(os.path.join(KIT, "source", "panel", "wccfpanel.c"), encoding="utf-8") as f:
+    assert " LOST (it was up " in f.read(), "wccfpanel.c no longer writes the LOST line play.py looks for"
+print("ended: 16 checks passed")

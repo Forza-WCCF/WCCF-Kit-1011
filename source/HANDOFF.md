@@ -7,9 +7,11 @@ The source of every compiled program the kit ships, the scripts that build, chec
 | `README.txt` | how each program is built, command by command |
 | `build.ps1` | builds every program into its place: the C programs (32-bit, Microsoft's compiler) and the launchers (Rust) |
 | `check.ps1` | every check that needs no game - CI runs it on every push; run it after any change |
+| `crashme.c` | not shipped: a program that crashes at once, for `test_crash_dump.py` (built into `build\`) |
 | `package.ps1` | makes the kit ZIP the way players get it, in `dist\` |
 | `test_card_fix.py` | a missing club-card helper file never stops a start |
-| `test_ended.py` | play.py's choice when a game window's launcher ends (a closed window stops the rest) |
+| `test_crash_dump.py` | a crash leaves a lean and a full memory snapshot in `data\dumps` (crashme.exe under the real launcher) |
+| `test_ended.py` | play.py's choice when a game window's launcher ends (a closed window stops the rest), and when a run went wrong (the automatic report) |
 | `test_english_pictures.py` | English writing in the game's pictures: added at the archive's end, taken back out byte for byte (peakx, #29) |
 | `test_handoffs.py` | every folder has a HANDOFF.md that names every file in it |
 | `test_hold_projector.py` | the seat desk keeps the projector box out of the game until a player is in it |

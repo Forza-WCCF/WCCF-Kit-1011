@@ -415,6 +415,7 @@ static UINT  g_gw = 0, g_gh = 0;         // the game's own frame size (its back-
 // press them) - the game takes the left; the right strip keeps the field, CATALOGUE and KEYS, with SETTINGS and
 // CLUB CARD moved under them (compact_strip).  SETTINGS > VIEW > LAYOUT switches it at once; data\panel.txt keeps it.
 static int   g_compact = 0;
+static int   g_auto_off = 0;      // auto_logs=0 in data\panel.txt (play.py's automatic report off): kept through a save
 
 static RECT strip_rect(float x0, float y0, float x1, float y1)    // sheet px in the right strip -> canvas (pinned right)
 {
@@ -3001,7 +3002,7 @@ static int valid_ipv4(const char *s)     // = play.py valid_ipv4: four numbers 0
 static void set_load_locked(void)
 {
     FILE *f = fopen(g_panel_path, "rb"); char line[256];
-    g_on_online = 0; g_server[0] = 0; g_eng_req = -1; g_card_req[0] = 0; g_fix_req = 0; g_compact = 0;
+    g_on_online = 0; g_server[0] = 0; g_eng_req = -1; g_card_req[0] = 0; g_fix_req = 0; g_compact = 0; g_auto_off = 0;
     if (!f) return;
     while (fgets(line, sizeof line, f)) {
         char *p = strchr(line, '#'), *eq, *name, *val;
@@ -3015,6 +3016,7 @@ static void set_load_locked(void)
         else if (!_stricmp(name, "card")) lstrcpynA(g_card_req, val, sizeof g_card_req);
         else if (!_stricmp(name, "card_fix")) g_fix_req = !_stricmp(val, "bad_endings");
         else if (!_stricmp(name, "layout")) g_compact = !_stricmp(val, "compact");
+        else if (!_stricmp(name, "auto_logs")) g_auto_off = !strcmp(val, "0");
     }
     fclose(f);
 }
@@ -3031,6 +3033,7 @@ static int set_save_locked(void)
     if (g_card_req[0]) n += _snprintf(text + n, sizeof text - n, "card=%s\n", g_card_req);
     if (g_fix_req) n += _snprintf(text + n, sizeof text - n, "card_fix=bad_endings\n");
     if (g_compact) n += _snprintf(text + n, sizeof text - n, "layout=compact\n");     // the VIEW: kept, not a request
+    if (g_auto_off) n += _snprintf(text + n, sizeof text - n, "auto_logs=0\n");       // the player's choice: kept
     f = fopen(g_panel_tmp, "wb");
     if (!f) { logline("settings: could not write %s", g_panel_tmp); return 0; }
     k = (int)fwrite(text, 1, (size_t)n, f) == n;
@@ -3048,6 +3051,23 @@ static int set_save_locked(void)
     }
     logline("settings: could not swap %s in (error %lu)", g_panel_path, GetLastError());
     return 0;
+}
+
+// the tests only (check.ps1: WCCFPANEL_SETTEST, a scratch data\): a save keeps what the panel does not show -
+// auto_logs=0, the player's "no automatic report" (play.py, 2026-10-11) - and the choices it does show
+static void set_selftest(void)
+{
+    char buf[1024]; FILE *f; size_t got = 0; int ok;
+    if ((f = fopen(g_panel_path, "wb")) != NULL) { fputs("play_on=online\nserver=1.2.3.4\nauto_logs=0\n", f); fclose(f); }
+    EnterCriticalSection(&g_board_cs);
+    set_load_locked();
+    ok = set_save_locked();
+    LeaveCriticalSection(&g_board_cs);
+    if ((f = fopen(g_panel_path, "rb")) != NULL) { got = fread(buf, 1, sizeof buf - 1, f); fclose(f); }
+    buf[got] = 0;
+    logline("settings test: %s  a save keeps auto_logs=0", ok && strstr(buf, "\nauto_logs=0\n") ? "PASS" : "FAIL");
+    logline("settings test: %s  a save keeps ONLINE and the server", ok && strstr(buf, "\nplay_on=online\n") &&
+            strstr(buf, "\nserver=1.2.3.4\n") ? "PASS" : "FAIL");
 }
 
 static void set_init(void)               // the init thread: where data\ is, and what the file says
@@ -3068,6 +3088,7 @@ static void set_init(void)               // the init thread: where data\ is, and
     logline("settings: %s (%s)", g_panel_path, GetFileAttributesA(g_panel_path) != INVALID_FILE_ATTRIBUTES
                                                ? "read" : "no file yet - this PC, no request");
     logline("view: layout %s", g_compact ? "compact" : "cabinet");
+    { char t[8]; if (GetEnvironmentVariableA("WCCFPANEL_SETTEST", t, sizeof t) > 0) set_selftest(); }
 }
 
 // ---- reading the status (the board thread; no lock held while it reads files)
@@ -3396,8 +3417,37 @@ static void sendlogs_poll(void)          // the board thread: the helper's answe
     logline("settings: send logs - %s", line);
 }
 
+// The server link, watched all the time (2026-10-11): SETTINGS looked only while it was open, so a link that dropped
+// mid-match left no trace - the player's side of an Error 3000.  One dated line in data\logs\server_link.txt (WCCF_LOGS,
+// a fresh file each run) when it comes up and when it drops; play.py's end of run sends the logs by itself after a drop.
+static void link_watch(void)
+{
+    static int was = 0; static DWORD last = 0, up_at = 0;
+    char peer[16], dir[MAX_PATH], path[MAX_PATH]; SYSTEMTIME t; DWORD n; FILE *f; int now;
+    // unsigned: right at any uptime (a signed test was stuck past 24.8 days of uptime - found on this PC, 2026-10-11)
+    if (g_projector || GetTickCount() - last < 2000) return;              // the cabinet's link only
+    last = GetTickCount();
+    now = server_link(peer);
+    if (now < 0 || now == was) return;
+    n = GetEnvironmentVariableA("WCCF_LOGS", dir, MAX_PATH);
+    if (n > 0 && n < MAX_PATH - 32) {
+        _snprintf(path, MAX_PATH, "%s\\server_link.txt", dir); path[MAX_PATH - 1] = 0;
+        GetLocalTime(&t);
+        if ((f = fopen(path, "a")) != NULL) {
+            if (now == 1) fprintf(f, "%04d-%02d-%02d %02d:%02d:%02d UP %s\n", t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute,
+                                  t.wSecond, peer);
+            else fprintf(f, "%04d-%02d-%02d %02d:%02d:%02d LOST (it was up %lu s)\n", t.wYear, t.wMonth, t.wDay, t.wHour,
+                         t.wMinute, t.wSecond, (unsigned long)((GetTickCount() - up_at) / 1000));
+            fclose(f);
+        }
+    }
+    if (now == 1) up_at = GetTickCount();
+    was = now;
+}
+
 static void set_tick(void)               // the board thread, every pass: the status while the panel is open
 {
+    link_watch();
     sendlogs_poll();
     if (g_lg_sent && GetTickCount() - g_lg_sent > 5000) {      // the helper takes it within 0.5 s when it runs
         char p[MAX_PATH];

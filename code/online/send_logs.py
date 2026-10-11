@@ -8,6 +8,10 @@ In the ZIP: data\logs (this run and the one before - not the zipped archive), th
 data\logs\wccfpanel_projector.log), data\panel.txt, data\keys.txt, data\running.json and version.txt - each its last
 2 MB at most.  NEVER the club card (data\save).  In the text, what points at the person is replaced: the Windows user
 folder (%USERPROFILE%), the user name (USER) and the PC's name (PC).
+Also the newest DUMPS_SENT lean memory snapshots of a crash (data\dumps\*_lean.dmp, debugger.py - 2026-10-11), whole:
+there the same names are blanked with as many underscores (also in UTF-16), so the file keeps its layout and opens.
+A note (why it was sent: play.py's report after a run that went wrong) goes in as report.txt.
+    python code\online\send_logs.py ADDRESS [--note TEXT]
 """
 import io
 import os
@@ -22,6 +26,7 @@ KIT = K.KIT
 PORT = int(os.environ.get("WCCF_INBOX_PORT", "20050"))
 TAIL = 2 * 1024 * 1024
 LIMIT = 7 * 1024 * 1024                    # the inbox takes 8 MB: a bigger ZIP is made again with shorter tails
+DUMPS_SENT = 3                             # a cabinet's lean snapshot: ~1 MB, ~90 KB zipped
 
 
 def version(kit=KIT):
@@ -83,10 +88,52 @@ def scrub(data, pairs):
     return data
 
 
-def pack(kit=KIT, game=None, tail=TAIL):
+def blanker():
+    """a binary file's names blanked in place: the same strings as scrubbers() (and in UTF-16, Windows' own text),
+    each match turned into as many underscores - nothing moves, so a memory snapshot stays a valid file"""
+    home = os.environ.get("USERPROFILE") or os.path.expanduser("~")
+    pats = []
+    for old in (home, os.environ.get("USERNAME") or "", os.environ.get("COMPUTERNAME") or ""):
+        if len(old) < 3:
+            continue
+        for enc in ("utf-8", "mbcs" if os.name == "nt" else "latin-1", "utf-16-le"):
+            try:
+                pats.append(re.compile(re.escape(old.encode(enc)), re.I))
+            except UnicodeEncodeError:
+                continue
+
+    def blank(data):
+        for p in pats:
+            data = p.sub(lambda m: b"_" * len(m.group(0)), data)
+        return data
+    return blank
+
+
+def dumps(kit=KIT):
+    """[(name in the ZIP, path)] of the newest DUMPS_SENT lean crash snapshots"""
+    folder = os.path.join(kit, "data", "dumps")
+    try:
+        names = sorted(n for n in os.listdir(folder) if n.endswith("_lean.dmp"))[-DUMPS_SENT:]
+    except OSError:
+        return []
+    return [("dumps/" + n, os.path.join(folder, n)) for n in names]
+
+
+def pack(kit=KIT, game=None, tail=TAIL, note=None):
     """the ZIP (bytes) and how many files are in it"""
     pairs, buf, n = scrubbers(), io.BytesIO(), 0
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        if note:
+            z.writestr("report.txt", scrub(note.encode("utf-8", "replace"), pairs))
+            n += 1
+        blank = blanker()
+        for arc, path in dumps(kit):
+            try:
+                with open(path, "rb") as f:
+                    z.writestr(arc, blank(f.read()))
+                n += 1
+            except OSError:
+                continue
         for arc, path in files(kit, game):
             try:
                 with open(path, "rb") as f:
@@ -102,7 +149,7 @@ def pack(kit=KIT, game=None, tail=TAIL):
             n += 1
     blob = buf.getvalue()
     if len(blob) > LIMIT and tail > 64 * 1024:
-        return pack(kit, game, tail // 4)
+        return pack(kit, game, tail // 4, note)
     return blob, n
 
 
@@ -129,13 +176,27 @@ def send(address, blob, ver, port=PORT, timeout=60.0):
 
 
 def main(argv):
+    note, report = None, None
+    if len(argv) == 3 and argv[1] == "--report":     # play.py's report a run could not send: the server, then why
+        argv, report = argv[:1], argv[2]
+        try:
+            with open(report, encoding="utf-8") as f:
+                f.readline()
+                note = f.read()
+        except OSError:
+            return 1
     if len(argv) != 1:
         print(__doc__)
         return 2
-    blob, n = pack()
+    blob, n = pack(note=note)
     ok, what = send(argv[0], blob, version())
     print(("sent %d files (%d KB) - code %s: tell us this code" if ok else "not sent (%d files, %d KB): %s") %
           (n, len(blob) // 1024, what))
+    if ok and report:
+        try:
+            os.remove(report)                         # taken: never sent twice
+        except OSError:
+            pass
     return 0 if ok else 1
 
 

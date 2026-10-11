@@ -20,6 +20,7 @@ files ship.** SETUP builds whatever it needs from the player's own copy of the g
 | `programs\` | the compiled programs: the in-game hook (`wccfk.dll`), the panel (`wccfpanel.dll`) and the card-table helper (`FPR_Emu.exe`) |
 | `art\` | the panel's picture (`skin.tex`) |
 | `data\cache\` | the catalogue + card pictures SETUP makes from the player's own game (made again if deleted) |
+| `data\dumps\` | memory snapshots of crashes (debugger.py; newest 5 lean + 5 full) - the lean ones go with SEND LOGS and the automatic report |
 | `languages\` | one folder per language - `languages\english\`: the English translation tables (text + fingerprints of Sega's files; no Sega file) |
 | `python\` | an embedded Python so players install nothing |
 | `code\` | the kit's Python. At the top, the four a person runs or everything shares: `play.py` (start/stop), `setup.py`, `english.py`, `kit_common.py`. Then `cards\` (club cards, the catalogue), `hardware\` (the cabinet's parts, faked on a PC), `online\` (joining a server), `server\` (running one for others), `helpers\` (the panel's helper, sound, the hook's name in the game) |

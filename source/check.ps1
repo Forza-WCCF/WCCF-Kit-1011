@@ -15,6 +15,8 @@
 #   English in the game's pictures: added at the archive's end, taken back out byte for byte
 #   (source\test_english_pictures.py: a scratch archive with one picture)
 #   the Italian tables: each key once, the game's font, the kit's English codes (source\test_italian_tables.py)
+#   a crash leaves a lean and a full memory snapshot (source\test_crash_dump.py: build\crashme.exe under the real
+#   debugger.py, from a scratch folder)
 #   the panel's money, relay and dealt-card self-tests (wccfpanel.dll loaded by source\build\fakegame.exe, in a
 #   scratch folder; the relay test plays two seats through code\server\relay.py on 127.0.0.1:20941 - the C side and
 #   the Python side of the match relay checked against each other)
@@ -114,6 +116,8 @@ if ($LASTEXITCODE) { $failed += 'the Italian tables: keys, font and codes' }
 
 & (Join-Path $PSScriptRoot 'build\test_wholemsg.exe')
 if ($LASTEXITCODE) { $failed += 'whole messages: a batch in pieces waits for its rest, bytes that are no batch are skipped' }
+& $py -I (Join-Path $PSScriptRoot 'test_crash_dump.py')
+if ($LASTEXITCODE) { $failed += 'a crash leaves its memory snapshots (lean + full) in data\dumps' }
 
 $t = Join-Path ([IO.Path]::GetTempPath()) "wccfpanel-check-$PID"
 Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
@@ -127,6 +131,7 @@ $env:WCCF_KEYS = Join-Path $t 'data\keys.txt'
 $env:WCCFPANEL_MONEYTEST = '1'
 $env:WCCFPANEL_RELAYTEST = '1'
 $env:WCCFPANEL_DEALTEST = '1'             # the dealt card's odds
+$env:WCCFPANEL_SETTEST = '1'              # a panel.txt save keeps auto_logs=0
 $env:WCCF_RELAY_PORT = '20941'
 $env:WCCF_SKIN = Join-Path $kit 'art\skin.tex'      # the panel's art (play.py passes it; no longer beside the panel)
 $relay = Start-Process -FilePath $py -ArgumentList '-I', "`"$(Join-Path $kit 'code\server\relay.py')`"", '60' -PassThru -WindowStyle Hidden
@@ -147,7 +152,7 @@ try {
 } finally {
     if (-not $relay.HasExited) { Stop-Process -Id $relay.Id -Force }
     'WCCF_RELAY_PORT', 'WCCF_SKIN', 'WCCFPANEL_ROLE', 'WCCFPANEL_DRYKEYS', 'WCCFPANEL_FULLSCREEN', 'WCCF_DATA', 'WCCF_KEYS', 'WCCFPANEL_MONEYTEST',
-    'WCCFPANEL_RELAYTEST', 'WCCFPANEL_DEALTEST' | ForEach-Object { Remove-Item "env:$_" -ErrorAction SilentlyContinue }
+    'WCCFPANEL_RELAYTEST', 'WCCFPANEL_DEALTEST', 'WCCFPANEL_SETTEST' | ForEach-Object { Remove-Item "env:$_" -ErrorAction SilentlyContinue }
     Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
 }
 
