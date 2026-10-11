@@ -58,8 +58,10 @@ const LEGACY: &[&str] = &[
     "STOP.exe",
     "ENGLISH.exe",
     "UPDATE.exe",
-    "overlay\\inject.exe",   // the two files Windows Defender flagged on a player's PC (B11): remove them on a
-    "bin\\logowin.exe",      // hand-unzip too, not only when UPDATE has an old files.txt to compare against
+    // the two files Windows Defender flagged on a player's PC (B11): removed on a hand-unzip too, not only when
+    // UPDATE has an old files.txt to compare against
+    "overlay\\inject.exe",
+    "bin\\logowin.exe",
 ];
 
 const ID_FOLDER: i32 = 10;
