@@ -1,5 +1,6 @@
 /*
- * mxhook.c - WCCF RingEdge hardware-emulation shim.
+ * wccfk.c (was mxhook.c; it still logs "mxhook attached", which setup.py looks for) - WCCF RingEdge
+ * hardware-emulation shim.
  *
  * wccfk.dll, the kit's hook for the arcade game client_Release.exe. The game
  * is a 2010-11 Sega RingEdge title; on a real cabinet it talks to cabinet

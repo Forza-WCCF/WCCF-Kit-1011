@@ -231,7 +231,7 @@ def is_cabinet_role(role):
     return role in CABINET_ROLES or bool(re.fullmatch(r"seat \d+ launcher", role or ""))
 
 
-# the overlay (seat 1's panels, the projector's money): the kit's hook (wccfk.dll, mxhook.c) loads it once the
+# the overlay (seat 1's panels, the projector's money): the kit's hook (wccfk.dll, source\hook\wccfk.c) loads it once the
 # game's window is up, in the game itself - for the two windows whose environment names it, never the server.  Before
 # 2026-10-09 overlay\inject.exe wrote it into the running game from outside, which antivirus programs flag
 PANEL_DLL = os.path.join(K.PROGRAMS, "wccfpanel.dll")     # not PANEL: that is data\panel.txt (Kit 5.5 reused the

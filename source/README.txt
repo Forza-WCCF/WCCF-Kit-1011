@@ -2,7 +2,7 @@ The source of every program the kit ships, and how each is built.  The kit ZIP c
 holds only their source (2026-10-08).  From a git checkout, build them all into their places with:
 
     powershell -ExecutionPolicy Bypass -File source\build.ps1     the C programs (32-bit, MSVC) and the launchers (Rust)
-    powershell -ExecutionPolicy Bypass -File source\check.ps1     the checks that need no game (scripts, key driver, panel)
+    powershell -ExecutionPolicy Bypass -File source\check.ps1     the checks that need no game (code, key driver, panel)
     powershell -ExecutionPolicy Bypass -File source\package.ps1   the kit ZIP in dist\, as players get it
 
 Needs Visual Studio 2022 (or its Build Tools) with "Desktop development with C++", and rustup.  CI
@@ -13,14 +13,14 @@ source gives the same file, and keeps the compiler's leftovers in source\build\)
 The C source of every program the kit ships. Each was built with Microsoft's C compiler for 32-bit x86
 (Visual Studio Build Tools, "vcvarsall.bat x86"), the runtime linked in (/MT), so no Visual C++ runtime is needed.
 
-  programs\wccfk.dll   mxhook\mxhook.c (+ winmm_fwd.h: forwards the game's 3 timer functions to Windows' winmm)
-                       cl /nologo /LD /O2 /MT /W3 /D_CRT_SECURE_NO_WARNINGS mxhook.c /Fe:wccfk.dll
-  programs\FPR_Emu.exe fpr_emu\fpr_emu.c
+  programs\wccfk.dll   hook\wccfk.c (+ winmm_fwd.h: forwards the game's 3 timer functions to Windows' winmm)
+                       cl /nologo /LD /O2 /MT /W3 /D_CRT_SECURE_NO_WARNINGS wccfk.c /Fe:wccfk.dll
+  programs\FPR_Emu.exe card_table\fpr_emu.c
                        cl /nologo /O2 /MT /W3 /D_CRT_SECURE_NO_WARNINGS fpr_emu.c /Fe:FPR_Emu.exe /link user32.lib
-  programs\wccfpanel.dll   overlay\wccfpanel.c
+  programs\wccfpanel.dll   panel\wccfpanel.c
                        cl /nologo /LD /O2 /MT /W3 /D_CRT_SECURE_NO_WARNINGS wccfpanel.c /Fe:wccfpanel.dll
                           /link d3d9.lib gdi32.lib user32.lib ole32.lib windowscodecs.lib
-  overlay\fakegame.c   not shipped: a stand-in for seat 1's game window to see the panel without the game (its
+  panel\fakegame.c     not shipped: a stand-in for seat 1's game window to see the panel without the game (its
                        header: the steps, and the settings that keep a test off the live game)
                        cl /nologo /O2 /MT /W3 /D_CRT_SECURE_NO_WARNINGS fakegame.c /Fe:fakegame.exe /link d3d9.lib user32.lib
 
