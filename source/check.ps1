@@ -26,6 +26,12 @@ $failed = @()
 & $py -I -c "import pathlib, sys; [compile(p.read_bytes(), str(p), 'exec') for p in sorted(pathlib.Path(sys.argv[1]).glob('*.py'))]; print('code: all compile')" (Join-Path $kit 'code')
 if ($LASTEXITCODE) { $failed += 'code compile' }
 
+# the launchers run python\python.exe code\<script>: the kit's modules are found ONLY through python\python313._pth
+# (2026-10-11: scripts\ was renamed to code\ but the _pth still said ..\scripts - every test here adds code\ to the
+# path itself, so they all passed while a real PLAY.exe could not import kit_common)
+& $py -I -c "import os, kit_common, play, setup, english, club_wallet; d = os.path.basename(os.path.dirname(kit_common.__file__)); assert d == 'code', d; print('imports: found in code\\ through python313._pth')"
+if ($LASTEXITCODE) { $failed += 'the kit''s modules import through python313._pth (code\), as the launchers run them' }
+
 # Kit 5.5 reused the name PANEL for wccfpanel.dll: a plain start read the dll as data\panel.txt and never went online
 & $py -I -c "import sys; sys.path.insert(0, sys.argv[1]); import play; assert play.PANEL.endswith('panel.txt'), play.PANEL; print('play.py: PANEL is panel.txt')" (Join-Path $kit 'code')
 if ($LASTEXITCODE) { $failed += 'play.py PANEL' }

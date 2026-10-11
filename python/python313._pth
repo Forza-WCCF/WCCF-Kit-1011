@@ -1,7 +1,8 @@
 python313.zip
 .
 Lib\site-packages
-..\scripts
+..\code
 
-# the kit's own code: ..\scripts (the embeddable Python does not add a script's folder by itself)
+# the kit's own code: ..\code (the embeddable Python does not add a script's folder by itself; source\check.ps1
+# imports the kit's modules through this file alone, so a folder renamed without it fails the checks)
 import site

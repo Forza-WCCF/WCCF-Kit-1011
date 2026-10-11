@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """test_hold_projector.py - the seat desk keeps the projector box out of the game until a player is in it
-(scripts\\_seat_broker.py, data\\hold_projector.txt; check.ps1 runs it).  The real desk on 127.0.0.1:20933, a scratch
+(code\\_seat_broker.py, data\\hold_projector.txt; check.ps1 runs it).  The real desk on 127.0.0.1:20933, a scratch
 control log written as the game would, and WCCF_HOLD_FW: the firewall rule's on/off goes to a scratch file instead of
 Windows' firewall.  The box is 10.0.0.9; players are 10.0.0.5.
     python source\\test_hold_projector.py"""

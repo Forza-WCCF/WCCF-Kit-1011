@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""test_seat_desk_game.py - the seat desk (scripts\\_seat_broker.py) never gives a seat that is in the game: a scratch
+"""test_seat_desk_game.py - the seat desk (code\\_seat_broker.py) never gives a seat that is in the game: a scratch
 "control debug log" is written line by line as the game would, and the real desk answers on a test port (check.ps1
 runs it; nothing of the game runs).  The PCs asking are 127.0.0.1; the cabinets already in the game are 10.0.0.5.
     python source\\test_seat_desk_game.py"""
