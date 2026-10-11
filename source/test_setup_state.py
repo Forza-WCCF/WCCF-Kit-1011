@@ -49,7 +49,22 @@ try:
     K.find_game = lambda cfg: None
     check(play.setup_state() == (None, None), "no game found still stops")
 
-    n = 4
+    # ensure_hook: a game an older kit set up (no wccfk.dll) is set up once by the start, not refused or started old
+    calls = []
+    play.subprocess.call = lambda args: calls.append(args) or answer[0]
+    answer = [0]
+    open(os.path.join(game, "wccfk.dll"), "w").close()
+    check(play.ensure_hook(game, seat) is True and len(calls) == 1, "no wccfk.dll in seat1\\: setup is run")
+    calls.clear()
+    open(os.path.join(seat, "wccfk.dll"), "w").close()
+    check(play.ensure_hook(game, seat) is True and calls == [], "set up for kit 6: no setup run")
+    os.remove(os.path.join(game, "wccfk.dll"))
+    check(play.ensure_hook(game, seat) is True and len(calls) == 1 and calls[0][-1] == game
+          and calls[0][-2].endswith("setup.py"), "no wccfk.dll: setup.py GAME is run, and the start goes on")
+    answer[0] = 1
+    check(play.ensure_hook(game, seat) is False, "setup failing: the start stops, saying SETUP.exe")
+
+    n = 8
     print("setup_state: %d of %d checks passed" % (n - len(fails), n))
 finally:
     import shutil

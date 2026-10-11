@@ -12,6 +12,8 @@ game is not included. Newest first; each date is the day that kit was built.
   makes from your game are in `data\cache\`. Updating from an older kit and pressing set up moves your catalogue and
   card pictures over (no waiting for them to be made again) and removes the old kit's leftover files and folders -
   anything of yours in those folders stays.
+- Updating from an older kit by unzipping it by hand (or saying no to "set up now?") is fine: the first PLAY sets
+  the game up for the new helper by itself, as SETUP would, instead of starting the old one Windows Defender deletes.
 - The kit's helper no longer gets deleted by antivirus. It used to sit beside the game pretending to be a Windows
   file (`winmm.dll`), which is how some malware sneaks in - so Windows Defender flagged and deleted it, and the game
   would not start. Now the helper has its own honest name (`wccfk.dll`) and SETUP simply points the game at it (a

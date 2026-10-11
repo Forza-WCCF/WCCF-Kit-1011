@@ -353,6 +353,19 @@ def setup_state():
     return game, seat                                                  # game: it must never stop a start
 
 
+def ensure_hook(game, seat):
+    """kit 6 loads its hook as wccfk.dll (setup renames the game's import to it).  A game set up by an older kit still
+    has the fake winmm.dll Windows Defender deletes - kit 6 unzipped over the old one, or the update's "set up now?"
+    answered no.  Set it up once, as SETUP.exe does, instead of starting the old hook or refusing.  True = ready."""
+    if all(os.path.isfile(os.path.join(d, "wccfk.dll")) for d in (game, seat)):
+        return True
+    say("This kit loads its helper under its own name now - setting the game up for it once (as SETUP.exe does) ...")
+    if subprocess.call([PY, os.path.join(K.SCRIPTS, "setup.py"), game]) == 0:
+        return True
+    say("Setting the game up did not finish (see above) - open SETUP.exe and press set up.")
+    return False
+
+
 def write_running(roles, mode, ip, seat_no=1):
     with open(RUNNING, "w", encoding="utf-8") as f:
         json.dump({"started": time.strftime("%Y-%m-%d %H:%M:%S"), "mode": mode, "server": ip, "seat": seat_no,
@@ -597,6 +610,8 @@ def play(debug, mode="local", ip=None, seat_no=None):
         if read_panel().get("english", "").lower() in ("on", "off"):
             say("  (the SETTINGS panel's English change waits: the server on this PC uses the same game files)")
     else:
+        if not ensure_hook(game, seat):
+            return 2
         rotate_logs()
         apply_english_request()
     apply_card_request()                       # the card reader is not running yet, in every mode that gets here
