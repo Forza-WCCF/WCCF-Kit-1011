@@ -34,6 +34,8 @@ try:
     touch("code", "play.py")
     touch("scripts", "play.py")                      # the old copy of code\play.py
     touch("scripts", "__pycache__", "play.cpython-313.pyc")
+    touch("scripts", "_jvs_seat1_input.txt")         # written beside the old scripts while the kit ran
+    touch("scripts", "_dbg_control.txt")
     touch("bin", "winmm.dll")                        # the old fake hook (what Defender flagged)
     touch("overlay", "wccfpanel.dll")
     touch("overlay", "skin.tex")

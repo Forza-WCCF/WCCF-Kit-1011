@@ -336,6 +336,8 @@ def setup_seat(game):
 # go; anything else stays, and so does its folder.  None = the old copies of what is in code\ now.
 OLD_LAYOUT = {"scripts": None, "bin": ("winmm.dll", "winmm_orig.dll", "wccfk.dll", "FPR_Emu.exe", "logowin.exe"),
               "overlay": ("wccfpanel.dll", "skin.tex", "inject.exe")}
+# what an older kit wrote beside its scripts while it ran: the key driver's and I/O board's files, server debug logs
+OLD_RUNTIME = re.compile(r"^(_jvs_seat1_\w+|_dbg_\w+|keys_crash)\.txt$", re.I)
 
 
 def tidy_old_layout():
@@ -360,7 +362,7 @@ def tidy_old_layout():
         if not os.path.isdir(d):
             continue
         if files is None:
-            files = [n for n in os.listdir(d) if os.path.isfile(os.path.join(K.SCRIPTS, n))]
+            files = [n for n in os.listdir(d) if os.path.isfile(os.path.join(K.SCRIPTS, n)) or OLD_RUNTIME.match(n)]
             shutil.rmtree(os.path.join(d, "__pycache__"), ignore_errors=True)
         for n in files:
             try:
