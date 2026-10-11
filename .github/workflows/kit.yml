@@ -73,7 +73,11 @@ jobs:
           PRERELEASE: ${{ inputs.prerelease }}
           RELEASE: ${{ inputs.release }}
         run: |
-          # tag kit-5.4 -> WCCF-2010-11-kit-5.4.zip; pre-release kit-5.4-test1 -> WCCF-2010-11-kit-5.4-test1.zip
+          # tag kit-5.4 -> WCCF-2010-11-kit-5.4.zip; pre-release kit-5.4-test1 -> WCCF-2010-11-kit-5.4-test1.zip;
+          # any other build of a commit -> WCCF-2010-11-kit-6-test-<commit>.zip, "KIT 6-test-<commit>" in the game (Ali,
+          # 2026-10-11: a test build says which release it leads to). NEXT = the release this branch is working towards:
+          # change it when that release is out. SETUP's UPDATE reads kit-6-test-... as a test build of 6 (release.rs).
+          $next = '6'
           if ($env:PRERELEASE -and $env:RELEASE) { throw 'Run workflow: a pre-release or a release, not both' }
           if ($env:PRERELEASE -and $env:PRERELEASE -cnotmatch '^kit-[0-9][0-9.]*-test[0-9]*$') {
             throw "a pre-release's tag looks like kit-5.4-test1, not '$env:PRERELEASE'"
@@ -84,7 +88,7 @@ jobs:
           $suffix = if ($env:PRERELEASE) { $env:PRERELEASE -replace '^kit-', '' }
                     elseif ($env:RELEASE) { $env:RELEASE -replace '^kit-', '' }
                     elseif ($env:REF_TYPE -eq 'tag') { $env:REF_NAME -replace '^kit-', '' }
-                    else { $env:SHA.Substring(0, 7) }
+                    else { "$next-test-" + $env:SHA.Substring(0, 7) }
           ./source/package.ps1 -Name "WCCF-2010-11-kit-$suffix"
           "zip=WCCF-2010-11-kit-$suffix.zip" >> $env:GITHUB_OUTPUT
 

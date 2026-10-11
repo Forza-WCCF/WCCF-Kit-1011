@@ -39,7 +39,7 @@ pub fn curl() -> Command {
 }
 
 impl Kit {
-    /// version.txt, which the kit ZIP brings (source\package.ps1 writes it): kit-5.4, kit-5.5-test1, kit-<commit>.
+    /// version.txt from the kit ZIP (source\package.ps1 writes it): kit-5.4, kit-5.5-test1, kit-6-test-<commit>.
     pub fn version(&self) -> Option<String> {
         let v = fs::read_to_string(self.dir.join("version.txt")).ok()?;
         Some(v.trim().to_owned()).filter(|v| !v.is_empty())
@@ -121,5 +121,9 @@ mod tests {
         assert!(!is_newer("kit-5.6-test1", "kit-5.4")); // a test build is never offered
         assert!(!is_newer("kit-5.5", "kit-1208d80")); // a commit's build: unknown
         assert!(!is_newer("v1", "kit-5.4"));
+        // CI's build of a commit since 2026-10-11 (kit.yml): kit-6-test-<commit>, a test build of 6
+        assert!(is_newer("kit-6", "kit-6-test-af17138"));
+        assert!(!is_newer("kit-5.5.1", "kit-6-test-af17138"));
+        assert!(is_newer("kit-6.1", "kit-6-test-af17138"));
     }
 }
