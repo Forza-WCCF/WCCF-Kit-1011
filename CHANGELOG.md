@@ -7,6 +7,10 @@ game is not included. Newest first; each date is the day that kit was built.
 ## Unreleased
 
 ### Changed
+- The kit's helper no longer gets deleted by antivirus. It used to sit beside the game pretending to be a Windows
+  file (`winmm.dll`), which is how some malware sneaks in - so Windows Defender flagged and deleted it, and the game
+  would not start. Now the helper has its own honest name (`wccfk.dll`) and SETUP simply points the game at it (a
+  tiny, exact change it can undo). Turning English on or off keeps it. Nothing else about your game is changed.
 - Fewer things that look suspicious to antivirus: the panel no longer writes screenshots of the game to disk
   (`wccfpanel_frame.bmp`, `wccfpanel_atlas.bmp`), the scene helper no longer runs `tasklist`, and SETUP now also
   removes the two old files Windows Defender flagged (`overlay\inject.exe`, `bin\logowin.exe`) when you unzip a new

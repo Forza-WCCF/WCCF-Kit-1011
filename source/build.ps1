@@ -1,5 +1,5 @@
 # build.ps1 - every program the kit ships, built from source\ into the places the kit runs them from (2026-10-08):
-#   bin\winmm.dll  bin\FPR_Emu.exe  overlay\wccfpanel.dll                                        (C, 32-bit, MSVC)
+#   bin\wccfk.dll  bin\FPR_Emu.exe  overlay\wccfpanel.dll                                        (C, 32-bit, MSVC)
 #   PLAY.exe  SETUP.exe                                                                        (Rust, 64-bit)
 # and source\build\fakegame.exe (tests only, not shipped).  Git holds none of them: run this after a checkout, or take
 # the kit ZIP that CI makes (.github\workflows\kit.yml runs this same script).
@@ -30,7 +30,7 @@ function Build-C([string]$source, [string]$out, [string[]]$compile = @(), [strin
     if ($LASTEXITCODE) { throw "cl failed for $source" }
     Write-Host "built $out"
 }
-Build-C 'mxhook\mxhook.c' "$kit\bin\winmm.dll" @('/LD')
+Build-C 'mxhook\mxhook.c' "$kit\bin\wccfk.dll" @('/LD')
 Build-C 'fpr_emu\fpr_emu.c' "$kit\bin\FPR_Emu.exe" @() @('user32.lib')
 Build-C 'overlay\wccfpanel.c' "$kit\overlay\wccfpanel.dll" @('/LD') @('d3d9.lib', 'gdi32.lib', 'user32.lib', 'ole32.lib', 'windowscodecs.lib')
 Build-C 'overlay\fakegame.c' "$obj\fakegame.exe" @() @('d3d9.lib', 'user32.lib')

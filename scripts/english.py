@@ -36,6 +36,7 @@ import sys
 import unicodedata
 
 import kit_common as K
+import patch_hook_import as H
 
 ENG = os.path.join(K.KIT, "english")
 BACK = os.path.join(K.DATA, "english_backup")
@@ -91,10 +92,12 @@ def where(game, rel):
 
 
 def sega_file(game, rel):
-    """the original: the backup once English has been on, else the game's own file"""
+    """the original: the backup once English has been on, else the game's own file. For a program, its import is
+    un-renamed back to Sega's WINMM.dll (norm), so English builds from Sega's original bytes even after SETUP has
+    pointed the program at the kit's hook (wccfk.dll)."""
     b = os.path.join(BACK, rel)
     with open(b if os.path.isfile(b) else where(game, rel), "rb") as f:
-        return f.read()
+        return norm(f.read(), rel)
 
 
 # ---------------------------------------------------------------- the screen text
@@ -367,11 +370,33 @@ def put(path, data):
     os.replace(path + ".tmp", path)
 
 
-def backup_copy(src, dst):
-    """Sega's file copied into the backup and read back; it stays in place until its replacement lands in one step"""
+def is_exe(rel):
+    return rel.lower().endswith(".exe")
+
+
+def norm(data, rel):
+    """for a game program, its bytes with the kit's hook import renamed back to Sega's WINMM.dll; other files
+    unchanged. So English's backups and fingerprints are Sega's original bytes whether or not SETUP has renamed the
+    import to the kit's wccfk.dll (the Defender fix)."""
+    return H.normalized(data) if is_exe(rel) else data
+
+
+def apply_hook(rel, path):
+    """after a program is placed, rename its import to the kit's hook so it loads wccfk.dll (not a fake winmm.dll).
+    Idempotent; only for the .exe files."""
+    if not is_exe(rel):
+        return
+    data = open(path, "rb").read()
+    if not H.imports_hook(data):
+        put(path, H.rename_import(data))
+
+
+def backup_copy(rel, src, dst):
+    """Sega's file copied into the backup and read back; it stays in place until its replacement lands in one step. A
+    program is stored as Sega's WINMM original (the import un-renamed), so the backup matches sega_hash."""
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     with open(src, "rb") as f:
-        data = f.read()
+        data = norm(f.read(), rel)
     put(dst, data)
     with open(dst, "rb") as f:
         if f.read() != data:
@@ -397,19 +422,20 @@ def turn_on(game, files):
     for rel in files:                                    # first: every file to be backed up must be Sega's
         if unsaved(rel):
             with open(where(game, rel), "rb") as f:
-                if sha(f.read()) != sega_hash(rel):
+                if sha(norm(f.read(), rel)) != sega_hash(rel):   # a program may already carry the kit's hook import
                     raise Failed("%s is neither Sega's original nor backed up - refusing to replace it" % rel)
     for rel, data in files.items():
         tgt = where(game, rel)
         if unsaved(rel):
-            backup_copy(tgt, os.path.join(BACK, rel))
+            backup_copy(rel, tgt, os.path.join(BACK, rel))
             man[rel] = {"sega": sega_hash(rel)}
             save_manifest(man)                           # after each backup: an interruption never loses one
         put(tgt, data)                                   # one step: the game's file is never missing (2026-10-06)
         with open(tgt, "rb") as f:
             if sha(f.read()) != sha(data):
                 raise Failed("%s did not write correctly - press JAPANESE in SETUP.exe" % rel)
-        man[rel]["english"] = sha(data)
+        man[rel]["english"] = sha(data)                  # the English bytes with Sega's WINMM import (before the hook)
+        apply_hook(rel, tgt)                              # then load the kit's hook by its own name (wccfk.dll)
     save_manifest(man)
 
 
@@ -424,10 +450,11 @@ def turn_off(game):
             if sha(data) != h["sega"]:
                 raise Failed("the backup of %s is not Sega's file - left as it is" % rel)
             put(tgt, data)                               # one step: Sega's file back, never a moment without one
+            apply_hook(rel, tgt)                          # it still loads the kit's hook by its own name (wccfk.dll)
             os.remove(bak)
         elif os.path.isfile(tgt):                        # no backup: put back already, or lost (older kits' bug)
             with open(tgt, "rb") as f:
-                if sha(f.read()) != h["sega"]:
+                if sha(norm(f.read(), rel)) != h["sega"]:
                     lost.append(rel)
     if lost:                                             # said, and the list kept - never quietly forgotten
         raise Failed("%d file(s) are not Sega's and have no backup of Sega's file, so they stay as they are (%s%s)"

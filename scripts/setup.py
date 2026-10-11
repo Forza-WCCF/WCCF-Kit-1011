@@ -7,9 +7,10 @@ Run it once (SETUP.exe); running it again checks everything and repairs what is 
     python setup.py undo       put the game folder back the way it was before setup
 
 What it changes, and nothing else on the PC:
-  in extracted\   + winmm.dll (the kit's hook) and winmm_orig.dll (a copy of this PC's own Windows winmm.dll)
-                  logowin.exe stays Sega's: the hook keeps the server from starting it (a kit before 2026-10-09
-                  put a stand-in there, Sega's as logowin_sega.exe - Sega's goes back)
+  in extracted\   + wccfk.dll (the kit's hook) and the game's import of WINMM.dll renamed to it, so the hook loads
+                  under its own name (no system-named fake winmm.dll - what Windows Defender flagged); undo restores
+                  Sega's WINMM import exactly.  logowin.exe stays Sega's: the hook keeps the server from starting it
+                  (a kit before 2026-10-09 put a stand-in there, Sega's as logowin_sega.exe - Sega's goes back)
                   + local\client_user_option.conf (the projector) and local\ctrl_user_option.conf (the server)
   beside it       seat1\   the player cabinet: links to extracted\'s folders and files, its own patched
                            client_Release.exe (15 changes, checked byte for byte) and its own local\ settings
@@ -27,6 +28,7 @@ import sys
 
 import cards
 import kit_common as K
+import patch_hook_import as H
 
 SEGA_CLIENT = "AEF9998D8A77B4DD7A0CFF3753A11FC8689A6700E133265D6681EF28D3E9CEA4"
 PATCHED_CLIENT = "6243C394E9A57B33C23519326EF8A77B0992873A0033B5892A9155C5B827E20A"
@@ -53,8 +55,8 @@ PATCHES = [
 ]
 JUNCTIONS = ["AI", "data", "lighting", "Microsoft.VC90.CRT", "Microsoft.VC90.MFC", "prog_data", "script", "shader",
              "update"]
-NO_LINK = re.compile(r"^(busram\d+\.bin|eeprom\d+\.bin|logowin_messages\.txt|client_release\.exe|winmm\.dll|"
-                     r"mxsram\.bin|.*\.log|.*\.bmp|.*\.tmp)$", re.I)
+NO_LINK = re.compile(r"^(busram\d+\.bin|eeprom\d+\.bin|logowin_messages\.txt|client_release\.exe|wccfk\.dll|"
+                     r"winmm\.dll|mxsram\.bin|.*\.log|.*\.bmp|.*\.tmp)$", re.I)
 SEAT_DATA = re.compile(r"^(busram\d+\.bin|eeprom\d+\.bin|mxsram\.bin|fpr_table\d\.txt|fpr_panel_state\.json)$", re.I)
 MARKER = ".wccf-kit"
 WINMM = os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "SysWOW64", "winmm.dll")
@@ -113,6 +115,31 @@ def copy_if_different(src, dst, what):
     ok("%s put in place" % what)
 
 
+def norm_sha(path):
+    """SHA-256 of a game program with its hook import renamed back to WINMM.dll (patch_hook_import.normalized) - so a
+    fingerprint is the same whether or not setup has already renamed the import to the kit's own wccfk.dll. Any file
+    that is not a PE / does not import the hook hashes as-is."""
+    try:
+        return K.sha256(H.normalized(open(path, "rb").read()))
+    except (OSError, H.PatchError):
+        return K.sha256(path)
+
+
+def rename_hook_import(path, what):
+    """rename the game program's WINMM.dll import to the kit's own wccfk.dll, so it loads the hook by an honest name
+    (no system-named side-loading DLL - what Windows Defender flagged). Idempotent: a program already renamed is left
+    alone. Raises Failed only if the program does not import winmm at all (not Sega's exe)."""
+    data = open(path, "rb").read()
+    if H.imports_hook(data):
+        return False
+    try:
+        put_file(H.rename_import(data), path)
+    except H.PatchError as ex:
+        raise Failed("%s: could not point it at the kit's hook (%s)" % (what, ex))
+    ok("%s loads the kit's hook by its own name (wccfk.dll)" % what)
+    return True
+
+
 # the lines play.py sets at each start (the server's address, the seat, whether to wait for a projector): a file that
 # differs from ours only there is ours, as play.py left it - not a hand edit (2026-10-06: online play changes them)
 RUNTIME_LINES = re.compile(rb"(?m)^(CONTROL_IP|MATCH_IP|SATELLITE_NO|WAIT_PROJECTOR)=[^\r\n]*(\r?\n|$)")
@@ -154,7 +181,7 @@ def sega_client(game):
     """path of Sega's client exe: extracted\\'s own, or - while English is on - the copy in the backup"""
     p = os.path.join(game, "client_Release.exe")
     b = os.path.join(ENGLISH_BACKUP, "client_Release.exe")
-    if K.sha256(p) != SEGA_CLIENT and os.path.isfile(b) and K.sha256(b) == SEGA_CLIENT:
+    if norm_sha(p) != SEGA_CLIENT and os.path.isfile(b) and norm_sha(b) == SEGA_CLIENT:
         return b
     return p
 
@@ -169,8 +196,9 @@ def english_copy(rel):
 
 
 def patched_client(game):
-    """Sega's client exe with the 15 changes, checked before and after"""
-    data = bytearray(open(sega_client(game), "rb").read())
+    """Sega's client exe with the 15 changes, checked before and after (the base is normalized to WINMM.dll first, so
+    an already-renamed Sega client still patches to the tested bytes)"""
+    data = bytearray(H.normalized(open(sega_client(game), "rb").read()))
     for va, off, old, new, what in PATCHES:
         old, new = bytes.fromhex(old), bytes.fromhex(new)
         if cards.va_to_offset(data, va) != off or bytes(data[off:off + len(old)]) != old:
@@ -184,7 +212,7 @@ def patched_client(game):
 def check_game(game):
     if K.game_processes(game):
         raise Failed("the game is running - close its window first, then run setup again")
-    h = K.sha256(sega_client(game))
+    h = norm_sha(sega_client(game))
     if sega_client(game) != os.path.join(game, "client_Release.exe"):
         ok("English is on (SETUP.exe's ENGLISH): Sega's client_Release.exe is checked in data\\english_backup")
     if h == PATCHED_CLIENT:
@@ -195,7 +223,7 @@ def check_game(game):
                      % h[:16])
     ok("client_Release.exe is Sega's Rev D")
     for n, want in SEGA_OTHERS.items():
-        if K.sha256(os.path.join(game, n)) != want:
+        if norm_sha(os.path.join(game, n)) != want:
             note("%s is not the Rev D file this kit was tested with - it may not work" % n)
     if not os.path.isfile(WINMM):
         raise Failed("no %s - this needs 64-bit Windows 10 or 11" % WINMM)
@@ -210,10 +238,16 @@ def check_game(game):
 
 def setup_extracted(game):
     print("in %s:" % game)
-    copy_if_different(WINMM, os.path.join(game, "winmm_orig.dll"), "winmm_orig.dll (this PC's own winmm.dll)")
-    copy_if_different(os.path.join(K.BIN, "winmm.dll"), os.path.join(game, "winmm.dll"), "winmm.dll (the hook)")
+    copy_if_different(os.path.join(K.BIN, "wccfk.dll"), os.path.join(game, "wccfk.dll"), "wccfk.dll (the kit's hook)")
+    for n in ("client_Release.exe", "control_Release.exe", "match_Release.exe"):
+        rename_hook_import(os.path.join(game, n), n)
+    for old in ("winmm.dll", "winmm_orig.dll"):      # a kit before this one put a fake winmm.dll (a Windows name) here
+        p = os.path.join(game, old)
+        if os.path.isfile(p):
+            os.remove(p)
+            ok("removed the old %s - the hook now loads by its own name" % old)
     # logowin.exe (2026-10-09): the server starts it for its logo and error screens - a white window over the whole
-    # screen.  The hook (winmm.dll, above) now answers that start itself and runs nothing, so Sega's file stays.  A kit
+    # screen.  The hook (wccfk.dll, above) now answers that start itself and runs nothing, so Sega's file stays.  A kit
     # before this one put a quiet stand-in there (the exe antivirus programs flagged) and kept Sega's as
     # logowin_sega.exe: Sega's goes back.  Seat 1's link to it follows (setup_seat links again what changed)
     lw, sega = os.path.join(game, "logowin.exe"), os.path.join(game, "logowin_sega.exe")
@@ -269,7 +303,7 @@ def setup_seat(game):
         new += 1
     ok("%d file links to extracted\\ (%d new)" % (linked, new))
     exe = os.path.join(seat, "client_Release.exe")
-    have = K.sha256(exe) if os.path.isfile(exe) else None
+    have = norm_sha(exe) if os.path.isfile(exe) else None
     if have == PATCHED_CLIENT:
         ok("client_Release.exe: seat 1's patched copy already in place")
     elif have and have == english_copy(os.path.join("seat1", "client_Release.exe")):
@@ -279,7 +313,12 @@ def setup_seat(game):
         if K.sha256(exe) != PATCHED_CLIENT:
             raise Failed("seat 1's exe did not write correctly")
         ok("client_Release.exe: seat 1's own copy, 15 changes, the tested exe byte for byte")
-    copy_if_different(os.path.join(K.BIN, "winmm.dll"), os.path.join(seat, "winmm.dll"), "winmm.dll (the hook)")
+    rename_hook_import(exe, "seat 1's client_Release.exe")
+    copy_if_different(os.path.join(K.BIN, "wccfk.dll"), os.path.join(seat, "wccfk.dll"), "wccfk.dll (the kit's hook)")
+    for old in ("winmm.dll", "winmm_orig.dll"):      # from a kit before this one
+        p = os.path.join(seat, old)
+        if os.path.isfile(p):
+            os.remove(p)
     write_text(os.path.join(seat, "local", "client_user_option.conf"), CONF_SEAT1, "seat 1 settings")
     copy_if_different(os.path.join(game, "local", "SBWG_Table.dat"), os.path.join(seat, "local", "SBWG_Table.dat"),
                       "local\\SBWG_Table.dat")
@@ -340,11 +379,18 @@ def undo(game):
             if os.path.isdir(d) and not os.listdir(d):
                 os.rmdir(d)
         ok("misc\\FlatPanelReader_Emulator removed")
-    for n in ("winmm.dll", "winmm_orig.dll"):
+    for n in ("client_Release.exe", "control_Release.exe", "match_Release.exe"):
         p = os.path.join(game, n)
         if os.path.isfile(p):
-            if n == "winmm.dll" and b"mxhook attached" not in open(p, "rb").read():
-                note("extracted\\winmm.dll is not the kit's hook - left alone")
+            data = open(p, "rb").read()
+            if H.imports_hook(data):                 # a pure swap: this restores Sega's exact original bytes
+                put_file(H.rename_import(data, frm=H.HOOK_DLL, to=H.SYS_DLL), p)
+                ok("extracted\\%s: Sega's WINMM import restored" % n)
+    for n in ("wccfk.dll", "winmm.dll", "winmm_orig.dll"):
+        p = os.path.join(game, n)
+        if os.path.isfile(p):
+            if n in ("wccfk.dll", "winmm.dll") and b"mxhook attached" not in open(p, "rb").read():
+                note("extracted\\%s is not the kit's hook - left alone" % n)
                 continue
             os.remove(p)
             ok("extracted\\%s removed" % n)
