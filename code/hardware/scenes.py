@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Stand-in for the launcher's scene service, xscnWatch (WCCF 2010-11): loads scene files on request.
 
-    python .work/_xscn_watch.py SECONDS [LOGFILE]
+    python code/hardware/scenes.py SECONDS [LOGFILE]
 
 What the real one does (Launcher1011.exe, read 2026-10-04): xscnWatch::Watcher owns the mutex
 "xscnWatch::Mutex" and a 0x5CC-byte board "xscnWatch::ComBuf" (FUN_00403680, initialised by FUN_00403640):

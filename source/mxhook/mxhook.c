@@ -564,7 +564,7 @@ static unsigned long WINAPI hook_inet_addr(const char *cp)
  * The player cabinet's Club Team Card reader is a serial device: client FUN_004d5820 opens "COM1"
  * (COM3 on a real cabinet), 115200 8N1, then polls ClearCommError for bytes and reads exactly those.
  * MXHOOK_COM = "COM1=\\.\pipe\wccf_icc_seat1" (several separated by ';') makes CreateFileA of that
- * port open the named pipe instead; a stand-in reader (.work/_icc_reader.py) is the pipe's server.
+ * port open the named pipe instead; a stand-in reader (code/hardware/card_reader.py) is the pipe's server.
  * On such a handle the comm functions succeed, ClearCommError reports the bytes waiting in the pipe,
  * and ReadFile waits at most the port's timeouts (capped at 1 s) and never for more than is there.
  * Without MXHOOK_COM nothing here is installed. */
@@ -585,7 +585,7 @@ typedef struct {
  * The I/O board (2026-10-04): client amJvstDriverSetup FUN_008398c0 opens "\\.\mxjvs" OVERLAPPED;
  * FUN_008387b0 / FUN_00838850 write and read with an OVERLAPPED and wait 150 ms on its event, and
  * assume a completed read delivered every byte asked for. With MXHOOK_COM "mxjvs=\\.\pipe\..." the
- * board stand-in (.work/_jvs_board.py) serves it; these requests are completed at once (event set) or,
+ * board stand-in (code/hardware/io_board.py) serves it; these requests are completed at once (event set) or,
  * if the bytes do not come within ~120 ms, left "pending" so the game's own 150 ms timeout applies.
  * The SENSE line comes from GetCommModemStatus (FUN_00839730: DSR 0x20, RLSD 0x80 -> 0..3); the node
  * setup (code around 0x0082DA0A / 0x0082DB9F) reads 2 = no board, 3 = a board without an address,

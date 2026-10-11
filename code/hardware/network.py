@@ -2,7 +2,7 @@
 """Stand-ins for RingEdge's background services, for WCCF 2010-11 on a normal PC. This version LOGS every question and
 answers with guesses, to learn what Launcher1011.exe and the game ask (it grew out of _pcp_keychip.py, same protocol).
 
-    python .work/_ringedge_services.py SECONDS OUT.log
+    python code/hardware/network.py SECONDS OUT.log
 
 Services and ports, read from Launcher1011.exe (2026-10-03):
     40100        master    (mxmaster: amMasterOpen ... mxmaster.foreground.getcount / next)       FUN_004171d0

@@ -6,7 +6,7 @@
 //   RIGHT strip : FORMATION pitch with his placed cards (top) + action buttons (bottom)
 //   MIDDLE      : the game's own frame, scaled to fit with its shape kept - never covered, never stretched
 // A click on a button injects the matching keyboard key (SendInput), so the existing keyboard driver
-// (_keys_seat1.py, which polls GetAsyncKeyState) turns it into the real cabinet button - no shared-file fight.
+// (keyboard.py, which polls GetAsyncKeyState) turns it into the real cabinet button - no shared-file fight.
 //
 // How it draws: the game's Direct3D 9 "Present" (put-frame-on-screen) call is detoured.  The game renders at a size
 // fixed at boot (1440x900); stretching that to a bigger window blurs and distorts it (the player saw it with _resizable.py).
@@ -1207,7 +1207,7 @@ static void board_hover(HWND h, int x, int y)
 // "+ CARD" (in the skin, left of START) opens it over the middle: a search line (a name or a card number) and a grid
 // of real card faces.  A click puts that card on the table where fpr_panel.py would (its line's free 4-4-2 spot, else
 // any free one, else the bench), at most 16 (11 on the pitch + 5 on the bench).  While it is open the game window
-// carries the property WCCF_TYPING, which _keys_seat1.py honours: letters typed into the search press no buttons.
+// carries the property WCCF_TYPING, which keyboard.py honours: letters typed into the search press no buttons.
 #define ADD_X0 1084.0f                   // the "+ CARD" button on the design sheet (measure_skin.js)
 #define ADD_Y0 529.0f
 #define ADD_X1 1196.0f
@@ -1947,7 +1947,7 @@ static void browse_open(HWND h, int open)
     g_pick = 0; g_pq[0] = 0;                                  // the COUNTRY / CLUB list starts closed (the choices stay)
     if (open) { g_query[0] = 0; g_bmsg[0] = 0; g_bdetail = -1; run_search_locked(); }
     LeaveCriticalSection(&g_board_cs);
-    if (open) SetPropA(h, "WCCF_TYPING", (HANDLE)1);         // _keys_seat1.py: these keys are not cabinet buttons
+    if (open) SetPropA(h, "WCCF_TYPING", (HANDLE)1);         // keyboard.py: these keys are not cabinet buttons
     else RemovePropA(h, "WCCF_TYPING");
     logline("browser %s", open ? "opened" : "closed");
 }
@@ -2062,9 +2062,9 @@ static void browse_wheel(int notches)                    // + = up
 // ---------------------------------------------------------------- KEYS: which key does what (the player, 2026-10-05)
 // "KEYS" (in the skin, right of START) opens a panel over the middle, styled like the catalogue: every cabinet action
 // with its key.  Click an action, press its new key; a key another action has swaps over, so no key is ever used
-// twice.  The keys live in keys.txt, which the key driver (_keys_seat1.py) reads again whenever it changes - a change
+// twice.  The keys live in keys.txt, which the key driver (keyboard.py) reads again whenever it changes - a change
 // works at once - and the on-screen buttons take their keys from it too.  The actions, names, defaults and allowed
-// keys are the same as _keys_seat1.py's ACTIONS / ALLOWED_VKS: keep the two equal.  keys.txt: WCCF_KEYS if set (the
+// keys are the same as keyboard.py's ACTIONS / ALLOWED_VKS: keep the two equal.  keys.txt: WCCF_KEYS if set (the
 // tests), else the kit's data\keys.txt (beside overlay\), else beside this DLL.  While the panel is open the game
 // window carries WCCF_TYPING, so the key pressed for an action presses nothing in the game.  Since 2026-10-06 every
 // action also has a CONTROLLER box (a game controller's button or stick - see "KEYS: game controllers" below).
@@ -2090,7 +2090,7 @@ static struct KAct g_kact[] = {          // left column 0-7 (BUTTONS, CARD + COI
     { "RIGHT",     "R-SIDE",     "tactic, right",    0x27, 0x27, B_RIGHT, COL_GREEN  },
     { "TEST",      "TEST",       "operator menu",    0x70, 0x70, -1,      COL_GREY   },
     { "SERVICE",   "SERVICE",    "",                 0x71, 0x71, -1,      COL_GREY   },
-    // ids stay SENSOR2/3 (keys.txt and _keys_seat1.py use them); the bits are Sega's service switches SW1/SW2, not
+    // ids stay SENSOR2/3 (keys.txt and keyboard.py use them); the bits are Sega's service switches SW1/SW2, not
     // card sensors (2026-10-06, docs\research\CARD-DISPENSER-2010-11.md): on Sega's club-card recovery screen SW1
     // answers "Write the backup data over the Club Card? [SW1] Yes (overwrite)".
     { "SENSOR2",   "SW1",        "overwrites card - set only if needed", 0, 0, -1, COL_GREY   },
@@ -2103,7 +2103,7 @@ static int   g_keys = 0;                 // the KEYS panel is open
 static int   g_kcap = -1;                // the action waiting for its new key (-1 = none)
 static int   g_khover = -1;              // the action under the mouse
 
-static int key_allowed(int vk)           // = _keys_seat1.py ALLOWED_VKS
+static int key_allowed(int vk)           // = keyboard.py ALLOWED_VKS
 {
     if (vk == 0x08 || vk == 0x09 || vk == 0x0D || vk == 0x10 || vk == 0x11 || vk == 0x13 || vk == 0x20 ||
         vk == 0x2D || vk == 0x2E || vk == 0xE2) return 1;
@@ -2151,7 +2151,7 @@ static char *trim(char *s)
 // the player: "lets make it so that in the key mapping, users can map their joystick without an issue" - a player's group
 // runs real cabinet button panels on a USB encoder.  Every action also gets a CONTROLLER box: click it, then press a
 // button or move the stick.  Read with Windows' standard joystick calls (winmm joyGetPosEx), as the key driver reads
-// them (_keys_seat1.py CONTROLLERS / PadDevice / Pads - keep the numbers, the words and the rest rule equal).  All
+// them (keyboard.py CONTROLLERS / PadDevice / Pads - keep the numbers, the words and the rest rule equal).  All
 // controllers count as one.  A control is a number above every key code: 0x100 + n button n (1-32), 0x200 + 2 * axis
 // + (1 for +) a stick or axis direction (X Y Z R U V; the stick is X and Y, up is Y-), 0x300 + n the hat - a pad's
 // d-pad (up right down left).  keys.txt: "PAD START=B3".  The REST RULE: an axis direction a controller rests on when
@@ -2220,7 +2220,7 @@ static const char *pad_label(int code, char *b, int n)   // a control's name on 
     return b;
 }
 
-static int pad_code(const char *s)       // keys.txt's word -> the control, 0 = none (= _keys_seat1.py pad_code)
+static int pad_code(const char *s)       // keys.txt's word -> the control, 0 = none (= keyboard.py pad_code)
 {
     char t[24]; int n = 0, i, v;
     for (; *s && n < (int)sizeof t - 1; s++)
@@ -2391,7 +2391,7 @@ static void pad_first(struct PadDev *p, const JOYINFOEX *j)     // first seen: w
 }
 
 // the controller's own name as Windows keeps it under its USB ids, else the ids (winmm's own name is "Microsoft
-// PC-joystick driver" for every one) - = _keys_seat1.py pad_name; ASCII for the font
+// PC-joystick driver" for every one) - = keyboard.py pad_name; ASCII for the font
 static void pad_name(const JOYCAPSA *c, char *out, int n)
 {
     char key[200], *t; HKEY roots[2] = { HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE }, h; DWORD type, sz; int k;
@@ -2476,7 +2476,7 @@ static void keys_init_path(void)
     _snprintf(g_keys_tmp, MAX_PATH, "%s.panel", g_keys_path); g_keys_tmp[MAX_PATH - 1] = 0;
 }
 
-// keys.txt -> g_kact[].vk, by _keys_seat1.py load_keys()'s rules: no file = the defaults; a bad, unknown or forbidden
+// keys.txt -> g_kact[].vk, by keyboard.py load_keys()'s rules: no file = the defaults; a bad, unknown or forbidden
 // line is skipped; a key given twice stays with the first action of the file, and the later one goes back to its
 // default if that is free, else it has no key.  Then the on-screen buttons take the keys.  The "PAD NAME=WORD" lines
 // -> g_kact[].pad, by load_pads()'s: no line = none; "=" or "=-" = none; the same action twice: its last line counts;
@@ -2543,7 +2543,7 @@ static int keys_save_locked(void)
 {
     char text[2048], wb[16]; int n, i, k; FILE *f;
     n = _snprintf(text, sizeof text, "# WCCF 2010-11 kit - which key and which controller control does what. Written "
-                  "by the KEYS panel\n# in seat 1's window, read by the key driver (_keys_seat1.py). Delete this file "
+                  "by the KEYS panel\n# in seat 1's window, read by the key driver (keyboard.py). Delete this file "
                   "to get the default keys back.\n");
     for (i = 0; i < NKACT && n < (int)sizeof text - 48; i++)
         n += g_kact[i].vk ? _snprintf(text + n, sizeof text - n, "%s=0x%02X\n", g_kact[i].id, g_kact[i].vk)
@@ -2810,7 +2810,7 @@ static void keys_open(HWND h, int open)
         InterlockedExchange(&g_pad_reset, 1);                // again) by the board thread
         InterlockedExchange(&g_pad_rescan, 1);
     }
-    if (open) SetPropA(h, "WCCF_TYPING", (HANDLE)1);         // _keys_seat1.py: the key pressed for an action is not a button
+    if (open) SetPropA(h, "WCCF_TYPING", (HANDLE)1);         // keyboard.py: the key pressed for an action is not a button
     else RemovePropA(h, "WCCF_TYPING");
     logline("keys %s", open ? "opened" : "closed");
 }
@@ -3156,7 +3156,7 @@ static int any_session_open(void)
 
 // ---- closing the window quits the game (2026-10-08)
 // The player: "remove STOP.exe and have a clean quit every time".  Closing seat 1's window (its X, Alt+F4) is how the
-// game is quit: _debug_launch.py ends the game once its window is gone, and PLAY.exe's watcher stops the rest.  During
+// game is quit: debugger.py ends the game once its window is gone, and PLAY.exe's watcher stops the rest.  During
 // a card session that ends the match without its locker-room save - a bad ending on the card - so the first close
 // then only warns, over the picture, and a second close within 8 s quits anyway: the question STOP used to ask.
 #define CLOSE_AGAIN_MS 8000

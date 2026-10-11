@@ -19,7 +19,7 @@ import kit_common as K
 
 SLOT = os.path.join(K.SAVE, "seat1_club.bin")
 WALLET = os.path.join(K.SAVE, "cards")
-NEW = os.path.join(K.SAVE, "seat1_club.new.bin")      # the second card of a manager transfer (_icc_reader.py)
+NEW = os.path.join(K.SAVE, "seat1_club.new.bin")      # the second card of a manager transfer (card_reader.py)
 
 
 def club_label(card):

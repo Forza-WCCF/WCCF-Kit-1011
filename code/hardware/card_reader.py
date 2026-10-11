@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """Stand-in for the player cabinet's Club Team Card reader (WCCF 2010-11), served over a named pipe.
 
-    python .work/_icc_reader.py PIPE_NAME SECONDS [LOGFILE] [CARDFILE] [NEWCARDFILE]
-    python .work/_icc_reader.py \\\\.\\pipe\\wccf_icc_seat1 6000 _icc_seat1_log.txt _card_seat1.bin _card_seat1.new.bin
+    python code/hardware/card_reader.py PIPE_NAME SECONDS [LOGFILE] [CARDFILE] [NEWCARDFILE]
+    python code/hardware/card_reader.py \\\\.\\pipe\\wccf_icc_seat1 6000 _icc_seat1_log.txt _card_seat1.bin _card_seat1.new.bin
 
 The game opens "COM1" (client FUN_004d5820); the winmm hook, started with
 MXHOOK_COM=COM1=\\\\.\\pipe\\wccf_icc_seat1, hands it this pipe instead. This file answers like the reader.

@@ -27,6 +27,6 @@ assert play.crashed_logs(win, set(), logs()) is None, "no game window left: the 
 assert play.crashed_logs(win, {12, 13}, logs()) == [], "nothing ended (a hand-run ended): nothing stops"
 assert play.crashed_logs({}, set(), logs()) is None, "no running.json: the rest stops, as before"
 
-with open(os.path.join(KIT, "code", "_debug_launch.py"), encoding="utf-8") as f:
-    assert play.WINDOW_CLOSED in f.read(), "_debug_launch.py no longer prints the line play.py looks for"
+with open(os.path.join(KIT, "code", "hardware", "debugger.py"), encoding="utf-8") as f:
+    assert play.WINDOW_CLOSED in f.read(), "debugger.py no longer prints the line play.py looks for"
 print("ended: 9 checks passed")

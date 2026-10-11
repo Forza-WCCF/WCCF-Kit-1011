@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """Drive seat 1 (the 2010-11 player cabinet) from the keyboard.
 
-    python .work/_keys_seat1.py              run it; keep its window open, close the window to stop
-    python .work/_keys_seat1.py --selftest   check the key logic on a scratch file (touches nothing live)
+    python code/hardware/keyboard.py              run it; keep its window open, close the window to stop
+    python code/hardware/keyboard.py --selftest   check the key logic on a scratch file (touches nothing live)
 
 Keys count only while a game window (client_Release.exe) is the one in front, so typing anywhere else
 sends nothing.  Every change is written to .work/_jvs_seat1_input.txt, which the I/O board stand-in
-(_jvs_board.py) re-reads at once.  The bits are the ones in .work/input_mapping.md (the game's switch
+(io_board.py) re-reads at once.  The bits are the ones in .work/input_mapping.md (the game's switch
 table at 0x00ad0a30).  Only one copy can run at a time.
 
 Which key does what comes from keys.txt (keys_path(): the kit's data folder), written by the KEYS panel in seat 1's
@@ -30,10 +30,12 @@ import tempfile
 import threading
 import time
 
+import kit_common as K
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 # the live files shared with the I/O board stand-in, in the kit's data\ (not in code\, 2026-10-11).  play.KEYS_INPUT
 # names the same file: its stop guard reads the card state from it (check.ps1 asserts the two agree)
-RUN = os.path.join(os.path.dirname(HERE), "data")
+RUN = K.DATA
 LIVE = os.path.join(RUN, "_jvs_seat1_input.txt")
 
 # THE KEYS (2026-10-05: the KEYS panel in seat 1's window can change them).  Every action: its name in keys.txt, the
@@ -132,7 +134,7 @@ def keys_path():
     env = os.environ.get("WCCF_KEYS")
     if env:
         return env
-    data = os.path.join(os.path.dirname(HERE), "data")
+    data = K.DATA
     return os.path.join(data, "keys.txt") if os.path.isdir(data) else os.path.join(HERE, "keys.txt")
 
 
@@ -262,7 +264,7 @@ apply_keys(DEFAULTS)
 # waits for a card (start screen, and ~5.6 s after each eject; off while a card is in use - _jvs_seat1_log.txt).
 # Seen on WITH our card in = the game has let it go -> take it out. Margins: not in the first EJECT_GRACE s
 # after an insert, and the signal must hold EJECT_HOLD s (the game re-reads a held card ~0.7 s later).
-OUTPUTS = os.path.join(RUN, "_jvs_seat1_outputs.txt")       # _jvs_board.py writes it beside LIVE
+OUTPUTS = os.path.join(RUN, "_jvs_seat1_outputs.txt")       # io_board.py writes it beside LIVE
 AUTO_EJECT = True
 EJECT_BYTE, EJECT_BIT = 1, 0x08
 EJECT_GRACE, EJECT_HOLD = 2.5, 0.25
@@ -314,7 +316,7 @@ def render(down, card, coin, start=None):
             f[line][byte] |= bit
     if card:
         f["p2"][0] |= 0x20
-    return ("# JVS inputs for the player cabinet - written by _keys_seat1.py; read by _jvs_board.py\n"
+    return ("# JVS inputs for the player cabinet - written by keyboard.py; read by io_board.py\n"
             "sys=0x%02X\np1=0x%02X 0x%02X\np2=0x%02X 0x%02X\ncoin1=%d\ncoin2=0\n"
             % (f["sys"][0], f["p1"][0], f["p1"][1], f["p2"][0], f["p2"][1], coin))
 
@@ -829,7 +831,7 @@ def main(argv):
     if argv == ["--selftest"]:
         return selftest()
     if argv:
-        print("usage: python _keys_seat1.py   (or --selftest)")
+        print("usage: python keyboard.py   (or --selftest)")
         return 2
     u = ctypes.WinDLL("user32", use_last_error=True)
     k = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -851,7 +853,7 @@ def main(argv):
         k.SetConsoleMode(cin, (cmode.value & ~0x0040) | 0x0080)   # QuickEdit off, extended flags on
     k.CreateMutexW(None, False, "Local\\wccf_keys_seat1")
     if ctypes.get_last_error() == 183:            # ERROR_ALREADY_EXISTS
-        print("_keys_seat1.py is already running in another window - use that one")
+        print("keyboard.py is already running in another window - use that one")
         time.sleep(4)
         return 1
     u.GetPropW.argtypes = [w.HWND, w.LPCWSTR]

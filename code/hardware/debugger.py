@@ -3,7 +3,7 @@
 memory in place, and report crashes: address, registers, the crashing thread's start address, and
 the return addresses on its stack, named from the Ghidra index.
 
-    python _debug_launch.py [timeout_s=60] [client|control|match] [follow] [nomosuppl] [debugheap] [nomaps] [hide] [arg=X ...] [dir=FOLDER]
+    python debugger.py [timeout_s=60] [client|control|match] [follow] [nomosuppl] [debugheap] [nomaps] [hide] [arg=X ...] [dir=FOLDER]
 
 INVALID-PARAMETER STOPS (exit code 0xC0000417, added 2026-10-05): the game's runtime (MSVCR90.dll) ends the program
 itself through _invoke_watson - no exception, so a debugger sees only the exit code. A breakpoint on _invoke_watson

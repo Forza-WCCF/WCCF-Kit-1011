@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """Stand-in for the player cabinet's JVS I/O board (WCCF 2010-11), served over a named pipe.
 
-    python .work/_jvs_board.py PIPE SECONDS [LOGFILE] [INPUTFILE]
-    python .work/_jvs_board.py \\\\.\\pipe\\wccf_jvs_seat1 6000 _jvs_seat1_log.txt _jvs_seat1_input.txt
+    python code/hardware/io_board.py PIPE SECONDS [LOGFILE] [INPUTFILE]
+    python code/hardware/io_board.py \\\\.\\pipe\\wccf_jvs_seat1 6000 _jvs_seat1_log.txt _jvs_seat1_input.txt
 
 The game opens "\\\\.\\mxjvs" (client amJvstDriverSetup FUN_008398c0); the winmm hook started with
 MXHOOK_COM=mxjvs=\\\\.\\pipe\\wccf_jvs_seat1 hands it this pipe (and drives the JVS sense line itself).
@@ -33,6 +33,8 @@ FEATURES = bytes([0x01, 2, 13, 0,      # switch inputs: 2 players, 13 switches e
                   0x03, 8, 10, 0,      # analog inputs: 8 channels, 10 bits
                   0x12, 20, 0, 0,      # general-purpose outputs: 20
                   0x00])
+import kit_common as K
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 k = ctypes.windll.kernel32
@@ -84,7 +86,7 @@ class Inputs:
             with open(self.path, encoding="utf-8") as f:
                 text = f.read()
         except OSError:
-            # the file is being swapped whole (_keys_seat1.py writes it that way): read it on the next poll.
+            # the file is being swapped whole (keyboard.py writes it that way): read it on the next poll.
             # Unhandled, this PermissionError killed the board mid-game on 2026-10-04 (_jvs_refresh_race_test.py).
             return
         self.stamp = stamp
@@ -224,7 +226,7 @@ def main(argv):
         return 2
     pipe_name, seconds = argv[0], int(argv[1])
     logf = open(argv[2], "a", encoding="utf-8") if len(argv) > 2 else None
-    inpath = argv[3] if len(argv) > 3 else os.path.join(HERE, "_jvs_seat1_input.txt")
+    inpath = argv[3] if len(argv) > 3 else os.path.join(K.DATA, "_jvs_seat1_input.txt")
     if not os.path.isabs(inpath):
         inpath = os.path.join(HERE, inpath)
     t0 = time.time()
@@ -239,7 +241,7 @@ def main(argv):
 
     if not os.path.exists(inpath):
         with open(inpath, "w", encoding="utf-8") as f:
-            f.write("# JVS inputs for the player cabinet - edit and save; read by _jvs_board.py\n"
+            f.write("# JVS inputs for the player cabinet - edit and save; read by io_board.py\n"
                     "sys=0x00\np1=0x00 0x00\np2=0x00 0x00\ncoin1=0\ncoin2=0\n")
     inputs = Inputs(inpath)
     inputs.refresh(log)

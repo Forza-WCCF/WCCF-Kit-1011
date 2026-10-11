@@ -36,7 +36,7 @@ except ImportError:      # an error, never an exit: play.py, the panel helper an
     raise ImportError("cards\\schema.py is missing: it must sit beside this file "
                       "(make it with make_schema_module.py)") from None
 
-CARD_BYTES = 16 + 256 * 16          # the kit's card file (_icc_reader.py CARD_BYTES)
+CARD_BYTES = 16 + 256 * 16          # the kit's card file (card_reader.py CARD_BYTES)
 RAW_BYTES = 256 * 16                # a bare block dump, no header
 COPY_BYTES = 0x690                  # one copy: payload + checksum
 PAYLOAD_BYTES = 0x68C               # 1,676

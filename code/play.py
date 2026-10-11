@@ -71,7 +71,7 @@ LIFE = SERVER_LIFE                # the player side: a BACKSTOP only (A3, 2026-1
                                   # ending - so there is no short limit any more, only this far-off safety net
 PY = sys.executable
 ICC_PIPE, JVS_PIPE = r"\\.\pipe\wccf_icc_seat1", r"\\.\pipe\wccf_jvs_seat1"
-KEYS_INPUT = os.path.join(K.DATA, "_jvs_seat1_input.txt")        # = _keys_seat1.LIVE; the board's outputs beside it
+KEYS_INPUT = os.path.join(K.DATA, "_jvs_seat1_input.txt")        # = hardware\keyboard.LIVE; the board's outputs beside it
 CARD = os.path.join(K.SAVE, "seat1_club.bin")
 RUNNING = os.path.join(K.DATA, "running.json")
 PANEL = os.path.join(K.DATA, "panel.txt")         # the SETTINGS panel's choices (wccfpanel.dll writes it)
@@ -530,13 +530,13 @@ def start_cabinet(debug, env, mode, ip, seat_no, seat, roles):
     """steps 4-6 of a start, then the key driver: seat N's own side - the keychip / network, card reader and I/O board
     stand-ins, the cabinet (the seat1 folder) with its overlay - each new process into roles.  A cabinet restart
     (2026-10-07) runs only this: the projector, the scene service, the seat lease and the panel helper keep running."""
-    p = start("_ringedge_services.py", [LIFE, "ringedge_log.txt"], "run_ringedge.txt", env)
+    p = start(os.path.join("hardware", "network.py"), [LIFE, "ringedge_log.txt"], "run_ringedge.txt", env)
     roles[p.pid] = "keychip / network stand-in"
     from cards import wallet                   # its NEW: room for a second card, for a manager transfer (2026-10-08)
-    p = start("_icc_reader.py", [ICC_PIPE, LIFE, "icc_log.txt" if debug else "NUL", CARD, wallet.NEW],
+    p = start(os.path.join("hardware", "card_reader.py"), [ICC_PIPE, LIFE, "icc_log.txt" if debug else "NUL", CARD, wallet.NEW],
               "run_cardreader.txt", env, quiet=not debug)
     roles[p.pid] = "card reader stand-in"
-    p = start("_jvs_board.py", [JVS_PIPE, LIFE, "jvs_log.txt", KEYS_INPUT], "run_ioboard.txt", env)
+    p = start(os.path.join("hardware", "io_board.py"), [JVS_PIPE, LIFE, "jvs_log.txt", KEYS_INPUT], "run_ioboard.txt", env)
     roles[p.pid] = "I/O board stand-in"
     wait_for("the cabinet's stand-ins", lambda: {40100, 40102, 40106} <= K.listening_ports() and
              {"wccf_icc_seat1", "wccf_jvs_seat1"} <= K.pipes(), 20)
@@ -550,7 +550,7 @@ def start_cabinet(debug, env, mode, ip, seat_no, seat, roles):
         senv["MXHOOK_VERBOSE"] = "1"
     senv["WCCF_PANEL"] = PANEL_DLL
     # the cabinet in the seat1 folder SETUP made, whatever its seat number: the number is only its command line
-    p = start("_debug_launch.py", [LIFE, "client", "follow", "arg=%d" % seat_no, "dir=" + seat], "run_seat1.txt", senv)
+    p = start(os.path.join("hardware", "debugger.py"), [LIFE, "client", "follow", "arg=%d" % seat_no, "dir=" + seat], "run_seat1.txt", senv)
     roles[p.pid] = "seat 1 launcher" if seat_no == 1 else "seat %d launcher" % seat_no
     found = {}
 
@@ -582,9 +582,9 @@ def start_cabinet(debug, env, mode, ip, seat_no, seat, roles):
         say("  6/6 the overlay did not report its window (seat1\\wccfpanel.log; data\\logs\\hook says if it loaded) - "
             "the game runs; the keyboard works as usual")
     if debug:                               # its own window, minimized, as before
-        k = start("_keys_seat1.py", [], None, env, show=SW_SHOWMINNOACTIVE)
+        k = start(os.path.join("hardware", "keyboard.py"), [], None, env, show=SW_SHOWMINNOACTIVE)
     else:
-        k = start("_keys_seat1.py", [], "run_keys.txt", env)
+        k = start(os.path.join("hardware", "keyboard.py"), [], "run_keys.txt", env)
     roles[k.pid] = "key driver"
 
 
@@ -633,7 +633,7 @@ def play(debug, mode="local", ip=None, seat_no=None):
     if "scene service" in roles.values():
         say("  1/%d scene service (the server's, already running on this PC)" % steps)
     else:
-        p = start("_xscn_watch.py", [life + 120, "xscn_watch_log.txt"], "run_scenes.txt", env)
+        p = start(os.path.join("hardware", "scenes.py"), [life + 120, "xscn_watch_log.txt"], "run_scenes.txt", env)
         roles[p.pid] = "scene service"
         time.sleep(2)
         if p.poll() is not None:
@@ -669,7 +669,7 @@ def play(debug, mode="local", ip=None, seat_no=None):
             # dropped like any seat and the matches go on (docs\NETWORK-MAP-2010-11.md section 8); the seat desk
             # gives the projector to the first PC that joins.
             set_conf_value(ctrl_conf, "WAIT_PROJECTOR", 1)
-        p = start("_debug_launch.py", [life + 60, "control", "follow"] + ([] if debug else ["hide"]), "run_server.txt",
+        p = start(os.path.join("hardware", "debugger.py"), [life + 60, "control", "follow"] + ([] if debug else ["hide"]), "run_server.txt",
                   env)
         roles[p.pid] = "server launcher"
         wait_for("the server", lambda: CONTROL_PORT in K.listening_ports() and len(games("match_release.exe")) >= 4,
@@ -715,7 +715,7 @@ def play(debug, mode="local", ip=None, seat_no=None):
         return 0
 
     if projector:
-        p = start("_debug_launch.py", [LIFE, "client", "follow", "arg=0"], "run_projector.txt",
+        p = start(os.path.join("hardware", "debugger.py"), [LIFE, "client", "follow", "arg=0"], "run_projector.txt",
                   dict(env, WCCF_PANEL=PANEL_DLL))     # the overlay too, in its money-only mode (below)
         roles[p.pid] = "projector launcher"
         say("  3/6 projector (seat 0) - its window opens in a few seconds")
@@ -868,7 +868,7 @@ def stop(force, check=False, keep_server=False):
     return 0
 
 
-WINDOW_CLOSED = "its window was closed"   # _debug_launch.py's line when it ends a game because its window was closed
+WINDOW_CLOSED = "its window was closed"   # debugger.py's line when it ends a game because its window was closed
 
 
 def window_launchers(roles):
@@ -898,7 +898,7 @@ def read_log(name):
 
 def ended():
     """a game window closed (2026-10-08; there is no STOP now): PLAY.exe's watcher saw one of the run's cabinet and
-    projector launchers end - _debug_launch.py ends the game, and itself, when the game's window is closed - and asks
+    projector launchers end - debugger.py ends the game, and itself, when the game's window is closed - and asks
     for the rest to stop: the server, its match engines, the stand-ins, the key driver, the panel helper.  Before, they
     ran on hidden for up to 12 hours.  The card rule still holds for a cabinet that still runs (the projector closed
     during a match: refused, exit 3, and the watcher goes on watching).  A cabinet that played on a server started on

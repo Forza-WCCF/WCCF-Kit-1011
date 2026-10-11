@@ -1,6 +1,6 @@
 # check.ps1 - the kit's own checks that need no game (2026-10-08), after build.ps1; CI runs it too (kit.yml):
 #   every script in code\ compiles with the kit's own Python (nothing written)
-#   the key driver's self-test (_keys_seat1.py --selftest: a scratch file, nothing live)
+#   the key driver's self-test (hardware\keyboard.py --selftest: a scratch file, nothing live)
 #   play.py's choice when a game window ends: a closed window stops the rest, a crash does not (source\test_ended.py)
 #   the club card editor's self-test (cards\edit.py --self-test: cards made in memory, no real card)
 #   a missing club-card helper file never stops a start (source\test_card_fix.py: a scratch panel.txt)
@@ -33,15 +33,15 @@ if ($LASTEXITCODE) { $failed += 'code compile' }
 if ($LASTEXITCODE) { $failed += 'every file in code\ imports through python313._pth, as the launchers run them' }
 
 # the key driver's live file is where play.py's stop guard reads the card state, and the I/O board's outputs file is
-# beside it (_jvs_board.py derives it): if they ever disagree, the stop guard reads "card out" with a card in
-& $py -I -c "import os, play, _keys_seat1 as k; n = os.path.normcase; assert n(play.KEYS_INPUT) == n(k.LIVE), (play.KEYS_INPUT, k.LIVE); assert n(k.OUTPUTS) == n(k.LIVE[:-len('_input.txt')] + '_outputs.txt'); assert os.path.basename(os.path.dirname(k.LIVE)) == 'data'; print('key driver files: in data\\, the same for play.py and the I/O board')"
+# beside it (hardware\io_board.py derives it): if they ever disagree, the stop guard reads "card out" with a card in
+& $py -I -c "import os, play; from hardware import keyboard as k; n = os.path.normcase; assert n(play.KEYS_INPUT) == n(k.LIVE), (play.KEYS_INPUT, k.LIVE); assert n(k.OUTPUTS) == n(k.LIVE[:-len('_input.txt')] + '_outputs.txt'); assert os.path.basename(os.path.dirname(k.LIVE)) == 'data'; print('key driver files: in data\\, the same for play.py and the I/O board')"
 if ($LASTEXITCODE) { $failed += 'the key driver, the I/O board and play.py name the same live files in data\' }
 
 # Kit 5.5 reused the name PANEL for wccfpanel.dll: a plain start read the dll as data\panel.txt and never went online
 & $py -I -c "import sys; sys.path.insert(0, sys.argv[1]); import play; assert play.PANEL.endswith('panel.txt'), play.PANEL; print('play.py: PANEL is panel.txt')" (Join-Path $kit 'code')
 if ($LASTEXITCODE) { $failed += 'play.py PANEL' }
 
-& $py -I (Join-Path $kit 'code\_keys_seat1.py') --selftest | Select-Object -Last 1
+& $py -I (Join-Path $kit 'code\hardware\keyboard.py') --selftest | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'key driver self-test' }
 
 & $py -I (Join-Path $PSScriptRoot 'test_ended.py')

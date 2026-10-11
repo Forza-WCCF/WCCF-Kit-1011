@@ -4,7 +4,7 @@
 //! 12 hours were up.  There is no STOP now: closing a game window is how the game is quit.
 //!
 //! After a start or a restart, PLAY leaves a watcher: the same exe again, `--watch`, without a window.  It waits for
-//! the run's cabinet and projector launchers (data\running.json; _debug_launch.py ends each game, and itself, when the
+//! the run's cabinet and projector launchers (data\running.json; hardware\debugger.py ends each game, and itself, when the
 //! game's window is closed) and once one has ended, runs `play.py ended`, which stops the rest of the run - by full
 //! path, nothing else on the PC is touched.  Its output: data\logs\run_ended.txt.  When that stop is refused (the
 //! projector's window closed while seat 1 is in a card session: a match is on), it watches the rest again.
