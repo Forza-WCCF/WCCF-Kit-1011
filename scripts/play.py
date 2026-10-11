@@ -240,6 +240,9 @@ def kit_env(game):
     where the game and the logs are"""
     env = {k: v for k, v in os.environ.items() if not k.upper().startswith(("MXHOOK_", "WCCF"))}
     env.update(WCCF_GAME=game, WCCF_LOGS=K.LOGS, MXHOOK_LOG_DIR=os.path.join(K.LOGS, "hook"))
+    msaa = read_panel().get("msaa", "")     # SETTINGS > ANTI-ALIAS: the game's winmm.dll raises the match's MSAA
+    if msaa in ("4", "8"):
+        env["WCCF_MSAA"] = msaa
     return env
 
 

@@ -3028,6 +3028,9 @@ static char g_card_req[64] = "";         // card=: the CLUB CARD panel's choice 
 static int  g_fix_req = 0;               // card_fix=bad_endings: CLEAR BAD ENDINGS, done by play.py at the next start
 static volatile LONG g_aniso = 0;        // textures=: 0 the game's own filters, else 4 / 8 / 16x anisotropic (VIEW)
 static const int ANISO[4] = { 0, 4, 8, 16 };
+static int  g_msaa_req = 0;              // msaa=: 0 the game's own (4x seat, 2x projector), 4 or 8 - play.py passes it
+static int  g_msaa_run = 0;              // to the next start's winmm.dll as WCCF_MSAA (mxhook.c); THIS run's
+static const int MSAA[3] = { 0, 4, 8 };
 static volatile LONG g_set_dirty = 1;    // the status must be read again now
 // RESTART NOW (the player, 2026-10-06: "a button that goes to the next start"): a first click arms it for 8 s, a second
 // writes data\restart.request; _kit_helper.py (outside the game - seat 1's debugger would kill a restart the game
@@ -3064,7 +3067,7 @@ static int valid_ipv4(const char *s)     // = play.py valid_ipv4: four numbers 0
 static void set_load_locked(void)
 {
     FILE *f = fopen(g_panel_path, "rb"); char line[256];
-    g_on_online = 0; g_server[0] = 0; g_eng_req = -1; g_card_req[0] = 0; g_fix_req = 0; g_compact = 0; g_aniso = 0;
+    g_on_online = 0; g_server[0] = 0; g_eng_req = -1; g_card_req[0] = 0; g_fix_req = 0; g_compact = 0; g_aniso = 0; g_msaa_req = 0;
     if (!f) return;
     while (fgets(line, sizeof line, f)) {
         char *p = strchr(line, '#'), *eq, *name, *val;
@@ -3079,6 +3082,7 @@ static void set_load_locked(void)
         else if (!_stricmp(name, "card_fix")) g_fix_req = !_stricmp(val, "bad_endings");
         else if (!_stricmp(name, "layout")) g_compact = !_stricmp(val, "compact");
         else if (!_stricmp(name, "textures")) { int a = atoi(val); g_aniso = a == 4 || a == 8 || a == 16 ? a : 0; }
+        else if (!_stricmp(name, "msaa")) { int a = atoi(val); g_msaa_req = a == 4 || a == 8 ? a : 0; }
     }
     fclose(f);
 }
@@ -3096,6 +3100,7 @@ static int set_save_locked(void)
     if (g_fix_req) n += _snprintf(text + n, sizeof text - n, "card_fix=bad_endings\n");
     if (g_compact) n += _snprintf(text + n, sizeof text - n, "layout=compact\n");     // the VIEW: kept, not a request
     if (g_aniso) n += _snprintf(text + n, sizeof text - n, "textures=%ld\n", (long)g_aniso);
+    if (g_msaa_req) n += _snprintf(text + n, sizeof text - n, "msaa=%d\n", g_msaa_req);
     f = fopen(g_panel_tmp, "wb");
     if (!f) { logline("settings: could not write %s", g_panel_tmp); return 0; }
     k = (int)fwrite(text, 1, (size_t)n, f) == n;
@@ -3103,10 +3108,10 @@ static int set_save_locked(void)
     if (!k) { logline("settings: could not write %s", g_panel_tmp); return 0; }
     for (k = 0; k < 40; k++) {
         if (MoveFileExA(g_panel_tmp, g_panel_path, MOVEFILE_REPLACE_EXISTING)) {
-            logline("settings: saved play_on=%s server=%s english=%s%s%s%s layout=%s textures=%ld", g_on_online ? "online" : "this_pc",
+            logline("settings: saved play_on=%s server=%s english=%s%s%s%s layout=%s textures=%ld msaa=%d", g_on_online ? "online" : "this_pc",
                     g_server[0] ? g_server : "-", g_eng_req < 0 ? "-" : g_eng_req ? "on" : "off",
                     g_card_req[0] ? " card=" : "", g_card_req, g_fix_req ? " card_fix=bad_endings" : "",
-                    g_compact ? "compact" : "cabinet", (long)g_aniso);
+                    g_compact ? "compact" : "cabinet", (long)g_aniso, g_msaa_req);
             return 1;
         }
         Sleep(5);
@@ -3124,6 +3129,7 @@ static void set_init(void)               // the init thread: where data\ is, and
         if (!GetFullPathNameA(data, MAX_PATH, g_data_dir, NULL)) lstrcpynA(g_data_dir, data, MAX_PATH);
     }
     _snprintf(g_panel_path, MAX_PATH, "%s\\panel.txt", g_data_dir); g_panel_path[MAX_PATH - 1] = 0;
+    if (GetEnvironmentVariableA("WCCF_MSAA", e, sizeof e) > 0) { int a = atoi(e); g_msaa_run = a == 4 || a == 8 ? a : 0; }
     _snprintf(g_panel_tmp, MAX_PATH, "%s.panel", g_panel_path); g_panel_tmp[MAX_PATH - 1] = 0;
     g_lg_stamp = sendlogs_stamp();                              // an answer from an earlier run is not shown
     EnterCriticalSection(&g_board_cs);
@@ -3546,7 +3552,7 @@ static void set_chip(IDirect3DDevice9 *dev, RECT r, const char *label, int on, f
 // GRAPHICS shows this page in SETTINGS' place (BACK returns; X and Esc close both).  AT ONCE: what the panel changes in
 // the running game.  NEXT START: what the game's winmm.dll sets before the game draws (play.py passes data\panel.txt
 // on), with RESTART NOW.  Each row: its name, its chips, a note under them.
-struct GGeo { float x0, x1, lx, vx, yonce, ynext; RECT close, back, tex[4], restart; };
+struct GGeo { float x0, x1, lx, vx, yonce, ynext; RECT close, back, tex[4], aa[3], restart; };
 static void set_open(HWND h, int open);   // (below: the panel's input)
 
 static RECT chip_at(float vx, float y, int i, float s)    // the i-th small chip of a row
@@ -3566,6 +3572,8 @@ static void gfx_geo(struct GGeo *g)
     for (i = 0; i < 4; i++) g->tex[i] = chip_at(g->vx, y, i, s);
     g->ynext = y + 36.0f * s + 52.0f * s;
     y = g->ynext + 36.0f * s;
+    for (i = 0; i < 3; i++) g->aa[i] = chip_at(g->vx, y, i, s);            // ANTI-ALIAS
+    y += 36.0f * s + 30.0f * s;
     g->restart = RC(g->vx, y, g->vx + 270.0f * s, y + 38.0f * s);
 }
 
@@ -3578,7 +3586,7 @@ static void gfx_row(IDirect3DDevice9 *dev, float lx, RECT r, const char *name, D
 
 static void gfx_draw(IDirect3DDevice9 *dev)
 {
-    static const char *TEXL[4] = { "GAME", "4x", "8x", "16x" };
+    static const char *TEXL[4] = { "GAME", "4x", "8x", "16x" }, *AAL[3] = { "GAME", "4x", "8x" };
     struct GGeo g; float s = g_s; int i, armed; DWORD now = GetTickCount();
     DWORD white = D3DCOLOR_ARGB(255, 240, 240, 245), grey = D3DCOLOR_ARGB(255, 150, 156, 170);
     DWORD orange = D3DCOLOR_ARGB(255, 255, 138, 42), red = D3DCOLOR_ARGB(255, 255, 110, 90);
@@ -3594,6 +3602,7 @@ static void gfx_draw(IDirect3DDevice9 *dev)
     fill_rect(dev, g.lx, g.ynext + 22.0f * s, g.x1 - g.x0 - 48.0f * s, 2.0f * s, D3DCOLOR_ARGB(255, 60, 52, 44));
     set_chip(dev, g.back, "< BACK", 0, s);
     for (i = 0; i < 4; i++) set_chip(dev, g.tex[i], TEXL[i], g_aniso == ANISO[i], s);
+    for (i = 0; i < 3; i++) set_chip(dev, g.aa[i], AAL[i], g_msaa_req == MSAA[i], s);
     set_chip(dev, g.restart, g_rs_sent ? "RESTARTING ..." : armed ? "CLICK AGAIN TO RESTART" : "RESTART NOW",
              armed || g_rs_sent, s);
     if (g_font_tex) {
@@ -3609,6 +3618,10 @@ static void gfx_draw(IDirect3DDevice9 *dev)
         gfx_row(dev, g.lx, g.tex[0], "TEXTURES", grey, g_aniso
                 ? "anisotropic filtering: the pitch's lines and far grass stay sharp at a slant"
                 : "GAME: the game's own filtering.  4x-16x: sharper pitch lines and far grass at a slant");
+        gfx_row(dev, g.lx, g.aa[0], "ANTI-ALIAS", g_msaa_req != g_msaa_run ? D3DCOLOR_ARGB(255, 255, 214, 40) : grey,
+                g_msaa_req != g_msaa_run ? "changes at the next start - smoother edges; 8x asks more of the graphics card"
+                : g_msaa_run == 8 ? "8x multisampling: the smoothest edges on the players and pitch"
+                : "GAME: the game's own (4x here, 2x on the projector).  8x: smoother edges still");
         gfx_row(dev, g.lx, g.restart, "APPLY NOW", g_st.card == CS_OPEN ? red : grey, g_st.card == CS_OPEN
                 ? "not during a card session - after the locker-room save"
                 : "the game closes and opens again with these NEXT START settings");
@@ -3656,7 +3669,14 @@ static void gfx_click(HWND h, int x, int y)                     // a press on th
     if (in_rect(&g.close, x, y)) { LeaveCriticalSection(&g_board_cs); set_open(h, 0); return; }
     if (in_rect(&g.back, x, y)) { g_gfx = 0; g_bmsg[0] = 0; logline("graphics: back to SETTINGS"); }
     else if (in_rect(&g.restart, x, y)) restart_click_locked();
-    else for (i = 0; i < 4; i++) {
+    else if (in_rect(&g.aa[0], x, y) || in_rect(&g.aa[1], x, y) || in_rect(&g.aa[2], x, y)) {   // ANTI-ALIAS: next start
+        for (i = 0; !in_rect(&g.aa[i], x, y); i++) ;
+        g_msaa_req = MSAA[i];
+        if (!set_save_locked()) note_locked(red, "could not save data\\panel.txt - try again");
+        else if (g_msaa_req == g_msaa_run) note_locked(green, "ANTI-ALIAS stays %s", i ? (i == 1 ? "4x" : "8x") : "the game's own");
+        else note_locked(green, "ANTI-ALIAS: %s from the next start (RESTART NOW applies it)", i ? (i == 1 ? "4x" : "8x") : "the game's own");
+        logline("graphics: anti-alias %d", g_msaa_req);
+    } else for (i = 0; i < 4; i++) {
         if (!in_rect(&g.tex[i], x, y)) continue;                 // TEXTURES: at once (aniso_tick), and kept
         g_aniso = ANISO[i];
         if (!set_save_locked()) note_locked(red, "could not save data\\panel.txt - changed for now");

@@ -29,6 +29,9 @@ if ($LASTEXITCODE) { $failed += 'scripts compile' }
 # Kit 5.5 reused the name PANEL for wccfpanel.dll: a plain start read the dll as data\panel.txt and never went online
 & $py -I -c "import sys; sys.path.insert(0, sys.argv[1]); import play; assert play.PANEL.endswith('panel.txt'), play.PANEL; print('play.py: PANEL is panel.txt')" (Join-Path $kit 'scripts')
 if ($LASTEXITCODE) { $failed += 'play.py PANEL' }
+# GRAPHICS > ANTI-ALIAS: msaa=4|8 in data\panel.txt reaches the game as WCCF_MSAA (mxhook.c); anything else does not
+& $py -I -c "import sys, os, tempfile; sys.path.insert(0, sys.argv[1]); import play; p = os.path.join(tempfile.mkdtemp(), 'panel.txt'); play.PANEL = p; open(p, 'w').write('msaa=8\n'); assert play.kit_env('g').get('WCCF_MSAA') == '8'; open(p, 'w').write('msaa=3\n'); assert 'WCCF_MSAA' not in play.kit_env('g'); print('play.py: msaa= reaches WCCF_MSAA')" (Join-Path $kit 'scripts')
+if ($LASTEXITCODE) { $failed += 'play.py msaa' }
 
 & $py -I (Join-Path $kit 'scripts\_keys_seat1.py') --selftest | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'key driver self-test' }

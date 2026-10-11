@@ -27,7 +27,9 @@
  *    "logowin" below (2026-10-09; before, the kit put a stand-in exe there);
  *  - loads the kit's overlay (WCCF_PANEL, wccfpanel.dll) once the game's
  *    window is up, for seat 1 and the projector (2026-10-09; before, the
- *    kit's inject.exe wrote it into the game from outside).
+ *    kit's inject.exe wrote it into the game from outside);
+ *  - raises the match scene's own anti-aliasing when WCCF_MSAA asks
+ *    (2026-10-11): see "anti-aliasing" below.
  *
  * Load method : winmm.dll proxy in the game folder (no process injection).
  * Hook method : IAT patch of the game module's imports (in-process), by name
@@ -36,7 +38,10 @@
 
 #include <windows.h>
 #include <winioctl.h>
+#define COBJMACROS
+#include <d3d9.h>        /* the anti-aliasing check only: called through the game's own d3d9, never linked */
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include "winmm_fwd.h"   /* generated: forwards all 192 winmm exports to winmm_orig.dll */
@@ -1042,6 +1047,78 @@ static BOOL WINAPI hook_CreateProcessA(LPCSTR app, LPSTR cmd, LPSECURITY_ATTRIBU
     return TRUE;
 }
 
+/* ---- anti-aliasing (2026-10-11) ----------------------------------------
+ * WCCF_MSAA = 4 or 8 (play.py: msaa= in data\panel.txt).  The 2010-11 engine
+ * draws the match into its own multisampled target (the default rendering
+ * pass, 0x4BD650): it asks 4x on a player seat and 2x on the projector (the
+ * test is SATELLITE_NO, dword_B0D4BC: "mov eax, 2" at 0x4BD913 is seat 0's),
+ * and 0x7604A0 turns the ask into the D3D type ("mov eax, 4" at 0x7604B3 =
+ * 4x).  4: the projector asks what a seat asks.  8: 4x's type becomes 8x.  Applied when the game calls Direct3DCreate9 - after the loader,
+ * before the passes are built - once the card says it can (else the next
+ * level down).  Each byte is checked before it is written, so any other exe
+ * (the server, the 2017-18 game) is left as it is.  Unset: no hook at all. */
+
+typedef IDirect3D9 *(WINAPI *pfn_Direct3DCreate9)(UINT);
+static pfn_Direct3DCreate9 real_Direct3DCreate9;
+static int g_msaa = 0;           /* 4 or 8; 0 = the game's own */
+
+static int msaa_can(IDirect3D9 *d3d, int n)
+{
+    static const D3DFORMAT fmt[3] = { D3DFMT_A8R8G8B8, D3DFMT_X8R8G8B8, D3DFMT_D24S8 };
+    int i;
+    for (i = 0; i < 3; i++)
+        if (FAILED(IDirect3D9_CheckDeviceMultiSampleType(d3d, D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, fmt[i], TRUE,
+                                                         (D3DMULTISAMPLE_TYPE)n, NULL)))
+            return 0;
+    return 1;
+}
+
+/* write one byte at va once the 5 bytes before/at `at` read `want` (the instruction it belongs to) */
+static int patch_code(DWORD at, const BYTE *want, int len, DWORD va, BYTE v)
+{
+    DWORD prot;
+    if (IsBadReadPtr((void *)at, len) || memcmp((void *)at, want, len) != 0)
+        return 0;
+    if (!VirtualProtect((void *)va, 1, PAGE_EXECUTE_READWRITE, &prot))
+        return 0;
+    *(BYTE *)va = v;
+    VirtualProtect((void *)va, 1, prot, &prot);
+    FlushInstructionCache(GetCurrentProcess(), (void *)va, 1);
+    return 1;
+}
+
+static void msaa_apply(IDirect3D9 *d3d)
+{
+    static const BYTE ask_pc[]   = { 0xB8, 0x04, 0x00, 0x00, 0x00, 0x39, 0x1D, 0xBC, 0xD4, 0xB0, 0x00, 0x75, 0x05,
+                                     0xB8, 0x02, 0x00, 0x00, 0x00 };          /* 0x4BD906: mov eax,4; cmp; jnz; mov eax,2 */
+    static const BYTE type_4x[]  = { 0xB8, 0x04, 0x00, 0x00, 0x00, 0xC3 };    /* 0x7604B3: mov eax,4; ret */
+    static LONG once = 0;
+    int n = g_msaa;
+    if (InterlockedExchange(&once, 1))
+        return;
+    while (n > 2 && !msaa_can(d3d, n))
+        n /= 2;
+    if (n < 4) {
+        logline("anti-aliasing: %dx asked, the graphics card cannot - the game's own", g_msaa);
+        return;
+    }
+    if (!patch_code(0x4BD906, ask_pc, sizeof ask_pc, 0x4BD914, 0x04)) {
+        logline("anti-aliasing: not the 2010-11 game's code at 0x4BD906 - left as it is");
+        return;
+    }
+    if (n == 8 && !patch_code(0x7604B3, type_4x, sizeof type_4x, 0x7604B4, 0x08))   /* only once the ask is ours */
+        n = 4;
+    logline("anti-aliasing: the match scene at %dx (asked %dx; the game's own: 4x on a seat, 2x on the projector)", n, g_msaa);
+}
+
+static IDirect3D9 *WINAPI hook_Direct3DCreate9(UINT sdk)
+{
+    IDirect3D9 *d3d = real_Direct3DCreate9(sdk);
+    if (d3d)
+        msaa_apply(d3d);
+    return d3d;
+}
+
 static void install_hooks(void)
 {
     HMODULE exe = GetModuleHandleW(NULL);
@@ -1078,6 +1155,16 @@ static void install_hooks(void)
         } else {
             logline("network address: this PC is presented to the game as %s (MXHOOK_NET_IP)", g_net_ip);
         }
+    }
+    {
+        char v[8];
+        DWORD n = GetEnvironmentVariableA("WCCF_MSAA", v, sizeof(v));
+        g_msaa = n > 0 && n < sizeof(v) ? atoi(v) : 0;
+        if (g_msaa != 4 && g_msaa != 8)
+            g_msaa = 0;
+        else if (!(real_Direct3DCreate9 = (pfn_Direct3DCreate9)patch_iat(exe, "d3d9.dll", "Direct3DCreate9",
+                                                                          hook_Direct3DCreate9)))
+            logline("anti-aliasing: %dx asked, but this program does not import Direct3DCreate9", g_msaa);
     }
     logline("hooks installed: CreateFileW=%d CreateFileA=%d CreateFileMappingA=%d OpenFileMappingA=%d DeviceIoControl=%d  IpRelease=%d IpRenew=%d  CreateProcessA=%d  gethostbyname=%d inet_addr=%d",
             real_CreateFileW != 0, real_CreateFileA != 0, real_CreateFileMappingA != 0,
