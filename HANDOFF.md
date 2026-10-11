@@ -1,6 +1,8 @@
 # WCCF 2010-11 kit - root HANDOFF
 
-The front door for a developer. (Players read `README.txt`.) Each folder has its own `HANDOFF.md`; this is the root.
+The front door for a developer. (Players read `README.txt`.) Each folder has its own `HANDOFF.md`, naming every file
+in it - `source\test_handoffs.py` (check.ps1) fails when one does not. The HANDOFFs are in git, not in the players'
+ZIP (`.gitattributes`). `programs\` and `data\` are made on the player's PC, so they are described here instead.
 
 ## What the kit is
 
@@ -21,8 +23,9 @@ files ship.** SETUP builds whatever it needs from the player's own copy of the g
 | `languages\` | one folder per language - `languages\english\`: the English translation tables (text + fingerprints of Sega's files; no Sega file) |
 | `python\` | an embedded Python so players install nothing |
 | `code\` | the kit's Python. At the top, the four a person runs or everything shares: `play.py` (start/stop), `setup.py`, `english.py`, `kit_common.py`. Then `cards\` (club cards, the catalogue), `hardware\` (the cabinet's parts, faked on a PC), `online\` (joining a server), `server\` (running one for others), `helpers\` (the panel's helper, sound, the hook's name in the game) |
-| `source\` | the source of every compiled program, the build/check/package scripts, and the tests |
-| `data\` | the player's own: settings, keys, the club card and other clubs, logs, runtime state |
+| `source\` | the source of every compiled program (`hook\`, `panel\`, `card_table\`, `launcher\`), the build/check/package scripts, and the tests |
+| `data\` | the player's own: settings, keys, the club card and other clubs, logs, runtime state, `cache\`, `english_backup\` (Sega's original files while English is on - never a cache) |
+| `docs\` | the redesign's plan and the research notes - not in the players' ZIP |
 
 ## How a start works (the short version)
 

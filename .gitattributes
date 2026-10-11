@@ -4,3 +4,5 @@
 .gitignore export-ignore
 # research notes for the people working on the kit, not for players
 docs export-ignore
+# a HANDOFF.md in every folder (and the root one): for the people working on the kit, not in the players' ZIP
+HANDOFF.md export-ignore

@@ -32,6 +32,10 @@ if ($LASTEXITCODE) { $failed += 'code compile' }
 & $py -I (Join-Path $PSScriptRoot 'test_imports.py') | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'every file in code\ imports through python313._pth, as the launchers run them' }
 
+# a HANDOFF.md in every folder, naming every file in it - a file added or renamed without its line fails here
+& $py -I (Join-Path $PSScriptRoot 'test_handoffs.py') | Select-Object -Last 1
+if ($LASTEXITCODE) { $failed += 'every folder has a HANDOFF.md that names every file in it' }
+
 # the key driver's live file is where play.py's stop guard reads the card state, and the I/O board's outputs file is
 # beside it (hardware\io_board.py derives it): if they ever disagree, the stop guard reads "card out" with a card in
 & $py -I -c "import os, play; from hardware import keyboard as k; n = os.path.normcase; assert n(play.KEYS_INPUT) == n(k.LIVE), (play.KEYS_INPUT, k.LIVE); assert n(k.OUTPUTS) == n(k.LIVE[:-len('_input.txt')] + '_outputs.txt'); assert os.path.basename(os.path.dirname(k.LIVE)) == 'data'; print('key driver files: in data\\, the same for play.py and the I/O board')"
