@@ -39,6 +39,6 @@ What each does, in short:
                 and I/O board stand-ins (named pipes), the RingEdge memory, the network address (127.0.0.1)
   FPR_Emu.exe   answers the game's card-table polls with the cards in seat1\fpr_table0.txt
   wccfpanel.dll the panel around seat 1's picture (drawn with the game's own Direct3D 9 device)
-  launchers     run scripts\play.py, setup.py or english.py with the kit's Python and keep the window as the .bat
+  launchers     run code\play.py, setup.py or english.py with the kit's Python and keep the window as the .bat
                 files did; PLAY leaves a windowless watcher (PLAY.exe --watch) that stops the rest of the run once a
-                game window is closed (launcher\src\watch.rs; scripts\_debug_launch.py ends the game itself)
+                game window is closed (launcher\src\watch.rs; code\_debug_launch.py ends the game itself)

@@ -21,7 +21,7 @@ os.environ["WCCF_LEASE_PING"] = "0.2"
 os.environ["WCCF_LEASE_RETRY"] = "0.2"
 
 KIT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(KIT, "scripts"))
+sys.path.insert(0, os.path.join(KIT, "code"))
 import _seat_lease as L  # noqa: E402
 
 fails = []

@@ -1,7 +1,7 @@
 //! SETUP.exe - the kit's window (2026-10-09; before, a console that ran setup.py, and ENGLISH.exe beside it).
-//!   GAME FOLDER  set up / repair (scripts\setup.py GAME) and undo (setup.py undo GAME); the folder is typed, picked,
+//!   GAME FOLDER  set up / repair (code\setup.py GAME) and undo (setup.py undo GAME); the folder is typed, picked,
 //!                dropped on the window or on SETUP.exe, and remembered by setup.py in data\settings.json
-//!   LANGUAGE     the game in English (scripts\english.py on) or Sega's Japanese back (english.py off)
+//!   LANGUAGE     the game in English (code\english.py on) or Sega's Japanese back (english.py off)
 //!   UPDATE       the kit's GitHub releases and test builds (pre-releases): the chosen one's kit ZIP is downloaded,
 //!                unzipped into data\update and copied over the kit folder - data\ (club cards, keys, settings, logs)
 //!                is never written, and nothing is copied while the game or a kit tool runs.  Files the old kit
@@ -353,12 +353,12 @@ fn obsolete<'a>(old: &'a [String], new: &[String]) -> Vec<&'a str> {
 
 // ---- the kit's scripts ------------------------------------------------------------------------------------------
 
-/// python\python.exe scripts\<script> args, its output line by line into the window.
+/// python\python.exe code\<script> args, its output line by line into the window.
 fn run_script(kit: &Kit, script: &str, args: &[OsString]) -> Result<(), String> {
     let shown: Vec<String> = args.iter().map(|a| a.to_string_lossy().into_owned()).collect();
     log(&format!("> {script} {}", shown.join(" ")));
     let mut child = Command::new(kit.dir().join("python").join("python.exe"))
-        .arg(kit.dir().join("scripts").join(script))
+        .arg(kit.dir().join("code").join(script))
         .args(args)
         .current_dir(kit.dir())
         .env("PYTHONUTF8", "1")
@@ -925,7 +925,7 @@ mod tests {
         let old: Vec<String> = [
             "PLAY.exe",
             "ENGLISH.exe",
-            "scripts\\old.py",
+            "code\\old.py",
             "data\\keys.txt",
             "..\\x",
             "C:\\x",
@@ -933,7 +933,7 @@ mod tests {
         .map(String::from)
         .into();
         let new: Vec<String> = ["play.exe", "SETUP.exe"].map(String::from).into();
-        assert_eq!(obsolete(&old, &new), ["ENGLISH.exe", "scripts\\old.py"]);
+        assert_eq!(obsolete(&old, &new), ["ENGLISH.exe", "code\\old.py"]);
     }
 
     #[test]

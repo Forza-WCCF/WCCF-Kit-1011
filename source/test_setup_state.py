@@ -7,7 +7,7 @@ import sys
 import tempfile
 
 KIT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(KIT, "scripts"))
+sys.path.insert(0, os.path.join(KIT, "code"))
 import kit_common as K  # noqa: E402
 import play  # noqa: E402
 

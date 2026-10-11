@@ -46,10 +46,10 @@ impl Kit {
         self.dir.join("data")
     }
 
-    /// `python\python.exe scripts\<script>`, to add arguments to
+    /// `python\python.exe code\<script>`, to add arguments to
     fn script(&self, script: &str) -> Command {
         let mut cmd = Command::new(self.python());
-        cmd.arg(self.dir.join("scripts").join(script));
+        cmd.arg(self.dir.join("code").join(script));
         cmd
     }
 

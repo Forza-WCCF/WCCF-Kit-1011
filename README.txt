@@ -171,7 +171,7 @@ CLUB CARD (left side, under SETTINGS)
   CLEAR BAD ENDINGS (under CARD HEALTH, while the card has a bad ending or its last session was cut): click twice,
   and the game restarts with the card's bad endings back to 0 (the old card goes to data\save\backup first). Not
   during a match. Trade rights or money the game already took for them stay as they are.
-  Any other field of the card: python\python.exe scripts\edit_club_card.py data\save\seat1_club.bin --help
+  Any other field of the card: python\python.exe code\edit_club_card.py data\save\seat1_club.bin --help
   (close the game first; it shows what it would change and writes only with --write).
 
 QUIT
@@ -259,7 +259,7 @@ FOLDERS
   overlay\   wccfpanel.dll (the panel; the game's winmm.dll loads it into seat 1, and into the projector for its money
              with commas only), skin.tex (its picture);
              setup adds catalogue.tsv and cards\
-  scripts\   setup, play, english, the card maker, the launcher, and stand-ins for the arcade's hardware
+  code\   setup, play, english, the card maker, the launcher, and stand-ins for the arcade's hardware
              (keychip and network, card reader, I/O board, scene service) and the key driver
   english\   the kit's English: screen_text.tsv (the translation), sega_rstring.tsv (Sega's European English),
              cpu_names.tsv (team names), exe_text.tsv (the ticker, the dates, money, the shop's name) - text and

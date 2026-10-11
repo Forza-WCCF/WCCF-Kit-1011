@@ -19,13 +19,13 @@ files ship.** SETUP builds whatever it needs from the player's own copy of the g
 | `overlay\` | the panel art (`skin.tex`) and the catalogue + card pictures SETUP builds from the player's game |
 | `english\` | the English translation tables (text + fingerprints of Sega's files; no Sega file) |
 | `python\` | an embedded Python so players install nothing |
-| `scripts\` | the kit's Python: launching, hardware stand-ins, the card toolset, online, the server, setup |
+| `code\` | the kit's Python: launching, hardware stand-ins, the card toolset, online, the server, setup |
 | `source\` | the source of every compiled program, the build/check/package scripts, and the tests |
 | `data\` | the player's own: settings, keys, the club card and other clubs, logs, runtime state |
 
 ## How a start works (the short version)
 
-`PLAY.exe` -> `scripts\play.py`. It starts, in order: the scene service, the server or an online seat, the
+`PLAY.exe` -> `code\play.py`. It starts, in order: the scene service, the server or an online seat, the
 projector, the cabinet's stand-ins (keychip, card reader, I/O board), the cabinet (`client_Release.exe`) with the
 hook and the panel, and the key driver. The game loads the hook (`bin\winmm.dll`) because it sits in the game's
 folder; the hook stands in for the cabinet hardware and loads the panel. Closing the game window ends the whole run.

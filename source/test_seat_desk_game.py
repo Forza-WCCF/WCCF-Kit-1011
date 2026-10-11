@@ -41,7 +41,7 @@ tmp = tempfile.mkdtemp(prefix="seatgame_")
 game = os.path.join(tmp, "_dbg_control.txt")
 deskl = os.path.join(tmp, "seat_broker.txt")
 env = dict(os.environ, WCCF_BROKER_PORT=str(PORT), WCCF_BROKER_SILENT="30")
-desk = subprocess.Popen([sys.executable, "-B", os.path.join(KIT, "scripts", "_seat_broker.py"), "60", deskl], env=env,
+desk = subprocess.Popen([sys.executable, "-B", os.path.join(KIT, "code", "_seat_broker.py"), "60", deskl], env=env,
                         stdout=subprocess.DEVNULL)
 socks = []
 try:

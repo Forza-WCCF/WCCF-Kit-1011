@@ -9,7 +9,7 @@ import sys
 import tempfile
 
 KIT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(KIT, "scripts"))
+sys.path.insert(0, os.path.join(KIT, "code"))
 import club_view as V  # noqa: E402
 import club_wallet as W  # noqa: E402
 import edit_club_card as E  # noqa: E402

@@ -13,7 +13,7 @@ import time
 import zipfile
 
 KIT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(KIT, "scripts"))
+sys.path.insert(0, os.path.join(KIT, "code"))
 import send_logs as S  # noqa: E402
 
 results = []
@@ -26,7 +26,7 @@ def check(name, ok, detail=""):
 
 def inbox(port, folder, log, **env):
     e = dict(os.environ, WCCF_INBOX_PORT=str(port), **{k: str(v) for k, v in env.items()})
-    p = subprocess.Popen([sys.executable, "-B", os.path.join(KIT, "scripts", "_log_inbox.py"), "60", log, folder], env=e,
+    p = subprocess.Popen([sys.executable, "-B", os.path.join(KIT, "code", "_log_inbox.py"), "60", log, folder], env=e,
                          stdout=subprocess.DEVNULL)
     end = time.time() + 10
     while time.time() < end:

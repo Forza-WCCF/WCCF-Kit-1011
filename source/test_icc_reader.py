@@ -11,7 +11,7 @@ import tempfile
 import time
 
 KIT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(KIT, "scripts"))
+sys.path.insert(0, os.path.join(KIT, "code"))
 import _icc_reader as R  # noqa: E402
 
 fails = []

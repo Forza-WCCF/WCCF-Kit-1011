@@ -124,7 +124,7 @@ def pad_label(code):
 
 
 def keys_path():
-    """keys.txt: WCCF_KEYS if set; in the kit, data\\keys.txt beside scripts\\ (the overlay finds the same file from
+    """keys.txt: WCCF_KEYS if set; in the kit, data\\keys.txt beside code\\ (the overlay finds the same file from
     overlay\\); otherwise beside this script"""
     env = os.environ.get("WCCF_KEYS")
     if env:

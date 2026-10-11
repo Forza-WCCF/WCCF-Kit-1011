@@ -104,7 +104,7 @@ Status: [ ] not started  [~] in progress  [x] done (PR #)
 - [ ] paths.py, files.py, procs.py, settings.py - the shared foundation; switch call sites one by one
 - [ ] card\ modules; merge the duplicate readers/savers (D1, D2); parity test for the C decoder (D4)
 - [ ] run\, standins\, online\, server\, setup\ - move and merge
-- [ ] data\ split (own / run / cache); runtime files out of scripts\ and seat1\ (F3)
+- [ ] data\ split (own / run / cache); runtime files out of code\ and seat1\ (F3)
 - [ ] assets\, bin\ consolidation; the HANDOFF.md in every folder
 - [ ] split wccfpanel.c
 - [ ] the missing tests (audit G): the card reader, the session rule, the lease, the relay, keys parity

@@ -62,7 +62,7 @@ def desk(tmp, port, hold_text, fw):
         with open(os.path.join(tmp, "data", "hold_projector.txt"), "w", encoding="ascii") as f:
             f.write(hold_text)
     env = dict(os.environ, WCCF_BROKER_PORT=str(port), WCCF_HOLD_FW=fw)
-    p = subprocess.Popen([sys.executable, "-B", os.path.join(KIT, "scripts", "_seat_broker.py"), "60",
+    p = subprocess.Popen([sys.executable, "-B", os.path.join(KIT, "code", "_seat_broker.py"), "60",
                           os.path.join(logs, "seat_broker.txt")], env=env, stdout=subprocess.DEVNULL)
     wait_for(lambda: os.path.exists(os.path.join(logs, "seat_broker.txt")), 5)
     time.sleep(0.5)

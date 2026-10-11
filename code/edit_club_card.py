@@ -2,8 +2,8 @@
 r"""edit_club_card.py - change the data on the club card (the kit's card file: a 16-byte header + 256 blocks of
 16 bytes, normally data\save\seat1_club.bin).
 
-    python scripts\edit_club_card.py CARD.bin --set FIELD=VALUE [--set FIELD=VALUE ...] [--write] [--force]
-    python scripts\edit_club_card.py --self-test
+    python code\edit_club_card.py CARD.bin --set FIELD=VALUE [--set FIELD=VALUE ...] [--write] [--force]
+    python code\edit_club_card.py --self-test
 
 Fields are addressed as GROUP.FIELD - Club.CLUB_GET_PRIZE, Coach.COACH_LAST_TERM, Coach.COACH_NAME,
 UserInfo.USER_INJUSTICE_NUM - or, for the repeated groups, Player0.FIELD ... Player15.FIELD and
@@ -12,7 +12,7 @@ A text field (club and manager names) takes the text; SYSTEM_COACH_ID takes hex;
 a comma-separated list of exactly the field's length.  Numbers are decimal, or hex with 0x.
 
 The field table is the one decode_club_card.py reads out of client_Release.exe, so list names, lengths and
-limits with:   python scripts\decode_club_card.py CARD.bin --all --defaults
+limits with:   python code\decode_club_card.py CARD.bin --all --defaults
 
 Nothing is written without --write.  The changed card is checked with the game's own acceptance rules before
 it is put in place, the old card is kept in backup\ beside it, and the file is replaced in one step (a crash
