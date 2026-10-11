@@ -81,7 +81,7 @@ Status: [ ] not started  [~] in progress  [x] done (PR #)
 - [~] A6  the relay now rejects a seat claim from a different address while the owner is live (`claim`, `source\test_relay.py`, 10 checks) - stops internet hijacking of a live match. THE FULL desk-issued token (also covers the pre-match race and two-behind-one-router) is deferred to the online\ rebuild: it needs the desk, the lease, the overlay (C) and a coordinated client update
 - [ ] A7  one "is a session open" rule, incl. the transfer card, used by the panel too
 - [ ] A8  no default key for SW1/SW2 (the card-overwrite switch)
-- [ ] A9  a log folder that cannot be moved starts a fresh-named one instead of failing
+- [x] A9  log rotation never stops a start: a busy `previous` is set aside with a timestamp, a busy current log is left in place (`rotate_logs`). `source\test_rotate_logs.py` (4 checks)
 - [ ] A10 the smaller lock-outs (catalogue-missing start, 17th club, SEND LOGS address, UPDATE SHA check, hold-file)
 
 ### Phase 2 - cheap antivirus wins (small, mostly conflict-free)

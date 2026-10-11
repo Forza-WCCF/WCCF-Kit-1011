@@ -7,6 +7,9 @@ game is not included. Newest first; each date is the day that kit was built.
 ## Unreleased
 
 ### Fixed
+- The game no longer fails to start because a log file is open. If something is holding a file in the logs folder
+  (an antivirus, or you viewing a log), the kit sets that folder aside and starts anyway, instead of failing every
+  time until the file is released. (`source\test_rotate_logs.py`.)
 - Online: your live match can no longer be hijacked. The match relay now treats a seat as belonging to the address
   that holds it, so a stranger sending "I am seat n" from somewhere else is ignored while you are playing. Before,
   anyone could redirect another player's match to themselves and drop them to a CPU game. (`source\test_relay.py`.)

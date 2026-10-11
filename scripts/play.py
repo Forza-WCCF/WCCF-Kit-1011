@@ -305,6 +305,9 @@ def archive_run(folder, archive, limit=ARCHIVE_LIMIT):
 
 
 def rotate_logs():
+    """Keep last run's logs in data\\logs\\previous and this run's fresh. Log housekeeping must NEVER stop a start, so
+    every step that can fail on a file another program is holding (an antivirus, a tail, the user viewing it) is
+    caught: a stuck 'previous' is set aside with a timestamp, a stuck current log is left where it is (A9)."""
     os.makedirs(K.LOGS, exist_ok=True)
     prev = os.path.join(K.LOGS, "previous")
     if os.path.isdir(prev):
@@ -312,12 +315,27 @@ def rotate_logs():
             archive_run(prev, os.path.join(K.LOGS, "archive"))
         except (OSError, zipfile.BadZipFile) as ex:     # never a reason not to start: the old run's logs just go
             say("  logs: the run before last not archived (%s)" % ex)
-        shutil.rmtree(prev)
-    names = [n for n in os.listdir(K.LOGS) if n not in ("previous", "archive")]
-    if names:
-        os.makedirs(prev)
-        for n in names:
-            shutil.move(os.path.join(K.LOGS, n), os.path.join(prev, n))
+        try:
+            shutil.rmtree(prev)
+        except OSError as ex:                           # a file in it is held open: set it aside so a fresh one can be made
+            aside = prev + time.strftime("-%Y%m%d-%H%M%S")
+            try:
+                os.rename(prev, aside)
+                say("  logs: last run's folder was busy (%s) - set aside as %s" % (ex, os.path.basename(aside)))
+            except OSError:
+                say("  logs: last run's folder is busy (%s) - starting without rotating this run's logs" % ex)
+                return
+    try:
+        names = [n for n in os.listdir(K.LOGS) if not n.startswith("previous") and n != "archive"]
+        if names:
+            os.makedirs(prev, exist_ok=True)
+            for n in names:
+                try:
+                    shutil.move(os.path.join(K.LOGS, n), os.path.join(prev, n))
+                except OSError:
+                    pass                                # a current log held open: leave it, the start goes on
+    except OSError as ex:
+        say("  logs: could not rotate this run's logs (%s) - starting anyway" % ex)
     os.makedirs(os.path.join(K.LOGS, "hook"), exist_ok=True)
 
 
