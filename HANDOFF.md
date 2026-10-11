@@ -18,7 +18,7 @@ files ship.** SETUP builds whatever it needs from the player's own copy of the g
 | `programs\` | the compiled programs: the in-game hook (`wccfk.dll`), the panel (`wccfpanel.dll`) and the card-table helper (`FPR_Emu.exe`) |
 | `art\` | the panel's picture (`skin.tex`) |
 | `data\cache\` | the catalogue + card pictures SETUP makes from the player's own game (made again if deleted) |
-| `english\` | the English translation tables (text + fingerprints of Sega's files; no Sega file) |
+| `languages\` | one folder per language - `languages\english\`: the English translation tables (text + fingerprints of Sega's files; no Sega file) |
 | `python\` | an embedded Python so players install nothing |
 | `code\` | the kit's Python: launching, hardware stand-ins, the card toolset, online, the server, setup |
 | `source\` | the source of every compiled program, the build/check/package scripts, and the tests |

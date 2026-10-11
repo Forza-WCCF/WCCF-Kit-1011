@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 r"""english.py - WCCF 2010-11 in English.  Built on this PC from YOUR game files, every line checked, then swapped in
-with Sega's files kept; "off" puts Sega's back.  Nothing of Sega's ships with the kit: english\ holds only English
+with Sega's files kept; "off" puts Sega's back.  Nothing of Sega's ships with the kit: languages\english\ holds only English
 text and fingerprints (SHA-256) of Sega's files.
 
     python english.py on       (SETUP.exe: ENGLISH)   build, check, then put the English files in place
@@ -20,8 +20,8 @@ switch stopped half way (a crash, a kill, a full disk) leaves every file in plac
 never a missing one: a missing exe would keep the game from starting (2026-10-06).  Kept in Japanese on purpose: country and prefecture names (the
 game finds its weather table by them; English ones crashed the server) and the network-ranking areas.  Pictures with
 writing in them are not changed.
-Where the English comes from: english\screen_text.tsv (this kit's translation), Sega's own English that the game files
-already hold (a second language column), and english\sega_rstring.tsv (lines from Sega's European English of the
+Where the English comes from: languages\english\screen_text.tsv (this kit's translation), Sega's own English that the game files
+already hold (a second language column), and languages\english\sega_rstring.tsv (lines from Sega's European English of the
 older WCCF, matched by identical Japanese).
 Exit 0 done; 1 refused or a check failed (nothing changed); 2 no game set up (run SETUP.exe first).
 """
@@ -38,7 +38,7 @@ import unicodedata
 import kit_common as K
 import patch_hook_import as H
 
-ENG = os.path.join(K.KIT, "english")
+ENG = os.path.join(K.LANGUAGES, "english")
 BACK = os.path.join(K.DATA, "english_backup")
 MANIFEST = os.path.join(BACK, "manifest.json")
 BIN, HF = os.path.join("data", "string", "string_list.bin"), os.path.join("data", "string", "string_list.hf")

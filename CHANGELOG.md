@@ -8,7 +8,7 @@ game is not included. Newest first; each date is the day that kit was built.
 
 ### Changed
 - Simpler folders. The kit's Python is in `code\` (was `scripts\`); every program, the panel included, is in
-  `programs\` (was `bin\` and `overlay\`); the panel's picture is in `art\`; the catalogue and card pictures SETUP
+  `programs\` (was `bin\` and `overlay\`); the panel's picture is in `art\`; the English tables are in `languages\english\` (one folder per language); the catalogue and card pictures SETUP
   makes from your game are in `data\cache\`. Updating from an older kit and pressing set up moves your catalogue and
   card pictures over (no waiting for them to be made again) and removes the old kit's leftover files and folders -
   anything of yours in those folders stays.

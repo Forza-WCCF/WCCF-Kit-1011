@@ -17,7 +17,7 @@ What it changes, and nothing else on the PC:
                   misc\FlatPanelReader_Emulator\exe\FPR_Emu.exe   the card-table helper the game starts
   in the kit      data\cache\catalogue.tsv, data\cache\cards\   the catalogue and card pictures, made from YOUR files
                   data\   settings, your club card (data\save), logs
-                  an older kit's scripts\, bin\ and overlay\ (before kit 6): its own files removed, its catalogue and
+                  an older kit's scripts\, english\, bin\ and overlay\ (before kit 6): its own files removed, its catalogue and
                   card pictures moved to data\cache\ (tidy_old_layout)
 Exit: 0 done; 1 a step failed (the message says which); 2 no usable game folder.
 """
@@ -331,10 +331,12 @@ def setup_seat(game):
 
 
 # the folders a kit before 6 used (the 2026-10-11 folder move): code\ was scripts\, programs\ was bin\, art\ and
-# data\cache\ were overlay\.  An update removes the old kit's files but not their folders, and never the catalogue
-# and card pictures setup made; a kit unzipped by hand over an old one keeps all of it.  Only the old kit's own files
-# go; anything else stays, and so does its folder.  None = the old copies of what is in code\ now.
-OLD_LAYOUT = {"scripts": None, "bin": ("winmm.dll", "winmm_orig.dll", "wccfk.dll", "FPR_Emu.exe", "logowin.exe"),
+# data\cache\ were overlay\, languages\english\ was english\.  An update removes the old kit's files but not their
+# folders, and never the catalogue and card pictures setup made; a kit unzipped by hand over an old one keeps all of
+# it.  Only the old kit's own files go; anything else stays, and so does its folder.  A folder name (a str) = the old
+# copies of the files that folder of this kit holds now; a tuple = those files by name.
+OLD_LAYOUT = {"scripts": "code", "english": os.path.join("languages", "english"),
+              "bin": ("winmm.dll", "winmm_orig.dll", "wccfk.dll", "FPR_Emu.exe", "logowin.exe"),
               "overlay": ("wccfpanel.dll", "skin.tex", "inject.exe")}
 # what an older kit wrote beside its scripts while it ran: the key driver's and I/O board's files, server debug logs
 OLD_RUNTIME = re.compile(r"^(_jvs_seat1_\w+|_dbg_\w+|keys_crash)\.txt$", re.I)
@@ -361,8 +363,9 @@ def tidy_old_layout():
         d = os.path.join(K.KIT, folder)
         if not os.path.isdir(d):
             continue
-        if files is None:
-            files = [n for n in os.listdir(d) if os.path.isfile(os.path.join(K.SCRIPTS, n)) or OLD_RUNTIME.match(n)]
+        if isinstance(files, str):
+            now = os.path.join(K.KIT, files)
+            files = [n for n in os.listdir(d) if os.path.isfile(os.path.join(now, n)) or OLD_RUNTIME.match(n)]
             shutil.rmtree(os.path.join(d, "__pycache__"), ignore_errors=True)
         for n in files:
             try:
@@ -373,8 +376,8 @@ def tidy_old_layout():
                 note("%s\\%s (an older kit's) could not be removed: %s" % (folder, n, ex))
         try:
             os.rmdir(d)
-            ok("the older kit's %s\\ folder removed (its files are in code\\, programs\\, art\\ and data\\cache\\ now)"
-               % folder)
+            ok("the older kit's %s\\ folder removed (this kit keeps those files in code\\, programs\\, art\\, "
+               "languages\\ and data\\cache\\)" % folder)
         except OSError:
             note("%s\\ is from an older kit and still holds files that are not the kit's - left as it is" % folder)
 
