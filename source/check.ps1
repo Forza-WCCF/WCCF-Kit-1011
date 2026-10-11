@@ -60,6 +60,9 @@ if ($LASTEXITCODE) { $failed += 'log rotation never stops a start when a log fil
 & $py -I (Join-Path $PSScriptRoot 'test_setup_state.py') | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'a missing card catalogue does not stop a start' }
 
+& $py -I (Join-Path $PSScriptRoot 'test_patch_hook_import.py')
+if ($LASTEXITCODE) { $failed += 'the hook-import patcher: winmm -> wccfk, valid checksum, reversible' }
+
 & $py -I (Join-Path $PSScriptRoot 'test_log_archive.py')
 if ($LASTEXITCODE) { $failed += 'logs: the run before last zipped, the archive kept to its size' }
 

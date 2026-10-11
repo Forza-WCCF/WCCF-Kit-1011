@@ -15,6 +15,16 @@ by their audit tags (A1, B3, D10 ...).
 - **One thing at a time, each its own small PR/commit, tests passing before the next** (bunyan marsus).
 - **Every behaviour is kept** unless it is dead code (audit section E) - the move merges duplicates, it does not
   drop features.
+- **A 9-year-old must be able to figure it out** (Ali, 2026-10-11: "i want the organization to be so simple a 9
+  year old can figure it out naming wise, and structure wise"). Plain-English folder and file names, no jargon;
+  the structure obvious at a glance. Applies to the folder move (Phase 3). Draft plain names (Ali reviews before
+  the move):
+  - `programs\` (the compiled helpers - was `bin\`), `art\` (skin + English words - was `assets\`), `python\`,
+    `code\` (the kit's Python, one job per file - was `kit\`), `data\` (your club cards, keys, settings, logs - kept;
+    everyone knows "data"). Inside `code\`: plain names like `paths.py files.py settings.py running.py` (what is
+    running - was `procs`), `cards\ game\ online\ server\ setup\ hardware\` (the cabinet stand-ins - was `standins`).
+  - The hook DLL is `wccfk.dll` for now (must be <= 9 chars to rename in place, and not a Windows name); a clearer
+    name is open for Ali.
 - **Each folder gets a `HANDOFF.md`** (Ali's ask): what the folder is, one line per file, what depends on it, what
   is fragile. Root `HANDOFF.md` is the kit's front door for a developer. (Open question for Ali: whether the
   HANDOFF files ship in the player ZIP or are kept out by `.gitattributes` like `docs\`. Default: keep them in the
@@ -88,7 +98,7 @@ Status: [ ] not started  [~] in progress  [x] done (PR #)
 - [ ] B2e remove the screenshot-to-disk dumps; B9 remove the dead tasklist; B2a trampoline execute-only; B11 add the two flagged names to LEGACY
 - [ ] B1g version info in winmm.dll / wccfpanel.dll / FPR_Emu.exe (build.ps1 + package.ps1 check) - may already be in flight
 - [ ] B3  run cabinets and the projector without the debugger; keep it for control only
-- [ ] B(4) stop impersonating winmm: ship the hook as wccfk.dll, patch the import in the game exes (DESIGN at `.work\research\mxrename\DESIGN.md`, mechanism already proven)
+- [~] B(4) stop impersonating winmm: ship the hook as wccfk.dll, patch the import in the game exes (DESIGN at `.work\research\mxrename\DESIGN.md`). DONE: `scripts\patch_hook_import.py` (rename import + recompute PE checksum, reversible) + `source\test_patch_hook_import.py` (11, synthetic PE) + proven on all 3 real Sega exes (`.work\research\mxrename\prove_on_real_exes.py`). LEFT: ship the DLL as wccfk.dll (3 forwarders to real winmm, drop winmm_orig) in build.ps1; setup.py patches the game exes + places wccfk.dll; play.py ensure_hook -> wccfk.dll
 
 ### Phase 3 - the physical move
 - [ ] paths.py, files.py, procs.py, settings.py - the shared foundation; switch call sites one by one
