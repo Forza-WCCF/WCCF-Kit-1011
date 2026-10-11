@@ -15,7 +15,7 @@ second, so the game's bursts of saves are not read half way.  A view that cannot
 stops the helper: RESTART NOW does not depend on it.
 
 SEND LOGS (the SETTINGS panel, 2026-10-09): the panel writes data\sendlogs.request with the server's address; this
-helper takes it away, packs and sends the logs (send_logs.py) in a thread of its own, and writes data\sendlogs.result
+helper takes it away, packs and sends the logs (online\send_logs.py) in a thread of its own, and writes data\sendlogs.result
 for the panel: "sending", then "ok CODE" or "fail WHY".  An old request at the start is removed, never sent.
 
 THE STARTING VOLUMES (2026-10-06): sound_defaults.py - the projector muted, seat 1 very low - set once for each, as
@@ -87,7 +87,7 @@ class ClubView:
 
 
 class SendLogs:
-    """SEND LOGS: data\\sendlogs.request (the address) -> send_logs.py in a thread -> data\\sendlogs.result"""
+    """SEND LOGS: data\\sendlogs.request (the address) -> online\\send_logs.py in a thread -> data\\sendlogs.result"""
 
     def __init__(self, data):
         self.req, self.res = os.path.join(data, "sendlogs.request"), os.path.join(data, "sendlogs.result")
@@ -109,7 +109,7 @@ class SendLogs:
 
     def run(self, address):
         try:
-            import send_logs
+            from online import send_logs
             blob, n = send_logs.pack(self.kit)
             ok, what = send_logs.send(address, blob, send_logs.version(self.kit))
             say("SEND LOGS to %s: %d files, %d KB - %s" % (address, n, len(blob) // 1024,

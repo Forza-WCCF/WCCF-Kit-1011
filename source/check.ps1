@@ -28,9 +28,9 @@ if ($LASTEXITCODE) { $failed += 'code compile' }
 
 # the launchers run python\python.exe code\<script>: the kit's modules are found ONLY through python\python313._pth
 # (2026-10-11: scripts\ was renamed to code\ but the _pth still said ..\scripts - every test here adds code\ to the
-# path itself, so they all passed while a real PLAY.exe could not import kit_common)
-& $py -I -c "import os, kit_common, play, setup, english, club_wallet; d = os.path.basename(os.path.dirname(kit_common.__file__)); assert d == 'code', d; print('imports: found in code\\ through python313._pth')"
-if ($LASTEXITCODE) { $failed += 'the kit''s modules import through python313._pth (code\), as the launchers run them' }
+# path itself, so they all passed while a real PLAY.exe could not import kit_common).  Every file, every folder.
+& $py -I (Join-Path $PSScriptRoot 'test_imports.py') | Select-Object -Last 1
+if ($LASTEXITCODE) { $failed += 'every file in code\ imports through python313._pth, as the launchers run them' }
 
 # the key driver's live file is where play.py's stop guard reads the card state, and the I/O board's outputs file is
 # beside it (_jvs_board.py derives it): if they ever disagree, the stop guard reads "card out" with a card in

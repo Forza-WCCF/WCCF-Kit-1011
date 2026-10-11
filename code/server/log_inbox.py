@@ -5,7 +5,7 @@ their logs from their own game").  play.py server starts it beside the seat desk
 
     python code\server\log_inbox.py LIFE_SECONDS LOG_FILE [FOLDER]
 
-TCP port 20050 (WCCF_INBOX_PORT for the tests).  One upload per connection, from send_logs.py:
+TCP port 20050 (WCCF_INBOX_PORT for the tests).  One upload per connection, from online\send_logs.py:
     PC -> "WCCFLOGS1 SIZE VERSION\n" then SIZE bytes (a ZIP)
     inbox -> "OK CODE\n"   (a short code the player tells us, e.g. K7Q2M)   or   "NO reason\n"
 Kept as FOLDER\DATE_TIME_CODE_ADDRESS_VERSION.zip (FOLDER: data\player_logs beside LOG_FILE's folder).  An open port

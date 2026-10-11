@@ -502,12 +502,12 @@ def _seat_decision(got, seat_no, ip):
 
 def take_seat(ip, seat_no, env, roles):
     """remote mode (2026-10-06): this PC's seat on the server at ip, from the server's seat desk (server\\seat_desk.py,
-    TCP 20030) through _seat_lease.py, which keeps holding it while the game runs; seat_no None = the next free seat.
+    TCP 20030) through online\\seat.py, which keeps holding it while the game runs; seat_no None = the next free seat.
     Returns (seat, projector?).  See _seat_decision for what each answer means."""
     out = os.path.join(K.DATA, "seat_lease.json")
     if os.path.exists(out):
         os.remove(out)
-    p = start("_seat_lease.py", [ip, out, LIFE] + ([] if seat_no is None else [seat_no]), "run_seat_lease.txt", env)
+    p = start(os.path.join("online", "seat.py"), [ip, out, LIFE] + ([] if seat_no is None else [seat_no]), "run_seat_lease.txt", env)
     roles[p.pid] = "seat lease"                       # tracked AT ONCE, so a stop always cleans it up - even a lease
                                                       # that is slow to answer never keeps a seat untracked (A4)
     end = time.time() + 25                            # longer than the lease's worst case (6 s connect + 10 s answer)

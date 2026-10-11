@@ -2,7 +2,7 @@
 r"""send_logs.py - SEND LOGS (the SETTINGS panel, 2026-10-09): this kit's logs in one ZIP, sent to a server's log
 inbox (server\log_inbox.py, TCP 20050), so the people who run the server can see what went wrong on this PC.  The panel
 asks _kit_helper.py, which calls pack() and send(); by hand:
-    python send_logs.py ADDRESS
+    python code\online\send_logs.py ADDRESS
 
 In the ZIP: data\logs (this run and the one before - not the zipped archive), the panel's logs (seat1\wccfpanel.log,
 data\logs\wccfpanel_projector.log), data\panel.txt, data\keys.txt, data\running.json and version.txt - each its last
@@ -16,7 +16,9 @@ import socket
 import sys
 import zipfile
 
-KIT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+import kit_common as K
+
+KIT = K.KIT
 PORT = int(os.environ.get("WCCF_INBOX_PORT", "20050"))
 TAIL = 2 * 1024 * 1024
 LIMIT = 7 * 1024 * 1024                    # the inbox takes 8 MB: a bigger ZIP is made again with shorter tails

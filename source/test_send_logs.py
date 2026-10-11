@@ -14,7 +14,7 @@ import zipfile
 
 KIT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(KIT, "code"))
-import send_logs as S  # noqa: E402
+from online import send_logs as S  # noqa: E402
 
 results = []
 
