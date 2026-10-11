@@ -66,20 +66,15 @@ Or in the game: SETTINGS > NEXT START > **ONLINE**, type the server's address, t
 
 ```mermaid
 flowchart LR
+  p1["Player PC 1<br/>cabinet + panel"] --> host
+  p2["Player PC 2<br/>cabinet + panel"] --> host
   subgraph host["Host PC: PLAY.exe server"]
-    control["Sega's server<br/>and its 4 match engines<br/>TCP 20002"]
-    desk["Seat desk<br/>TCP 20030"]
-    relay["Match relay<br/>UDP 20040"]
-    inbox["Log inbox<br/>TCP 20050"]
+    direction TB
+    control["Sega's server and its 4 match engines · TCP 20002"]
+    desk["Seat desk: who sits where · TCP 20030"]
+    relay["Match relay: player against player · UDP 20040"]
+    inbox["Log inbox: SEND LOGS and reports · TCP 20050"]
   end
-  p1["Player PC 1<br/>cabinet + panel"] --> control
-  p2["Player PC 2<br/>cabinet + panel"] --> control
-  p1 -. "a seat" .-> desk
-  p2 -. "a seat" .-> desk
-  p1 <-- "matches" --> relay
-  p2 <-- "matches" --> relay
-  p1 -. "logs" .-> inbox
-  p2 -. "logs" .-> inbox
 ```
 
 ## When something goes wrong
