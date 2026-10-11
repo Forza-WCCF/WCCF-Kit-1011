@@ -11,7 +11,8 @@ game is not included. Newest first; each date is the day that kit was built.
   `programs\` (was `bin\` and `overlay\`); the panel's picture is in `art\`; the English tables are in `languages\english\` (one folder per language); the catalogue and card pictures SETUP
   makes from your game are in `data\cache\`. Updating from an older kit and pressing set up moves your catalogue and
   card pictures over (no waiting for them to be made again) and removes the old kit's leftover files and folders -
-  anything of yours in those folders stays.
+  anything of yours in those folders stays. Inside `code\`, the kit's Python is in plain folders with plain names:
+  `cards\`, `hardware\`, `online\`, `server\`, `helpers\` (`_keys_seat1.py` is now `hardware\keyboard.py`, and so on).
 - Updating from an older kit by unzipping it by hand (or saying no to "set up now?") is fine: the first PLAY sets
   the game up for the new helper by itself, as SETUP would, instead of starting the old one Windows Defender deletes.
 - The kit's helper no longer gets deleted by antivirus. It used to sit beside the game pretending to be a Windows

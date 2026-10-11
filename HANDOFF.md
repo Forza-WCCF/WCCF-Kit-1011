@@ -20,7 +20,7 @@ files ship.** SETUP builds whatever it needs from the player's own copy of the g
 | `data\cache\` | the catalogue + card pictures SETUP makes from the player's own game (made again if deleted) |
 | `languages\` | one folder per language - `languages\english\`: the English translation tables (text + fingerprints of Sega's files; no Sega file) |
 | `python\` | an embedded Python so players install nothing |
-| `code\` | the kit's Python: launching, hardware stand-ins, the card toolset, online, the server, setup |
+| `code\` | the kit's Python. At the top, the four a person runs or everything shares: `play.py` (start/stop), `setup.py`, `english.py`, `kit_common.py`. Then `cards\` (club cards, the catalogue), `hardware\` (the cabinet's parts, faked on a PC), `online\` (joining a server), `server\` (running one for others), `helpers\` (the panel's helper, sound, the hook's name in the game) |
 | `source\` | the source of every compiled program, the build/check/package scripts, and the tests |
 | `data\` | the player's own: settings, keys, the club card and other clubs, logs, runtime state |
 
