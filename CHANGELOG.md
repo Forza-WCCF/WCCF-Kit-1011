@@ -7,6 +7,13 @@ game is not included. Newest first; each date is the day that kit was built.
 ## Unreleased
 
 ### Changed
+- Online: no PC gets the projector any more. The first player to join used to run it as a second window; now every
+  PC runs only its own cabinet. The seat desk always answers `PROJECTOR 0` (kit 5's PCs follow that too), and
+  `PLAY.exe server` sets the server's `WAIT_PROJECTOR=0` - with 1 it would never start a round with no projector
+  connected. A projector box that joins by itself still works; it catches up at the next round. `PLAY.exe local`
+  keeps its own projector.
+- A start compares the game's copy of the hook (wccfk.dll, in the game and in seat1\) with the kit's own and sets
+  the game up once if they differ - a newer kit unzipped over this one by hand no longer starts the old hook.
 - Hosting a server: the server program now gets the players' messages only whole. Over the internet a message can
   arrive in pieces, and Sega's code for putting pieces back together is broken - the most likely cause of the server
   crash that cuts every player ("WCCF CONTROL NOT FOUND", Error 3000). The kit's hook (wccfk.dll) now holds the

@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
 r"""seat_desk.py - hands out cabinet seats on the PC (or cloud machine) that runs the server (2026-10-06): every PC
-that plays on this server asks it for a seat before starting its cabinet and gets the lowest free one, 1-8 - and the
-projector (seat 0) when no other PC has it - so nobody types a seat number (two PCs on one seat break the game).
+that plays on this server asks it for a seat before starting its cabinet and gets the lowest free one, 1-8, so nobody
+types a seat number (two PCs on one seat break the game).  It never gives out the projector (seat 0, 2026-10-11 - the
+owner: players on the server get only their own game): a PC that joins runs its cabinet and nothing else, and the
+server does not wait for a projector (play.py server, WAIT_PROJECTOR=0).  A projector box joins as seat 0 by itself.
 A seat stays taken while that PC's online\seat.py keeps its connection, pinging every 20 s; a PC that stops,
 crashes or goes away frees its seat: its connection closes, or it stays silent for 75 s.
 
     python code\server\seat_desk.py LIFE_SECONDS [LOG_FILE]        (play.py server starts it)
 
 TCP port 20030 (WCCF_BROKER_PORT for the tests).  Lines, ASCII, one per message:
-    PC -> "WANT"                broker -> "SEAT n PROJECTOR 1|0"   the lowest free seat; 1 = this PC shows the projector
+    PC -> "WANT"                broker -> "SEAT n PROJECTOR 0"     the lowest free seat (PROJECTOR is always 0 now;
+                                                                   kit 5's PCs ran a projector on 1)
     PC -> "WANT SEAT n"         broker -> the same for seat n, or "TAKEN n"
                                 broker -> "FULL" (8 cabinets) / "ERR ..." (anything else) - then it closes
     PC -> "PING"                broker -> "PONG"                   while it runs
@@ -19,8 +22,8 @@ lease for it - after a server restart a cabinet rejoins the game by itself on it
 with the old desk, and that night the desk gave seat 3 to a second PC: it was never let in (4 tries in 12 minutes).
 Who is on which seat comes from control's debug log (_dbg_control.txt beside this desk's log, written line by line):
 "sateID=n" then "++ACCEPT++ 'address'" = a cabinet on seat n, "---DISCONNECT--- sateID=n" = gone; sateID 0 is the
-projector. The same address may take its seat back (WANT SEAT n), and the projector's role is not given out while
-another address shows the projector. Two PCs behind one router share an address: the desk cannot tell them apart.
+projector. The same address may take its seat back (WANT SEAT n). Two PCs behind one router share an address: the
+desk cannot tell them apart.
 
 THE PROJECTOR BOX ON HOLD (2026-10-09): a machine that only shows the projector (a stream box) is kept out of the game
 until a player is in it.  On the shared server every run whose FIRST client was that box took (almost) no player in
@@ -48,7 +51,6 @@ GONE = re.compile(r"---DISCONNECT---\s*sateID=(\d+)")
 
 lock = threading.Lock()
 leases = {}                     # seat -> (peer, lease id)
-projector = None                # the seat whose PC shows the projector
 next_id = 0
 log_file = None
 
@@ -78,7 +80,7 @@ def read_line(conn, buf):
 
 
 def taken():
-    return ", ".join("%d%s" % (s, " (projector)" if s == projector else "") for s in sorted(leases)) or "none"
+    return ", ".join(str(s) for s in sorted(leases)) or "none"
 
 
 class InGame:
@@ -190,7 +192,7 @@ def hold_loop(end):
 
 
 def serve(conn, peer):
-    global projector, next_id
+    global next_id
     seat, lid, buf = None, None, [b""]
     conn.settimeout(SILENT)
     try:
@@ -226,11 +228,8 @@ def serve(conn, peer):
             next_id += 1
             lid = next_id
             leases[seat] = (peer, lid)
-            show = projector is None and 0 not in others            # nobody else shows the projector in the game
-            if show:
-                projector = seat
-            conn.sendall(b"SEAT %d PROJECTOR %d\n" % (seat, 1 if show else 0))
-            log("%s: seat %d%s - taken now: %s" % (peer, seat, " + the projector" if show else "", taken()))
+            conn.sendall(b"SEAT %d PROJECTOR 0\n" % seat)
+            log("%s: seat %d - taken now: %s" % (peer, seat, taken()))
         while True:
             if read_line(conn, buf) == "PING":
                 conn.sendall(b"PONG\n")
@@ -240,8 +239,6 @@ def serve(conn, peer):
         with lock:
             if seat is not None and leases.get(seat, (None, None))[1] == lid:
                 del leases[seat]
-                if projector == seat:
-                    projector = None
                 log("%s: seat %d free again - taken now: %s" % (peer, seat, taken()))
         try:
             conn.close()
@@ -263,7 +260,7 @@ def main(argv):
         return 1
     srv.listen(16)
     srv.settimeout(1.0)
-    log("seat broker listening on TCP %d: seats 1-8, the first PC also shows the projector" % PORT)
+    log("seat broker listening on TCP %d: seats 1-8, no projector for the PCs" % PORT)
     end = time.time() + life
     data =os.path.dirname(os.path.dirname(os.path.abspath(log_file))) if log_file else ""
     hold_ip = read_hold_ip(os.environ.get("WCCF_HOLD_FILE") or os.path.join(data, "hold_projector.txt"))

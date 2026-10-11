@@ -11,9 +11,9 @@ player cabinet (seat 1) with the overlay and your keyboard.  PLAY.exe runs it; r
                               it runs up to 32 days
     python play.py remote ADDRESS
                               only the cabinet on this PC, playing on the server at ADDRESS (four numbers with dots -
-                              the game takes no names): the server's seat desk gives this PC the next free seat, and
-                              the projector too if no other PC shows it yet (a server without the desk: seat 1 and the
-                              projector, as before). The address is remembered, so a later "play.py remote" alone uses
+                              the game takes no names): the server's seat desk gives this PC the next free seat - the
+                              cabinet only, no projector (a server without the desk: seat 1 and the projector, as
+                              before). The address is remembered, so a later "play.py remote" alone uses
                               it again. "play.py local" puts this PC back.
     python play.py remote ADDRESS seat N
                               seat N (1-8), if it is free there
@@ -48,6 +48,7 @@ Logs: data\logs\ (the run before: data\logs\previous\; older runs zipped in data
 past ARCHIVE_LIMIT); the key driver's is run_keys.txt.
 Exit: 0 ok, 1 a step failed, 2 not set up, 3 refused.
 """
+import filecmp
 import json
 import os
 import re
@@ -356,10 +357,16 @@ def setup_state():
 def ensure_hook(game, seat):
     """kit 6 loads its hook as wccfk.dll (setup renames the game's import to it).  A game set up by an older kit still
     has the fake winmm.dll Windows Defender deletes - kit 6 unzipped over the old one, or the update's "set up now?"
-    answered no.  Set it up once, as SETUP.exe does, instead of starting the old hook or refusing.  True = ready."""
-    if all(os.path.isfile(os.path.join(d, "wccfk.dll")) for d in (game, seat)):
-        return True
-    say("This kit loads its helper under its own name now - setting the game up for it once (as SETUP.exe does) ...")
+    answered no - and a newer kit unzipped over this one by hand leaves the game the OLD wccfk.dll (setup copies it).
+    Set it up once, as SETUP.exe does, instead of starting the old hook or refusing.  True = ready."""
+    kit = os.path.join(K.PROGRAMS, "wccfk.dll")
+    try:
+        if all(filecmp.cmp(kit, os.path.join(d, "wccfk.dll"), shallow=False) for d in (game, seat)):
+            return True
+    except OSError:                                  # a copy is missing
+        pass
+    say("The game's copy of the kit's helper (wccfk.dll) is missing or not this kit's - setting the game up for it "
+        "once (as SETUP.exe does) ...")
     if subprocess.call([PY, os.path.join(K.SCRIPTS, "setup.py"), game]) == 0:
         return True
     say("Setting the game up did not finish (see above) - open SETUP.exe and press set up.")
@@ -664,12 +671,11 @@ def play(debug, mode="local", ip=None, seat_no=None):
             set_conf_value(confs[1], "WAIT_PROJECTOR", 1)    # the game's own way, with its projector right here
             set_conf_value(ctrl_conf, "WAIT_PROJECTOR", 1)
         else:
-            # a server for others: the game's own way - it waits for the first projector before its first round, so
-            # the projector starts in step (2026-10-06: with 0 the rounds started at once and a projector joining a
-            # minute later sat on "Now Synchronizing" until the next round).  A projector that leaves later is
-            # dropped like any seat and the matches go on (docs\NETWORK-MAP-2010-11.md section 8); the seat desk
-            # gives the projector to the first PC that joins.
-            set_conf_value(ctrl_conf, "WAIT_PROJECTOR", 1)
+            # a server for others: no projector waited for (2026-10-11, the owner: players on the server get only
+            # their own game - the seat desk gives no PC the projector).  With 1 control never starts a round until a
+            # projector connects (docs\NETWORK-MAP-2010-11.md section 8).  A projector box that joins later shows
+            # "Now Synchronizing" until the next round (2026-10-06).
+            set_conf_value(ctrl_conf, "WAIT_PROJECTOR", 0)
         p = start(os.path.join("hardware", "debugger.py"), [life + 60, "control", "follow"] + ([] if debug else ["hide"]), "run_server.txt",
                   env)
         roles[p.pid] = "server launcher"
@@ -684,12 +690,12 @@ def play(debug, mode="local", ip=None, seat_no=None):
         say("  2/%d server: listening on port %d, %d match engines" % (steps, CONTROL_PORT,
                                                                        len(games("match_release.exe"))))
     if mode == "server":
-        # the seat desk (2026-10-06): every player's PC that joins gets the next free seat, the first the projector
+        # the seat desk (2026-10-06): every player's PC that joins gets the next free seat (no projector: 2026-10-11)
         b = start(os.path.join("server", "seat_desk.py"), [life + 60, os.path.join(K.LOGS, "seat_broker.txt")], "run_seat_broker.txt", env)
         time.sleep(1.5)
         if b.poll() is None:
             roles[b.pid] = "seat desk"
-            say("     seat desk: TCP 20030 - each player's PC gets the next free seat, the first also the projector")
+            say("     seat desk: TCP 20030 - each player's PC gets the next free seat (its cabinet only, no projector)")
         else:
             say("     the seat desk did not start (data\\logs\\run_seat_broker.txt) - players then give their seat")
         # the match relay (2026-10-06): a match between two players goes through here - home routers block the direct way
@@ -721,7 +727,7 @@ def play(debug, mode="local", ip=None, seat_no=None):
         roles[p.pid] = "projector launcher"
         say("  3/6 projector (seat 0) - its window opens in a few seconds")
     else:
-        say("  3/6 projector: none on this PC - the server's projector is on the seat 1 PC")
+        say("  3/6 projector: none on this PC - online, each PC runs only its own cabinet")
 
     start_cabinet(debug, env, mode, ip, seat_no, seat, roles)
     # the projector gets the overlay too (2026-10-06), in its money-only mode: its amounts with commas
@@ -1092,8 +1098,8 @@ def main(argv):
             words, seat_no = rest[1:], None
             if len(words) >= 2 and words[-2] == "seat":          # a second player's PC: "remote ADDRESS seat 2"
                 if not (words[-1].isdigit() and 1 <= int(words[-1]) <= 8):
-                    say("Seats are 1 to 8, e.g. PLAY.exe remote 192.168.1.20 seat 2 - seat 1 is the PC that also "
-                        "shows the projector, so every other PC takes its own seat from 2 up.")
+                    say("Seats are 1 to 8, e.g. PLAY.exe remote 192.168.1.20 seat 2 - or leave the seat out and "
+                        "the server gives the next free one.")
                     return 2
                 seat_no, words = int(words[-1]), words[:-2]
             if len(words) > 1:

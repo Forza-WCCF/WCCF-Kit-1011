@@ -4,7 +4,7 @@ play.py starts these when this PC is the server (`play.py server`).
 
 | File | What it does |
 |---|---|
-| `seat_desk.py` | hands out seats to the PCs that join (TCP 20030); the first one also gets the projector |
+| `seat_desk.py` | hands out seats to the PCs that join (TCP 20030); never the projector (players get only their cabinet; the server runs with WAIT_PROJECTOR=0) |
 | `relay.py` | passes match traffic between two players' PCs (UDP 20040) - home routers block the direct way; a live seat belongs to the address that holds it |
 | `log_inbox.py` | keeps the logs players send with SEND LOGS (TCP 20050), in `data\player_logs` |
 

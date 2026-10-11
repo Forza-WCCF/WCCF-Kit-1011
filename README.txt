@@ -24,6 +24,7 @@ NEW IN KIT 6
     and the last Japanese lines a player meets.
   - The kit's version is beside the SETTINGS title too.
   - Simpler folders: code\, programs\, art\, languages\ and data\ (your cards, keys, settings, logs - kept).
+  - Online: your PC runs only your own game - no projector window any more (the first player used to get it).
   - Hosting a server: the server now gets players' messages only whole - the likely cause of "WCCF CONTROL NOT
     FOUND" removed.
   - Updating from 5.x: SETUP's UPDATE, then say yes to "set up now?". Unzipping over the old folder works too: the
@@ -212,7 +213,8 @@ ONLINE (play with others on one server)
   window that started it closes by itself after 30 seconds while the server keeps running ("PLAY.exe stop" ends
   it). That PC must let in TCP ports 20002, 20030 and 20050 and UDP 20040; at home behind a router, forward those
   ports to it. Logs that players send with SEND LOGS are kept there in data\player_logs. Each player: "PLAY.exe remote" and the server's address (e.g. PLAY.exe remote 192.168.1.20), or ONLINE
-  in SETTINGS. The first PC to join also shows the projector. The PC that hosts can play too: "PLAY.exe remote"
+  in SETTINGS. Online, each PC runs only its own cabinet - no projector window; the server does not wait for one
+  (PLAY.exe local still has its own projector). The PC that hosts can play too: "PLAY.exe remote"
   with its own local address (ipconfig shows it).
 
 ENGLISH (optional)

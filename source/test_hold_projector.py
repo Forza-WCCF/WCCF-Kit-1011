@@ -79,8 +79,8 @@ try:
           str(fw_lines(fw)))
     check("HOLD -> HOLD 1", ask(20933, "HOLD") == "HOLD 1")
     a = ask(20933, "WANT SEAT 1")
-    check("the box still gets its seat and the projector (the hold is on the game's port, not the desk's)",
-          a == "SEAT 1 PROJECTOR 1", a)
+    check("seats are still given while the box is held (the hold is on the game's port, not the desk's); no projector",
+          a == "SEAT 1 PROJECTOR 0", a)
 
     with open(game, "w", encoding="utf-8") as f:
         f.write("t+  0.10s DEBUG  start\n" + joined(2, "10.0.0.5"))

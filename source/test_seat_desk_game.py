@@ -48,7 +48,7 @@ try:
     time.sleep(1.0)
     a, s = ask("WANT")
     socks.append(s)
-    check("no game log yet (control not started): seat 1 + the projector, as before", a == "SEAT 1 PROJECTOR 1", a)
+    check("no game log yet (control not started): seat 1, never the projector (2026-10-11)", a == "SEAT 1 PROJECTOR 0", a)
     s.close()
     socks.clear()
     time.sleep(0.3)
@@ -73,7 +73,7 @@ try:
         f.write(left(1) + left(0) + "t+ 99.50s INFO  ClientManage  ClientManage::INIT() : client[0] : sateID=5")
     a, s = ask("WANT")
     socks.append(s)
-    check("seat 1 and the projector left the game: seat 1 + the projector again", a == "SEAT 1 PROJECTOR 1", a)
+    check("seat 1 and the projector left the game: seat 1 again, no projector", a == "SEAT 1 PROJECTOR 0", a)
 
     with open(game, "a", encoding="utf-8") as f:                  # the half line ends; seat 5 joins from elsewhere
         f.write(",version=7128,serial=PC\nt+ 99.60s INFO  ClientManage  ClientManage::INIT() : ++ACCEPT++  '10.0.0.5:4001', 2026/10/9(Fri) 18:43:00\n")
@@ -95,7 +95,7 @@ try:
     b, s2 = ask("WANT")
     socks.append(s2)
     check("a new run's log is read from its start (old seats gone; 2 in the game): seats 1 and 3", (a, b) ==
-          ("SEAT 1 PROJECTOR 1", "SEAT 3 PROJECTOR 0"), "%s / %s" % (a, b))
+          ("SEAT 1 PROJECTOR 0", "SEAT 3 PROJECTOR 0"), "%s / %s" % (a, b))
 
     os.remove(game)
     for x in socks:
@@ -104,7 +104,7 @@ try:
     time.sleep(0.5)
     a, s = ask("WANT")
     socks.append(s)
-    check("the game log gone: nobody in the game, seat 1 + the projector", a == "SEAT 1 PROJECTOR 1", a)
+    check("the game log gone: nobody in the game, seat 1, no projector", a == "SEAT 1 PROJECTOR 0", a)
     with open(deskl, encoding="utf-8") as f:
         text = f.read()
     check("the desk's log says why seats were skipped and refused",

@@ -43,7 +43,7 @@ PLAY.exe remote 192.168.1.20     on each player's PC, with the host's address
 ```
 
 - The host lets in **TCP 20002 and 20030** and **UDP 20040** (at home behind a router: forward them to the host).
-- The first PC to join also shows the **projector**.
+- Each PC runs only its own cabinet: online there is **no projector window** on the players' PCs.
 - The host can play too: `PLAY.exe remote` with its own local address.
 
 ```mermaid

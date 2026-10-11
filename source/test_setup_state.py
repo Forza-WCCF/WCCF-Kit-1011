@@ -50,21 +50,31 @@ try:
     check(play.setup_state() == (None, None), "no game found still stops")
 
     # ensure_hook: a game an older kit set up (no wccfk.dll) is set up once by the start, not refused or started old
+    def put(path, data):
+        with open(path, "wb") as f:
+            f.write(data)
+    K.PROGRAMS = os.path.join(t, "programs")
+    os.makedirs(K.PROGRAMS)
+    put(os.path.join(K.PROGRAMS, "wccfk.dll"), b"this kit's hook")
     calls = []
     play.subprocess.call = lambda args: calls.append(args) or answer[0]
     answer = [0]
-    open(os.path.join(game, "wccfk.dll"), "w").close()
+    put(os.path.join(game, "wccfk.dll"), b"this kit's hook")
     check(play.ensure_hook(game, seat) is True and len(calls) == 1, "no wccfk.dll in seat1\\: setup is run")
     calls.clear()
-    open(os.path.join(seat, "wccfk.dll"), "w").close()
-    check(play.ensure_hook(game, seat) is True and calls == [], "set up for kit 6: no setup run")
+    put(os.path.join(seat, "wccfk.dll"), b"this kit's hook")
+    check(play.ensure_hook(game, seat) is True and calls == [], "set up for this kit: no setup run")
+    put(os.path.join(seat, "wccfk.dll"), b"an older kit's hook")     # a newer kit unzipped over by hand
+    check(play.ensure_hook(game, seat) is True and len(calls) == 1, "an older wccfk.dll in seat1\\: setup is run")
+    calls.clear()
+    put(os.path.join(seat, "wccfk.dll"), b"this kit's hook")
     os.remove(os.path.join(game, "wccfk.dll"))
     check(play.ensure_hook(game, seat) is True and len(calls) == 1 and calls[0][-1] == game
           and calls[0][-2].endswith("setup.py"), "no wccfk.dll: setup.py GAME is run, and the start goes on")
     answer[0] = 1
     check(play.ensure_hook(game, seat) is False, "setup failing: the start stops, saying SETUP.exe")
 
-    n = 8
+    n = 9
     print("setup_state: %d of %d checks passed" % (n - len(fails), n))
 finally:
     import shutil
