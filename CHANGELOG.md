@@ -7,6 +7,9 @@ game is not included. Newest first; each date is the day that kit was built.
 ## Unreleased
 
 ### Fixed
+- The card-overwrite switch (SW1) no longer has a key by default. On Sega's card-recovery screen SW1 means "write
+  the backup over your Club Card", and it used to be the `8` key - one stray press could roll your card back. SW1
+  and SW2 now have no key unless you set one in KEYS.
 - Closing the game during a manager transfer now warns you too. When your contract ends and the game is making your
   new club, closing the window used to close with no warning and cost that new club a bad ending - the warning only
   watched your old card. Now it (and the SETTINGS > RESTART NOW gate) watch both cards.

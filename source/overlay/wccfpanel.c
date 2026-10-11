@@ -2152,8 +2152,8 @@ static struct KAct g_kact[] = {          // left column 0-7 (BUTTONS, CARD + COI
     // ids stay SENSOR2/3 (keys.txt and _keys_seat1.py use them); the bits are Sega's service switches SW1/SW2, not
     // card sensors (2026-10-06, docs\research\CARD-DISPENSER-2010-11.md): on Sega's club-card recovery screen SW1
     // answers "Write the backup data over the Club Card? [SW1] Yes (overwrite)".
-    { "SENSOR2",   "SW1",        "can overwrite card", 0x38, 0x38, -1,    COL_GREY   },
-    { "SENSOR3",   "SW2",        "service: back",    0x39, 0x39, -1,      COL_GREY   },
+    { "SENSOR2",   "SW1",        "overwrites card - set only if needed", 0, 0, -1, COL_GREY   },
+    { "SENSOR3",   "SW2",        "service: back",    0,    0,    -1,      COL_GREY   },
 };
 #define NKACT ((int)(sizeof g_kact / sizeof g_kact[0]))
 static const char *KHEAD[4] = { "BUTTONS", "CARD + COIN", "TACTICS", "OPERATOR" };

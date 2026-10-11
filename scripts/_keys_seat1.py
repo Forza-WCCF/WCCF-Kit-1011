@@ -53,10 +53,11 @@ ACTIONS = [
     ("COIN", 0x35, None, "one coin"),
     ("TEST", 0x70, ("sys", 0, 0x80), "TEST (operator menu)"),
     ("SERVICE", 0x71, ("p1", 0, 0x40), "SERVICE"),
-    ("SENSOR2", 0x38, ("p2", 0, 0x10), "Sega's service switch SW1 (bit 28) - CAREFUL: on Sega's club-card recovery "
-                                       "screen SW1 = 'overwrite the card with the backup'; not needed to play"),
-    ("SENSOR3", 0x39, ("p2", 0, 0x08), "Sega's service switch SW2 (bit 27) - 'back' on Sega's service screens; "
-                                       "not needed to play"),
+    ("SENSOR2", 0, ("p2", 0, 0x10), "Sega's service switch SW1 (bit 28) - NO default key: on Sega's club-card recovery "
+                                    "screen SW1 = 'overwrite the card with the backup', so one stray key could roll "
+                                    "the card back; set a key in KEYS only if you need it (A8)"),
+    ("SENSOR3", 0, ("p2", 0, 0x08), "Sega's service switch SW2 (bit 27) - 'back' on Sega's service screens; NO default "
+                                    "key, set one in KEYS if you need it"),
 ]
 DEFAULTS = {a[0]: a[1] for a in ACTIONS}
 # keys an action may have: letters, digits, the number pad, F1-F9 and F12-F24, arrows and the keys around them,
@@ -591,7 +592,7 @@ def selftest():
     check("B = 2nd player byte 0 0x02", render({0x42}, False, 0).splitlines()[3], "p2=0x02 0x00")
     check("test", render({f1}, False, 0).splitlines()[1], "sys=0x80")
     check("card held", render(set(), True, 0).splitlines()[3], "p2=0x20 0x00")
-    check("card + sensor 2", render({0x38}, True, 0).splitlines()[3], "p2=0x30 0x00")
+    check("card + 8 does nothing: SW1 has no default key (A8)", render({0x38}, True, 0).splitlines()[3], "p2=0x20 0x00")
     card, coin, ev = step({cardk}, set(), False, 0)
     check("card key edge -> in", (card, ev), (True, ["card IN the slot"]))
     card, coin, ev = step({cardk}, {cardk}, card, coin)
@@ -656,7 +657,13 @@ def selftest():
     check("keys: a garbled file -> the defaults, no exception", load_keys(kp)[0], dict(DEFAULTS))
     vks = [vk for vk in load_keys(kp)[0].values() if vk]
     check("keys: the defaults use every key once", len(vks), len(set(vks)))
-    check("keys: no default is forbidden", all(v in ALLOWED_VKS for v in DEFAULTS.values()), True)
+    check("keys: no default is forbidden", all(v in ALLOWED_VKS for v in DEFAULTS.values() if v), True)
+    check("keys: SW1 and SW2 have no default key (A8)", (DEFAULTS["SENSOR2"], DEFAULTS["SENSOR3"]), (0, 0))
+    with open(kp, "w", encoding="ascii") as f:
+        f.write("SENSOR2=0x38\n")                    # a player who wants SW1 can still set a key
+    apply_keys(load_keys(kp)[0])
+    check("keys: SW1 works once a key is set", render({0x38}, True, 0).splitlines()[3], "p2=0x30 0x00")
+    apply_keys(dict(DEFAULTS))                       # back to defaults for the tests below
     try:
         apply_keys(k2)                              # START = Space, SHOOT = V
         check("rebound: Space holds START", render({0x20}, False, 0).splitlines()[2], "p1=0x80 0x00")
