@@ -48,6 +48,9 @@ if ($LASTEXITCODE) { $failed += 'the card reader: a failed save never writes in 
 & $py -I (Join-Path $PSScriptRoot 'test_take_seat.py')
 if ($LASTEXITCODE) { $failed += 'the seat decision: only "no broker" falls back to seat 1; other answers stop' }
 
+& $py -I (Join-Path $PSScriptRoot 'test_seat_lease.py') | Select-Object -Last 1
+if ($LASTEXITCODE) { $failed += 'the seat lease reconnects and re-claims its seat after a break' }
+
 & $py -I (Join-Path $PSScriptRoot 'test_log_archive.py')
 if ($LASTEXITCODE) { $failed += 'logs: the run before last zipped, the archive kept to its size' }
 

@@ -77,7 +77,7 @@ Status: [ ] not started  [~] in progress  [x] done (PR #)
 - [x] A2  card save never writes in place; keeps the newest image in memory and retries (`_flush`, `retry_saves`) + `source\test_icc_reader.py` (14 checks) - the reader's first test
 - [x] A3  no 12-hour kill: player `LIFE` is now a 32-day backstop; a run ends when its window closes (watch.rs). play.py docstring updated
 - [x] A4  seat fallback only on "no broker" (`_seat_decision`, tested); waits 25 s (> the lease's 16 s worst case); the lease pid is tracked at once so a stop always cleans it up. `source\test_take_seat.py` (10 checks)
-- [ ] A5  the seat lease reconnects (WANT SEAT n)
+- [x] A5  the seat lease reconnects and re-claims its seat (WANT SEAT n) after any break; retries through a desk restart. `source\test_seat_lease.py` (4 checks, a fake desk)
 - [ ] A6  the relay ties a seat to a token the desk issued; ignore spoofed "I am seat n"
 - [ ] A7  one "is a session open" rule, incl. the transfer card, used by the panel too
 - [ ] A8  no default key for SW1/SW2 (the card-overwrite switch)
