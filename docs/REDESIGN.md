@@ -79,7 +79,7 @@ Status: [ ] not started  [~] in progress  [x] done (PR #)
 - [x] A4  seat fallback only on "no broker" (`_seat_decision`, tested); waits 25 s (> the lease's 16 s worst case); the lease pid is tracked at once so a stop always cleans it up. `source\test_take_seat.py` (10 checks)
 - [x] A5  the seat lease reconnects and re-claims its seat (WANT SEAT n) after any break; retries through a desk restart. `source\test_seat_lease.py` (4 checks, a fake desk)
 - [~] A6  the relay now rejects a seat claim from a different address while the owner is live (`claim`, `source\test_relay.py`, 10 checks) - stops internet hijacking of a live match. THE FULL desk-issued token (also covers the pre-match race and two-behind-one-router) is deferred to the online\ rebuild: it needs the desk, the lease, the overlay (C) and a coordinated client update
-- [ ] A7  one "is a session open" rule, incl. the transfer card, used by the panel too
+- [x] A7  the panel's close warning AND the RESTART gate now check BOTH cards (`any_session_open` in wccfpanel.c), matching play.club_session - no silent bad ending on the manager-transfer club. Panel DLL builds clean; CI runs the panel self-test. (The RESTART hint text at line ~3656 and the club-switch at ~4257 still read the slot card only - fold into D5, one session rule; the panel session logic still has no unit test - G)
 - [ ] A8  no default key for SW1/SW2 (the card-overwrite switch)
 - [x] A9  log rotation never stops a start: a busy `previous` is set aside with a timestamp, a busy current log is left in place (`rotate_logs`). `source\test_rotate_logs.py` (4 checks)
 - [ ] A10 the smaller lock-outs (catalogue-missing start, 17th club, SEND LOGS address, UPDATE SHA check, hold-file)

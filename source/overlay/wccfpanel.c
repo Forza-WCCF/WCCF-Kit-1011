@@ -3197,6 +3197,22 @@ static int card_session_c(const char *path, ULONGLONG since, int *bad, ULONGLONG
     return CS_UNREADABLE;
 }
 
+// a card session open on EITHER the club card or the manager-transfer card beside it (seat1_club.new.bin): at a
+// contract end the game runs Club Make on the new card, so closing or restarting then is just as costly - the close
+// warning and the RESTART gate must see it too (A7, 2026-10-11, matching play.club_session).  `since` is this run's
+// start (running.json), so an open flag left on a card by a PREVIOUS run reads as a cut, not an active session.
+static int any_session_open(void)
+{
+    char p[MAX_PATH]; WIN32_FILE_ATTRIBUTE_DATA fa; ULONGLONG since = 0, saved; int bad;
+    _snprintf(p, MAX_PATH, "%s\\running.json", g_data_dir); p[MAX_PATH - 1] = 0;
+    if (GetFileAttributesExA(p, GetFileExInfoStandard, &fa)) since = ft_q(fa.ftLastWriteTime);
+    _snprintf(p, MAX_PATH, "%s\\save\\seat1_club.bin", g_data_dir); p[MAX_PATH - 1] = 0;
+    if (card_session_c(p, since, &bad, &saved) == CS_OPEN) return 1;
+    _snprintf(p, MAX_PATH, "%s\\save\\seat1_club.new.bin", g_data_dir); p[MAX_PATH - 1] = 0;
+    if (card_session_c(p, since, &bad, &saved) == CS_OPEN) return 1;
+    return 0;
+}
+
 // ---- closing the window quits the game (2026-10-08)
 // The player: "remove STOP.exe and have a clean quit every time".  Closing seat 1's window (its X, Alt+F4) is how the
 // game is quit: _debug_launch.py ends the game once its window is gone, and PLAY.exe's watcher stops the rest.  During
@@ -3207,16 +3223,11 @@ static DWORD g_close_until = 0;          // a close warned about until then (0: 
 
 static int close_allowed(void)           // WM_CLOSE: 1 = let the window close
 {
-    char p[MAX_PATH]; WIN32_FILE_ATTRIBUTE_DATA fa; ULONGLONG since = 0, saved = 0; int bad = -1, cs;
     if (g_close_until && (LONG)(g_close_until - GetTickCount()) > 0) {
         logline("close: closed again during the card session - the game ends");
         return 1;
     }
-    _snprintf(p, MAX_PATH, "%s\\running.json", g_data_dir); p[MAX_PATH - 1] = 0;      // this run's start (play.py)
-    if (GetFileAttributesExA(p, GetFileExInfoStandard, &fa)) since = ft_q(fa.ftLastWriteTime);
-    _snprintf(p, MAX_PATH, "%s\\save\\seat1_club.bin", g_data_dir); p[MAX_PATH - 1] = 0;
-    cs = card_session_c(p, since, &bad, &saved);
-    if (cs != CS_OPEN) {
+    if (!any_session_open()) {                        // the club card OR the manager-transfer card (A7)
         logline("close: the window closes - the game ends");
         return 1;
     }
@@ -3812,7 +3823,7 @@ static void set_click(HWND h, int x, int y)                     // a press insid
             DWORD now = GetTickCount(), yellow = D3DCOLOR_ARGB(255, 255, 214, 40);
             if (g_rs_sent) {
                 note_locked(yellow, "already asked - the game closes and opens again");
-            } else if (g_st.card == CS_OPEN) {                  // the card rule, said here before anything starts
+            } else if (any_session_open()) {                    // the card rule (both cards, A7), before anything starts
                 note_locked(red, "not during a card session - after the locker-room save");
                 logline("settings: restart refused - a card session is open");
             } else if (!g_rs_armed || (LONG)(g_rs_armed - now) <= 0) {
