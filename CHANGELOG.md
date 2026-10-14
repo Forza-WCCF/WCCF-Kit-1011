@@ -16,6 +16,14 @@ game is not included. Newest first; each date is the day that kit was built.
   told so, and kit 7 plays on its own PC instead and says why. If the website cannot be reached, signed-in PCs are
   let in anyway. A signed-in kit 7 still joins servers that have not updated (their seat desk does not know sign-ins:
   it asks again without one).
+- Online, signed in, you play with your account's own club - a fresh start, separate from the club cards on your PC
+  (those keep playing on your PC). A new account gets 11 white cards (1 GK, 4 DF, 4 MF, 2 FW); the CATALOGUE then
+  lists only the cards your account owns, and the first time they are laid out on the table so the game's own Club
+  Make builds your club from them. The club card is kept in `data\save\online\`. YOUR CARDS, NEW CLUB CARD and CLEAR
+  BAD ENDINGS are off for the online club, and no card is shown after a match there yet.
+
+### Fixed
+- Building the kit's programs (`source\build.ps1`) in a folder whose path has a space in it.
 
 ## Kit 6 - 2026-10-11
 

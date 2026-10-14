@@ -108,6 +108,7 @@ $side = @(
     Start-Check 'SEND LOGS: packed, sent, kept - and refused when it must be' 'test_send_logs.py'
     Start-Check 'the wccf.online sign-in: a code, approved, kept, never printed' 'test_account.py'
     Start-Check 'the seat desk and the sign-in: optional or needed, a good or refused token, no token logged' 'test_seat_desk_signin.py'
+    Start-Check 'the online club: owned cards make the CATALOGUE and a new club''s table, the slot when anything is wrong' 'test_online_club.py'
 )
 
 & $py -I (Join-Path $PSScriptRoot 'test_english_pictures.py')
@@ -155,6 +156,39 @@ try {
     if (-not $relay.HasExited) { Stop-Process -Id $relay.Id -Force }
     'WCCF_RELAY_PORT', 'WCCF_SKIN', 'WCCFPANEL_ROLE', 'WCCFPANEL_DRYKEYS', 'WCCFPANEL_FULLSCREEN', 'WCCF_DATA', 'WCCF_KEYS', 'WCCFPANEL_MONEYTEST',
     'WCCFPANEL_RELAYTEST', 'WCCFPANEL_DEALTEST', 'WCCFPANEL_SETTEST' | ForEach-Object { Remove-Item "env:$_" -ErrorAction SilentlyContinue }
+    Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
+}
+
+# the online club (2026-10-14): play.py's WCCF_CLUB_CARD reaches the panel - the card its close warning and SETTINGS
+# watch, the transfer card beside it, its backups - and switches YOUR CARDS off; without it, the slot card
+$t = Join-Path ([IO.Path]::GetTempPath()) "wccfpanel-club-$PID"
+Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Force (Join-Path $t 'data') | Out-Null
+Copy-Item (Join-Path $PSScriptRoot 'build\fakegame.exe') $t
+$env:WCCFPANEL_ROLE = 'seat1'; $env:WCCFPANEL_DRYKEYS = '1'; $env:WCCFPANEL_FULLSCREEN = '0'
+$env:WCCF_DATA = Join-Path $t 'data'; $env:WCCF_KEYS = Join-Path $t 'data\keys.txt'
+$env:WCCF_SKIN = Join-Path $kit 'art\skin.tex'
+$club = Join-Path $t 'data\save\online\u7'
+try {
+    $lines = foreach ($online in $true, $false) {
+        if ($online) { $env:WCCF_CLUB_CARD = "$club\club.bin" } else { Remove-Item env:WCCF_CLUB_CARD -ErrorAction SilentlyContinue }
+        Remove-Item (Join-Path $t 'wccfpanel.log') -ErrorAction SilentlyContinue
+        Start-Process -FilePath (Join-Path $t 'fakegame.exe') -WorkingDirectory $t -Wait -NoNewWindow `
+            -ArgumentList "`"$(Join-Path $kit 'programs\wccfpanel.dll')`" wait:3000"
+        @(Get-Content (Join-Path $t 'wccfpanel.log') -ErrorAction SilentlyContinue | Select-String 'club card: ')[0].Line
+    }
+    $slot = Join-Path $t 'data\save'
+    $want = @("club card: $club\club.bin (transfer $club\club.new.bin, backups $club\backup\club.bin.*.bak) - the online club: YOUR CARDS off, no card dealt",
+              "club card: $slot\seat1_club.bin (transfer $slot\seat1_club.new.bin, backups $slot\backup\seat1_club.bin.*.bak)")
+    $ok = 0
+    for ($i = 0; $i -lt 2; $i++) {
+        if ($lines[$i] -and $lines[$i].EndsWith($want[$i])) { $ok++ } else { Write-Host "  wanted: $($want[$i])`n  got:    $($lines[$i])" }
+    }
+    Write-Host "panel club card: $ok/2 checks passed"
+    if ($ok -ne 2) { $failed += 'the panel watches the club card in play (the online club or the slot)' }
+} finally {
+    'WCCF_CLUB_CARD', 'WCCF_SKIN', 'WCCFPANEL_ROLE', 'WCCFPANEL_DRYKEYS', 'WCCFPANEL_FULLSCREEN', 'WCCF_DATA', 'WCCF_KEYS' |
+        ForEach-Object { Remove-Item "env:$_" -ErrorAction SilentlyContinue }
     Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
 }
 

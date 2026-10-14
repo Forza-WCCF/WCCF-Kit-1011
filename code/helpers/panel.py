@@ -43,10 +43,13 @@ def say(msg):
 class ClubView:
     """the CLUB CARD panel's view of the card in DATA (data\\club_view.txt)"""
 
-    def __init__(self, data):
+    def __init__(self, data, online_card=None):
         save = os.path.join(data, "save")
         self.card, self.backups = os.path.join(save, "seat1_club.bin"), os.path.join(save, "backup")
         self.cards = os.path.join(save, "cards")                       # your other club cards (wallet.py)
+        if online_card:      # online and signed in (play.py WCCF_CLUB_CARD): the account's club, no other cards
+            folder = os.path.dirname(online_card)
+            self.card, self.backups, self.cards = online_card, os.path.join(folder, "backup"), os.path.join(folder, "cards")
         self.running, self.out = os.path.join(data, "running.json"), os.path.join(data, "club_view.txt")
         self.catalogue = os.path.join(data, "cache", "catalogue.tsv")     # made by SETUP (was overlay\)
         self.seen, self.since, self.done, self.mod, self.said, self.retry_at = None, 0.0, None, None, False, 0.0
@@ -197,7 +200,7 @@ def main(argv):
         except OSError as ex:
             say("an old restart request could not be removed: %s" % ex)
     say("watching %s" % req)
-    view = ClubView(data)
+    view = ClubView(data, os.environ.get("WCCF_CLUB_CARD"))      # online: the account's club (play.py)
     sound = SoundDefaults(os.environ.get("WCCF_GAME"), time.time())
     logs = SendLogs(data)
     end = time.time() + life

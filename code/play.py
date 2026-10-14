@@ -244,14 +244,20 @@ PANEL_DLL = os.path.join(K.PROGRAMS, "wccfpanel.dll")     # not PANEL: that is d
                                                           # name, so a plain start read the dll and never went online)
 
 
-def kit_env(game):
+def kit_env(game, online=None):
     """what every program of a run gets: this PC's environment without an earlier run's MXHOOK_ / WCCF settings, and
-    where the game and the logs are"""
+    where the game and the logs are.  online (online\\club.py): the account's club card (WCCF_CLUB_CARD - the card
+    reader, the panel and its helper use it instead of the slot card) and a CATALOGUE of its own cards only"""
     env = {k: v for k, v in os.environ.items() if not k.upper().startswith(("MXHOOK_", "WCCF"))}
     env.update(WCCF_GAME=game, WCCF_LOGS=K.LOGS, MXHOOK_LOG_DIR=os.path.join(K.LOGS, "hook"),
                # where the panel (wccfpanel.dll, now in programs\) finds its own data, no longer beside the DLL:
                WCCF_SKIN=os.path.join(K.ART, "skin.tex"), WCCF_CATALOGUE=os.path.join(K.CACHE, "catalogue.tsv"),
                WCCF_CARDS=os.path.join(K.CACHE, "cards"))
+    for k in ("WCCF_WEBSITE", "WCCF_ACCOUNT_FILE"):       # a test's website and sign-in file reach the run's programs
+        if os.environ.get(k):
+            env[k] = os.environ[k]
+    if online:
+        env.update(WCCF_CLUB_CARD=online["card"], WCCF_CATALOGUE=online["catalogue"])
     return env
 
 
@@ -378,10 +384,17 @@ def ensure_hook(game, seat):
     return False
 
 
-def write_running(roles, mode, ip, seat_no=1):
+def write_running(roles, mode, ip, seat_no=1, online=None):
+    """online: the account's club in play (online\\club.py) - a stop, a cabinet restart and the card rule read it here"""
     with open(RUNNING, "w", encoding="utf-8") as f:
-        json.dump({"started": time.strftime("%Y-%m-%d %H:%M:%S"), "mode": mode, "server": ip, "seat": seat_no,
-                   "processes": roles}, f, indent=1)
+        json.dump(dict({"started": time.strftime("%Y-%m-%d %H:%M:%S"), "mode": mode, "server": ip, "seat": seat_no,
+                        "processes": roles}, **({"online": online} if online else {})), f, indent=1)
+
+
+def online_of(info):
+    """the online club a run recorded (write_running), or None"""
+    o = info.get("online")
+    return o if isinstance(o, dict) and isinstance(o.get("card"), str) and isinstance(o.get("catalogue"), str) else None
 
 
 def read_panel(path=None):
@@ -480,13 +493,19 @@ def apply_card_fix():
     drop_panel_line("card_fix")
 
 
-def apply_board(seat):
+def apply_board(seat, online=None):
     """the cards on the table follow the club card in the slot (formation.py, 2026-10-08: the player saw another club's
-    formation on the board) - done while nothing reads the table: the card reader, FPR_Emu and the overlay start after
-    this.  Anything wrong: said, and the table stays as it is (never a reason not to start)."""
+    formation on the board) - or, online and signed in, the account's online club (online\\club.py, 2026-10-14) - done
+    while nothing reads the table: the card reader, FPR_Emu and the overlay start after this.  Anything wrong: said,
+    and the table stays as it is (never a reason not to start)."""
     try:
-        from cards import formation
-        for what in formation.sync(seat):
+        if online:
+            from online import club
+            said = club.table(seat, online)
+        else:
+            from cards import formation
+            said = formation.sync(seat)
+        for what in said:
             say("  table: %s" % what)
     except Exception as ex:
         say("  table: left as it is (%s)" % ex)
@@ -547,15 +566,17 @@ def start_cabinet(debug, env, mode, ip, seat_no, seat, roles):
     (2026-10-07) runs only this: the projector, the scene service, the seat lease and the panel helper keep running."""
     p = start(os.path.join("hardware", "network.py"), [LIFE, "ringedge_log.txt"], "run_ringedge.txt", env)
     roles[p.pid] = "keychip / network stand-in"
-    from cards import wallet                   # its NEW: room for a second card, for a manager transfer (2026-10-08)
-    p = start(os.path.join("hardware", "card_reader.py"), [ICC_PIPE, LIFE, "icc_log.txt" if debug else "NUL", CARD, wallet.NEW],
+    card = env.get("WCCF_CLUB_CARD") or CARD   # online and signed in: the account's own club (online\club.py)
+    # NAME.new.bin beside it (wallet.NEW for the slot): room for a second card, for a manager transfer (2026-10-08)
+    p = start(os.path.join("hardware", "card_reader.py"), [ICC_PIPE, LIFE, "icc_log.txt" if debug else "NUL", card,
+                                                           os.path.splitext(card)[0] + ".new.bin"],
               "run_cardreader.txt", env, quiet=not debug)
     roles[p.pid] = "card reader stand-in"
     p = start(os.path.join("hardware", "io_board.py"), [JVS_PIPE, LIFE, "jvs_log.txt", KEYS_INPUT], "run_ioboard.txt", env)
     roles[p.pid] = "I/O board stand-in"
     wait_for("the cabinet's stand-ins", lambda: {40100, 40102, 40106} <= K.listening_ports() and
              {"wccf_icc_seat1", "wccf_jvs_seat1"} <= K.pipes(), 20)
-    say("  4/6 cabinet stand-ins: keychip/network, card reader (card file data\\save\\seat1_club.bin), I/O board")
+    say("  4/6 cabinet stand-ins: keychip/network, card reader (card file %s), I/O board" % os.path.relpath(card, K.KIT))
 
     senv = dict(env, MXHOOK_RINGEDGE="1",
                 MXHOOK_COM="COM3=%s;COM1=%s;mxjvs=%s;COM4=%s" % (ICC_PIPE, ICC_PIPE, JVS_PIPE, JVS_PIPE))
@@ -619,9 +640,12 @@ def play(debug, mode="local", ip=None, seat_no=None):
         say("Already running (%s) - close the game's window first (a game that is stuck: PLAY.exe stop)." %
             ", ".join(sorted({p[2] for p in busy})))
         return 3
+    online = None
     if mode == "remote":                     # the wccf.online sign-in, before anything starts (2026-10-14): its token
-        from online import account           # goes to the server's seat desk with the seat request (online\seat.py);
-        account.ensure()                     # no sign-in is not fatal here - the server decides
+        from online import account, club     # goes to the server's seat desk with the seat request (online\seat.py);
+        token = account.ensure()             # no sign-in is not fatal here - the server decides
+        if token:                            # signed in: the account's own club and cards (online\club.py); None:
+            online = club.prepare(token)     # said why, and the slot card plays as before
     beside_server = bool(running)            # only "remote" gets here with something running: a server on this PC
     if beside_server:
         os.makedirs(os.path.join(K.LOGS, "hook"), exist_ok=True)     # its logs are open: no rotation
@@ -635,8 +659,8 @@ def play(debug, mode="local", ip=None, seat_no=None):
     apply_card_request()                       # the card reader is not running yet, in every mode that gets here
     apply_card_fix()
     if mode != "server":
-        apply_board(seat)                      # ... nor FPR_Emu or the overlay: the slot club's cards on the table
-    env = kit_env(game)
+        apply_board(seat, online)              # ... nor FPR_Emu or the overlay: the club's cards on the table
+    env = kit_env(game, online)
     roles = {p[0]: known[p[0]] for p in running if p[0] in known}
     steps = 2 if mode == "server" else 6
     confs = (os.path.join(game, "local", "client_user_option.conf"),
@@ -747,7 +771,7 @@ def play(debug, mode="local", ip=None, seat_no=None):
 
     h = start(os.path.join("helpers", "panel.py"), [LIFE], "run_helper.txt", env)      # the panels' RESTART NOW (from outside the game)
     roles[h.pid] = "panel helper"
-    write_running(roles, mode, ip, seat_no)
+    write_running(roles, mode, ip, seat_no, online)
     say("")
     if mode == "remote":
         say("Playing on the server at %s%s." % (ip, "" if projector else " as seat %d (no projector on this PC)" % seat_no))
@@ -755,7 +779,8 @@ def play(debug, mode="local", ip=None, seat_no=None):
         "front):")
     say("  Enter START (free play - no coin needed)   X decide   C shoot   arrows: tactics")
     say("  I club card in / out   F1 test menu   F11 window size   - or click the buttons around the picture")
-    say("First time: put the card in with I, and the game makes your club. It is saved in data\\save\\seat1_club.bin.")
+    say("First time: put the card in with I, and the game makes your club. It is saved in %s." %
+        os.path.relpath(online["card"] if online else CARD, K.KIT))
     say("To finish: let the card come out after a match, then close the game's window - the rest stops with it. %s" % (
         "(The key driver's window is minimized.)" if debug else
         "(The key driver runs in the background: its log is data\\logs\\run_keys.txt.)"))
@@ -799,12 +824,14 @@ def ask_yes(question):
 
 
 def club_session():
-    """(session state, bad endings) of the club in play: the slot card, or during a manager transfer the new card
-    beside it (2026-10-08) - an open session on either one is open"""
-    from cards import wallet
+    """(session state, bad endings) of the club in play: the slot card - or the online club's, while one plays
+    (online\\club.py) - or during a manager transfer the new card beside it (2026-10-08): an open session on either
+    one is open"""
+    online = online_of(running_info())
+    card = online["card"] if online else CARD
     since = run_started()
-    sess, bad = K.card_session(CARD, since)
-    new_sess, new_bad = K.card_session(wallet.NEW, since)
+    sess, bad = K.card_session(card, since)
+    new_sess, new_bad = K.card_session(os.path.splitext(card)[0] + ".new.bin", since)
     if new_sess == "open" or (new_sess == "cut" and sess != "open"):
         return new_sess, new_bad
     return sess, bad
@@ -1025,7 +1052,7 @@ def restart_cabinet():
         return 2
     info = running_info()
     roles = {int(k): v for k, v in (info.get("processes") or {}).items()}
-    mode, ip = info.get("mode"), info.get("server")
+    mode, ip, online = info.get("mode"), info.get("server"), online_of(info)
     try:
         seat_no = int(info.get("seat", 1))
     except (TypeError, ValueError):
@@ -1054,16 +1081,16 @@ def restart_cabinet():
         roles.pop(pid, None)
     left = seat_side() + [p for p in kit_pythons() if p[0] in doomed]
     if left:
-        write_running(roles, mode, ip, seat_no)
+        write_running(roles, mode, ip, seat_no, online)
         say("Still running: %s - the cabinet was not started again (PLAY.exe stop, then PLAY.exe)." % ", ".join(
             "%s %d" % (p[2], p[0]) for p in left))
         return 1
     apply_card_request()                     # the card reader is stopped: the CLUB CARD panel's switch goes in now
     apply_card_fix()                         # and its CLEAR BAD ENDINGS
-    apply_board(seat)                        # and the new club's cards onto the table, before FPR_Emu and the overlay
+    apply_board(seat, online)                # and the new club's cards onto the table, before FPR_Emu and the overlay
     time.sleep(1.0)                          # Windows frees the cabinet's ports and pipes
-    start_cabinet(False, kit_env(game), mode, ip, seat_no, seat, roles)
-    write_running(roles, mode, ip, seat_no)
+    start_cabinet(False, kit_env(game, online), mode, ip, seat_no, seat, roles)
+    write_running(roles, mode, ip, seat_no, online)
     say("")
     say("Seat %d's cabinet is back; the projector was not touched." % seat_no)
     return 0

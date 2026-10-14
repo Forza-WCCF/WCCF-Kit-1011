@@ -2958,6 +2958,12 @@ enum { CS_NONE, CS_UNREADABLE, CS_NEW, CS_OPEN, CS_CUT, CS_CLOSED };
 struct SetStatus { int link; char peer[16]; int card, bad, nback, english; ULONGLONG saved, backup; DWORD at; };
 static struct SetStatus g_st;            // refreshed by the board thread about once a second while the panel is open
 static char g_data_dir[MAX_PATH], g_panel_path[MAX_PATH], g_panel_tmp[MAX_PATH];
+// the club card in play (set_init): the slot (data\save\seat1_club.bin) - or, online and signed in, the account's own
+// club (play.py WCCF_CLUB_CARD, online\club.py, 2026-10-14): then YOUR CARDS, NEW CLUB CARD and CLEAR BAD ENDINGS are
+// off (the club lives on wccf.online) and no card is dealt after a match (the website grants them: phase 3).
+// g_club_new: the manager-transfer card beside it (NAME.new.bin); g_club_baks: its backups (backup\NAME.*.bak)
+static char g_club_card[MAX_PATH], g_club_new[MAX_PATH], g_club_baks[MAX_PATH];
+static int  g_online_club = 0;
 static int  g_set = 0;                   // the SETTINGS panel is open
 static int  g_on_online = 0;             // play_on: 0 this PC, 1 online
 static char g_server[64];                // server= as the file holds it (checked before use)
@@ -3080,6 +3086,22 @@ static void set_init(void)               // the init thread: where data\ is, and
     }
     _snprintf(g_panel_path, MAX_PATH, "%s\\panel.txt", g_data_dir); g_panel_path[MAX_PATH - 1] = 0;
     _snprintf(g_panel_tmp, MAX_PATH, "%s.panel", g_panel_path); g_panel_tmp[MAX_PATH - 1] = 0;
+    n = GetEnvironmentVariableA("WCCF_CLUB_CARD", e, sizeof e);
+    g_online_club = n > 0 && n < sizeof e && n > 4 && _stricmp(e + n - 4, ".bin") == 0;
+    if (g_online_club) lstrcpynA(g_club_card, e, MAX_PATH);
+    else { _snprintf(g_club_card, MAX_PATH, "%s\\save\\seat1_club.bin", g_data_dir); g_club_card[MAX_PATH - 1] = 0; }
+    {
+        char dir[MAX_PATH], *sl, *base;
+        lstrcpynA(dir, g_club_card, MAX_PATH);
+        sl = strrchr(dir, '\\'); base = sl ? sl + 1 : dir;
+        _snprintf(g_club_new, MAX_PATH, "%.*s.new.bin", (int)strlen(g_club_card) - 4, g_club_card);
+        g_club_new[MAX_PATH - 1] = 0;
+        if (sl) { *sl = 0; _snprintf(g_club_baks, MAX_PATH, "%s\\backup\\%s.*.bak", dir, base); }
+        else _snprintf(g_club_baks, MAX_PATH, "backup\\%s.*.bak", base);
+        g_club_baks[MAX_PATH - 1] = 0;
+    }
+    logline("club card: %s (transfer %s, backups %s)%s", g_club_card, g_club_new, g_club_baks,     // check.ps1 reads it
+            g_online_club ? " - the online club: YOUR CARDS off, no card dealt" : "");
     g_lg_stamp = sendlogs_stamp();                              // an answer from an earlier run is not shown
     EnterCriticalSection(&g_board_cs);
     set_load_locked();
@@ -3169,10 +3191,8 @@ static int any_session_open(void)
     char p[MAX_PATH]; WIN32_FILE_ATTRIBUTE_DATA fa; ULONGLONG since = 0, saved; int bad;
     _snprintf(p, MAX_PATH, "%s\\running.json", g_data_dir); p[MAX_PATH - 1] = 0;
     if (GetFileAttributesExA(p, GetFileExInfoStandard, &fa)) since = ft_q(fa.ftLastWriteTime);
-    _snprintf(p, MAX_PATH, "%s\\save\\seat1_club.bin", g_data_dir); p[MAX_PATH - 1] = 0;
-    if (card_session_c(p, since, &bad, &saved) == CS_OPEN) return 1;
-    _snprintf(p, MAX_PATH, "%s\\save\\seat1_club.new.bin", g_data_dir); p[MAX_PATH - 1] = 0;
-    if (card_session_c(p, since, &bad, &saved) == CS_OPEN) return 1;
+    if (card_session_c(g_club_card, since, &bad, &saved) == CS_OPEN) return 1;
+    if (card_session_c(g_club_new, since, &bad, &saved) == CS_OPEN) return 1;
     return 0;
 }
 
@@ -3262,13 +3282,13 @@ static void deal_now(void)
 static void deal_tick(void)              // the board thread, once a second: open -> closed = a match finished
 {
     static DWORD next = 0; static int seeded = 0, last = -1;
-    char p[MAX_PATH]; ULONGLONG saved; int bad, cs;
+    ULONGLONG saved; int bad, cs;
+    if (g_online_club) return;                              // online: the website grants the cards (phase 3)
     if (!seeded) { srand(GetTickCount() ^ GetCurrentProcessId()); seeded = 1; }     // rand() is per thread
     if (!next) next = GetTickCount();                       // see dispenser_tick: from 0 it never ran after 24.8 days up
     if ((LONG)(GetTickCount() - next) < 0) return;
     next = GetTickCount() + 1000;
-    _snprintf(p, MAX_PATH, "%s\\save\\seat1_club.bin", g_data_dir); p[MAX_PATH - 1] = 0;
-    cs = card_session_c(p, 0, &bad, &saved);
+    cs = card_session_c(g_club_card, 0, &bad, &saved);
     if (cs != CS_OPEN && cs != CS_CLOSED) return;          // no card, or caught mid-write: wait for the next look
     if (last == CS_OPEN && cs == CS_CLOSED) deal_now();
     last = cs;
@@ -3339,10 +3359,8 @@ static void set_refresh(void)
     st.link = server_link(st.peer);
     _snprintf(p, MAX_PATH, "%s\\running.json", g_data_dir); p[MAX_PATH - 1] = 0;      // this run's start (play.py)
     if (GetFileAttributesExA(p, GetFileExInfoStandard, &fa)) since = ft_q(fa.ftLastWriteTime);
-    _snprintf(p, MAX_PATH, "%s\\save\\seat1_club.bin", g_data_dir); p[MAX_PATH - 1] = 0;
-    st.card = card_session_c(p, since, &st.bad, &st.saved);
-    _snprintf(p, MAX_PATH, "%s\\save\\backup\\seat1_club.bin.*.bak", g_data_dir); p[MAX_PATH - 1] = 0;
-    fh = FindFirstFileA(p, &fd);
+    st.card = card_session_c(g_club_card, since, &st.bad, &st.saved);
+    fh = FindFirstFileA(g_club_baks, &fd);
     if (fh != INVALID_HANDLE_VALUE) {
         do {
             if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
@@ -4093,9 +4111,13 @@ static void club_draw(IDirect3DDevice9 *dev)
               D3DCOLOR_ARGB(255, 70, 75, 88));
     if (g_font_tex) {
         set_picture(dev, g_font_tex, 1);
-        put_str(dev, lx, 14.0f * s, 0.85f * s, orange, "CLUB CARD MANAGER");
-        put_str(dev, lx, 58.0f * s, 0.42f * s, grey, "the club card in the slot as the game reads it - updated each time the game saves it");
-        put_str(dev, lx, 76.0f * s, 0.42f * s, grey, "YOUR CARDS: switch club, or start a new one (the game restarts)    Esc closes this");
+        put_str(dev, lx, 14.0f * s, 0.85f * s, orange, g_online_club ? "YOUR ONLINE CLUB" : "CLUB CARD MANAGER");
+        put_str(dev, lx, 58.0f * s, 0.42f * s, grey, g_online_club
+                ? "your wccf.online account's club card as the game reads it - updated each time the game saves it"
+                : "the club card in the slot as the game reads it - updated each time the game saves it");
+        put_str(dev, lx, 76.0f * s, 0.42f * s, grey, g_online_club
+                ? "online, the club and its cards belong to your account; your other cards play on this PC    Esc closes this"
+                : "YOUR CARDS: switch club, or start a new one (the game restarts)    Esc closes this");
         put_in_rect(dev, cr, 0.8f * s, white, "X");
     }
     if (strcmp(g_cstate, "ok")) {                                                            // no club to show
@@ -4124,7 +4146,7 @@ static void club_draw(IDirect3DDevice9 *dev)
                 y += 32.0f * s;
             }
         }
-        if (g_cbad > 0 || !strcmp(g_csession, "cut")) {                // CLEAR BAD ENDINGS, under CARD HEALTH
+        if (!g_online_club && (g_cbad > 0 || !strcmp(g_csession, "cut"))) {   // CLEAR BAD ENDINGS, under CARD HEALTH
             int armed = g_wal_armed == WAL_FIX && (LONG)(g_wal_until - GetTickCount()) > 0;
             g_cfix = RC(lx, y + 6.0f * s, lx + 260.0f * s, y + 36.0f * s);
             set_chip(dev, g_cfix, armed ? "CLICK AGAIN TO CLEAR" : "CLEAR BAD ENDINGS", armed, s);
@@ -4168,7 +4190,7 @@ static void club_draw(IDirect3DDevice9 *dev)
         for (i = 0; i < g_ncbak; i++) { put_str(dev, lx, y, 0.42f * s, white, g_cbak[i]); y += 22.0f * s; }
         put_str(dev, lx, y + 6.0f * s, 0.38f * s, grey, "in data\\save\\backup - restoring one comes later");
     }
-    {                                                                   // YOUR CARDS (right, under the SQUAD)
+    if (!g_online_club) {                                               // YOUR CARDS (right, under the SQUAD)
         struct CGeo g; DWORD now = GetTickCount(); int armed;
         static int said_first = -1, said_n = -1, said_nwal = -1, said_top = -1;
         club_geo(&g);
@@ -4247,6 +4269,7 @@ static void club_click(HWND h, int x, int y)
     DWORD red = D3DCOLOR_ARGB(255, 255, 110, 90);
     RECT xr = club_close();
     if (in_rect(&xr, x, y)) { club_open(h, 0); return; }
+    if (g_online_club) return;                                      // the online club: nothing to switch or clear here
     EnterCriticalSection(&g_board_cs);
     club_geo(&g);
     if (g.paged && (in_rect(&g.prev, x, y) || in_rect(&g.next, x, y))) {    // a page, not a choice

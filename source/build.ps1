@@ -65,7 +65,9 @@ END
         if ($LASTEXITCODE) { throw "rc failed for $source" }
         $res = @("$obj\$name.res")
     }
-    & cl /nologo /O2 /MT /W3 /Brepro /D_CRT_SECURE_NO_WARNINGS @compile (Join-Path $src $source) "/Fo$obj\" "/Fe$out" `
+    # /Fo names the object file: a folder ending in "\" broke the build in a path with spaces (2026-10-14: quoted, its
+    # \" read as an escaped quote and cl took the rest of the line apart)
+    & cl /nologo /O2 /MT /W3 /Brepro /D_CRT_SECURE_NO_WARNINGS @compile (Join-Path $src $source) "/Fo$obj\$name.obj" "/Fe$out" `
         /link /Brepro "/IMPLIB:$obj\$name.lib" "/PDB:$obj\$name.pdb" @res @link
     if ($LASTEXITCODE) { throw "cl failed for $source" }
     Write-Host "built $out"

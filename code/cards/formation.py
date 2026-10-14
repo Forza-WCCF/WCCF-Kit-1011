@@ -60,11 +60,16 @@ def board_id(folder):
 
 
 def all_boards(save):
-    """{id: folder} of every card's board in data\\save (the slot's and YOUR CARDS')"""
+    """{id: folder} of every card's board in data\\save (the slot's, YOUR CARDS' and each account's online club:
+    online\\u<account>\\club.board, online\\club.py - a table out goes back to its own club in any mode)"""
     found = [os.path.join(save, "seat1_club.board")]
     try:
         found += [os.path.join(save, "cards", f) for f in os.listdir(os.path.join(save, "cards"))
                   if f.lower().endswith(".board")]
+    except OSError:
+        pass
+    try:
+        found += [os.path.join(save, "online", f, "club.board") for f in os.listdir(os.path.join(save, "online"))]
     except OSError:
         pass
     return {board_id(f): f for f in found if os.path.isdir(f) and board_id(f)}
