@@ -4,7 +4,8 @@ build.ps1; no game, no server): a link that drops while the game runs is written
 run's logs to the server by itself - and the link the game drops because the player closed its window is not
 (2026-10-11: three normal closes went to the server as runs that went wrong).  fakegame.exe holds a TCP link to this
 script's listener on the server's port, 127.0.0.1:20002.  The close goes through the panel only where it hooks the
-window, which needs a Direct3D device: on a machine without one (CI) that half says NOT RUN.
+window, which needs a Direct3D device: on a machine without one that half says NOT RUN (CI's Windows machine has one -
+4 checks there too, the first run).
     python source\\test_link_close.py"""
 import os
 import shutil
