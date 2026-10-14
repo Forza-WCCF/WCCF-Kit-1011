@@ -158,10 +158,13 @@ def set_synced(folder, sha, seq):
 def upload(token, card, folder):
     """the card file as a new version on wccf.online, built on the one it had at the last sync -> (state, detail):
     "kept" (seq) / "same" (nothing new) / "newer" (another PC saved since - the next start takes the website's) /
-    "refused" (why: the website's checks) / "unreachable" (why: try again later)"""
+    "refused" (why: the website's checks) / "unreachable" (why: try again later) / "used up" (not sent: a manager
+    transfer left it, and the website keeps the new card instead - it refuses this one too)"""
     data = card_bytes(card)
     if data is None:
         return "refused", "no club card file of the right size"
+    if data[5] == 0:                           # the use counter's low byte 0 (card_reader.py: transferred)
+        return "used up", "its manager moved to a new card - that card goes up after its first save"
     base = synced(folder).get("sha256", "")
     sha = hashlib.sha256(data).hexdigest()
     if sha == base:

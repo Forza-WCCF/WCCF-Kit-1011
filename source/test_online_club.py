@@ -199,6 +199,11 @@ check("upload: refused, and why", C.upload("t", one, os.path.dirname(one)) == ("
 answer["wccf_club_save"] = (0, {"error": "timed out"})
 check("upload: the website out of reach", C.upload("t", one, os.path.dirname(one)) == ("unreachable", "timed out"))
 check("upload: no card file", C.upload("t", os.path.join(CL, "none", "club.bin"), CL)[0] == "refused")
+used = os.path.join(CL, "used", "club.bin")
+put(used, card_of(0x0000, 7))
+posts.clear()
+check("upload: a used-up card (a manager transfer left it) is not sent - the website keeps the new card instead",
+      C.upload("t", used, os.path.dirname(used))[0] == "used up" and not posts, posts)
 
 two = os.path.join(CL, "b", "club.bin")
 answer["wccf_club"] = (200, {"seq": 0})
@@ -303,6 +308,10 @@ ticks(84)
 check("... then tried again", len(sent) == n + 1, sent)
 H.ClubSync(None).tick(now)
 check("the helper offline (no online club): nothing", True)
+check("the helper watches the online card and the new card a manager transfer puts beside it (its first save shows "
+      "the match's card; 2026-10-15 the real transfer showed none)",
+      [s.card for s in H.club_syncs(four, TMP)] == [four, os.path.join(os.path.dirname(four), "club.new.bin")] and
+      [s.card for s in H.club_syncs(None, TMP)] == [None, None])
 
 # phase 3: the card a finished match earned - found after the save, into the CATALOGUE and dealt.txt for the panel
 looks, found = [], [[], [77]]

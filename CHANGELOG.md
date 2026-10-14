@@ -33,6 +33,9 @@ game is not included. Newest first; each date is the day that kit was built.
 - Online play needs your wccf.online sign-in and your online club. Without them (not signed in, or the website cannot
   give you your cards the first time), PLAY plays on your PC instead, with your own club cards, and says why - your
   other club cards never go online.
+- When your online club's contract ends (after 100 matches, as on the arcade), put the card in again: the game moves
+  your manager to a new card and you make a new club on it. wccf.online keeps the new card from its first match, and
+  the old club is kept on your PC (`data\save\online\...\transferred\`) - the game will not play it again.
 - SETTINGS shows your wccf.online account (ACCOUNT, under NOW) with SIGN OUT: two clicks, done at the next start
   (RESTART NOW or PLAY). The website then no longer accepts that sign-in, and the next online start asks for a new
   code.

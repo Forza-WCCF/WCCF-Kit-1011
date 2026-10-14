@@ -21,7 +21,9 @@ for the panel: "sending", then "ok CODE" or "fail WHY".  An old request at the s
 THE ONLINE CLUB CARD (2026-10-14): online and signed in (play.py WCCF_CLUB_CARD), each save of the account's club
 card goes to wccf.online (online\club.py upload) once the card has held still for 2 s and its last save was the
 locker-room save - never mid-match - in a thread of its own; a send that cannot reach the website is tried again a
-minute later, and the next start sends what is left.
+minute later, and the next start sends what is left.  The new card a manager transfer puts beside it (NAME.new.bin,
+2026-10-15) is watched the same way: its first locker-room save goes up as the account's card at once, so the card
+that match earned is found and shown (watching only the old card, the real game's transfer showed none).
 
 THE STARTING VOLUMES (2026-10-06): sound.py - the projector muted, seat 1 very low - set once for each, as
 soon as it has opened its sound (looked for every 0.5 s for 10 minutes after the start); never again, so a change in
@@ -246,6 +248,12 @@ class ClubSync:
             say("new card from wccf.online: %s - in the CATALOGUE now" % ", ".join(map(str, new)))
 
 
+def club_syncs(card, data):
+    """the online club card's sends (card None: offline, nothing): the card, and the new card a manager transfer puts
+    beside it (NAME.new.bin - card_reader.py NEWCARDFILE, play.py)"""
+    return [ClubSync(card, data), ClubSync(card and os.path.splitext(card)[0] + ".new.bin", data)]
+
+
 def main(argv):
     if not argv or not argv[0].isdigit():
         print(__doc__)
@@ -265,13 +273,14 @@ def main(argv):
     view = ClubView(data, os.environ.get("WCCF_CLUB_CARD"))      # online: the account's club (play.py)
     sound = SoundDefaults(os.environ.get("WCCF_GAME"), time.time())
     logs = SendLogs(data)
-    club_sync = ClubSync(os.environ.get("WCCF_CLUB_CARD"), data)
+    syncs = club_syncs(os.environ.get("WCCF_CLUB_CARD"), data)
     end = time.time() + life
     while time.time() < end:
         view.tick(time.time())
         sound.tick(time.time())
         logs.tick()
-        club_sync.tick(time.time())
+        for sync in syncs:
+            sync.tick(time.time())
         if os.path.exists(req):
             try:
                 os.remove(req)                  # taken first: one request, one restart
