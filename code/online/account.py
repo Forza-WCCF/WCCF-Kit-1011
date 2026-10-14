@@ -170,6 +170,18 @@ def ensure(open_browser=True, sleep=time.sleep):
     return got["token"] if got else None
 
 
+def signout():
+    """this PC's sign-in ended: the website told first to refuse the token from now on (best effort - an unreachable
+    website does not keep it here), then forgotten -> what was done, to say"""
+    saved = load()
+    if not saved:
+        return "this PC was not signed in"
+    status, _body = post("wccf_signout", {"token": saved["token"]})
+    forget()
+    return "%s signed out%s" % (saved.get("username") or "the account", "" if status == 200 else
+                                " on this PC - wccf.online could not be reached to end it there too (HTTP %s)" % status)
+
+
 def main(argv):
     if argv[:1] == ["signin"]:
         return 0 if ensure() else 1
@@ -184,8 +196,7 @@ def main(argv):
             "unreachable": "the website could not be reached: " + detail}[state]))
         return 0 if state != "refused" else 1
     if argv[:1] == ["signout"]:
-        forget()
-        say("This PC's sign-in is forgotten; the next online start asks again.")
+        say("%s; the next online start asks again." % signout())
         return 0
     print(__doc__)
     return 2

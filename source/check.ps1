@@ -171,23 +171,28 @@ $env:WCCF_SKIN = Join-Path $kit 'art\skin.tex'
 $club = Join-Path $t 'data\save\online\u7'
 try {
     $lines = foreach ($online in $true, $false) {
-        if ($online) { $env:WCCF_CLUB_CARD = "$club\club.bin" } else { Remove-Item env:WCCF_CLUB_CARD -ErrorAction SilentlyContinue }
-        Remove-Item (Join-Path $t 'wccfpanel.log') -ErrorAction SilentlyContinue
+        if ($online) { $env:WCCF_CLUB_CARD = "$club\club.bin"; $env:WCCF_ACCOUNT_NAME = "Kak$([char]0xE1)7" }   # SETTINGS'
+        else { 'WCCF_CLUB_CARD', 'WCCF_ACCOUNT_NAME' | ForEach-Object { Remove-Item "env:$_" -ErrorAction SilentlyContinue } }
+        Remove-Item (Join-Path $t 'wccfpanel.log') -ErrorAction SilentlyContinue       # ACCOUNT row: the name, folded
         Start-Process -FilePath (Join-Path $t 'fakegame.exe') -WorkingDirectory $t -Wait -NoNewWindow `
             -ArgumentList "`"$(Join-Path $kit 'programs\wccfpanel.dll')`" wait:3000"
-        @(Get-Content (Join-Path $t 'wccfpanel.log') -ErrorAction SilentlyContinue | Select-String 'club card: ')[0].Line
+        $log = Get-Content (Join-Path $t 'wccfpanel.log') -ErrorAction SilentlyContinue
+        @($log | Select-String 'club card: ')[0].Line
+        @($log | Select-String '^account: ')[0].Line
     }
     $slot = Join-Path $t 'data\save'
     $want = @("club card: $club\club.bin (transfer $club\club.new.bin, backups $club\backup\club.bin.*.bak) - the online club: YOUR CARDS off, no card dealt",
-              "club card: $slot\seat1_club.bin (transfer $slot\seat1_club.new.bin, backups $slot\backup\seat1_club.bin.*.bak)")
+              "account: Kaka7",
+              "club card: $slot\seat1_club.bin (transfer $slot\seat1_club.new.bin, backups $slot\backup\seat1_club.bin.*.bak)",
+              "account: not signed in")
     $ok = 0
-    for ($i = 0; $i -lt 2; $i++) {
+    for ($i = 0; $i -lt 4; $i++) {
         if ($lines[$i] -and $lines[$i].EndsWith($want[$i])) { $ok++ } else { Write-Host "  wanted: $($want[$i])`n  got:    $($lines[$i])" }
     }
-    Write-Host "panel club card: $ok/2 checks passed"
-    if ($ok -ne 2) { $failed += 'the panel watches the club card in play (the online club or the slot)' }
+    Write-Host "panel club card and account: $ok/4 checks passed"
+    if ($ok -ne 4) { $failed += 'the panel watches the club card in play (the online club or the slot) and shows the account' }
 } finally {
-    'WCCF_CLUB_CARD', 'WCCF_SKIN', 'WCCFPANEL_ROLE', 'WCCFPANEL_DRYKEYS', 'WCCFPANEL_FULLSCREEN', 'WCCF_DATA', 'WCCF_KEYS' |
+    'WCCF_CLUB_CARD', 'WCCF_ACCOUNT_NAME', 'WCCF_SKIN', 'WCCFPANEL_ROLE', 'WCCFPANEL_DRYKEYS', 'WCCFPANEL_FULLSCREEN', 'WCCF_DATA', 'WCCF_KEYS' |
         ForEach-Object { Remove-Item "env:$_" -ErrorAction SilentlyContinue }
     Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
 }

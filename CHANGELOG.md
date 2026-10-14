@@ -21,6 +21,12 @@ game is not included. Newest first; each date is the day that kit was built.
   lists only the cards your account owns, and the first time they are laid out on the table so the game's own Club
   Make builds your club from them. The club card is kept in `data\save\online\`. YOUR CARDS, NEW CLUB CARD and CLEAR
   BAD ENDINGS are off for the online club, and no card is shown after a match there yet.
+- Online play needs your wccf.online sign-in and your online club. Without them (not signed in, or the website cannot
+  give you your cards the first time), PLAY plays on your PC instead, with your own club cards, and says why - your
+  other club cards never go online.
+- SETTINGS shows your wccf.online account (ACCOUNT, under NOW) with SIGN OUT: two clicks, done at the next start
+  (RESTART NOW or PLAY). The website then no longer accepts that sign-in, and the next online start asks for a new
+  code.
 
 ### Fixed
 - Building the kit's programs (`source\build.ps1`) in a folder whose path has a space in it.

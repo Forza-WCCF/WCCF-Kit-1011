@@ -77,6 +77,10 @@ class Site(BaseHTTPRequestHandler):
             if form.get("token") in site["good"]:
                 return self.answer(200, {"uid": 7, "username": "Tester"})
             return self.answer(401, {"error": "unknown or revoked sign-in"})
+        if action == "wccf_signout":
+            known = form.get("token") in site["good"]
+            site["good"].discard(form.get("token"))
+            return self.answer(200, {"signed_out": known})
         return self.answer(404, {"error": "unknown action"})
 
 
@@ -151,6 +155,18 @@ check(S.signed() == b"", "seat.py: a token that is not plain hex is not sent")
 A.forget()
 check(S.signed() == b"", "seat.py: not signed in -> nothing added")
 
+# 10. SIGN OUT (SETTINGS, 2026-10-14): the website told first - the token refused from then on - then forgotten here
+tok10, _out = run(A.ensure, False, no_wait)
+said, out = run(A.signout)
+check(tok10 and tok10 not in site["good"] and A.load() is None and "signed out" in said and tok10 not in said + out,
+      "sign out: the website refuses the token from then on, this PC forgets it, the token never said")
+run(A.ensure, False, no_wait)
+site["mode"] = "down"
+said, _out = run(A.signout)
+check(A.load() is None and "could not be reached" in said, "sign out with the website down: forgotten here anyway, and said")
+site["mode"] = "approve"
+check(run(A.signout)[0] == "this PC was not signed in", "sign out when not signed in: said, nothing else")
+
 srv.shutdown()
-print("account: %d failed" % len(fails) if fails else "account: all 16 checks passed")
+print("account: %d failed" % len(fails) if fails else "account: all 19 checks passed")
 sys.exit(1 if fails else 0)

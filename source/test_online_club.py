@@ -114,6 +114,34 @@ with open(play.RUNNING, "w") as f:
     json.dump({"online": "junk"}, f)
 check("play.py: a broken record means the slot", play.online_of(play.running_info()) is None)
 
+# play.py's rule for going online (the owner, 2026-10-14: only the online club online; your own cards on this PC)
+check("not signed in: not online", play.online_club(lambda: None, lambda t: online) == (None, "no wccf.online sign-in"))
+check("signed in but the online club not ready: not online",
+      play.online_club(lambda: "t", lambda t: None) == (None, "your online club is not ready"))
+check("signed in with the online club: online", play.online_club(lambda: "t", lambda t: online) == (online, None))
+
+# SETTINGS' SIGN OUT: done at the next start, then taken out of the file; RESTART NOW then makes it a full start
+play.PANEL = os.path.join(TMP, "panel.txt")
+with open(play.PANEL, "w") as f:
+    f.write("play_on=online\nserver=1.2.3.4\naccount=signout\n")
+calls = []
+A.signout = lambda: calls.append(1) or "tester signed out"
+_r, said = run(play.apply_account_request)
+with open(play.PANEL) as f:
+    left = f.read()
+check("SIGN OUT asked: done at the start, the request then taken out", calls == [1] and "account=" not in left and
+      "server=1.2.3.4" in left and "signed out" in said, (calls, left, said))
+run(play.apply_account_request)
+check("... once", calls == [1], calls)
+play.write_running({123: "seat 1 launcher"}, "local", None)
+with open(play.PANEL, "w") as f:
+    f.write("play_on=this_pc\n")
+fits = play.cabinet_restart_fits()
+with open(play.PANEL, "w") as f:
+    f.write("play_on=this_pc\naccount=signout\n")
+check("RESTART NOW with a SIGN OUT waiting is a full start (the seat lease holds the old sign-in)",
+      fits and not play.cabinet_restart_fits())
+
 import kit_common as K  # noqa: E402
 other = "Q:\\elsewhere\\club.bin" if not K.KIT.upper().startswith("Q:") else "R:\\elsewhere\\club.bin"
 check("a card on another drive is shown whole (CI's temp folder: relpath raised, 2026-10-14)", K.shown(other) == other)

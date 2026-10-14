@@ -2972,6 +2972,12 @@ static int  g_typing = 0;                // the address box has the keyboard
 static int  g_eng_req = -1;              // english=: -1 no request, 0 off (Japanese), 1 on
 static char g_card_req[64] = "";         // card=: the CLUB CARD panel's choice for the next start ("" none, "new")
 static int  g_fix_req = 0;               // card_fix=bad_endings: CLEAR BAD ENDINGS, done by play.py at the next start
+// ACCOUNT (SETTINGS, 2026-10-14 - the owner: "why dont i see the website login, in the settings"): the wccf.online name
+// this PC is signed in as (play.py WCCF_ACCOUNT_NAME - the name only, never the token), and SIGN OUT: two clicks write
+// account=signout, done by play.py at the next start (the website refuses the token from then on); a third undoes it
+static char g_account[48] = "";
+static int  g_signout_req = 0;
+static DWORD g_so_armed = 0;
 static volatile LONG g_set_dirty = 1;    // the status must be read again now
 // RESTART NOW (the player, 2026-10-06: "a button that goes to the next start"): a first click arms it for 8 s, a second
 // writes data\restart.request; panel.py (outside the game - seat 1's debugger would kill a restart the game
@@ -3009,6 +3015,7 @@ static void set_load_locked(void)
 {
     FILE *f = fopen(g_panel_path, "rb"); char line[256];
     g_on_online = 0; g_server[0] = 0; g_eng_req = -1; g_card_req[0] = 0; g_fix_req = 0; g_compact = 0; g_auto_off = 0;
+    g_signout_req = 0;
     if (!f) return;
     while (fgets(line, sizeof line, f)) {
         char *p = strchr(line, '#'), *eq, *name, *val;
@@ -3021,6 +3028,7 @@ static void set_load_locked(void)
         else if (!_stricmp(name, "english")) g_eng_req = !_stricmp(val, "on") ? 1 : !_stricmp(val, "off") ? 0 : -1;
         else if (!_stricmp(name, "card")) lstrcpynA(g_card_req, val, sizeof g_card_req);
         else if (!_stricmp(name, "card_fix")) g_fix_req = !_stricmp(val, "bad_endings");
+        else if (!_stricmp(name, "account")) g_signout_req = !_stricmp(val, "signout");
         else if (!_stricmp(name, "layout")) g_compact = !_stricmp(val, "compact");
         else if (!_stricmp(name, "auto_logs")) g_auto_off = !strcmp(val, "0");
     }
@@ -3038,6 +3046,7 @@ static int set_save_locked(void)
     if (g_eng_req >= 0) n += _snprintf(text + n, sizeof text - n, "english=%s\n", g_eng_req ? "on" : "off");
     if (g_card_req[0]) n += _snprintf(text + n, sizeof text - n, "card=%s\n", g_card_req);
     if (g_fix_req) n += _snprintf(text + n, sizeof text - n, "card_fix=bad_endings\n");
+    if (g_signout_req) n += _snprintf(text + n, sizeof text - n, "account=signout\n");
     if (g_compact) n += _snprintf(text + n, sizeof text - n, "layout=compact\n");     // the VIEW: kept, not a request
     if (g_auto_off) n += _snprintf(text + n, sizeof text - n, "auto_logs=0\n");       // the player's choice: kept
     f = fopen(g_panel_tmp, "wb");
@@ -3102,6 +3111,14 @@ static void set_init(void)               // the init thread: where data\ is, and
     }
     logline("club card: %s (transfer %s, backups %s)%s", g_club_card, g_club_new, g_club_baks,     // check.ps1 reads it
             g_online_club ? " - the online club: YOUR CARDS off, no card dealt" : "");
+    {                                    // the name as the panel's font can draw it (accents dropped, as card names)
+        WCHAR wn[64]; char u8[200];
+        DWORD k = GetEnvironmentVariableW(L"WCCF_ACCOUNT_NAME", wn, 64);
+        if (k > 0 && k < 64 && WideCharToMultiByte(CP_UTF8, 0, wn, -1, u8, sizeof u8, NULL, NULL) > 0)
+            fold_name(u8, g_account, sizeof g_account);
+        if (k > 0 && k < 64 && !g_account[0]) lstrcpynA(g_account, "your account", sizeof g_account);   // no Latin letters
+    }
+    logline("account: %s", g_account[0] ? g_account : "not signed in");                       // check.ps1 reads it
     g_lg_stamp = sendlogs_stamp();                              // an answer from an earlier run is not shown
     EnterCriticalSection(&g_board_cs);
     set_load_locked();
@@ -3511,10 +3528,11 @@ static void fmt_when(char *out, size_t cap, ULONGLONG t)   // a file time as the
     out[cap - 1] = 0;
 }
 
-// the panel's parts, in canvas pixels over the middle column: title + help + X; "NOW" with six rows; "NEXT START"
-// with two rows of choices (THIS PC / ONLINE + the address box, ENGLISH / JAPANESE) and RESTART NOW; "VIEW" with the
-// LAYOUT (CABINET / COMPACT, 2026-10-06), which changes at once
-struct SGeo { float x0, x1, lx, vx, rowh, ynow, ynext, yview; RECT close, pc, online, addr, eng, jap, restart, cab, cmp, logs; };
+// the panel's parts, in canvas pixels over the middle column: title + help + X; "NOW" with seven rows (the last,
+// ACCOUNT, with SIGN OUT at its right end); "NEXT START" with two rows of choices (THIS PC / ONLINE + the address box,
+// ENGLISH / JAPANESE) and RESTART NOW; "VIEW" with the LAYOUT (CABINET / COMPACT, 2026-10-06), which changes at once
+#define SET_ROWS 7
+struct SGeo { float x0, x1, lx, vx, rowh, ynow, ynext, yview; RECT close, pc, online, addr, eng, jap, restart, cab, cmp, logs, signout; };
 
 static void set_geo(struct SGeo *g)
 {
@@ -3523,7 +3541,9 @@ static void set_geo(struct SGeo *g)
     g->lx = g->x0 + 24.0f * s; g->vx = g->x0 + 230.0f * s;
     g->close = RC(g->x1 - 58.0f * s, 12.0f * s, g->x1 - 18.0f * s, 50.0f * s);
     g->ynow = 104.0f * s;
-    g->ynext = g->ynow + 32.0f * s + 6.0f * g->rowh + 22.0f * s;
+    y = g->ynow + 32.0f * s + (float)(SET_ROWS - 1) * g->rowh;           // the ACCOUNT row's band
+    g->signout = RC(g->x1 - 266.0f * s, y + 3.0f * s, g->x1 - 36.0f * s, y + g->rowh - 9.0f * s);
+    g->ynext = g->ynow + 32.0f * s + (float)SET_ROWS * g->rowh + 22.0f * s;
     y = g->ynext + 36.0f * s;
     g->pc = RC(g->vx, y, g->vx + 130.0f * s, y + 36.0f * s);
     g->online = RC(g->vx + 140.0f * s, y, g->vx + 270.0f * s, y + 36.0f * s);
@@ -3559,7 +3579,8 @@ static void set_draw(IDirect3DDevice9 *dev)
     DWORD white = D3DCOLOR_ARGB(255, 240, 240, 245), grey = D3DCOLOR_ARGB(255, 150, 156, 170);
     DWORD orange = D3DCOLOR_ARGB(255, 255, 138, 42), green = D3DCOLOR_ARGB(255, 120, 230, 120);
     DWORD yellow = D3DCOLOR_ARGB(255, 255, 214, 40), red = D3DCOLOR_ARGB(255, 255, 110, 90);
-    static const char *LABEL[6] = { "SERVER", "CLUB CARD", "BAD ENDINGS", "LAST SAVED", "LATEST BACKUP", "GAME TEXT" };
+    static const char *LABEL[SET_ROWS] = { "SERVER", "CLUB CARD", "BAD ENDINGS", "LAST SAVED", "LATEST BACKUP", "GAME TEXT",
+                                           "ACCOUNT" };
     if (!g_set) return;
     if (!g_font_tex) build_font(dev);
     EnterCriticalSection(&g_board_cs);
@@ -3572,7 +3593,7 @@ static void set_draw(IDirect3DDevice9 *dev)
     fill_rect(dev, g.lx, g.ynow + 22.0f * s, g.x1 - g.x0 - 48.0f * s, 2.0f * s, D3DCOLOR_ARGB(255, 60, 52, 44));
     fill_rect(dev, g.lx, g.ynext + 22.0f * s, g.x1 - g.x0 - 48.0f * s, 2.0f * s, D3DCOLOR_ARGB(255, 60, 52, 44));
     fill_rect(dev, g.lx, g.yview + 22.0f * s, g.x1 - g.x0 - 48.0f * s, 2.0f * s, D3DCOLOR_ARGB(255, 60, 52, 44));
-    for (i = 0; i < 6; i++)                                                                       // the rows' bands
+    for (i = 0; i < SET_ROWS; i++)                                                                // the rows' bands
         fill_rect(dev, g.lx, g.ynow + 32.0f * s + (float)i * g.rowh, g.x1 - g.x0 - 48.0f * s, g.rowh - 6.0f * s,
                   D3DCOLOR_ARGB(255, 24, 26, 34));
     {                                                                                             // the address box
@@ -3600,6 +3621,10 @@ static void set_draw(IDirect3DDevice9 *dev)
         int armed = g_lg_armed && (LONG)(g_lg_armed - now) > 0, busy = g_lg_sent || !strcmp(g_lg_res, "sending");
         set_chip(dev, g.logs, busy ? "SENDING ..." : armed ? "CLICK AGAIN TO SEND" : "SEND LOGS", armed || busy, s);
     }
+    if (g_account[0]) {
+        int armed = g_so_armed && (LONG)(g_so_armed - now) > 0;
+        set_chip(dev, g.signout, g_signout_req ? "UNDO SIGN OUT" : armed ? "CLICK AGAIN TO SIGN OUT" : "SIGN OUT", armed, s);
+    }
     if (!g_font_tex) return;
     set_picture(dev, g_font_tex, 1);
     put_str(dev, g.x0 + 24.0f * s, 14.0f * s, 0.85f * s, orange, "SETTINGS");
@@ -3613,7 +3638,7 @@ static void set_draw(IDirect3DDevice9 *dev)
     put_str(dev, g.lx, g.ynow, 0.46f * s, orange, "NOW");
     put_str(dev, g.lx, g.ynext, 0.46f * s, orange, "NEXT START");
     put_in_rect(dev, g.close, 0.8f * s, white, "X");
-    for (i = 0; i < 6; i++) {
+    for (i = 0; i < SET_ROWS; i++) {
         y = g.ynow + 32.0f * s + (float)i * g.rowh + (g.rowh - 6.0f * s - (float)g_cellh * 0.52f * s) * 0.5f;
         put_str(dev, g.lx + 12.0f * s, y + 2.0f * s, 0.44f * s, grey, LABEL[i]);
         col = white; v[0] = 0;
@@ -3653,9 +3678,16 @@ static void set_draw(IDirect3DDevice9 *dev)
         case 5:
             _snprintf(v, sizeof v, "%s", st.english ? "English" : "Japanese (Sega's original)");
             break;
+        case 6:
+            if (!g_account[0]) { _snprintf(v, sizeof v, "not signed in - ONLINE asks for a wccf.online code at its start"); col = grey; }
+            else if (g_signout_req) { _snprintf(v, sizeof v, "%s - signs out at the next start", g_account); col = yellow; }
+            else if (g_online_club) { _snprintf(v, sizeof v, "%s on wccf.online - you play your online club", g_account); col = green; }
+            else { _snprintf(v, sizeof v, "%s on wccf.online - ONLINE plays your online club", g_account); col = green; }
+            break;
         }
         v[sizeof v - 1] = 0;
-        put_str(dev, g.vx, y, 0.52f * s, col, v);
+        if (i == SET_ROWS - 1) put_fit(dev, g.vx, y, 0.52f * s, col, v, (float)g.signout.left - g.vx - 12.0f * s);
+        else put_str(dev, g.vx, y, 0.52f * s, col, v);
     }
     y = (float)g.pc.top + ((float)(g.pc.bottom - g.pc.top) - (float)g_cellh * 0.44f * s) * 0.5f;
     put_str(dev, g.lx + 12.0f * s, y, 0.44f * s, grey, "PLAY ON");
@@ -3814,6 +3846,21 @@ static void set_click(HWND h, int x, int y)                     // a press insid
                 else note_locked(green, "CABINET: the cabinet's buttons are back around the game");
                 logline("settings: layout %s", want ? "compact" : "cabinet");
             }
+        } else if (in_rect(&g.signout, x, y) && g_account[0]) {   // SIGN OUT: click twice; once more undoes it
+            DWORD now = GetTickCount(), yellow = D3DCOLOR_ARGB(255, 255, 214, 40);
+            if (g_signout_req) {
+                g_signout_req = 0;
+                if (set_save_locked()) note_locked(green, "%s stays signed in", g_account);
+                else { g_signout_req = 1; note_locked(red, "could not save data\\panel.txt - try again"); }
+            } else if (!g_so_armed || (LONG)(g_so_armed - now) <= 0) {
+                g_so_armed = now + 8000;
+                note_locked(yellow, "click SIGN OUT again: %s signs out at the next start", g_account);
+            } else {
+                g_so_armed = 0; g_signout_req = 1;
+                if (set_save_locked()) note_locked(green, "%s signs out at the next start - RESTART NOW or PLAY", g_account);
+                else { g_signout_req = 0; note_locked(red, "could not save data\\panel.txt - try again"); }
+            }
+            logline("settings: sign out %s", g_signout_req ? "asked" : g_so_armed ? "armed" : "not asked");
         } else if (in_rect(&g.logs, x, y)) {                  // SEND LOGS: click twice
             DWORD now = GetTickCount(), yellow = D3DCOLOR_ARGB(255, 255, 214, 40);
             if (g_lg_sent || !strcmp(g_lg_res, "sending")) {

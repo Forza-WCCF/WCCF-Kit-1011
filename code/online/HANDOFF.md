@@ -2,7 +2,7 @@
 
 | File | What it does |
 |---|---|
-| `account.py` | this PC's wccf.online sign-in, the way a TV signs in: a code shown (PLAY window + a small Windows box), the page opened in the browser, the player approves there; the token kept in `data\account.json`. play.py runs it before joining a server; nothing fatal - no sign-in plays on |
+| `account.py` | this PC's wccf.online sign-in, the way a TV signs in: a code shown (PLAY window + a small Windows box), the page opened in the browser, the player approves there; the token kept in `data\account.json`. play.py runs it before joining a server; no sign-in = play.py plays on this PC instead. `signout()` (SETTINGS' SIGN OUT, via play.py at the next start): the website refuses the token from then on, then it is forgotten here |
 | `club.py` | your online club: signed in, a PC plays online with the account's own club card (`data\save\online\u<account>\club.bin`), not the slot card; the cards the account owns on wccf.online (a new account gets 11 white ones) make the CATALOGUE (`data\cache\catalogue_online.tsv`) and, for a club not made yet, the table; the list is kept for when the website is down |
 | `seat.py` | this PC's seat on a server: asks the server's seat desk for a seat and holds it while the game runs; after a break it reconnects and asks for the same seat; signed in, every request carries the token |
 | `send_logs.py` | SEND LOGS (SETTINGS panel): this kit's logs in one ZIP, sent to a server's log inbox - never the club card, and names on this PC are replaced; also the newest lean crash snapshots and a report.txt; play.py uses it to send a run that went wrong by itself |

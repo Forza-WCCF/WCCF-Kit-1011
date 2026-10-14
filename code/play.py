@@ -258,6 +258,8 @@ def kit_env(game, online=None):
             env[k] = os.environ[k]
     if online:
         env.update(WCCF_CLUB_CARD=online["card"], WCCF_CATALOGUE=online["catalogue"])
+    from online import account                # SETTINGS' ACCOUNT row: the name only - the panel never sees the token
+    env["WCCF_ACCOUNT_NAME"] = str((online or account.load() or {}).get("username") or "")
     return env
 
 
@@ -475,6 +477,28 @@ def apply_card_request():
     drop_panel_line("card")
 
 
+def apply_account_request():
+    """the SETTINGS panel's "account=signout" (2026-10-14): this PC's wccf.online sign-in ended before anything starts
+    (online\\account.py signout: the website refuses the token from then on), then taken out of the file - the next
+    online start asks for a code"""
+    if read_panel().get("account", "").lower() != "signout":
+        return
+    from online import account
+    say("  wccf.online: %s, as the SETTINGS panel asked - the next online start asks for a code" % account.signout())
+    drop_panel_line("account")
+
+
+def online_club(ensure, prepare):
+    """remote mode's rule (the owner, 2026-10-14: "they should only have this club card when they are logged in, and if
+    they are playing offline thats when they can use the other club cards"): online = signed in to wccf.online AND the
+    account's own club ready -> (club, None); anything less -> (None, why), and play() plays on this PC instead"""
+    token = ensure()
+    if not token:
+        return None, "no wccf.online sign-in"
+    club = prepare(token)
+    return (club, None) if club else (None, "your online club is not ready")
+
+
 def apply_card_fix():
     """the CLUB CARD panel's "card_fix=bad_endings" (2026-10-08): the slot card's bad endings back to 0
     (edit.clear_bad_endings: the game's own checks, the old card into data\\save\\backup first), done now
@@ -640,12 +664,19 @@ def play(debug, mode="local", ip=None, seat_no=None):
         say("Already running (%s) - close the game's window first (a game that is stuck: PLAY.exe stop)." %
             ", ".join(sorted({p[2] for p in busy})))
         return 3
+    apply_account_request()                  # SETTINGS' SIGN OUT: before the sign-in below asks
     online = None
-    if mode == "remote":                     # the wccf.online sign-in, before anything starts (2026-10-14): its token
-        from online import account, club     # goes to the server's seat desk with the seat request (online\seat.py);
-        token = account.ensure()             # no sign-in is not fatal here - the server decides
-        if token:                            # signed in: the account's own club and cards (online\club.py); None:
-            online = club.prepare(token)     # said why, and the slot card plays as before
+    if mode == "remote":                     # the wccf.online sign-in and the account's own club, before anything
+        from online import account, club     # starts (2026-10-14): the token goes to the server's seat desk with the
+        online, why = online_club(account.ensure, club.prepare)       # seat request (online\seat.py)
+        if not online:                       # never online with the slot card; never locked out either
+            if running:                      # a server runs on this PC: the game cannot play beside it here
+                say("Online play needs a wccf.online sign-in and your online club (%s). A server runs on this PC, so "
+                    "the game cannot play here instead - PLAY.exe stop ends it." % why)
+                return 3
+            say("Online play needs a wccf.online sign-in and your online club (%s) - playing on this PC instead, with "
+                "your own club cards. The next online start tries again." % why)
+            return play(debug)
     beside_server = bool(running)            # only "remote" gets here with something running: a server on this PC
     if beside_server:
         os.makedirs(os.path.join(K.LOGS, "hook"), exist_ok=True)     # its logs are open: no rotation
@@ -1035,6 +1066,8 @@ def cabinet_restart_fits():
     panel = read_panel()
     want = panel.get("english", "").lower()
     if want in K.TEXT_LANGUAGE and K.TEXT_LANGUAGE[want] != K.game_language():
+        return False
+    if panel.get("account", "").lower() == "signout":    # SIGN OUT: the seat lease holds the old sign-in - a full start
         return False
     online = panel.get("play_on", "").lower() == "online"
     if info["mode"] == "remote":
