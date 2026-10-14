@@ -12,16 +12,20 @@
 //       size:W,H         the window's client size: the panel writes its frame dump (wccfpanel_frame.bmp, beside
 //                        this exe) once a new size has held for 10 frames
 //       copy:NAME        wccfpanel_frame.bmp copied to NAME
+//       connect:PORT     a TCP link from this program to 127.0.0.1:PORT - the game's link to the server (20002) for
+//                        the panel's link watch (source\test_link_close.py)
+//       disconnect       that link closed
 //
 // The panel's game-only parts (money, the % guard, the dispenser, the relay) check that they are in the real game
 // and stay off here.  Run it with WCCFPANEL_DRYKEYS=1 (button keys are logged, never pressed),
 // WCCFPANEL_FULLSCREEN=0 (the window is never maximized over the screen) and WCCF_DATA / WCCF_KEYS on scratch files.
 // The window opens off every screen and is never activated, so it takes no focus from what the player is doing.
 //
-//   cl /nologo /O2 /MT /W3 /D_CRT_SECURE_NO_WARNINGS fakegame.c /Fe:fakegame.exe /link d3d9.lib user32.lib
+//   cl /nologo /O2 /MT /W3 /D_CRT_SECURE_NO_WARNINGS fakegame.c /Fe:fakegame.exe /link d3d9.lib user32.lib ws2_32.lib
 #define CINTERFACE
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <winsock2.h>
 #include <d3d9.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,6 +35,7 @@
 #define GAME_H 900
 
 static HWND g_win;
+static SOCKET g_link = INVALID_SOCKET;
 
 static void client_size(int w, int h)
 {
@@ -58,6 +63,17 @@ static int step(const char *s, const char *dir)
         return 150;
     }
     if (!strcmp(s, "close")) { PostMessageA(g_win, WM_CLOSE, 0, 0); return 150; }
+    if (!strncmp(s, "connect:", 8)) {
+        WSADATA wd; struct sockaddr_in to;
+        WSAStartup(MAKEWORD(2, 2), &wd);
+        ZeroMemory(&to, sizeof to);
+        to.sin_family = AF_INET; to.sin_port = htons((u_short)atoi(s + 8)); to.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        g_link = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        if (g_link == INVALID_SOCKET || connect(g_link, (struct sockaddr *)&to, sizeof to))
+            printf("connect: 127.0.0.1:%s failed (%d)\n", s + 8, WSAGetLastError());
+        return 150;
+    }
+    if (!strcmp(s, "disconnect")) { closesocket(g_link); g_link = INVALID_SOCKET; return 150; }
     if (!strncmp(s, "move:", 5) && sscanf(s + 5, "%d,%d", &a, &b) == 2) {
         PostMessageA(g_win, WM_MOUSEMOVE, 0, MAKELPARAM(a, b));
         return 150;
@@ -84,7 +100,7 @@ int main(int argc, char **argv)
     char dir[MAX_PATH], *sl;
     WNDCLASSA wc; IDirect3D9 *d3d; IDirect3DDevice9 *dev = NULL; D3DPRESENT_PARAMETERS pp;
     int next = 2; DWORD due;
-    if (argc < 2) { printf("fakegame.exe PANEL.dll [wait:MS click:X,Y move:X,Y close type:TEXT key:VK size:W,H copy:NAME ...]\n"); return 2; }
+    if (argc < 2) { printf("fakegame.exe PANEL.dll [wait:MS click:X,Y move:X,Y close type:TEXT key:VK size:W,H copy:NAME connect:PORT disconnect ...]\n"); return 2; }
     GetModuleFileNameA(NULL, dir, MAX_PATH);
     sl = strrchr(dir, '\\'); if (sl) *sl = 0;
 

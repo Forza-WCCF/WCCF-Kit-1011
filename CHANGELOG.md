@@ -39,6 +39,9 @@ game is not included. Newest first; each date is the day that kit was built.
 
 ### Fixed
 - Building the kit's programs (`source\build.ps1`) in a folder whose path has a space in it.
+- Closing the game normally no longer sends its logs to the server as a run that went wrong. As the game ended, the
+  panel sometimes saw the server link go and wrote it as lost; now nothing is written once you have closed the
+  window. A link lost while you play is still written, and still sends the logs.
 
 ## Kit 6 - 2026-10-11
 

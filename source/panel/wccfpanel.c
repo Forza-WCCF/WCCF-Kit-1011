@@ -3221,15 +3221,18 @@ static int any_session_open(void)
 // then only warns, over the picture, and a second close within 8 s quits anyway: the question STOP used to ask.
 #define CLOSE_AGAIN_MS 8000
 static DWORD g_close_until = 0;          // a close warned about until then (0: none)
+static volatile LONG g_closed = 0;       // the player closed the window: the link the game drops now is no fault
 
 static int close_allowed(void)           // WM_CLOSE: 1 = let the window close
 {
     if (g_close_until && (LONG)(g_close_until - GetTickCount()) > 0) {
         logline("close: closed again during the card session - the game ends");
+        InterlockedExchange(&g_closed, 1);
         return 1;
     }
     if (!any_session_open()) {                        // the club card OR the manager-transfer card (A7)
         logline("close: the window closes - the game ends");
+        InterlockedExchange(&g_closed, 1);
         return 1;
     }
     g_close_until = GetTickCount() + CLOSE_AGAIN_MS;
@@ -3496,12 +3499,15 @@ static void sendlogs_poll(void)          // the board thread: the helper's answe
 // The server link, watched all the time (2026-10-11): SETTINGS looked only while it was open, so a link that dropped
 // mid-match left no trace - the player's side of an Error 3000.  One dated line in data\logs\server_link.txt (WCCF_LOGS,
 // a fresh file each run) when it comes up and when it drops; play.py's end of run sends the logs by itself after a drop.
+// Nothing once the player has closed the window (close_allowed, kit 7): the game drops its link as it ends, and on
+// 2026-10-11 that LOST sent three normal closes to the server as runs that went wrong.  A link lost before the close
+// is written as before.
 static void link_watch(void)
 {
     static int was = 0; static DWORD last = 0, up_at = 0;
     char peer[16], dir[MAX_PATH], path[MAX_PATH]; SYSTEMTIME t; DWORD n; FILE *f; int now;
     // unsigned: right at any uptime (a signed test was stuck past 24.8 days of uptime - found on this PC, 2026-10-11)
-    if (g_projector || GetTickCount() - last < 2000) return;              // the cabinet's link only
+    if (g_projector || g_closed || GetTickCount() - last < 2000) return;  // the cabinet's link only; not after a close
     last = GetTickCount();
     now = server_link(peer);
     if (now < 0 || now == was) return;

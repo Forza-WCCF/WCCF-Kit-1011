@@ -19,6 +19,7 @@ The source of every compiled program the kit ships, the scripts that build, chec
 | `test_icc_reader.py` | the card reader's saving and recovery (a busy file never half-writes the card) |
 | `test_imports.py` | every file in `code\` imports the way the launchers run it |
 | `test_italian_tables.py` | the Italian keeps every printf and colour code of the English, in the game's font (peakx, #30) |
+| `test_link_close.py` | the panel's server link watch: a link lost while the game runs is written LOST (the automatic report), the link the game drops after the player closed it is not (fakegame.exe and a listener on 127.0.0.1:20002) |
 | `test_log_archive.py` | the run before last is zipped into the archive, never just deleted |
 | `test_old_layout.py` | a kit updated from before kit 6 is tidied: old folders, catalogue moved |
 | `test_patch_hook_import.py` | the game's import renamed to `wccfk.dll` and back (the antivirus fix) |

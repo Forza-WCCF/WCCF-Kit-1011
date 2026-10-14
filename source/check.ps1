@@ -20,6 +20,8 @@
 #   the panel's money, relay and dealt-card self-tests (wccfpanel.dll loaded by source\build\fakegame.exe, in a
 #   scratch folder; the relay test plays two seats through code\server\relay.py on 127.0.0.1:20941 - the C side and
 #   the Python side of the match relay checked against each other)
+#   the server link watch: a link lost while the game runs is written LOST, the player's own close is not
+#   (source\test_link_close.py: fakegame.exe linked to a listener on 127.0.0.1:20002)
 # The panel's frame-wait test (WCCFPANEL_LIMITERTEST) measures milliseconds and stays out: a busy machine fails it.
 #
 #   powershell -ExecutionPolicy Bypass -File source\check.ps1
@@ -235,6 +237,9 @@ try {
     'WCCF_KEYS' | ForEach-Object { Remove-Item "env:$_" -ErrorAction SilentlyContinue }
     Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
 }
+
+& $py -I (Join-Path $PSScriptRoot 'test_link_close.py')
+if ($LASTEXITCODE) { $failed += 'the server link watch: LOST for a link lost in play, nothing for the player''s own close' }
 
 foreach ($c in $side) {
     $c.Process.WaitForExit()
