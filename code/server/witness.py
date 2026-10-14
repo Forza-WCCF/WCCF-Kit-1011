@@ -2,9 +2,9 @@
 r"""witness.py - a finished match earns a card (2026-10-14, kit 7, phase 3).
 
 On a server with a wccf.online secret (data\server_name.txt and data\server_secret.txt - play.py starts this only
-then), the hook in control (source\hook\wccfk.c) keeps the club data each cabinet sends before a match (ENTRY SVR) and
-after it (TEAM DATA RSLT: the locker room, a finished match) as files in data\witness\, named with the cabinet's
-address. This tells wccf.online whose they were - the seat desk's data\leases.json gives the signed-in account at that
+then), the hook in control (source\hook\wccfk.c) keeps the club data each cabinet sends at a session's start (ENTRY
+SVR), at each match's start (TEAM DATA - a match played on from the locker room sends only this) and after a match
+(TEAM DATA RSLT: the locker room, a finished match) as files in data\witness\, named with the cabinet's address. This tells wccf.online whose they were - the seat desk's data\leases.json gives the signed-in account at that
 address - with the server's secret, never a player's token. The website keeps what it saw and gives a finished match's
 account one card. Each file then goes to data\witness\done\ (what the server saw, kept), and one line says what
 happened. An address with no signed-in seat, or with two (one house, two players): nothing is sent, and it says why.
@@ -23,7 +23,7 @@ from online import account  # noqa: E402  (its post(): the website, WCCF_WEBSITE
 
 KIT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA = os.path.join(KIT, "data")
-NAME = re.compile(r"^\d{8}-\d{6}-\d+-(entry|rslt)-([0-9.]+)_\d+\.bin$")      # the hook's file names
+NAME = re.compile(r"^\d{8}-\d{6}-\d+-(entry|team|rslt)-([0-9.]+)_\d+\.bin$")      # the hook's file names
 RECENT = 120                    # seconds a freed seat's account still counts
 RETRY = 30                      # seconds before a file is tried again when the website could not be reached
 log_file = None
@@ -88,7 +88,7 @@ def handle(path, ident, seats):
     if not m:
         return True, "%s: not a name the hook gives - set aside" % os.path.basename(path)
     kind, ip = m.group(1), m.group(2)
-    what = {"entry": "before a match", "rslt": "a finished match"}[kind]
+    what = {"entry": "before a match", "team": "a match starting", "rslt": "a finished match"}[kind]
     state, who = seats.at(ip)
     if state != "ok":
         return True, "%s from %s: %s - nothing sent" % (what, ip, who)

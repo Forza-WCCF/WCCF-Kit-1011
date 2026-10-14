@@ -73,6 +73,7 @@ seats = W.Seats(LEASES)
 leases({"1": {"ip": "127.0.0.1", "uid": 7, "username": "tester"}})
 rslt = kept("20261014-120000-1-rslt-127.0.0.1_52046.bin", b"RSLT" * 100)
 entry = kept("20261014-115000-2-entry-127.0.0.1_52046.bin", b"ENTR" * 100)
+team = kept("20261014-115030-6-team-127.0.0.1_52046.bin", b"TEAM" * 100)     # each match's start (a played-on one too)
 other = kept("20261014-120001-3-rslt-8.8.8.8_1000.bin")
 odd = kept("something else.bin")
 retry = {}
@@ -82,12 +83,14 @@ check("a finished match goes to the website: this server, its secret, the accoun
       sent["rslt"]["server"] == "this-pc-test" and sent["rslt"]["secret"] == SECRET and sent["rslt"]["uid"] == 7 and
       base64.b64decode(sent["rslt"]["body"]) == b"RSLT" * 100, sent.get("rslt", {}).get("uid"))
 check("... and what came before a match too", "entry" in sent and sent["entry"]["uid"] == 7)
+check("... and each match's start (TEAM DATA) too", "team" in sent and sent["team"]["uid"] == 7 and
+      base64.b64decode(sent["team"]["body"]) == b"TEAM" * 100 and "a match starting" in out, out)
 check("... and the card it earned is said", "card 1234" in out, out)
-check("an address with nobody signed in: nothing sent, said why", len(posts) == 2 and "no signed-in seat at 8.8.8.8" in out,
+check("an address with nobody signed in: nothing sent, said why", len(posts) == 3 and "no signed-in seat at 8.8.8.8" in out,
       out)
 check("a file the hook would not name: set aside", "not a name the hook gives" in out, out)
 done = sorted(os.listdir(os.path.join(FOLDER, "done")))
-check("every handled file moved to done\\ (kept)", len(done) == 4 and not [f for f in os.listdir(FOLDER) if f.endswith(".bin")],
+check("every handled file moved to done\\ (kept)", len(done) == 5 and not [f for f in os.listdir(FOLDER) if f.endswith(".bin")],
       done)
 check("the server's secret in no line said", SECRET not in out, out)
 posts.clear()

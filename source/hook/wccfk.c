@@ -1084,16 +1084,17 @@ static wm_sock          g_wm[WM_SOCKS];
 static CRITICAL_SECTION g_wm_lock;
 
 /* ---- the witness (2026-10-14, kit 7 phase 3: a card per finished match) ---------------------------------------
- * With WCCF_WITNESS_DIR set (play.py, a server with a wccf.online secret), each club data a cabinet sends before a
- * match (ENTRY SVR) and after it (TEAM DATA RSLT: the locker room - a finished match) is kept there as a file
- * STAMP-N-KIND-ADDRESS_PORT.bin, KIND entry or rslt, written as .part and then renamed so it is only ever seen
+ * With WCCF_WITNESS_DIR set (play.py, a server with a wccf.online secret), each club data a cabinet sends at a
+ * session's start (ENTRY SVR), at each match's start (TEAM DATA - a match played on from the locker room sends only
+ * this, seen 2026-10-14) and after a match (TEAM DATA RSLT: the locker room - a finished match) is kept there as a file
+ * STAMP-N-KIND-ADDRESS_PORT.bin, KIND entry, team or rslt, written as .part and then renamed so it is only ever seen
  * whole. server\witness.py tells the website whose it was. Never a reason for the server to fail: an error is said. */
 static char g_witness_dir[MAX_PATH];     /* "" = not kept */
 static LONG g_witness_seq;
 
-/* The match flow (2026-10-14: a match played on from the locker room sends no ENTRY SVR, and which message starts it
- * is not known yet): each message name a player sends is said when it first comes, and again when it comes after 10 s
- * or more without it - so the flow of a match shows, and the 3-second chatter is said once. */
+/* The match flow (2026-10-14: it showed that a match played on from the locker room sends NOTICE_CONTINUE, then TEAM
+ * DATA, and no ENTRY SVR): each message name a player sends is said when it first comes, and again when it comes after
+ * 10 s or more without it - so the flow of a match shows, and the 3-second chatter is said once. */
 static void witness_flow(wm_sock *w, const unsigned char *id, unsigned len)
 {
     char name[17];
@@ -1121,7 +1122,6 @@ static void witness_batches(wm_sock *w, const unsigned char *p, unsigned n)
         const char *kind = !strncmp((const char *)id, "TEAM DATA RSLT", 16) ? "rslt"
                          : !strncmp((const char *)id, "ENTRY SVR", 16) ? "entry"
                          : !strncmp((const char *)id, "TEAM DATA", 16) ? "team" : NULL;
-        const char *sub = kind && kind[0] == 't' ? "seen\\" : "";  /* team: kept for the record, never sent on */
         char path[MAX_PATH], part[MAX_PATH + 8], addr[24];
         SYSTEMTIME t;
         FILE *f;
@@ -1135,8 +1135,8 @@ static void witness_batches(wm_sock *w, const unsigned char *p, unsigned n)
             if (addr[i] == ':')
                 addr[i] = '_';
         GetLocalTime(&t);
-        _snprintf(path, MAX_PATH - 1, "%s\\%s%04u%02u%02u-%02u%02u%02u-%ld-%s-%s.bin", g_witness_dir, sub, t.wYear,
-                  t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond, InterlockedIncrement(&g_witness_seq), kind, addr);
+        _snprintf(path, MAX_PATH - 1, "%s\\%04u%02u%02u-%02u%02u%02u-%ld-%s-%s.bin", g_witness_dir, t.wYear, t.wMonth,
+                  t.wDay, t.wHour, t.wMinute, t.wSecond, InterlockedIncrement(&g_witness_seq), kind, addr);
         path[MAX_PATH - 1] = 0;
         _snprintf(part, sizeof(part) - 1, "%s.part", path);
         part[sizeof(part) - 1] = 0;
@@ -1280,13 +1280,8 @@ static void install_wholemsg(HMODULE exe)
     n = GetEnvironmentVariableA("WCCF_WITNESS_DIR", g_witness_dir, MAX_PATH);
     if (n == 0 || n >= MAX_PATH || !real_recv)
         g_witness_dir[0] = 0;
-    else {
-        char seen[MAX_PATH + 8];
+    else
         CreateDirectoryA(g_witness_dir, NULL);
-        _snprintf(seen, sizeof(seen) - 1, "%s\\seen", g_witness_dir);
-        seen[sizeof(seen) - 1] = 0;
-        CreateDirectoryA(seen, NULL);                          /* TEAM DATA, kept for the record (witness_batches) */
-    }
     logline("witness: %s%s", g_witness_dir[0] ? "the club data before and after each match kept in " : "off",
             g_witness_dir);
 }
