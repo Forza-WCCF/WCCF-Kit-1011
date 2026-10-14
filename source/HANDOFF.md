@@ -9,6 +9,7 @@ The source of every compiled program the kit ships, the scripts that build, chec
 | `check.ps1` | every check that needs no game - CI runs it on every push; run it after any change |
 | `crashme.c` | not shipped: a program that crashes at once, for `test_crash_dump.py` (built into `build\`) |
 | `package.ps1` | makes the kit ZIP the way players get it, in `dist\` |
+| `test_account.py` | the wccf.online sign-in against a fake website: a code, the approval, the token saved and never printed, reused, replaced when refused, the website down; seat.py's TOKEN suffix |
 | `test_card_fix.py` | a missing club-card helper file never stops a start |
 | `test_crash_dump.py` | a crash leaves a lean and a full memory snapshot in `data\dumps` (crashme.exe under the real launcher) |
 | `test_ended.py` | play.py's choice when a game window's launcher ends (a closed window stops the rest), and when a run went wrong (the automatic report) |
@@ -24,6 +25,7 @@ The source of every compiled program the kit ships, the scripts that build, chec
 | `test_relay.py` | a live seat cannot be taken over by another address |
 | `test_rotate_logs.py` | a log file held open never stops a start |
 | `test_seat_desk_game.py` | the seat desk never gives a seat that is in the game |
+| `test_seat_desk_signin.py` | the seat desk with the wccf.online sign-in: optional or needed (data\require_signin.txt), a good / refused token, the website down, seat.py signed in, no token in the log |
 | `test_seat_lease.py` | the seat lease reconnects and asks for the same seat after a break |
 | `test_send_logs.py` | SEND LOGS packs and sends, the inbox keeps, and both refuse what they must |
 | `test_setup_state.py` | what a start needs; a game an older kit set up is set up once |

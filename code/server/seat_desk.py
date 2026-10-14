@@ -33,7 +33,17 @@ While no player is in the game and the box is not in it, a Windows firewall rule
 that address off TCP 20002; as soon as a player is in, it is lifted and the box joins in seconds.  Looked at every
 second.  The box asks "HOLD" -> "HOLD 1" (held) or "HOLD 0", and its keeper does not restart it while it is held.
 No file: nothing is held (every other server).  Needs the rights to change the firewall (the server task's SYSTEM).
+
+THE wccf.online SIGN-IN (2026-10-14): a PC signed in (online\account.py) ends its WANT line with "TOKEN <token>"
+("WANT TOKEN t", "WANT SEAT n TOKEN t").  The desk asks the website who that is (xmlhttp.php?action=wccf_whoami,
+WCCF_WEBSITE, default https://wccf.online), outside its lock, and keeps the answer CHECKED seconds.  A token the
+website refuses (revoked, banned): "ERR sign in again: ..." and no seat.  The website out of reach: let in unchecked
+(never lock everyone out because the website is down).  No token: let in - unless data\require_signin.txt exists
+(looked at on every claim, so switching it needs no restart): then "ERR sign in: ...", and kit 7 plays on its own PC
+instead and says why.  The lease remembers the account; the log names it, never the token.
 """
+import hashlib
+import json
 import os
 import re
 import socket
@@ -41,18 +51,59 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 
 PORT = int(os.environ.get("WCCF_BROKER_PORT", "20030"))
 SILENT = float(os.environ.get("WCCF_BROKER_SILENT", "75"))       # seconds without a line: the PC is gone
+WEBSITE = os.environ.get("WCCF_WEBSITE", "https://wccf.online").rstrip("/")
+CHECKED = float(os.environ.get("WCCF_SIGNIN_KEEP", "600"))       # seconds a website answer about a token is kept
 SEATS = range(1, 9)
 SATE = re.compile(r"client\[\d+\]\s*:\s*sateID=(\d+)")
 ACCEPT = re.compile(r"\+\+ACCEPT\+\+\s+'([0-9.]+):\d+'")
 GONE = re.compile(r"---DISCONNECT---\s*sateID=(\d+)")
 
 lock = threading.Lock()
-leases = {}                     # seat -> (peer, lease id)
+leases = {}                     # seat -> (peer, lease id, account {"uid", "username"} or None)
 next_id = 0
 log_file = None
+require_file = None             # data\require_signin.txt: when it exists, a PC must be signed in
+known = {}                      # sha256(token) -> (when, ("ok", account) or ("refused", why))
+
+
+def website_check(token):
+    """("ok", {"uid", "username"}) / ("refused", why) / ("unreachable", why) - from the website's who-am-I; ok and
+    refused are kept CHECKED seconds, unreachable is asked again next time.  Never raises."""
+    key = hashlib.sha256(token.encode("ascii", "replace")).hexdigest()
+    hit = known.get(key)
+    if hit and time.time() - hit[0] < CHECKED:
+        return hit[1]
+    req = urllib.request.Request(WEBSITE + "/xmlhttp.php?action=wccf_whoami",
+                                 data=urllib.parse.urlencode({"token": token}).encode("ascii"),
+                                 headers={"User-Agent": "WCCF-seat-desk"})
+    try:
+        with urllib.request.urlopen(req, timeout=8) as r:
+            body = json.loads(r.read().decode("utf-8", "replace") or "{}")
+        if not (isinstance(body, dict) and body.get("username")):
+            return "unreachable", "the website's answer named nobody"
+        res = ("ok", {"uid": body.get("uid"), "username": str(body["username"])})
+    except urllib.error.HTTPError as ex:
+        if ex.code not in (401, 403):
+            return "unreachable", "HTTP %d" % ex.code
+        try:
+            why = json.loads(ex.read().decode("utf-8", "replace") or "{}").get("error", "")
+        except (ValueError, AttributeError):
+            why = ""
+        res = ("refused", why or "HTTP %d" % ex.code)
+    except (OSError, ValueError) as ex:
+        return "unreachable", str(ex)
+    known[key] = (time.time(), res)
+    return res
+
+
+def require_signin():
+    return bool(require_file) and os.path.exists(require_file)
 
 
 def log(msg):
@@ -201,6 +252,23 @@ def serve(conn, peer):
         if words == ["HOLD"]:                                       # the projector box: held? (no seat taken)
             conn.sendall(b"HOLD 1\n" if held else b"HOLD 0\n")
             return
+        account = None
+        if len(words) >= 3 and words[-2] == "TOKEN":                # a signed-in PC (2026-10-14): who is it?
+            state, got = website_check(words[-1])                   # outside the lock: the website may be slow
+            words = words[:-2]
+            if state == "refused":
+                conn.sendall(b"ERR sign in again: wccf.online refused this PC's sign-in (%s)\n" %
+                             str(got)[:80].encode("ascii", "replace"))
+                log("%s: refused - the website refused its sign-in (%s)" % (peer, got))
+                return
+            if state == "ok":
+                account = got
+            else:
+                log("%s: the website could not be asked about its sign-in (%s) - let in unchecked" % (peer, got))
+        elif require_signin():
+            conn.sendall(b"ERR sign in: this server needs a wccf.online account - update the kit and start again\n")
+            log("%s: refused - not signed in, and this server needs it" % peer)
+            return
         with lock:
             game = in_game.now()
             others = {s: a for s, a in game.items() if a != ip}     # seats another address has in the game
@@ -227,9 +295,11 @@ def serve(conn, peer):
                 return
             next_id += 1
             lid = next_id
-            leases[seat] = (peer, lid)
+            leases[seat] = (peer, lid, account)
             conn.sendall(b"SEAT %d PROJECTOR 0\n" % seat)
             log("%s: seat %d - taken now: %s" % (peer, seat, taken()))
+            log("%s: seat %d is %s" % (peer, seat, "signed in as %s (uid %s)" % (account["username"], account["uid"])
+                                        if account else "not signed in"))
         while True:
             if read_line(conn, buf) == "PING":
                 conn.sendall(b"PONG\n")
@@ -247,7 +317,7 @@ def serve(conn, peer):
 
 
 def main(argv):
-    global log_file, hold_ip
+    global log_file, hold_ip, require_file
     life = float(argv[0]) if argv else 12 * 3600
     log_file = argv[1] if len(argv) > 1 else None
     if not in_game.path and log_file:                               # control's debug log is beside this desk's log
@@ -264,6 +334,9 @@ def main(argv):
     end = time.time() + life
     data =os.path.dirname(os.path.dirname(os.path.abspath(log_file))) if log_file else ""
     hold_ip = read_hold_ip(os.environ.get("WCCF_HOLD_FILE") or os.path.join(data, "hold_projector.txt"))
+    require_file = os.environ.get("WCCF_REQUIRE_FILE") or (os.path.join(data, "require_signin.txt") if data else None)
+    log("sign-in: %s (%s)" % ("NEEDED" if require_signin() else "not needed - players without one get in too",
+                              require_file or "no data folder"))
     if hold_ip:
         hold_tick()                                                 # at once: the box must not be the first in
         threading.Thread(target=hold_loop, args=(end,), daemon=True).start()

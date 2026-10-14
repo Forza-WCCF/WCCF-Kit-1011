@@ -106,6 +106,8 @@ $side = @(
     Start-Check 'the seat desk: never a seat that is in the game' 'test_seat_desk_game.py'
     Start-Check 'the projector box: held until a player is in' 'test_hold_projector.py'
     Start-Check 'SEND LOGS: packed, sent, kept - and refused when it must be' 'test_send_logs.py'
+    Start-Check 'the wccf.online sign-in: a code, approved, kept, never printed' 'test_account.py'
+    Start-Check 'the seat desk and the sign-in: optional or needed, a good or refused token, no token logged' 'test_seat_desk_signin.py'
 )
 
 & $py -I (Join-Path $PSScriptRoot 'test_english_pictures.py')

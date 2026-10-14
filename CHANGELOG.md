@@ -4,6 +4,18 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
+## Kit 7 - not released yet
+
+### Added
+- Online: a wccf.online sign-in, the way a TV signs in. Before joining a server, PLAY shows a short code (in its
+  window and in a small Windows box) and opens wccf.online in your browser; log in there - or register - and approve
+  the code, and the game carries on by itself. This PC stays signed in (`data\account.json`; never sent with SEND
+  LOGS). It is the first step of linking the website and online play: a wccf.online account to play online.
+- Hosting a server: the seat desk checks each PC's sign-in with the website and its log says who sits where. Sign-in
+  is optional until the host puts a file `data\require_signin.txt` on the server; then a PC that is not signed in is
+  told so, and kit 7 plays on its own PC instead and says why. If the website cannot be reached, signed-in PCs are
+  let in anyway.
+
 ## Kit 6 - 2026-10-11
 
 ### Changed

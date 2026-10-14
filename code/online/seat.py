@@ -7,10 +7,15 @@ game. The end of the run ends the lease and the seat is free again at once.
 
     python code\online\seat.py ADDRESS OUT_FILE LIFE_SECONDS [SEAT]
 
-OUT_FILE gets {"seat": n, "projector": 1|0}, or {"error": "no broker" | "no answer" | "full" | "taken" | "refused",
-"detail": "..."} - written ONCE, from the first claim, for play.py. "no broker" = nothing answered on the port (a
-server without the desk - play.py then plays as before); "no answer" = the desk was reached but did not reply in
-time (play.py stops rather than risk two PCs on one seat).
+OUT_FILE gets {"seat": n, "projector": 1|0}, or {"error": "no broker" | "no answer" | "full" | "taken" | "signin" |
+"refused", "detail": "..."} - written ONCE, from the first claim, for play.py. "no broker" = nothing answered on the
+port (a server without the desk - play.py then plays as before); "no answer" = the desk was reached but did not
+reply in time (play.py stops rather than risk two PCs on one seat); "signin" = the desk wants a wccf.online sign-in,
+or refused this PC's (play.py then plays on this PC and says why).
+
+THE SIGN-IN (2026-10-14): when this PC is signed in (online\account.py, data\account.json) every WANT line ends with
+"TOKEN <the token>" - the first claim and every reclaim. The token is read from the file here, so it never travels on
+a command line, and it is never written to a log.
 """
 import json
 import os
@@ -21,6 +26,21 @@ import time
 PORT = int(os.environ.get("WCCF_BROKER_PORT", "20030"))
 PING = float(os.environ.get("WCCF_LEASE_PING", "20"))          # seconds between pings (the desk waits 75)
 RETRY = float(os.environ.get("WCCF_LEASE_RETRY", "3"))         # seconds between reclaim tries after a break
+ACCOUNT = os.environ.get("WCCF_ACCOUNT_FILE") or os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data", "account.json")
+
+
+def signed():
+    """b" TOKEN <token>" when this PC is signed in (online\\account.py), else b"" - a token that is not plain hex is
+    not sent"""
+    try:
+        with open(ACCOUNT, encoding="utf-8") as f:
+            token = json.load(f).get("token", "")
+    except (OSError, ValueError, AttributeError):
+        return b""
+    if not (isinstance(token, str) and 0 < len(token) <= 128 and all(c in "0123456789abcdef" for c in token)):
+        return b""
+    return b" TOKEN " + token.encode("ascii")
 
 
 def log(msg):
@@ -61,7 +81,8 @@ def hold(conn, end):
 
 def main(argv):
     ip, out, life = argv[0], argv[1], float(argv[2])
-    want_initial = b"WANT SEAT %d\n" % int(argv[3]) if len(argv) > 3 else b"WANT\n"
+    sign = signed()
+    want_initial = (b"WANT SEAT %d" % int(argv[3]) if len(argv) > 3 else b"WANT") + sign + b"\n"
     end = time.time() + life
 
     # the first claim - the only write to OUT_FILE (play.py reads it to set up the game)
@@ -77,14 +98,15 @@ def main(argv):
         conn.close()
         return 1
     if not (len(words) == 4 and words[0] == "SEAT" and words[2] == "PROJECTOR"):
-        write(out, {"error": {"FULL": "full", "TAKEN": "taken"}.get(words[0] if words else "", "refused"),
-                    "detail": " ".join(words)})
+        kind = "signin" if words[:2] == ["ERR", "sign"] else \
+            {"FULL": "full", "TAKEN": "taken"}.get(words[0] if words else "", "refused")
+        write(out, {"error": kind, "detail": " ".join(words)})
         conn.close()
         return 1
     seat = int(words[1])
     write(out, {"seat": seat, "projector": int(words[3])})
     log("seat %d held (projector %s)" % (seat, words[3]))
-    want_reclaim = b"WANT SEAT %d\n" % seat
+    want_reclaim = b"WANT SEAT %d" % seat + sign + b"\n"
 
     # hold the seat for the life of the run; reconnect and reclaim the SAME seat after any break (A5)
     while time.time() < end:

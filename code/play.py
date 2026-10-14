@@ -84,6 +84,11 @@ class Failed(Exception):
     pass
 
 
+class SignInRefused(Failed):
+    """the server's seat desk wants a wccf.online sign-in, or refused this PC's (2026-10-14): main() then plays on this
+    PC and says why - never a dead end"""
+
+
 def say(msg):
     print(msg, flush=True)
 
@@ -499,6 +504,8 @@ def _seat_decision(got, seat_no, ip):
     if err == "no broker":
         s = seat_no or 1
         return "no_broker", s, (s == 1)
+    if err == "signin":
+        raise SignInRefused(detail)
     raise Failed({
         "full": "the server at %s is full: 8 cabinets play there now" % ip,
         "taken": "seat %s is taken on the server at %s - leave the seat number out to get the next free one"
@@ -612,6 +619,9 @@ def play(debug, mode="local", ip=None, seat_no=None):
         say("Already running (%s) - close the game's window first (a game that is stuck: PLAY.exe stop)." %
             ", ".join(sorted({p[2] for p in busy})))
         return 3
+    if mode == "remote":                     # the wccf.online sign-in, before anything starts (2026-10-14): its token
+        from online import account           # goes to the server's seat desk with the seat request (online\seat.py);
+        account.ensure()                     # no sign-in is not fatal here - the server decides
     beside_server = bool(running)            # only "remote" gets here with something running: a server on this PC
     if beside_server:
         os.makedirs(os.path.join(K.LOGS, "hook"), exist_ok=True)     # its logs are open: no rotation
@@ -1105,6 +1115,24 @@ def show():
     return 0
 
 
+def play_online(debug, ip, seat_no=None):
+    """play on the server at ip; when its seat desk wants a wccf.online sign-in or refuses this PC's (SignInRefused),
+    stop what was started and play on this PC instead, saying why - never a dead end (2026-10-14)"""
+    try:
+        return play(debug, "remote", ip, seat_no)
+    except SignInRefused as ex:
+        detail = str(ex)
+        if " again" in detail:                       # the website refused the saved sign-in: a fresh one next start
+            from online import account
+            account.forget()
+        say("The server at %s did not let this PC in: %s" % (ip, detail))
+        say("Playing on this PC instead; the next online start asks for a wccf.online sign-in.")
+        say("Stopping what was started ...")
+        stop(force=True)
+        time.sleep(2)                                # Windows frees the ports and pipes
+        return play(debug)
+
+
 def main(argv):
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -1146,7 +1174,7 @@ def main(argv):
                         "PC instead. (The panel keeps ONLINE for next time; THIS PC there stops this try.)" % ip)
                     return play(debug)
                 say("Online, as the SETTINGS panel chose (PLAY.exe local plays on this PC).")
-                return play(debug, "remote", ip)              # the server's seat desk picks the seat
+                return play_online(debug, ip)                 # the server's seat desk picks the seat
             return play(debug)
         if rest == ["local"]:
             return play(debug)
@@ -1174,7 +1202,7 @@ def main(argv):
             if s.get("server") != ip:
                 s["server"] = ip
                 K.save_settings(s)
-            return play(debug, "remote", ip, seat_no)       # seat_no None: the server's seat desk picks
+            return play_online(debug, ip, seat_no)          # seat_no None: the server's seat desk picks
         print(__doc__)
         return 2
     except Failed as ex:

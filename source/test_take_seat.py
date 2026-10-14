@@ -50,6 +50,15 @@ try:
 except play.Failed as e:
     check("did not answer" in str(e) and "local" in str(e), "the 'no answer' message says so and offers local play")
 
-n = 10
+# a seat desk that wants a wccf.online sign-in, or refused this PC's (2026-10-14): SignInRefused, with the desk's
+# own words - play.play_online then plays on this PC and says why
+try:
+    dec({"error": "signin", "detail": "ERR sign in: this server needs a wccf.online account"})
+    check(False, "a sign-in refusal must raise SignInRefused")
+except play.SignInRefused as e:
+    check("needs a wccf.online account" in str(e), "a sign-in refusal keeps the desk's words for the player")
+check(issubclass(play.SignInRefused, play.Failed), "SignInRefused is still a Failed (old handlers keep working)")
+
+n = 12
 print("take_seat: %d of %d checks passed" % (n - len(fails), n))
 sys.exit(1 if fails else 0)
