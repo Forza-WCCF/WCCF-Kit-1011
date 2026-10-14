@@ -167,10 +167,56 @@ with open(out2, encoding="utf-8") as f:
     got2 = json.load(f)
 check(got2.get("error") == "signin" and "again" in got2.get("detail", ""), "seat.py writes 'signin' for play.py (%r)" % got2)
 
+# an older server's seat desk (kit 6 and before) does not know TOKEN: seat.py asks again without it - a signed-in
+# kit 7 must still join a host who has not updated
+OLD = free_port()
+old_lines, kept = [], []
+
+
+def old_desk():
+    srv = socket.socket()
+    srv.bind(("127.0.0.1", OLD))
+    srv.listen(4)
+    srv.settimeout(10)
+    for _ in range(2):
+        try:
+            c, _addr = srv.accept()
+        except OSError:
+            return
+        line = c.recv(256).decode("ascii", "replace").strip()
+        old_lines.append(line)
+        if "TOKEN" in line:
+            c.sendall(b"ERR say WANT or WANT SEAT n\n")                 # kit 6's answer to anything it does not know
+            c.close()
+        else:
+            c.sendall(b"SEAT 2 PROJECTOR 0\n")
+            kept.append(c)
+
+
+threading.Thread(target=old_desk, daemon=True).start()
+with open(os.environ["WCCF_ACCOUNT_FILE"], "w", encoding="utf-8") as f:
+    json.dump({"token": "d4" * 32}, f)
+S.PORT, desk_port = OLD, S.PORT
+out3 = os.path.join(TMP, "lease3.json")
+threading.Thread(target=S.main, args=(["127.0.0.1", out3, "2"],), daemon=True).start()
+for _ in range(50):
+    if os.path.exists(out3):
+        break
+    time.sleep(0.1)
+S.PORT = desk_port
+try:
+    with open(out3, encoding="utf-8") as f:
+        got3 = json.load(f)
+except (OSError, ValueError):
+    got3 = {}
+check(got3.get("seat") == 2, "an older seat desk: seat.py still gets a seat (%r)" % got3)
+check(len(old_lines) == 2 and "TOKEN" in old_lines[0] and old_lines[1] == "WANT",
+      "it asked once with the token, then again without it (%r)" % [ln[:12] for ln in old_lines])
+
 # never a token in the desk's log
 text = log_text()
 check(not any(t in text for t in list(GOOD) + [REVOKED, UNCHECKED]), "no token is ever written to the desk's log")
 
 web.shutdown()
-print("seat desk sign-in: %d failed" % len(fails) if fails else "seat desk sign-in: all 14 checks passed")
+print("seat desk sign-in: %d failed" % len(fails) if fails else "seat desk sign-in: all 16 checks passed")
 sys.exit(1 if fails else 0)

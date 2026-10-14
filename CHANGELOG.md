@@ -14,7 +14,8 @@ game is not included. Newest first; each date is the day that kit was built.
 - Hosting a server: the seat desk checks each PC's sign-in with the website and its log says who sits where. Sign-in
   is optional until the host puts a file `data\require_signin.txt` on the server; then a PC that is not signed in is
   told so, and kit 7 plays on its own PC instead and says why. If the website cannot be reached, signed-in PCs are
-  let in anyway.
+  let in anyway. A signed-in kit 7 still joins servers that have not updated (their seat desk does not know sign-ins:
+  it asks again without one).
 
 ## Kit 6 - 2026-10-11
 

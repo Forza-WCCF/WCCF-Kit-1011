@@ -81,8 +81,11 @@ def hold(conn, end):
 
 def main(argv):
     ip, out, life = argv[0], argv[1], float(argv[2])
+    asked = int(argv[3]) if len(argv) > 3 else None
     sign = signed()
-    want_initial = (b"WANT SEAT %d" % int(argv[3]) if len(argv) > 3 else b"WANT") + sign + b"\n"
+
+    def want(seat):
+        return (b"WANT SEAT %d" % seat if seat else b"WANT") + sign + b"\n"
     end = time.time() + life
 
     # the first claim - the only write to OUT_FILE (play.py reads it to set up the game)
@@ -92,7 +95,13 @@ def main(argv):
         write(out, {"error": "no broker", "detail": str(ex)})       # nothing listening: play.py plays as before
         return 1
     try:
-        words = send_want(conn, want_initial)
+        words = send_want(conn, want(asked))
+        if sign and words[:2] == ["ERR", "say"]:                    # a seat desk from before the sign-in (kit 6 and
+            conn.close()                                            # older servers - hosts update when they like):
+            sign = b""                                              # the same claim again, without the token
+            log("this server's seat desk does not know sign-ins - asking without one")
+            conn = socket.create_connection((ip, PORT), timeout=6)
+            words = send_want(conn, want(asked))
     except OSError as ex:
         write(out, {"error": "no answer", "detail": str(ex)})       # reached but silent: play.py stops (A4)
         conn.close()
@@ -106,7 +115,7 @@ def main(argv):
     seat = int(words[1])
     write(out, {"seat": seat, "projector": int(words[3])})
     log("seat %d held (projector %s)" % (seat, words[3]))
-    want_reclaim = b"WANT SEAT %d" % seat + sign + b"\n"
+    want_reclaim = want(seat)
 
     # hold the seat for the life of the run; reconnect and reclaim the SAME seat after any break (A5)
     while time.time() < end:

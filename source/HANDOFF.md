@@ -25,7 +25,7 @@ The source of every compiled program the kit ships, the scripts that build, chec
 | `test_relay.py` | a live seat cannot be taken over by another address |
 | `test_rotate_logs.py` | a log file held open never stops a start |
 | `test_seat_desk_game.py` | the seat desk never gives a seat that is in the game |
-| `test_seat_desk_signin.py` | the seat desk with the wccf.online sign-in: optional or needed (data\require_signin.txt), a good / refused token, the website down, seat.py signed in, no token in the log |
+| `test_seat_desk_signin.py` | the seat desk with the wccf.online sign-in: optional or needed (data\require_signin.txt), a good / refused token, the website down, seat.py signed in, an older desk that does not know TOKEN (seat.py asks again without it), no token in the log |
 | `test_seat_lease.py` | the seat lease reconnects and asks for the same seat after a break |
 | `test_send_logs.py` | SEND LOGS packs and sends, the inbox keeps, and both refuse what they must |
 | `test_setup_state.py` | what a start needs; a game an older kit set up is set up once |
