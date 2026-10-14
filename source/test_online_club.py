@@ -142,7 +142,168 @@ with open(play.PANEL, "w") as f:
 check("RESTART NOW with a SIGN OUT waiting is a full start (the seat lease holds the old sign-in)",
       fits and not play.cabinet_restart_fits())
 
+# the club card kept on wccf.online (2c/2d): upload, the start-time sync, the contract-end swap, the helper's sends
+import base64  # noqa: E402
+import hashlib  # noqa: E402
+import time  # noqa: E402
+
+posts = []
+
+
+def fake_post(action, fields):
+    posts.append((action, dict(fields)))
+    got = answer[action]
+    return got(fields) if callable(got) else got
+
+
+A.post = fake_post
+CL = os.path.join(TMP, "clubs")
+
+
+def card_of(counter, fill=1):
+    b = bytearray([fill]) * C.CARD_BYTES
+    b[5], b[6] = counter & 0xFF, counter >> 8
+    return bytes(b)
+
+
+def put(path, data):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "wb") as f:
+        f.write(data)
+
+
+def sha(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def kept_answer(fields):
+    data = base64.b64decode(fields["card"])
+    return 200, {"seq": 5, "sha256": sha(data)}
+
+
+one = os.path.join(CL, "a", "club.bin")
+put(one, card_of(0xFFFE, 7))
+answer["wccf_club_save"] = kept_answer
+posts.clear()
+check("upload: a new save kept, built on no version yet", C.upload("t", one, os.path.dirname(one)) == ("kept", 5) and
+      posts[-1][1]["base"] == "" and base64.b64decode(posts[-1][1]["card"]) == card_of(0xFFFE, 7), posts)
+check("... and the version is remembered beside the card", C.synced(os.path.dirname(one)) == {"sha256": sha(card_of(0xFFFE, 7)), "seq": 5})
+posts.clear()
+check("upload: the same save again is not sent", C.upload("t", one, os.path.dirname(one)) == ("same", 5) and not posts, posts)
+put(one, card_of(0xFFFD, 7))
+answer["wccf_club_save"] = (409, {"error": "the website has a newer club card"})
+check("upload: another PC saved since -> newer", C.upload("t", one, os.path.dirname(one))[0] == "newer" and
+      posts[-1][1]["base"] == sha(card_of(0xFFFE, 7)), posts[-1:])
+answer["wccf_club_save"] = (422, {"error": "card 5 is not owned"})
+check("upload: refused, and why", C.upload("t", one, os.path.dirname(one)) == ("refused", "card 5 is not owned"))
+answer["wccf_club_save"] = (0, {"error": "timed out"})
+check("upload: the website out of reach", C.upload("t", one, os.path.dirname(one)) == ("unreachable", "timed out"))
+check("upload: no card file", C.upload("t", os.path.join(CL, "none", "club.bin"), CL)[0] == "refused")
+
+two = os.path.join(CL, "b", "club.bin")
+answer["wccf_club"] = (200, {"seq": 0})
+said = C.sync("t", two)
+blank = C.card_bytes(two)
+check("sync, nothing anywhere: a new blank card with an id of its own", blank is not None and blank[5:7] == b"\xff\xff"
+      and blank[:4] != b"\xde\xad\xbe\xef" and "a new card" in " ".join(said), (said, blank[:8] if blank else None))
+posts.clear()
+check("sync, nothing on the website and a blank here: nothing to do", C.sync("t", two) == [] and
+      [p for p in posts if p[0] == "wccf_club_save"] == [], posts)
+put(two, card_of(0xFFFE, 2))
+answer["wccf_club_save"] = kept_answer
+said = C.sync("t", two)
+check("sync, nothing on the website, this PC's club: it goes up", "kept on wccf.online now" in " ".join(said) and
+      C.synced(os.path.dirname(two)).get("sha256") == sha(card_of(0xFFFE, 2)), said)
+site_card = card_of(0xFFFC, 3)
+answer["wccf_club"] = (200, {"seq": 9, "sha256": sha(site_card), "card": base64.b64encode(site_card).decode()})
+put(two, site_card)
+check("sync, the same card on both: nothing said", C.sync("t", two) == [] and
+      C.synced(os.path.dirname(two)) == {"sha256": sha(site_card), "seq": 9})
+put(two, card_of(0xFFFB, 3))
+said = C.sync("t", two)
+check("sync, a save here after the website's version: it goes up now", "went to wccf.online now" in " ".join(said) and
+      posts[-1][1]["base"] == sha(site_card) and C.card_bytes(two) == card_of(0xFFFB, 3), said)
+C.set_synced(os.path.dirname(two), sha(site_card), 9)
+put(two, card_of(0xFFFA, 3))
+answer["wccf_club_save"] = (422, {"error": "an older save than the one kept"})
+said = C.sync("t", two)
+aside = [f for f in os.listdir(os.path.join(os.path.dirname(two), "backup")) if ".replaced-" in f]
+check("sync, the website refuses this PC's save: the website's card plays, this PC's kept in backup\\",
+      C.card_bytes(two) == site_card and len(aside) == 1 and "did not take" in " ".join(said), (said, aside))
+C.set_synced(os.path.dirname(two), "an older version", 8)
+put(two, card_of(0xFFF9, 3))
+posts.clear()
+said = C.sync("t", two)
+check("sync, the website's is newer (another PC): it wins, nothing sent, this PC's kept",
+      C.card_bytes(two) == site_card and not [p for p in posts if p[0] == "wccf_club_save"] and
+      len([f for f in os.listdir(os.path.join(os.path.dirname(two), "backup")) if ".replaced-" in f]) == 2, said)
+answer["wccf_club"] = (0, {"error": "no network"})
+put(two, card_of(0xFFF8, 3))
+said = C.sync("t", two)
+check("sync, the website out of reach: this PC's card plays", C.card_bytes(two) == card_of(0xFFF8, 3) and
+      "could not be read" in " ".join(said), said)
+three = os.path.join(CL, "c", "club.bin")
+C.sync("t", three)
+check("sync, out of reach with no card here: a blank to make the club on", (C.card_bytes(three) or b"")[5:7] == b"\xff\xff")
+answer["wccf_club"] = (200, {"seq": 2, "sha256": "x", "card": base64.b64encode(b"short").decode()})
+said = C.sync("t", two)
+check("sync, the website's card is not a card file: this PC's plays", C.card_bytes(two) == card_of(0xFFF8, 3) and
+      "not a card file" in " ".join(said), said)
+
+from cards import wallet  # noqa: E402
+got_args = []
+keep_ft = wallet.finish_transfer
+wallet.finish_transfer = lambda *a: got_args.append(a) or (True, "manager transfer finished")
+answer["wccf_club"] = (200, {"seq": 0})
+said = C.ready("t", two)
+wallet.finish_transfer = keep_ft
+check("a finished manager transfer of the online card is put away first (wallet.finish_transfer)",
+      got_args == [(two, os.path.join(os.path.dirname(two), "club.new.bin"), os.path.join(os.path.dirname(two), "transferred"))]
+      and said[0] == "manager transfer finished", (got_args, said))
+
+from helpers import panel as H  # noqa: E402
 import kit_common as K  # noqa: E402
+sent = []
+keep_upload, keep_session = C.upload, K.card_session
+C.upload = lambda token, card, folder: sent.append(card) or ("kept", len(sent))
+session = ["open"]
+K.card_session = lambda card, since=None: (session[0], 0)
+four = os.path.join(CL, "d", "club.bin")
+put(four, card_of(0xFFFE, 4))
+A.save({"token": "t" * 64, "username": "tester", "website": A.WEBSITE, "linked": "x"})
+sync = H.ClubSync(four)
+now = time.time()
+
+
+def ticks(*at):
+    for t in at:
+        sync.tick(now + t)
+        if sync.busy:
+            sync.busy.join(5)
+
+
+ticks(0, 1, 3)
+check("the helper: nothing sent while a match is on (the session open)", sent == [], sent)
+session[0] = "closed"
+ticks(4)
+check("the helper: the locker-room save goes up once the card holds still", sent == [four], sent)
+ticks(5, 9)
+check("... once", sent == [four], sent)
+put(four, card_of(0xFFFD, 4))
+ticks(10, 11, 13)
+check("... and the next save after the next match", sent == [four, four], sent)
+C.upload = lambda token, card, folder: sent.append("x") or ("unreachable", "no network")
+put(four, card_of(0xFFFC, 4))
+ticks(20, 23)
+n = len(sent)
+ticks(40, 60)
+check("the helper: the website out of reach - not again within the minute", len(sent) == n, sent)
+ticks(84)
+check("... then tried again", len(sent) == n + 1, sent)
+H.ClubSync(None).tick(now)
+check("the helper offline (no online club): nothing", True)
+C.upload, K.card_session = keep_upload, keep_session
+
 other = "Q:\\elsewhere\\club.bin" if not K.KIT.upper().startswith("Q:") else "R:\\elsewhere\\club.bin"
 check("a card on another drive is shown whole (CI's temp folder: relpath raised, 2026-10-14)", K.shown(other) == other)
 check("a card in the kit is shown from the kit's folder",

@@ -18,6 +18,11 @@ SEND LOGS (the SETTINGS panel, 2026-10-09): the panel writes data\sendlogs.reque
 helper takes it away, packs and sends the logs (online\send_logs.py) in a thread of its own, and writes data\sendlogs.result
 for the panel: "sending", then "ok CODE" or "fail WHY".  An old request at the start is removed, never sent.
 
+THE ONLINE CLUB CARD (2026-10-14): online and signed in (play.py WCCF_CLUB_CARD), each save of the account's club
+card goes to wccf.online (online\club.py upload) once the card has held still for 2 s and its last save was the
+locker-room save - never mid-match - in a thread of its own; a send that cannot reach the website is tried again a
+minute later, and the next start sends what is left.
+
 THE STARTING VOLUMES (2026-10-06): sound.py - the projector muted, seat 1 very low - set once for each, as
 soon as it has opened its sound (looked for every 0.5 s for 10 minutes after the start); never again, so a change in
 the Volume Mixer stays.  The game folder comes from play.py (WCCF_GAME); without it nothing is set.  Like the view, it
@@ -184,6 +189,46 @@ class SoundDefaults:
                 self.said = True
 
 
+class ClubSync:
+    """the online club card's saves to wccf.online (see the top); card None: not online, nothing to do"""
+
+    def __init__(self, card):
+        self.card, self.seen, self.since, self.done, self.retry_at, self.busy = card, None, 0.0, None, 0.0, None
+
+    def tick(self, now):
+        if not self.card or (self.busy and self.busy.is_alive()):
+            return
+        try:                                    # the card's bytes, not its time: two saves in one tick of Windows'
+            with open(self.card, "rb") as f:    # clock (about 16 ms) have the same time (a test missed one)
+                sig = hash(f.read())
+        except OSError:
+            sig = None
+        if sig != self.seen:                    # changed: wait until it holds still
+            self.seen, self.since = sig, now
+            return
+        if sig is None or sig == self.done or now - self.since < 2.0 or now < self.retry_at:
+            return
+        if K.card_session(self.card)[0] != "closed":     # mid-match, a blank card, unreadable: not now
+            return
+        self.busy = threading.Thread(target=self.send, args=(sig, now), daemon=True)
+        self.busy.start()
+
+    def send(self, sig, now):
+        from online import account, club
+        token = (account.load() or {}).get("token")
+        if not token:
+            self.done = sig
+            say("club card: this PC is not signed in - not sent to wccf.online")
+            return
+        state, detail = club.upload(token, self.card, os.path.dirname(self.card))
+        say("club card -> wccf.online: %s" % {"kept": "kept (version %s)" % detail,
+                                              "same": "it has this save already"}.get(state, "%s - %s" % (state, detail)))
+        if state == "unreachable":
+            self.retry_at = now + 60
+        else:
+            self.done = sig
+
+
 def main(argv):
     if not argv or not argv[0].isdigit():
         print(__doc__)
@@ -203,11 +248,13 @@ def main(argv):
     view = ClubView(data, os.environ.get("WCCF_CLUB_CARD"))      # online: the account's club (play.py)
     sound = SoundDefaults(os.environ.get("WCCF_GAME"), time.time())
     logs = SendLogs(data)
+    club_sync = ClubSync(os.environ.get("WCCF_CLUB_CARD"))
     end = time.time() + life
     while time.time() < end:
         view.tick(time.time())
         sound.tick(time.time())
         logs.tick()
+        club_sync.tick(time.time())
         if os.path.exists(req):
             try:
                 os.remove(req)                  # taken first: one request, one restart

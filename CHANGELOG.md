@@ -21,6 +21,10 @@ game is not included. Newest first; each date is the day that kit was built.
   lists only the cards your account owns, and the first time they are laid out on the table so the game's own Club
   Make builds your club from them. The club card is kept in `data\save\online\`. YOUR CARDS, NEW CLUB CARD and CLEAR
   BAD ENDINGS are off for the online club, and no card is shown after a match there yet.
+- Your online club card is kept on wccf.online: each save goes up after the match (never mid-match), and each online
+  start takes the website's latest - so your club is the same on any PC, and a copy edited on a PC is not taken. A new
+  online club starts on a blank card with an id of its own. If the website cannot be reached, you play with your PC's
+  copy, and it goes up after the next match.
 - Online play needs your wccf.online sign-in and your online club. Without them (not signed in, or the website cannot
   give you your cards the first time), PLAY plays on your PC instead, with your own club cards, and says why - your
   other club cards never go online.

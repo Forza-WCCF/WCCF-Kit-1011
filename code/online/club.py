@@ -11,6 +11,8 @@ is used; none kept -> prepare() says so and returns None, and play.py plays with
 locked out).
     python code\online\club.py         what this PC holds for the signed-in account (read-only)
 """
+import base64
+import hashlib
 import json
 import os
 import sys
@@ -26,6 +28,8 @@ CATALOGUE = os.path.join(K.CACHE, "catalogue.tsv")
 OWNED_CATALOGUE = os.path.join(K.CACHE, "catalogue_online.tsv")
 LINES = ("GK", "DF", "MF", "FW")
 TABLE_MAX = 16                    # cards on the table: 11 on the pitch + 5 on the bench (formation.py, the board)
+CARD_BYTES = 4112                 # a club card file (hardware\card_reader.py)
+SYNCED = "synced.json"            # beside the card: the version wccf.online has {"sha256", "seq"}
 
 
 def say(msg):
@@ -108,7 +112,143 @@ def prepare(token):
         return None
     card = os.path.join(folder_of(got["uid"]), "club.bin")
     say("  online club: %s - %d cards (%s)" % (got.get("username") or "?", n, K.shown(card)))
+    try:
+        for what in ready(token, card):
+            say("  online club: %s" % what)
+    except Exception as ex:                    # never a reason not to play: the card on this PC plays as it is
+        say("  online club: the club card was not checked with wccf.online (%s) - it plays as it is" % ex)
+        if not os.path.exists(card):           # else the card reader's own blank, with the id every kit card shares
+            make_blank(card)
     return {"uid": got["uid"], "username": got.get("username", ""), "card": card, "catalogue": OWNED_CATALOGUE}
+
+
+def ready(token, card):
+    """the online club card ready for the card reader: a finished manager transfer put away (wallet.finish_transfer,
+    as for the slot: the old card kept in transferred\\), then the card made the same as wccf.online's (sync)"""
+    from cards import wallet
+    _done, what = wallet.finish_transfer(card, os.path.splitext(card)[0] + ".new.bin",
+                                         os.path.join(os.path.dirname(card), "transferred"))
+    return ([what] if what else []) + sync(token, card)
+
+
+def card_bytes(path):
+    """a club card file's bytes, or None (none there, or not a card's size)"""
+    try:
+        with open(path, "rb") as f:
+            data = f.read()
+    except OSError:
+        return None
+    return data if len(data) == CARD_BYTES else None
+
+
+def synced(folder):
+    """the version of the club card wccf.online has, as this PC last knew it: {"sha256", "seq"} or {}"""
+    try:
+        with open(os.path.join(folder, SYNCED), encoding="utf-8") as f:
+            d = json.load(f)
+        return d if isinstance(d, dict) and isinstance(d.get("sha256"), str) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def set_synced(folder, sha, seq):
+    write_atomic(os.path.join(folder, SYNCED), json.dumps({"sha256": sha, "seq": seq}) + "\n")
+
+
+def upload(token, card, folder):
+    """the card file as a new version on wccf.online, built on the one it had at the last sync -> (state, detail):
+    "kept" (seq) / "same" (nothing new) / "newer" (another PC saved since - the next start takes the website's) /
+    "refused" (why: the website's checks) / "unreachable" (why: try again later)"""
+    data = card_bytes(card)
+    if data is None:
+        return "refused", "no club card file of the right size"
+    base = synced(folder).get("sha256", "")
+    sha = hashlib.sha256(data).hexdigest()
+    if sha == base:
+        return "same", synced(folder).get("seq")
+    status, body = account.post("wccf_club_save", {"token": token, "base": base,
+                                                   "card": base64.b64encode(data).decode("ascii")})
+    if status == 200 and body.get("sha256") == sha and isinstance(body.get("seq"), int):
+        set_synced(folder, sha, body["seq"])
+        return "kept", body["seq"]
+    if status == 409:
+        return "newer", body.get("error") or "the website has a newer club card"
+    if status in (401, 403, 422):
+        return "refused", body.get("error") or "HTTP %s" % status
+    return "unreachable", body.get("error") or "HTTP %s" % status
+
+
+def make_blank(card):
+    """a blank club card with an id of its own (card_reader.Card.blank): every card older kits made shares one id, so
+    an online club starts on its own card - the website refuses the shared one"""
+    from hardware import card_reader
+    write_atomic_bytes(card, card_reader.Card.blank(card).image())
+
+
+def write_atomic_bytes(path, data):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path + ".tmp", "wb") as f:
+        f.write(data)
+    os.replace(path + ".tmp", path)
+
+
+def keep_aside(card, why):
+    """this PC's copy of the card into its backup folder (never deleted) -> the name it got"""
+    folder = os.path.join(os.path.dirname(card), "backup")
+    os.makedirs(folder, exist_ok=True)
+    name = os.path.join(folder, "%s.%s-%s" % (os.path.basename(card), why, time.strftime("%Y%m%d-%H%M%S")))
+    dst, n = name + ".bak", 2
+    while os.path.exists(dst):                 # two in one second: never one over the other
+        dst, n = "%s (%d).bak" % (name, n), n + 1
+    os.replace(card, dst)
+    return os.path.basename(dst)
+
+
+def sync(token, card):
+    """before the card reader starts (prepare): this PC's online club card made the same as wccf.online's -> what it
+    did, to say.  Nothing there yet: this PC's club goes up, or a new blank card is made.  This PC saved after the
+    website's version: that save goes up now.  The website's is newer (another PC): it wins, this PC's copy kept in
+    backup\\.  The website out of reach: this PC's card plays, and goes up after the next match."""
+    folder = os.path.dirname(card)
+    status, body = account.post("wccf_club", {"token": token})
+    local = card_bytes(card)
+    if status != 200 or not isinstance(body.get("seq"), int):
+        if local is None:
+            make_blank(card)
+        return ["wccf.online's copy of your club card could not be read (%s) - playing with this PC's; it goes up "
+                "after the next match" % (body.get("error") or "HTTP %s" % status)]
+    if body["seq"] == 0:                                    # nothing kept on the website yet
+        if local is None:
+            make_blank(card)
+            return ["a new card for your online club (its own id) - put it in (I) and press START, and the game "
+                    "makes your club"]
+        if local[5:7] == b"\xff\xff":                      # a blank card: no club on it yet
+            return []
+        state, detail = upload(token, card, folder)
+        return ["your club card %s" % {"kept": "is kept on wccf.online now (version %s)" % detail,
+                                       "same": "is on wccf.online"}.get(state, "did not go to wccf.online: %s - "
+                                                                               "it plays from this PC" % detail)]
+    remote = base64.b64decode(body.get("card") or "")
+    if local == remote:
+        if synced(folder).get("sha256") != body.get("sha256"):
+            set_synced(folder, body.get("sha256"), body["seq"])
+        return []
+    if local is not None and synced(folder).get("sha256") == body.get("sha256"):    # saved here after the website's
+        state, detail = upload(token, card, folder)
+        if state in ("kept", "same"):
+            return ["your club card's last save went to wccf.online now (version %s)" % detail]
+        if state == "unreachable":
+            return ["your club card's last save could not go to wccf.online (%s) - it plays from this PC" % detail]
+        said = ["wccf.online did not take this PC's last save (%s)" % detail]
+    else:
+        said = []
+    if len(remote) != CARD_BYTES:
+        return said + ["wccf.online's copy of your club card is not a card file - playing with this PC's"]
+    if local is not None:
+        said.append("this PC's copy kept as backup\\%s" % keep_aside(card, "replaced"))
+    write_atomic_bytes(card, remote)
+    set_synced(folder, body.get("sha256"), body["seq"])
+    return said + ["your club card from wccf.online (version %s)" % body["seq"]]
 
 
 def squad_of(catalogue):
