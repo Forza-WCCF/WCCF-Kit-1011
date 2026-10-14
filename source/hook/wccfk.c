@@ -1068,12 +1068,16 @@ static pfn_accept      real_accept;
 static pfn_recv        real_recv;
 static pfn_closesocket real_closesocket;
 
+#define WM_IDS   24                     /* message names followed per connection (the witness's match flow) */
+
 typedef struct {
     SOCKET         s;
     char           who[24];
     unsigned char *buf;                 /* read from the player, not given to the server yet; NULL = a free slot */
     unsigned       have;
     unsigned long  given, waits, skipped, largest;
+    char           ids[WM_IDS][17];     /* each message name this player sent, and when it last came (witness_flow) */
+    DWORD          id_seen[WM_IDS];
 } wm_sock;
 
 static wm_sock          g_wm[WM_SOCKS];
@@ -1087,27 +1091,52 @@ static CRITICAL_SECTION g_wm_lock;
 static char g_witness_dir[MAX_PATH];     /* "" = not kept */
 static LONG g_witness_seq;
 
-static void witness_batches(const char *who, const unsigned char *p, unsigned n)
+/* The match flow (2026-10-14: a match played on from the locker room sends no ENTRY SVR, and which message starts it
+ * is not known yet): each message name a player sends is said when it first comes, and again when it comes after 10 s
+ * or more without it - so the flow of a match shows, and the 3-second chatter is said once. */
+static void witness_flow(wm_sock *w, const unsigned char *id, unsigned len)
+{
+    char name[17];
+    DWORD now = GetTickCount();
+    int i, quiet;
+    lstrcpynA(name, (const char *)id, sizeof(name));          /* at most 16 characters: the name's field */
+    for (i = 0; i < WM_IDS && w->ids[i][0]; i++)
+        if (!strcmp(w->ids[i], name))
+            break;
+    if (i == WM_IDS)
+        return;                                                /* the table is full: nothing more is said */
+    quiet = w->ids[i][0] && now - w->id_seen[i] < 10000;
+    lstrcpyA(w->ids[i], name);
+    w->id_seen[i] = now;
+    if (!quiet)
+        logline("match flow: %s, %u bytes from %s", name, len, w->who);
+}
+
+static void witness_batches(wm_sock *w, const unsigned char *p, unsigned n)
 {
     wm_walk wk = {0, 0};
     const unsigned char *id, *body;
     unsigned len;
     while (g_witness_dir[0] && wm_next(p, n, &wk, &id, &body, &len)) {
         const char *kind = !strncmp((const char *)id, "TEAM DATA RSLT", 16) ? "rslt"
-                         : !strncmp((const char *)id, "ENTRY SVR", 16) ? "entry" : NULL;
+                         : !strncmp((const char *)id, "ENTRY SVR", 16) ? "entry"
+                         : !strncmp((const char *)id, "TEAM DATA", 16) ? "team" : NULL;
+        const char *sub = kind && kind[0] == 't' ? "seen\\" : "";  /* team: kept for the record, never sent on */
         char path[MAX_PATH], part[MAX_PATH + 8], addr[24];
         SYSTEMTIME t;
         FILE *f;
         int i, ok = 0;
-        if (!kind)
+        if (!kind) {
+            witness_flow(w, id, len);
             continue;
-        lstrcpynA(addr, who, sizeof(addr));
+        }
+        lstrcpynA(addr, w->who, sizeof(addr));
         for (i = 0; addr[i]; i++)
             if (addr[i] == ':')
                 addr[i] = '_';
         GetLocalTime(&t);
-        _snprintf(path, MAX_PATH - 1, "%s\\%04u%02u%02u-%02u%02u%02u-%ld-%s-%s.bin", g_witness_dir, t.wYear, t.wMonth,
-                  t.wDay, t.wHour, t.wMinute, t.wSecond, InterlockedIncrement(&g_witness_seq), kind, addr);
+        _snprintf(path, MAX_PATH - 1, "%s\\%s%04u%02u%02u-%02u%02u%02u-%ld-%s-%s.bin", g_witness_dir, sub, t.wYear,
+                  t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond, InterlockedIncrement(&g_witness_seq), kind, addr);
         path[MAX_PATH - 1] = 0;
         _snprintf(part, sizeof(part) - 1, "%s.part", path);
         part[sizeof(part) - 1] = 0;
@@ -1118,7 +1147,7 @@ static void witness_batches(const char *who, const unsigned char *p, unsigned n)
             if (!ok)
                 DeleteFileA(part);
         }
-        logline("witness: %s, %u bytes from %s%s", kind, len, who, ok ? "" : " - NOT kept (the file could not be written)");
+        logline("witness: %s, %u bytes from %s%s", kind, len, w->who, ok ? "" : " - NOT kept (the file could not be written)");
     }
 }
 
@@ -1183,7 +1212,7 @@ static int WINAPI hook_recv(SOCKET s, char *buf, int len, int flags)
             memmove(w->buf, w->buf + skip, w->have);
         }
         if (n) {
-            witness_batches(w->who, w->buf, n);
+            witness_batches(w, w->buf, n);
             memcpy(buf, w->buf, n);
             w->have -= n;
             memmove(w->buf, w->buf + n, w->have);
@@ -1251,8 +1280,13 @@ static void install_wholemsg(HMODULE exe)
     n = GetEnvironmentVariableA("WCCF_WITNESS_DIR", g_witness_dir, MAX_PATH);
     if (n == 0 || n >= MAX_PATH || !real_recv)
         g_witness_dir[0] = 0;
-    else
+    else {
+        char seen[MAX_PATH + 8];
         CreateDirectoryA(g_witness_dir, NULL);
+        _snprintf(seen, sizeof(seen) - 1, "%s\\seen", g_witness_dir);
+        seen[sizeof(seen) - 1] = 0;
+        CreateDirectoryA(seen, NULL);                          /* TEAM DATA, kept for the record (witness_batches) */
+    }
     logline("witness: %s%s", g_witness_dir[0] ? "the club data before and after each match kept in " : "off",
             g_witness_dir);
 }

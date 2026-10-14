@@ -182,7 +182,7 @@ try {
         @($log | Select-String '^account: ')[0].Line
     }
     $slot = Join-Path $t 'data\save'
-    $want = @("club card: $club\club.bin (transfer $club\club.new.bin, backups $club\backup\club.bin.*.bak) - the online club: YOUR CARDS off, no card dealt",
+    $want = @("club card: $club\club.bin (transfer $club\club.new.bin, backups $club\backup\club.bin.*.bak) - the online club: YOUR CARDS off, NEW CARD only for a card wccf.online gave",
               "account: Kaka7",
               "club card: $slot\seat1_club.bin (transfer $slot\seat1_club.new.bin, backups $slot\backup\seat1_club.bin.*.bak)",
               "account: not signed in")

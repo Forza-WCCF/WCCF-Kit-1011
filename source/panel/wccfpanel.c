@@ -3111,7 +3111,7 @@ static void set_init(void)               // the init thread: where data\ is, and
         g_club_baks[MAX_PATH - 1] = 0;
     }
     logline("club card: %s (transfer %s, backups %s)%s", g_club_card, g_club_new, g_club_baks,     // check.ps1 reads it
-            g_online_club ? " - the online club: YOUR CARDS off, no card dealt" : "");
+            g_online_club ? " - the online club: YOUR CARDS off, NEW CARD only for a card wccf.online gave" : "");
     {                                    // the name as the panel's font can draw it (accents dropped, as card names)
         WCHAR wn[64]; char u8[200];
         DWORD k = GetEnvironmentVariableW(L"WCCF_ACCOUNT_NAME", wn, 64);
