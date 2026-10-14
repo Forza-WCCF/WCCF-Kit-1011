@@ -236,11 +236,11 @@ SYS_ADV_compe_0012	You cannot enter the tournament.
 SYS_ADV_normal_0011	Select a mode to play
 SYS_ADV_normal_0012	Play matches on this arcade's schedule.
 SYS_ADV_normal_0013	Play against players nationwide.
-SYS_ADV_normal_0014	This cabinet is offline.\nNetwork features cannot be used.
+SYS_ADV_normal_0014	Sega's network is closed.\nNo nationwide play or rankings.
 SYS_ADV_normal_0015	You have not qualified,\nso you cannot choose nationwide play.
-SYS_NET_error_0000	This cabinet is offline.\nNetwork features cannot be used.
-SYS_NET_error_0002	This cabinet is offline.\nNetwork features cannot be used.
-SYS_NET_error_0008	Currently offline. Network features cannot be used.
+SYS_NET_error_0000	Sega's network is closed.\nNo nationwide play or rankings.
+SYS_NET_error_0002	Sega's network is closed.\nNo nationwide play or rankings.
+SYS_NET_error_0008	Sega's network is closed: no nationwide play or rankings.
 COM_NEW_GROUND_question_0000	%s has just joined the team.\nWhat do you expect of him?
 COM_NEW_GROUND_choice_0000_00	Attacking
 COM_NEW_GROUND_choice_0000_01	Defending

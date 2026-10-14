@@ -3177,7 +3177,7 @@ SYS_ADV_compe_0012	Non puoi iscriverti al torneo.
 SYS_ADV_normal_0011	Scegli la modalita' di gioco
 SYS_ADV_normal_0012	Incontri secondo il calendario della sala.
 SYS_ADV_normal_0013	Sfida giocatori di tutto il Paese.
-SYS_ADV_normal_0014	Questo cabinato e' offline.\nFunzioni di rete non disponibili.
+SYS_ADV_normal_0014	La rete Sega e' chiusa.\nNiente gioco nazionale ne' classifiche.
 SYS_ADV_normal_0015	Non ti sei qualificato,\nquindi non puoi scegliere il gioco nazionale.
 SYS_ADV_right_0002	Arsenal: ? & c 2006 Arsenal Football Club Plc.Licensed by Granada Ventures\nChelsea FC: c 2006 Chelsea Football Clubs Limited\nLiverpool FC: ? & c 2006 Liverpool Football Club & Athletic Grounds Plc. Licensed by Granada Ventures\nThe player and club statistics are absolutely not from Liverpool Football Club nor they endorsed by the club in any way.\nIt is important to note that the club and Player Statistics have been prepared from information gathered by Panini S.p.A.\nfor the seasons as indicated on the products and not from the club themselves.\nManchester United: Crest & Imagery c MU Ltd.\nNewcastle United: Newcastle United appears under licence from Newcastle United Football Company Limited ("Newcastle FC"). \nThe Newcastle United club crest and imagery c Newcastle FC. All rights reserved.\nOlympique Lyonnais: c 2006 Olympique Lyonnais - Tous droits reserves\nOlympique de Marseille: c Olympique de Marseille.\nParis Saint-Germain FC: c PSG / PSG Merchandising 2005\nc Credits photos Christian Gavelle\nFC Bayern Muenchen
 SYS_CARD_warning_0002	Un giocatore sostituito\nnon puo' rientrare.
@@ -3271,15 +3271,15 @@ SYS_DIS_error_0011	Dummy (5305)
 SYS_GAME_warning_0000	Errore di gioco.\nFine forzata dell'incontro.
 SYS_GAME_warning_0001	Questa Club Card non si e' chiusa bene l'ultima volta.\nI suoi dati potrebbero non essere salvati.\nInoltre, l'eventuale iscrizione\na un incontro dati verra' annullata.
 SYS_GAME_warning_0002	Questa Club Card non si e' chiusa bene l'ultima volta.\nI suoi dati potrebbero non essere salvati.
-SYS_NET_error_0000	Questo cabinato e' offline.\nFunzioni di rete non disponibili.
+SYS_NET_error_0000	La rete Sega e' chiusa.\nNiente gioco nazionale ne' classifiche.
 SYS_NET_error_0001	Rete disconnessa.\nPasso a un incontro vs CPU.
-SYS_NET_error_0002	Questo cabinato e' offline.\nFunzioni di rete non disponibili.
+SYS_NET_error_0002	La rete Sega e' chiusa.\nNiente gioco nazionale ne' classifiche.
 SYS_NET_error_0003	Invio dati di gioco non riuscito.
 SYS_NET_error_0004	Dati Club Card non validi.\nAutenticazione server fallita.
 SYS_NET_error_0005	Rete disconnessa.\nIncontro annullato.\nIl risultato non sara' salvato.
 SYS_NET_error_0006	Iscritto alla classifica World Trophy.
 SYS_NET_error_0007	Impossibile inviare i dati.\nIncontro annullato.\nIl risultato non sara' salvato.
-SYS_NET_error_0008	Sei offline. Funzioni di rete non disponibili.
+SYS_NET_error_0008	La rete Sega e' chiusa: niente gioco nazionale ne' classifiche.
 SYS_NET_error_0009	Nessun avversario trovato.\nAmichevole contro la CPU.
 SYS_NET_error_0010	Incontro dati:\niscriz. fallita.
 SYS_NET_error_0011	Incontro dati:\niscriz. forse fallita.

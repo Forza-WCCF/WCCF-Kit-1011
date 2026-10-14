@@ -37,6 +37,12 @@ game is not included. Newest first; each date is the day that kit was built.
   (RESTART NOW or PLAY). The website then no longer accepts that sign-in, and the next online start asks for a new
   code.
 
+### Changed
+- The game's red notice "This cabinet is offline. Network features cannot be used." now says what is true: "Sega's
+  network is closed. No nationwide play or rankings." (in Italian too). The old words made players on a community
+  server think they were not connected. It shows the same on your own PC, so it does not name a server. New words
+  need the English (or Italian) put in again: after UPDATE, SETUP offers it.
+
 ### Fixed
 - Building the kit's programs (`source\build.ps1`) in a folder whose path has a space in it.
 - Closing the game normally no longer sends its logs to the server as a run that went wrong. As the game ended, the
