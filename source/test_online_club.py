@@ -114,6 +114,12 @@ with open(play.RUNNING, "w") as f:
     json.dump({"online": "junk"}, f)
 check("play.py: a broken record means the slot", play.online_of(play.running_info()) is None)
 
+import kit_common as K  # noqa: E402
+other = "Q:\\elsewhere\\club.bin" if not K.KIT.upper().startswith("Q:") else "R:\\elsewhere\\club.bin"
+check("a card on another drive is shown whole (CI's temp folder: relpath raised, 2026-10-14)", K.shown(other) == other)
+check("a card in the kit is shown from the kit's folder",
+      K.shown(os.path.join(K.KIT, "data", "save", "x.bin")) == os.path.join("data", "save", "x.bin"))
+
 shutil.rmtree(TMP, ignore_errors=True)
 print("online club: %s" % ("all %d checks passed" % len(results) if all(results) else
                            "%d of %d FAILED" % (results.count(False), len(results))))

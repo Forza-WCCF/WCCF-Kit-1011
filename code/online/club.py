@@ -107,7 +107,7 @@ def prepare(token):
         say("  online club: none of your cards is in this kit's catalogue - playing with the club card in the slot")
         return None
     card = os.path.join(folder_of(got["uid"]), "club.bin")
-    say("  online club: %s - %d cards (%s)" % (got.get("username") or "?", n, os.path.relpath(card, K.KIT)))
+    say("  online club: %s - %d cards (%s)" % (got.get("username") or "?", n, K.shown(card)))
     return {"uid": got["uid"], "username": got.get("username", ""), "card": card, "catalogue": OWNED_CATALOGUE}
 
 

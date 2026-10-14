@@ -20,6 +20,15 @@ SETTINGS = os.path.join(DATA, "settings.json")
 GAME_EXES = ("client_release.exe", "control_release.exe", "match_release.exe", "logowin.exe", "fpr_emu.exe")
 
 
+def shown(path):
+    """a path as a message shows it: from the kit's folder when it is inside it, else whole (on another drive
+    os.path.relpath raises - CI's temp folder, 2026-10-14)"""
+    try:
+        return os.path.relpath(path, KIT)
+    except ValueError:
+        return path
+
+
 def sha256(path_or_bytes):
     if isinstance(path_or_bytes, (bytes, bytearray)):
         return hashlib.sha256(path_or_bytes).hexdigest().upper()

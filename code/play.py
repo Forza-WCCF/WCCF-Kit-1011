@@ -576,7 +576,7 @@ def start_cabinet(debug, env, mode, ip, seat_no, seat, roles):
     roles[p.pid] = "I/O board stand-in"
     wait_for("the cabinet's stand-ins", lambda: {40100, 40102, 40106} <= K.listening_ports() and
              {"wccf_icc_seat1", "wccf_jvs_seat1"} <= K.pipes(), 20)
-    say("  4/6 cabinet stand-ins: keychip/network, card reader (card file %s), I/O board" % os.path.relpath(card, K.KIT))
+    say("  4/6 cabinet stand-ins: keychip/network, card reader (card file %s), I/O board" % K.shown(card))
 
     senv = dict(env, MXHOOK_RINGEDGE="1",
                 MXHOOK_COM="COM3=%s;COM1=%s;mxjvs=%s;COM4=%s" % (ICC_PIPE, ICC_PIPE, JVS_PIPE, JVS_PIPE))
@@ -780,7 +780,7 @@ def play(debug, mode="local", ip=None, seat_no=None):
     say("  Enter START (free play - no coin needed)   X decide   C shoot   arrows: tactics")
     say("  I club card in / out   F1 test menu   F11 window size   - or click the buttons around the picture")
     say("First time: put the card in with I, and the game makes your club. It is saved in %s." %
-        os.path.relpath(online["card"] if online else CARD, K.KIT))
+        K.shown(online["card"] if online else CARD))
     say("To finish: let the card come out after a match, then close the game's window - the rest stops with it. %s" % (
         "(The key driver's window is minimized.)" if debug else
         "(The key driver runs in the background: its log is data\\logs\\run_keys.txt.)"))
