@@ -63,7 +63,14 @@ import kit_common as K
 
 CONTROL_PORT = 20002
 RELAY_PORT = 20040                                    # UDP, the server's match relay (server\relay.py)
-SERVER_ROLES = ("scene service", "server launcher", "seat desk", "match relay", "log inbox")
+SERVER_ROLES = ("scene service", "server launcher", "seat desk", "match relay", "log inbox", "witness")
+WITNESS = os.path.join(K.DATA, "witness")      # a server with a wccf.online secret keeps each match's club data here
+                                               # (the hook, source\hook\wccfk.c) for server\witness.py (2026-10-14)
+
+
+def witness_ready():
+    """this server is one of wccf.online's (data\\server_name.txt + server_secret.txt): finished matches earn cards"""
+    return all(os.path.isfile(os.path.join(K.DATA, n)) for n in ("server_name.txt", "server_secret.txt"))
 SERVER_LIFE = 32 * 24 * 3600      # "play.py server" (2026-10-07): a month and a day - a server for others stays up
                                   # all month; a keeper task on that machine restarts it whenever it stops
 LIFE = SERVER_LIFE                # the player side: a BACKSTOP only (A3, 2026-10-11). A player's run really ends when
@@ -743,7 +750,7 @@ def play(debug, mode="local", ip=None, seat_no=None):
             # "Now Synchronizing" until the next round (2026-10-06).
             set_conf_value(ctrl_conf, "WAIT_PROJECTOR", 0)
         p = start(os.path.join("hardware", "debugger.py"), [life + 60, "control", "follow"] + ([] if debug else ["hide"]), "run_server.txt",
-                  env)
+                  dict(env, WCCF_WITNESS_DIR=WITNESS) if mode == "server" and witness_ready() else env)
         roles[p.pid] = "server launcher"
         wait_for("the server", lambda: CONTROL_PORT in K.listening_ports() and len(games("match_release.exe")) >= 4,
                  90, p, "run_server.txt")
@@ -780,6 +787,16 @@ def play(debug, mode="local", ip=None, seat_no=None):
             say("     log inbox: TCP 20050 - logs players send from SETTINGS go to data\\player_logs")
         else:
             say("     the log inbox did not start (data\\logs\\run_log_inbox.txt) - SEND LOGS will not reach here")
+        if witness_ready():     # a card per finished match (2026-10-14): only a server wccf.online knows
+            wt = start(os.path.join("server", "witness.py"), [life + 60, os.path.join(K.LOGS, "witness.txt")],
+                       "run_witness.txt", env)
+            time.sleep(1.0)
+            if wt.poll() is None:
+                roles[wt.pid] = "witness"
+                say("     witness: each finished match earns its signed-in player a card on wccf.online "
+                    "(data\\logs\\witness.txt)")
+            else:
+                say("     the witness did not start (data\\logs\\run_witness.txt) - finished matches earn no cards")
         write_running(roles, mode, None)
         say("")
         say("Server running. On each player's PC: PLAY.exe remote, then this machine's address - the one their PC")

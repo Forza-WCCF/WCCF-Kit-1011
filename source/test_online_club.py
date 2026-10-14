@@ -271,6 +271,7 @@ K.card_session = lambda card, since=None: (session[0], 0)
 four = os.path.join(CL, "d", "club.bin")
 put(four, card_of(0xFFFE, 4))
 A.save({"token": "t" * 64, "username": "tester", "website": A.WEBSITE, "linked": "x"})
+keep_checks, H.ClubSync.CHECKS = H.ClubSync.CHECKS, ()     # the sends alone first; the card looks below
 sync = H.ClubSync(four)
 now = time.time()
 
@@ -302,7 +303,51 @@ ticks(84)
 check("... then tried again", len(sent) == n + 1, sent)
 H.ClubSync(None).tick(now)
 check("the helper offline (no online club): nothing", True)
+
+# phase 3: the card a finished match earned - found after the save, into the CATALOGUE and dealt.txt for the panel
+looks, found = [], [[], [77]]
+H.ClubSync.CHECKS = keep_checks
+keep_new = C.new_cards
+C.new_cards = lambda token, data: looks.append(now) or found.pop(0)
+sync = H.ClubSync(four, TMP)
+sync.done = None
+C.upload = lambda token, card, folder: ("kept", 9)
+put(four, card_of(0xFFFB, 4))
+ticks(100, 103)
+check("after a save, the helper asks for the match's card a few seconds later", sync.checks and looks == [], sync.checks)
+ticks(108)
+check("... first look: nothing yet", len(looks) == 1, looks)
+ticks(118)
+check("... next look: the card - no more looks after it", len(looks) == 2 and sync.checks == [], (looks, sync.checks))
+ticks(140, 170)
+check("... none after that", len(looks) == 2, looks)
+C.new_cards = keep_new
 C.upload, K.card_session = keep_upload, keep_session
+
+data = os.path.join(TMP, "data7")
+os.makedirs(data)
+with open(C.OWNED_CATALOGUE, "w", encoding="utf-8", newline="") as f:
+    f.write(HEAD + "25\t1\tDF\tPLAYER 25\r\n31\t1\tGK\tPLAYER 31\r\n")
+put(os.path.join(C.ONLINE, "u7", "owned.json"), json.dumps({"uid": 7, "username": "tester", "cards": [25, 31]}).encode())
+answer["wccf_owned"] = (200, {"uid": 7, "username": "tester", "cards": [25, 31, 40]})
+got = C.new_cards("t", data)
+with open(C.OWNED_CATALOGUE, encoding="utf-8", newline="") as f:
+    listed = f.read()
+with open(os.path.join(data, "dealt.txt")) as f:
+    dealt = f.read()
+check("a card the match earned: found, into the CATALOGUE once, named for the panel", got == [40] and
+      listed.count("40\t1\tMF") == 1 and dealt == "1 40\n", (got, listed, dealt))
+check("... and remembered as owned", C.read_owned(7)["cards"] == [25, 31, 40])
+check("asked again: nothing new, nothing named again", C.new_cards("t", data) == [] and
+      open(os.path.join(data, "dealt.txt")).read() == "1 40\n")
+answer["wccf_owned"] = (200, {"uid": 7, "username": "tester", "cards": [25, 31, 40, 40]})
+got = C.new_cards("t", data)
+with open(C.OWNED_CATALOGUE, encoding="utf-8", newline="") as f:
+    listed = f.read()
+check("a second copy of a card: shown (\"2 40\"), the CATALOGUE not listing it twice", got == [40] and
+      listed.count("40\t1\tMF") == 1 and open(os.path.join(data, "dealt.txt")).read() == "2 40\n", (got, listed))
+answer["wccf_owned"] = (0, {"error": "no network"})
+check("the website out of reach: nothing", C.new_cards("t", data) == [])
 
 other = "Q:\\elsewhere\\club.bin" if not K.KIT.upper().startswith("Q:") else "R:\\elsewhere\\club.bin"
 check("a card on another drive is shown whole (CI's temp folder: relpath raised, 2026-10-14)", K.shown(other) == other)

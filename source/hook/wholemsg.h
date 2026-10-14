@@ -70,4 +70,25 @@ static unsigned wm_whole(const unsigned char *p, unsigned n, unsigned room, unsi
     return used;
 }
 
+/* the records of the whole batches at p[0..n) (what wm_whole gave), one per call: its 16-byte id and body; 0 at the
+ * end. Start with a zeroed wm_walk. (2026-10-14: the server keeps the club data cabinets send before and after each
+ * match - ENTRY SVR, TEAM DATA RSLT - for the website's card per finished match.) */
+typedef struct { unsigned at, end; } wm_walk;
+
+static int wm_next(const unsigned char *p, unsigned n, wm_walk *w, const unsigned char **id,
+                   const unsigned char **body, unsigned *len)
+{
+    while (w->at >= w->end) {                       /* the next batch: its head, then its records */
+        if (w->end + WM_HEAD > n)
+            return 0;
+        w->at = w->end + WM_HEAD;
+        w->end += wm_u32(p + w->end + 4);
+    }
+    *id = p + w->at;
+    *len = wm_u32(p + w->at + 16);
+    *body = p + w->at + WM_REC;
+    w->at += WM_REC + *len;
+    return 1;
+}
+
 #endif

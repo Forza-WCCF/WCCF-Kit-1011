@@ -109,6 +109,7 @@ $side = @(
     Start-Check 'the wccf.online sign-in: a code, approved, kept, never printed' 'test_account.py'
     Start-Check 'the seat desk and the sign-in: optional or needed, a good or refused token, no token logged' 'test_seat_desk_signin.py'
     Start-Check 'the online club: owned cards make the CATALOGUE and a new club''s table, the slot when anything is wrong' 'test_online_club.py'
+    Start-Check 'the server''s witness: a finished match tells the website whose it was, with the server''s secret' 'test_witness.py'
 )
 
 & $py -I (Join-Path $PSScriptRoot 'test_english_pictures.py')
@@ -194,6 +195,44 @@ try {
 } finally {
     'WCCF_CLUB_CARD', 'WCCF_ACCOUNT_NAME', 'WCCF_SKIN', 'WCCFPANEL_ROLE', 'WCCFPANEL_DRYKEYS', 'WCCFPANEL_FULLSCREEN', 'WCCF_DATA', 'WCCF_KEYS' |
         ForEach-Object { Remove-Item "env:$_" -ErrorAction SilentlyContinue }
+    Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
+}
+
+# the card a finished match earned, online (2026-10-14, phase 3): the panel helper adds it to the run's CATALOGUE and
+# names it in data\dealt.txt while the game runs - the panel reads the CATALOGUE again and shows that card
+$t = Join-Path ([IO.Path]::GetTempPath()) "wccfpanel-deal-$PID"
+Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Force (Join-Path $t 'data') | Out-Null
+Copy-Item (Join-Path $PSScriptRoot 'build\fakegame.exe') $t
+function Cat-Line([int]$no, [string]$name, [string]$pos) {     # the panel's catalogue columns (wccfpanel.c load_catalogue)
+    ($no, 1, 1, 1, 13, '2001-02', 1, 'REGULAR', 'Normal', 0, "Test $name", $name, 'x', 'x', 'x', $pos, 1, 'Bologna', 5,
+     'Italy', 'x', 'x', 'x', 'x', 10, 10, 10, 10, 10, 10, 60) -join "`t"
+}
+$cat = Join-Path $t 'catalogue_online.tsv'
+Set-Content -Encoding ascii $cat ("card_no`tx", (Cat-Line 25 'BRIOSCHI' 'DF'))
+$env:WCCFPANEL_ROLE = 'seat1'; $env:WCCFPANEL_DRYKEYS = '1'; $env:WCCFPANEL_FULLSCREEN = '0'
+$env:WCCF_DATA = Join-Path $t 'data'; $env:WCCF_KEYS = Join-Path $t 'data\keys.txt'
+$env:WCCF_SKIN = Join-Path $kit 'art\skin.tex'; $env:WCCF_CATALOGUE = $cat
+$env:WCCF_CLUB_CARD = Join-Path $t 'data\save\online\u7\club.bin'
+try {
+    $p = Start-Process -FilePath (Join-Path $t 'fakegame.exe') -WorkingDirectory $t -PassThru -NoNewWindow `
+        -ArgumentList "`"$(Join-Path $kit 'programs\wccfpanel.dll')`" wait:5000"
+    Start-Sleep -Milliseconds 2000                             # the panel up, its catalogue read, dealt.txt looked at
+    Add-Content -Encoding ascii $cat (Cat-Line 31 'PAGLIUCA' 'GK')
+    Set-Content -Encoding ascii (Join-Path $t 'data\dealt.txt') '1 31'
+    $p.WaitForExit()
+    $log = Get-Content (Join-Path $t 'wccfpanel.log') -ErrorAction SilentlyContinue
+    $ok = @((@($log | Select-String '^browser: catalogue 1 cards').Count -ge 1),    # (each in brackets: a comma binds
+            (@($log | Select-String '^browser: catalogue 2 cards').Count -ge 1),    # before -ge in PowerShell)
+            (@($log | Select-String '^deal: card 31 PAGLIUCA \(REGULAR\) - given by wccf.online for the match').Count -eq 1))
+    Write-Host "panel new card online: $(@($ok | Where-Object { $_ }).Count)/3 checks passed"
+    if ($ok -contains $false) {
+        $log | Select-String 'browser:|deal:' | ForEach-Object { Write-Host "  log: $($_.Line)" }
+        $failed += 'online, the card a match earned: the CATALOGUE read again and the card shown'
+    }
+} finally {
+    'WCCF_CLUB_CARD', 'WCCF_CATALOGUE', 'WCCF_SKIN', 'WCCFPANEL_ROLE', 'WCCFPANEL_DRYKEYS', 'WCCFPANEL_FULLSCREEN', 'WCCF_DATA',
+    'WCCF_KEYS' | ForEach-Object { Remove-Item "env:$_" -ErrorAction SilentlyContinue }
     Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
 }
 

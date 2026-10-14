@@ -251,6 +251,42 @@ def sync(token, card):
     return said + ["your club card from wccf.online (version %s)" % body["seq"]]
 
 
+def new_cards(token, data):
+    """after a match (the panel helper): the account's cards again from wccf.online - one it did not have before (a
+    finished match earns one, phase 3; a second copy counts too) goes into this run's CATALOGUE (OWNED_CATALOGUE, read
+    again by the panel when it changes) and is named in data\\dealt.txt ("N CARDNO", N counting up) for the panel's
+    NEW CARD window -> the new card numbers ([] when none, or the website out of reach)"""
+    from collections import Counter
+    state, got = fetch(token)
+    if state != "ok":
+        return []
+    before = Counter((read_owned(got["uid"]) or {}).get("cards", []))
+    new = list((Counter(got["cards"]) - before).elements())
+    got["at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+    write_atomic(os.path.join(folder_of(got["uid"]), "owned.json"), json.dumps(got) + "\n")
+    if not new:
+        return []
+    try:
+        with open(OWNED_CATALOGUE, encoding="utf-8", newline="") as f:
+            listed = {ln.split("\t", 1)[0] for ln in f}
+        with open(CATALOGUE, encoding="utf-8", newline="") as f:
+            add = [ln for ln in f if ln.split("\t", 1)[0].isdigit() and int(ln.split("\t", 1)[0]) in set(new)
+                   and ln.split("\t", 1)[0] not in listed]
+        if add:
+            with open(OWNED_CATALOGUE, "a", encoding="utf-8", newline="") as f:
+                f.writelines(add)
+    except OSError:
+        pass                                    # the card is owned all the same: the next start lists it
+    dealt = os.path.join(data, "dealt.txt")
+    try:
+        with open(dealt, encoding="ascii") as f:
+            n = int(f.read().split()[0])
+    except (OSError, ValueError, IndexError):
+        n = 0
+    write_atomic(dealt, "%d %d\n" % (n + 1, new[-1]))
+    return new
+
+
 def squad_of(catalogue):
     """[(card number, line)] of the cards a catalogue lists, by line (GK DF MF FW) then number, at most TABLE_MAX"""
     with open(catalogue, encoding="utf-8", newline="") as f:

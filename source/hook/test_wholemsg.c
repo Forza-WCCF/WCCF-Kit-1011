@@ -76,6 +76,29 @@ int main(void)
     CHECK(wm_whole(buf, 37 + n1, WM_MAX_BATCH, &skip) == n1 && skip == 37, "garbage in front: skipped to the batch");
     CHECK(wm_whole(buf, 37 + 100, WM_MAX_BATCH, &skip) == 0 && skip == 37, "garbage, then a batch not all here");
 
+    {                                                   /* the record walker (2026-10-14): the witness's records */
+        const char *rids[] = {"ENTRY SVR", "TEAM DATA RSLT", "SIXTEEN_CHAR_ID!"};
+        unsigned rsz[] = {0x1044, 0x1490, 3}, m1, m2, got = 0, found = 0;
+        const unsigned char *id, *body;
+        unsigned len;
+        wm_walk w = {0, 0};
+        m1 = batch(buf, 3, rids, rsz, 0x52);
+        put32(buf + m1, 0); put32(buf + m1 + 4, 8);    /* an empty batch between */
+        m2 = batch(buf + m1 + 8, 1, rids + 1, rsz + 1, 0x53);
+        while (wm_next(buf, m1 + 8 + m2, &w, &id, &body, &len)) {
+            got++;
+            if (!strncmp((const char *)id, "TEAM DATA RSLT", 16) && len == 0x1490 && body[0] == (got == 2 ? 0x52 : 0x53)
+                    && body[len - 1] == body[0])
+                found++;
+        }
+        CHECK(got == 4, "the walker: every record of three batches, an empty one among them");
+        CHECK(found == 2, "the walker: both TEAM DATA RSLT bodies, whole, from their own batches");
+        CHECK(strncmp("TEAM DATA RSLT", "TEAM DATA", 16) != 0 && strncmp("SIXTEEN_CHAR_ID!", "SIXTEEN_CHAR_ID", 16) != 0,
+              "the walker's names: a shorter or longer id is another message");
+        w.at = w.end = 0;
+        CHECK(!wm_next(buf, 7, &w, &id, &body, &len), "the walker: less than a batch head - nothing");
+    }
+
     printf("wholemsg: %d of %d checks passed\n", g_n - g_fail, g_n);
     return g_fail != 0;
 }

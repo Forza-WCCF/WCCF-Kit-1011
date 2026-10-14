@@ -134,6 +134,24 @@ def taken():
     return ", ".join(str(s) for s in sorted(leases)) or "none"
 
 
+leases_file = None              # data\leases.json: who sits where, for server\witness.py (2026-10-14)
+
+
+def publish():
+    """the seats taken now and who sits there -> data\\leases.json, for the server's witness (a card per finished
+    match): each seat's address and account - never a token.  Lock held.  Never raises."""
+    if not leases_file:
+        return
+    out = {str(s): {"ip": p.rsplit(":", 1)[0], "uid": (a or {}).get("uid"), "username": (a or {}).get("username")}
+           for s, (p, _lid, a) in leases.items()}
+    try:
+        with open(leases_file + ".tmp", "w", encoding="utf-8") as f:
+            json.dump(out, f)
+        os.replace(leases_file + ".tmp", leases_file)
+    except OSError:
+        pass
+
+
 class InGame:
     """the seats control has a cabinet on now: {seat: address} (0 = the projector), from its debug log.  Each look reads
     only what control wrote since the last one; a new run's log (made again at control's start) is read from its start;
@@ -296,6 +314,7 @@ def serve(conn, peer):
             next_id += 1
             lid = next_id
             leases[seat] = (peer, lid, account)
+            publish()
             conn.sendall(b"SEAT %d PROJECTOR 0\n" % seat)
             log("%s: seat %d - taken now: %s" % (peer, seat, taken()))
             log("%s: seat %d is %s" % (peer, seat, "signed in as %s (uid %s)" % (account["username"], account["uid"])
@@ -309,6 +328,7 @@ def serve(conn, peer):
         with lock:
             if seat is not None and leases.get(seat, (None, None))[1] == lid:
                 del leases[seat]
+                publish()
                 log("%s: seat %d free again - taken now: %s" % (peer, seat, taken()))
         try:
             conn.close()
@@ -317,7 +337,7 @@ def serve(conn, peer):
 
 
 def main(argv):
-    global log_file, hold_ip, require_file
+    global log_file, hold_ip, require_file, leases_file
     life = float(argv[0]) if argv else 12 * 3600
     log_file = argv[1] if len(argv) > 1 else None
     if not in_game.path and log_file:                               # control's debug log is beside this desk's log
@@ -335,6 +355,9 @@ def main(argv):
     data =os.path.dirname(os.path.dirname(os.path.abspath(log_file))) if log_file else ""
     hold_ip = read_hold_ip(os.environ.get("WCCF_HOLD_FILE") or os.path.join(data, "hold_projector.txt"))
     require_file = os.environ.get("WCCF_REQUIRE_FILE") or (os.path.join(data, "require_signin.txt") if data else None)
+    leases_file = os.environ.get("WCCF_LEASES_FILE") or (os.path.join(data, "leases.json") if data else None)
+    with lock:
+        publish()                                                   # a new run: nobody sits yet
     log("sign-in: %s (%s)" % ("NEEDED" if require_signin() else "not needed - players without one get in too",
                               require_file or "no data folder"))
     if hold_ip:

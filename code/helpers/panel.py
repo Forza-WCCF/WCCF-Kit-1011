@@ -192,11 +192,19 @@ class SoundDefaults:
 class ClubSync:
     """the online club card's saves to wccf.online (see the top); card None: not online, nothing to do"""
 
-    def __init__(self, card):
+    CHECKS = (5, 15, 35, 60)    # seconds after a save: the card the match earned (phase 3: the server tells the website)
+
+    def __init__(self, card, data=None):
         self.card, self.seen, self.since, self.done, self.retry_at, self.busy = card, None, 0.0, None, 0.0, None
+        self.data, self.checks = data or K.DATA, []
 
     def tick(self, now):
         if not self.card or (self.busy and self.busy.is_alive()):
+            return
+        if self.checks and now >= self.checks[0]:          # after a match: did it earn a card yet?
+            self.checks.pop(0)
+            self.busy = threading.Thread(target=self.look, daemon=True)
+            self.busy.start()
             return
         try:                                    # the card's bytes, not its time: two saves in one tick of Windows'
             with open(self.card, "rb") as f:    # clock (about 16 ms) have the same time (a test missed one)
@@ -227,6 +235,15 @@ class ClubSync:
             self.retry_at = now + 60
         else:
             self.done = sig
+            self.checks = [now + s for s in self.CHECKS]
+
+    def look(self):
+        from online import account, club
+        token = (account.load() or {}).get("token")
+        new = club.new_cards(token, self.data) if token else []
+        if new:
+            self.checks = []
+            say("new card from wccf.online: %s - in the CATALOGUE now" % ", ".join(map(str, new)))
 
 
 def main(argv):
@@ -248,7 +265,7 @@ def main(argv):
     view = ClubView(data, os.environ.get("WCCF_CLUB_CARD"))      # online: the account's club (play.py)
     sound = SoundDefaults(os.environ.get("WCCF_GAME"), time.time())
     logs = SendLogs(data)
-    club_sync = ClubSync(os.environ.get("WCCF_CLUB_CARD"))
+    club_sync = ClubSync(os.environ.get("WCCF_CLUB_CARD"), data)
     end = time.time() + life
     while time.time() < end:
         view.tick(time.time())

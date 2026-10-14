@@ -1420,7 +1420,8 @@ static void load_catalogue(void)
     qsort(pn, (size_t)npn, sizeof pn[0], pick_cmp);
     qsort(pc, (size_t)npc, sizeof pc[0], pick_cmp);
     EnterCriticalSection(&g_board_cs);
-    g_cat = a; g_ncat = n;
+    free(g_cat);                                           // read again online (a card won): the old list goes; every
+    g_cat = a; g_ncat = n; g_bdetail = -1;                 // reader holds the lock (2026-10-14: it was never freed)
     memcpy(g_pnat, pn, sizeof pn[0] * (size_t)npn); g_npnat = npn;
     memcpy(g_pclub, pc, sizeof pc[0] * (size_t)npc); g_npclub = npc;
     if (g_browse) run_search_locked();
@@ -3296,11 +3297,49 @@ static void deal_now(void)
     else logline("deal: a match finished, but no catalogue card to show");
 }
 
+// Online (2026-10-14, phase 3): wccf.online gives a card for each finished match. The panel helper (code\helpers\
+// panel.py, online\club.py new_cards) adds it to this run's CATALOGUE (WCCF_CATALOGUE: the account's own cards) and
+// names it in data\dealt.txt, "N CARDNO" with N counting up. The catalogue is read again when its file changes, and
+// the card is shown in the dealt-card window - for real now. What dealt.txt names at the start was shown before.
+static void deal_online_tick(void)
+{
+    static DWORD next = 0; static ULONGLONG cat_time = 0; static long shown = 0; static int started = 0;
+    WIN32_FILE_ATTRIBUTE_DATA fa; char p[MAX_PATH], line[64]; FILE *f; long n = 0; int no = 0, i, idx = -1;
+    if (!next) next = GetTickCount();
+    if ((LONG)(GetTickCount() - next) < 0) return;
+    next = GetTickCount() + 1000;
+    if (GetFileAttributesExA(g_cat_path, GetFileExInfoStandard, &fa)) {
+        ULONGLONG t = ft_q(fa.ftLastWriteTime);
+        if (cat_time && t != cat_time) {                    // the helper added a card: read it again
+            load_catalogue();
+            EnterCriticalSection(&g_board_cs);
+            g_deal = -1;                                     // an index into the old list
+            LeaveCriticalSection(&g_board_cs);
+        }
+        cat_time = t;
+    }
+    _snprintf(p, MAX_PATH, "%s\\dealt.txt", g_data_dir); p[MAX_PATH - 1] = 0;
+    if ((f = fopen(p, "rb")) != NULL) {
+        if (fgets(line, sizeof line, f) && sscanf(line, "%ld %d", &n, &no) != 2) n = 0;
+        fclose(f);
+    }
+    if (!started) { started = 1; shown = n; return; }
+    if (n == shown || no <= 0) return;
+    EnterCriticalSection(&g_board_cs);
+    for (i = 0; i < g_ncat; i++) if (g_cat[i].no == no) idx = i;
+    if (idx >= 0) { g_deal = idx; g_deal_until = GetTickCount() + DEAL_MS; }
+    LeaveCriticalSection(&g_board_cs);
+    if (idx >= 0) {
+        shown = n;
+        logline("deal: card %d %s (%s) - given by wccf.online for the match", no, g_cat[idx].shown, g_cat[idx].rar);
+    }                                                       // not in the catalogue yet: the next second
+}
+
 static void deal_tick(void)              // the board thread, once a second: open -> closed = a match finished
 {
     static DWORD next = 0; static int seeded = 0, last = -1;
     ULONGLONG saved; int bad, cs;
-    if (g_online_club) return;                              // online: the website grants the cards (phase 3)
+    if (g_online_club) { deal_online_tick(); return; }     // online: the card wccf.online gave (phase 3)
     if (!seeded) { srand(GetTickCount() ^ GetCurrentProcessId()); seeded = 1; }     // rand() is per thread
     if (!next) next = GetTickCount();                       // see dispenser_tick: from 0 it never ran after 24.8 days up
     if ((LONG)(GetTickCount() - next) < 0) return;
@@ -3336,10 +3375,12 @@ static void deal_draw(IDirect3DDevice9 *dev)  // the dealt card's window, over t
     if (g_font_tex) {
         set_picture(dev, g_font_tex, 1);
         put_in_rect(dev, RC((float)r.left, (float)r.top + 10.0f * s, (float)r.right, (float)r.top + 44.0f * s), 0.72f * s,
-                    col, t == 0 ? "NEW PLAYER CARD - RARE!" : "NEW PLAYER CARD");
+                    col, t == 0 ? (g_online_club ? "NEW CARD - RARE!" : "NEW PLAYER CARD - RARE!")
+                                : (g_online_club ? "NEW CARD" : "NEW PLAYER CARD"));
     }
     draw_pane(dev, RC((float)r.left + 6.0f * s, (float)r.top + 50.0f * s, (float)r.right - 6.0f * s, (float)r.bottom - 6.0f * s),
-              c, s, "test only - not on your club card - click to close");
+              c, s, g_online_club ? "given by wccf.online for that match - it is in your CATALOGUE now - click to close"
+                                  : "test only - not on your club card - click to close");
     LeaveCriticalSection(&g_board_cs);
 }
 

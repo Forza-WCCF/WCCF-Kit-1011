@@ -1079,6 +1079,49 @@ typedef struct {
 static wm_sock          g_wm[WM_SOCKS];
 static CRITICAL_SECTION g_wm_lock;
 
+/* ---- the witness (2026-10-14, kit 7 phase 3: a card per finished match) ---------------------------------------
+ * With WCCF_WITNESS_DIR set (play.py, a server with a wccf.online secret), each club data a cabinet sends before a
+ * match (ENTRY SVR) and after it (TEAM DATA RSLT: the locker room - a finished match) is kept there as a file
+ * STAMP-N-KIND-ADDRESS_PORT.bin, KIND entry or rslt, written as .part and then renamed so it is only ever seen
+ * whole. server\witness.py tells the website whose it was. Never a reason for the server to fail: an error is said. */
+static char g_witness_dir[MAX_PATH];     /* "" = not kept */
+static LONG g_witness_seq;
+
+static void witness_batches(const char *who, const unsigned char *p, unsigned n)
+{
+    wm_walk wk = {0, 0};
+    const unsigned char *id, *body;
+    unsigned len;
+    while (g_witness_dir[0] && wm_next(p, n, &wk, &id, &body, &len)) {
+        const char *kind = !strncmp((const char *)id, "TEAM DATA RSLT", 16) ? "rslt"
+                         : !strncmp((const char *)id, "ENTRY SVR", 16) ? "entry" : NULL;
+        char path[MAX_PATH], part[MAX_PATH + 8], addr[24];
+        SYSTEMTIME t;
+        FILE *f;
+        int i, ok = 0;
+        if (!kind)
+            continue;
+        lstrcpynA(addr, who, sizeof(addr));
+        for (i = 0; addr[i]; i++)
+            if (addr[i] == ':')
+                addr[i] = '_';
+        GetLocalTime(&t);
+        _snprintf(path, MAX_PATH - 1, "%s\\%04u%02u%02u-%02u%02u%02u-%ld-%s-%s.bin", g_witness_dir, t.wYear, t.wMonth,
+                  t.wDay, t.wHour, t.wMinute, t.wSecond, InterlockedIncrement(&g_witness_seq), kind, addr);
+        path[MAX_PATH - 1] = 0;
+        _snprintf(part, sizeof(part) - 1, "%s.part", path);
+        part[sizeof(part) - 1] = 0;
+        if ((f = fopen(part, "wb")) != NULL) {
+            ok = fwrite(body, 1, len, f) == len;
+            ok = fclose(f) == 0 && ok;
+            ok = ok && MoveFileExA(part, path, MOVEFILE_REPLACE_EXISTING);
+            if (!ok)
+                DeleteFileA(part);
+        }
+        logline("witness: %s, %u bytes from %s%s", kind, len, who, ok ? "" : " - NOT kept (the file could not be written)");
+    }
+}
+
 static wm_sock *wm_find(SOCKET s)
 {
     wm_sock *w = NULL;
@@ -1140,6 +1183,7 @@ static int WINAPI hook_recv(SOCKET s, char *buf, int len, int flags)
             memmove(w->buf, w->buf + skip, w->have);
         }
         if (n) {
+            witness_batches(w->who, w->buf, n);
             memcpy(buf, w->buf, n);
             w->have -= n;
             memmove(w->buf, w->buf + n, w->have);
@@ -1204,6 +1248,13 @@ static void install_wholemsg(HMODULE exe)
     logline("whole messages: %s (closesocket=%d accept=%d recv=%d) - the server gets the players' batches on port %d "
             "only whole", real_recv ? "ON" : "NOT installed", real_closesocket != 0, real_accept != 0, real_recv != 0,
             WM_PORT);
+    n = GetEnvironmentVariableA("WCCF_WITNESS_DIR", g_witness_dir, MAX_PATH);
+    if (n == 0 || n >= MAX_PATH || !real_recv)
+        g_witness_dir[0] = 0;
+    else
+        CreateDirectoryA(g_witness_dir, NULL);
+    logline("witness: %s%s", g_witness_dir[0] ? "the club data before and after each match kept in " : "off",
+            g_witness_dir);
 }
 
 static void install_hooks(void)

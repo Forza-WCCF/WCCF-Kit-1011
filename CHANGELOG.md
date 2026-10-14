@@ -21,6 +21,11 @@ game is not included. Newest first; each date is the day that kit was built.
   lists only the cards your account owns, and the first time they are laid out on the table so the game's own Club
   Make builds your club from them. The club card is kept in `data\save\online\`. YOUR CARDS, NEW CLUB CARD and CLEAR
   BAD ENDINGS are off for the online club, and no card is shown after a match there yet.
+- Every finished online match earns a card. The server sees the match end (the game's own end-of-match message) and
+  tells wccf.online; the website draws the card - 2.5% better than black, otherwise 70% white and 30% black - and
+  adds it to your account (a card you already own counts as a copy). After the locker room the game shows it - NEW
+  CARD - and it is in your CATALOGUE at once. Only servers wccf.online knows give cards (hosting: a secret from the
+  website owner in `data\server_name.txt` and `data\server_secret.txt`).
 - Your online club card is kept on wccf.online: each save goes up after the match (never mid-match), and each online
   start takes the website's latest - so your club is the same on any PC, and a copy edited on a PC is not taken. A new
   online club starts on a blank card with an id of its own. If the website cannot be reached, you play with your PC's

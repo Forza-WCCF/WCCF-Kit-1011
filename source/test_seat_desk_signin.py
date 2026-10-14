@@ -31,7 +31,7 @@ LOG = os.path.join(TMP, "seat_broker.txt")
 os.environ.update({"WCCF_BROKER_PORT": str(DESK), "WCCF_WEBSITE": "http://127.0.0.1:%d" % SITE,
                    "WCCF_REQUIRE_FILE": REQUIRE, "WCCF_CONTROL_LOG": os.path.join(TMP, "_dbg_control.txt"),
                    "WCCF_HOLD_FILE": os.path.join(TMP, "no_hold.txt"), "WCCF_ACCOUNT_FILE": os.path.join(TMP, "account.json"),
-                   "WCCF_LEASE_PING": "0.3"})
+                   "WCCF_LEASE_PING": "0.3", "WCCF_LEASES_FILE": os.path.join(TMP, "leases.json")})
 
 KIT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(KIT, "code"))
@@ -112,7 +112,14 @@ good = "a1" * 32
 reply, c = ask("WANT TOKEN " + good)
 check(reply.startswith("SEAT "), "a good token gets a seat (%r)" % reply)
 check("signed in as Tester (uid 7)" in log_text(), "the log names the account")
+with open(os.environ["WCCF_LEASES_FILE"], encoding="utf-8") as f:     # for server\witness.py (2026-10-14)
+    leased = f.read()
+check(json.loads(leased).get(reply.split()[1]) == {"ip": "127.0.0.1", "uid": 7, "username": "Tester"} and
+      good not in leased, "leases.json: the seat, its address and account - never the token (%r)" % leased)
 c.close()
+time.sleep(0.5)
+with open(os.environ["WCCF_LEASES_FILE"], encoding="utf-8") as f:
+    check(reply.split()[1] not in json.load(f), "leases.json: the seat gone once it is free")
 
 # WANT SEAT n with a token
 reply, c = ask("WANT SEAT 5 TOKEN " + "b2" * 32)
@@ -218,5 +225,5 @@ text = log_text()
 check(not any(t in text for t in list(GOOD) + [REVOKED, UNCHECKED]), "no token is ever written to the desk's log")
 
 web.shutdown()
-print("seat desk sign-in: %d failed" % len(fails) if fails else "seat desk sign-in: all 16 checks passed")
+print("seat desk sign-in: %d failed" % len(fails) if fails else "seat desk sign-in: all 18 checks passed")
 sys.exit(1 if fails else 0)
