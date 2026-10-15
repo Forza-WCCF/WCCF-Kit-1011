@@ -19,12 +19,12 @@ Community-developed launcher, hardware compatibility tools and an in-game panel 
 
 > **The game is not included, and the kit holds none of Sega's files.** It works with your own copy: what it needs from the game, SETUP makes from that copy, on your PC.
 
-## New in Kit 7
+## New in Kit 8
 
-- **Play online with a wccf.online account** - sign in once with a short code; online you play your account's own club, kept on wccf.online, starting with 11 cards and earning a card for every finished match.
-- **Buttons that never stop** - a short freeze of the kit's I/O helper could leave the game ignoring every button until it was closed; now a freeze costs only the moment it lasts.
-- **More player against player** - a router changing the game's port at kick-off no longer turns the match into a CPU match, the server pairs any two free players at random, and two players in one house both get their cards.
-- **More English** - the "please wait for the next match" line between matches, and an honest notice: Sega's network is closed.
+- **DREAM TEAM** - a third way to play: online on the same server with your PC's own club card and any card, no account needed and nothing earned; in friendlies DREAM TEAM clubs only meet each other.
+- **Where each player plays** - point at a card on the FORMATION board and the pitch glows where he plays well; every card on the pitch has a tag with his rating for its spot, on the game's own FW / MF / DF lines.
+- **Names and links on the board** - each card's name under it, and your club's real links between the cards: thin white, thick white, gold.
+- **Sega's role names** - ST, PP, WG, SS, BT, OH, CH, DH, SH, WB, SB, CB, STP, SW, LIB, GK, in the board, the CATALOGUE and its search.
 
 Every change, kit by kit: [CHANGELOG.md](/CHANGELOG.md).
 
@@ -33,7 +33,7 @@ Every change, kit by kit: [CHANGELOG.md](/CHANGELOG.md).
 | | |
 |---|---|
 | **One launcher** | `PLAY.exe` starts everything: on your own PC the server, the projector and your cabinet; online, only your cabinet |
-| **Formation board** | your cards on the table: drag to move, drop on another card to swap, right-click to take one off |
+| **Formation board** | your cards on the table: drag to move, drop on another card to swap, right-click to take one off; each card's name, its rating for the spot it stands in, where it plays well, and your club's links |
 | **Catalogue** | all 3,909 player cards: search, position, rarity, country and club filters, sorting, a slider per stat |
 | **Keys** | your own keys, or a game controller's buttons |
 | **Club card** | your club as the game reads it, more than one club, safe saves with backups, CLEAR BAD ENDINGS |
@@ -64,6 +64,7 @@ Or in the game: SETTINGS > NEXT START > **ONLINE**, type the server's address, t
 - Each PC runs only its own cabinet - online there is no projector window on the players' PCs.
 - The host can play too: `PLAY.exe remote` with its own local address.
 - **Your wccf.online account:** the first online start shows a short code and opens wccf.online - log in or register, approve the code, and the game starts. Online you play your account's own club; without a sign-in, PLAY plays on your PC instead.
+- **DREAM TEAM:** SETTINGS > NEXT START > **DREAM TEAM** (or `PLAY.exe remote ADDRESS dream`) plays on the same server with your PC's own club card and any card - no account, no cards earned; in friendlies DREAM TEAM clubs only meet each other.
 
 ```mermaid
 flowchart LR

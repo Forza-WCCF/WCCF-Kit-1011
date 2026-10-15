@@ -14,6 +14,22 @@ WHAT IT IS
   or a game controller's buttons, SETTINGS, and CLUB CARD, your club card and your other clubs.
   The kit holds none of Sega's files. Everything that comes from the game is made by setup from YOUR copy.
 
+NEW IN KIT 8
+  - DREAM TEAM: a third choice under SETTINGS > PLAY ON. It plays on the server with your PC's own club card and any
+    card from the CATALOGUE, without your wccf.online account - no cards are earned and nothing goes to the website.
+    In friendlies the server pairs a DREAM TEAM club only with other DREAM TEAM clubs. (ONLINE, below.)
+  - Where each player plays, on the FORMATION BOARD: point at a card and the pitch glows where he plays well, from his
+    card's own 16 role ratings; every card on the pitch has a tag with his rating for the spot he stands in ("CB 10"),
+    on the game's own lines - FW, MF (the board's darker band) and DF. Drag a card to find the spot that suits him.
+  - Each card has its player's name under it, and your club's links show between the cards as the game draws them:
+    thin white, thick white, gold.
+  - The roles have Sega's own names: ST, PP, WG, SS, BT, OH, CH, DH, SH, WB, SB, CB, STP, SW, LIB and GK. The
+    CATALOGUE's search takes them too ("dh", "cb").
+  - Fixed: "+ CARD" put its two forwards inside the game's midfield line, so the game played them as midfielders.
+  - Hosting a server: friendlies keep DREAM TEAM clubs apart, and a player who switches to DREAM TEAM no longer has
+    his first reports sent as his account's.
+  - Updating from kit 7: SETUP's UPDATE, then yes to "set up now?". Your clubs, keys and settings stay.
+
 NEW IN KIT 7
   - Online with a wccf.online account. The first time you play online, PLAY shows a short code and opens wccf.online:
     log in there (or register) and approve the code - the game carries on by itself. Online you then play your

@@ -16,7 +16,8 @@ tells you if it is missing). Python is inside the kit.
 `PLAY.exe` (two windows: the projector and seat 1; online only seat 1 - no projector on players' PCs). Quit by
 closing the game's window. Online: SETTINGS > NEXT START: **ONLINE**, type the server's address, then **RESTART
 NOW** (click it twice). The first online start asks you to sign in to [wccf.online](https://wccf.online): PLAY shows a
-short code - log in (or register) there and approve it.
+short code - log in (or register) there and approve it. Or **DREAM TEAM** there: online with your PC's own club card
+and any card, no account and nothing earned - in friendlies DREAM TEAM clubs only meet each other.
 
 The zip's SHA-256: `{SHA256}`
 
