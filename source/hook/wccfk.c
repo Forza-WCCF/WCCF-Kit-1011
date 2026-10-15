@@ -43,6 +43,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include "winmm_fwd.h"   /* forwards the game's 3 timer functions to Windows' own winmm */
+#include "jvs.h"         /* the I/O board's guards: the error mark off, late answers dropped (2026-10-15) */
 #pragma comment(lib, "user32.lib")   /* the overlay: EnumWindows, to see the game's window */
 
 /* ---- logging ----------------------------------------------------------- */
@@ -797,15 +798,26 @@ static void jvs_watch(int i, const unsigned char *p, DWORD n)
     }
 }
 
+static LONG g_jvs_drops = 0, g_jvs_dropped = 0;
+
 static BOOL WINAPI hook_WriteFile(HANDLE h, LPCVOID buf, DWORD n, LPDWORD put, LPOVERLAPPED ov)
 {
     int   i = vcom_for_handle(h);
-    DWORD done = 0;
+    DWORD done = 0, late;
     BOOL  r;
     if (i < 0)
         return real_WriteFile(h, buf, n, put, ov);
-    if (g_vcom[i].jvs)
+    if (g_vcom[i].jvs) {
         jvs_watch(i, (const unsigned char *)buf, n);
+        /* a new request: anything still waiting answers a poll the game gave up on (jvs.h) - never hand it to this one */
+        if ((late = jvs_drop(h, real_ReadFile)) > 0) {
+            LONG k = InterlockedIncrement(&g_jvs_drops);
+            InterlockedExchangeAdd(&g_jvs_dropped, (LONG)late);
+            if (k <= 5 || k % 100 == 0)
+                logline("JVS: %lu byte(s) of late answers dropped before a new poll (%ld times so far, %ld bytes in all)",
+                        late, k, g_jvs_dropped);
+        }
+    }
     r = real_WriteFile(h, buf, n, &done, NULL);     /* the pipe is synchronous */
     if (!r)
         return FALSE;
@@ -1286,6 +1298,35 @@ static void install_wholemsg(HMODULE exe)
             g_witness_dir);
 }
 
+/* The I/O board's error mark off in the game itself (jvs.h): only in client_Release.exe, at its usual base, and only on
+ * Sega's exact bytes - in any other program the two places hold other code and nothing is touched. */
+static void install_jvs_unlatch(HMODULE exe)
+{
+    char me[MAX_PATH], *base;
+    DWORD prot;
+    int r;
+    me[0] = 0;
+    GetModuleFileNameA(NULL, me, MAX_PATH);
+    base = strrchr(me, '\\');
+    base = base ? base + 1 : me;
+    if (lstrcmpiA(base, "client_Release.exe") != 0)
+        return;
+    if (exe != (HMODULE)(UINT_PTR)0x00400000) {
+        logline("JVS: the board's error mark left as it is - the game is not at its usual address");
+        return;
+    }
+    if (!VirtualProtect((void *)(UINT_PTR)JVS_MARK_1, JVS_MARK_2 + 4 - JVS_MARK_1, PAGE_EXECUTE_READWRITE, &prot)) {
+        logline("JVS: the board's error mark left as it is - its code could not be opened (error %lu)", GetLastError());
+        return;
+    }
+    r = jvs_unlatch((unsigned char *)(UINT_PTR)JVS_MARK_1, (unsigned char *)(UINT_PTR)JVS_MARK_2);
+    VirtualProtect((void *)(UINT_PTR)JVS_MARK_1, JVS_MARK_2 + 4 - JVS_MARK_1, prot, &prot);
+    FlushInstructionCache(GetCurrentProcess(), (void *)(UINT_PTR)JVS_MARK_1, JVS_MARK_2 + 4 - JVS_MARK_1);
+    logline("JVS: %s", r == 1 ? "failed polls can no longer switch the buttons off (Sega's error mark at 0x007A61DA and "
+                                "0x007A61E6 off)" : r == 2 ? "the board's error mark was already off" :
+                                "the board's error mark left as it is - not the bytes this kit knows (not Rev D?)");
+}
+
 static void install_hooks(void)
 {
     HMODULE exe = GetModuleHandleW(NULL);
@@ -1306,6 +1347,7 @@ static void install_hooks(void)
         g_ringedge = (n == 1 && v[0] == '1');
     }
     install_vcom_hooks(exe);
+    install_jvs_unlatch(exe);
     if (g_ringedge && !real_CloseHandle) {
         int n = 0;
         real_CloseHandle = (pfn_CloseHandle)hook_k32(exe, "CloseHandle", hook_CloseHandle, &n);

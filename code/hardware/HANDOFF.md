@@ -6,7 +6,7 @@ programs stand in for them; play.py starts each one (data\running.json lists the
 | File | What it does |
 |---|---|
 | `card_reader.py` | the club-card reader: hands the card file to the game over a named pipe, and saves what the game writes - never in place, with backups |
-| `io_board.py` | the I/O board (JVS): turns the key driver's file `data\_jvs_seat1_input.txt` into the game's buttons; writes the game's outputs (the card ejector) beside it |
+| `io_board.py` | the I/O board (JVS): turns the key driver's file `data\_jvs_seat1_input.txt` into the game's buttons; writes the game's outputs (the card ejector) beside it. Since 2026-10-15 the thread that answers the game never touches the disk (the input file is read, and the log and outputs file written, by threads of their own), it runs at high priority out of Windows' throttling, and moments over 250 ms are logged as `SLOW` - a 5 s stall here once cost the buttons for the rest of a run (`docs\research\NO-INPUT-2010-11.md`) |
 | `keyboard.py` | the key driver: your keyboard and controllers become the cabinet's buttons (keys from `data\keys.txt`, the KEYS panel); takes the card out when the game ejects it |
 | `scenes.py` | the scene service (xscnWatch): loads the game's scene files when it asks |
 | `network.py` | the arcade's background services (keychip and network): answers the game's questions |

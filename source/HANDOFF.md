@@ -24,6 +24,7 @@ The source of every compiled program the kit ships, the scripts that build, chec
 | `test_old_layout.py` | a kit updated from before kit 6 is tidied: old folders, catalogue moved |
 | `test_patch_hook_import.py` | the game's import renamed to `wccfk.dll` and back (the antivirus fix) |
 | `test_relay.py` | a live seat cannot be taken over by another address; the same address on a new port takes its seat at once |
+| `test_io_board.py` | the I/O board stand-in on a real pipe, the test in the game's place: while a write of the outputs file hangs 2 s every answer still goes out at once (the old stand-in held one for 2,003 ms), a key press reaches the answers, a held-up answer with requests waiting is logged SLOW, the last line is written before it ends |
 | `test_server_conf.py` | the server's settings file: kit 7's random-pairing line (`MATCHING_PARA_FM1`) with a value, an older kit's file (also with play.py's `WAIT_PROJECTOR`) replaced without a copy, a hand edit kept |
 | `test_rotate_logs.py` | a log file held open never stops a start |
 | `test_seat_desk_game.py` | the seat desk never gives a seat that is in the game |

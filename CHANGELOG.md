@@ -52,6 +52,13 @@ game is not included. Newest first; each date is the day that kit was built.
   need the English (or Italian) put in again: after UPDATE, SETUP offers it.
 
 ### Fixed
+- The buttons no longer stop working for the rest of a session. If the kit's I/O board stand-in paused for about 4
+  seconds (two of the three pauses seen began as it wrote a file; the cause is not certain), the game marked the
+  board broken and never read a button
+  again until it was closed - a card session then ended badly. The kit now switches that mark off as the game starts,
+  drops the stand-in's late answers (after a shorter pause every press stayed late until the game was closed, and
+  later each pause made it later still), and the stand-in answers without ever waiting for the disk. Checked in the
+  real game: after a 6-second pause the buttons work at once.
 - Online: two signed-in players in one house (one internet address) now each get their cards and keep their club
   saves. The server could not tell them apart and sent nothing for either; kit 7 now tells the server which club card
   it plays, and the server matches it with the card in each match. (A server must update too; an older one is asked

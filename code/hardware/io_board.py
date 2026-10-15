@@ -19,11 +19,21 @@ INPUTFILE (default _jvs_seat1_input.txt beside this file) is re-read whenever it
     coin1=0           coin counters
     coin2=0
 Unknown commands are logged and answered "unknown" (status 2). Exit 0 after SECONDS.
+
+THE ANSWERS NEVER WAIT FOR THE DISK (2026-10-15, "no input" - docs/research/NO-INPUT-2010-11.md): this stand-in once
+went silent for 5 s mid-session, right after writing a lamp change to its files; the game counted every poll it
+missed, and after 10 in a row Sega's I/O library stopped reading the buttons for the rest of the run (the hook now
+switches that mark off, source/hook/jvs.h). So the thread that answers touches only the pipe and memory: the input
+file is read by a thread of its own, and the log lines and the outputs file are written by another. Moments over SLOW
+are logged as "SLOW": an answer that came late with requests waiting, a slow read of the input file, a slow write.
+The process runs at high priority and out of Windows' throttling (debugger.full_speed).
 """
 import ctypes
 import ctypes.wintypes as w
 import os
+import queue
 import sys
+import threading
 import time
 
 SYNC, MARK = 0xE0, 0xD0
@@ -46,8 +56,12 @@ k.ReadFile.argtypes = [w.HANDLE, ctypes.c_void_p, w.DWORD, ctypes.POINTER(w.DWOR
 k.WriteFile.argtypes = [w.HANDLE, ctypes.c_void_p, w.DWORD, ctypes.POINTER(w.DWORD), ctypes.c_void_p]
 k.PeekNamedPipe.argtypes = [w.HANDLE, ctypes.c_void_p, w.DWORD, ctypes.c_void_p, ctypes.POINTER(w.DWORD), ctypes.c_void_p]
 k.CloseHandle.argtypes = [w.HANDLE]
+k.GetCurrentProcess.restype = w.HANDLE
+k.SetPriorityClass.argtypes = [w.HANDLE, w.DWORD]
 INVALID = w.HANDLE(-1).value
 ERROR_PIPE_CONNECTED = 535
+HIGH_PRIORITY_CLASS = 0x80
+SLOW = 0.25                     # seconds: a moment longer than this is logged ("SLOW")
 
 
 def escape(body):
@@ -74,6 +88,7 @@ class Inputs:
         self.path, self.stamp = path, None
         self.sys, self.p = 0, [[0, 0], [0, 0]]
         self.coin = [0, 0]
+        self.lock = threading.Lock()        # the watcher thread changes the state, the answering thread reads it
 
     def refresh(self, log):
         try:
@@ -90,23 +105,34 @@ class Inputs:
             # Unhandled, this PermissionError killed the board mid-game on 2026-10-04 (_jvs_refresh_race_test.py).
             return
         self.stamp = stamp
-        for line in text.splitlines():
-            line = line.split("#")[0].strip()
-            if "=" not in line:
-                continue
-            key, val = [s.strip() for s in line.split("=", 1)]
-            try:
-                nums = [int(v, 0) for v in val.split()]
-            except ValueError:
-                continue
-            if key == "sys" and nums:
-                self.sys = nums[0] & 0xFF
-            elif key in ("p1", "p2") and nums:
-                self.p[int(key[1]) - 1] = [n & 0xFF for n in (nums + [0, 0])[:2]]
-            elif key in ("coin1", "coin2") and nums:
-                self.coin[int(key[4]) - 1] = nums[0] & 0x3FFF
+        with self.lock:
+            for line in text.splitlines():
+                line = line.split("#")[0].strip()
+                if "=" not in line:
+                    continue
+                key, val = [s.strip() for s in line.split("=", 1)]
+                try:
+                    nums = [int(v, 0) for v in val.split()]
+                except ValueError:
+                    continue
+                if key == "sys" and nums:
+                    self.sys = nums[0] & 0xFF
+                elif key in ("p1", "p2") and nums:
+                    self.p[int(key[1]) - 1] = [n & 0xFF for n in (nums + [0, 0])[:2]]
+                elif key in ("coin1", "coin2") and nums:
+                    self.coin[int(key[4]) - 1] = nums[0] & 0x3FFF
         log("inputs now: sys=%02x p1=%02x %02x p2=%02x %02x coin=%d,%d" % (
             self.sys, self.p[0][0], self.p[0][1], self.p[1][0], self.p[1][1], self.coin[0], self.coin[1]))
+
+    def watch(self, log, slow):
+        """the input file re-read whenever it changes, in a thread of its own (2026-10-15): a slow disk never holds up
+        an answer - the answers go out with the last state read"""
+        while True:
+            t = time.time()
+            self.refresh(log)
+            if time.time() - t > SLOW:
+                slow("reading the input file took %d ms" % ((time.time() - t) * 1000))
+            time.sleep(0.005)
 
 
 def write_whole(path, text):
@@ -127,11 +153,12 @@ def write_whole(path, text):
 
 
 class Board:
-    def __init__(self, inputs, log, outputs_path=None):
+    def __init__(self, inputs, log, outputs_path=None, save=write_whole):
         self.addr, self.inputs, self.log, self.last = None, inputs, log, None
         # the game's general-purpose outputs (lamps, solenoids - e.g. the card ejector), from command 0x32.
-        # Every change is logged and the latest bytes kept in outputs_path for other tools (2026-10-04).
-        self.outputs, self.outputs_path, self.output_changes = None, outputs_path, 0
+        # Every change is logged and the latest bytes kept in outputs_path for other tools (2026-10-04), by save -
+        # main() hands both to its writer thread, so an answer never waits for them (2026-10-15).
+        self.outputs, self.outputs_path, self.output_changes, self.save = None, outputs_path, 0, save
 
     def note_outputs(self, outs):
         if outs == self.outputs:
@@ -140,8 +167,8 @@ class Board:
         self.output_changes += 1
         self.log("outputs now: %s" % (outs.hex(" ") or "(none)"))
         if self.outputs_path:
-            write_whole(self.outputs_path, "# the game's JVS outputs (command 0x32), latest; change %d\n%s\n"
-                        % (self.output_changes, outs.hex(" ")))
+            self.save(self.outputs_path, "# the game's JVS outputs (command 0x32), latest; change %d\n%s\n"
+                      % (self.output_changes, outs.hex(" ")))
 
     def handle(self, node, data):
         """One request packet -> the reply packet (or None)."""
@@ -230,92 +257,132 @@ def main(argv):
     if not os.path.isabs(inpath):
         inpath = os.path.join(HERE, inpath)
     t0 = time.time()
-    quiet = {"polls": 0}
+    quiet, slow_moments = {"polls": 0}, [0]
+    disk = queue.SimpleQueue()          # log lines and outputs files, for the writer thread: put() never waits
 
     def log(msg):
-        line = "%8.3f  %s" % (time.time() - t0, msg)
-        print(line, flush=True)
-        if logf:
-            logf.write(line + "\n")
-            logf.flush()
+        disk.put("%8.3f  %s" % (time.time() - t0, msg))
 
-    if not os.path.exists(inpath):
-        with open(inpath, "w", encoding="utf-8") as f:
-            f.write("# JVS inputs for the player cabinet - edit and save; read by io_board.py\n"
-                    "sys=0x00\np1=0x00 0x00\np2=0x00 0x00\ncoin1=0\ncoin2=0\n")
-    inputs = Inputs(inpath)
-    inputs.refresh(log)
-    h = k.CreateNamedPipeW(pipe_name, 3, 0, 1, 4096, 4096, 0, None)
-    if not h or h == INVALID:
-        log("cannot create pipe %s (err %d) - another board running?" % (pipe_name, k.GetLastError()))
-        return 2
-    log("JVS I/O board stand-in on %s for %d s; inputs from %s" % (pipe_name, seconds, inpath))
-    outpath = (inpath[:-len("_input.txt")] + "_outputs.txt") if inpath.endswith("_input.txt") else inpath + ".outputs"
-    board = Board(inputs, log, outpath)
-    buf = (ctypes.c_char * 4096)()
-    got = w.DWORD()
-    while time.time() - t0 < seconds:
-        log("waiting for the game to open \\\\.\\mxjvs...")
-        if not k.ConnectNamedPipe(h, None) and k.GetLastError() != ERROR_PIPE_CONNECTED:
-            time.sleep(1)
-            continue
-        log("game connected")
-        raw = bytearray()
-        while time.time() - t0 < seconds:
-            avail = w.DWORD()
-            if not k.PeekNamedPipe(h, None, 0, None, ctypes.byref(avail), None):
-                log("game closed the port")
-                break
-            if avail.value == 0:
-                time.sleep(0.001)
-                continue
-            k.ReadFile(h, buf, min(avail.value, 4096), ctypes.byref(got), None)
-            raw += buf.raw[:got.value]
-            while True:                                         # take every complete packet
-                s = raw.find(bytes([SYNC]))
-                if s < 0:
-                    raw.clear()
-                    break
-                del raw[:s]
-                body, j, mark = bytearray(), 1, False
-                while j < len(raw):
-                    b = raw[j]
-                    j += 1
-                    if mark:
-                        body.append(b + 1)
-                        mark = False
-                    elif b == MARK:
-                        mark = True
-                    elif b == SYNC:
-                        break
-                    else:
-                        body.append(b)
-                    if len(body) >= 2 and len(body) >= 2 + body[1]:
-                        break
-                if len(body) < 2 or len(body) < 2 + body[1]:
-                    break                                       # wait for more bytes
-                del raw[:j]
-                node, length = body[0], body[1]
-                data, total = bytes(body[2:1 + length]), body[1 + length]
-                ok = ((node + length + sum(data)) & 0xFF) == total
-                inputs.refresh(log)
-                reply = board.handle(node, data)
-                routine = data[:1] in (b"\x20", b"\x21") and ok
-                if routine:
-                    quiet["polls"] += 1
-                    if quiet["polls"] % 600 == 1:
-                        log("<- node %02x %s (input polls so far: %d)" % (node, data.hex(" "), quiet["polls"]))
+    def slow(msg):
+        """a moment over SLOW: the first 20 logged, then every 100th (a sick disk must not fill the log)"""
+        slow_moments[0] += 1
+        if slow_moments[0] <= 20 or slow_moments[0] % 100 == 0:
+            log("SLOW (%d so far): %s" % (slow_moments[0], msg))
+
+    def writer():
+        while True:
+            item = disk.get()
+            if item is None:
+                return
+            t = time.time()
+            try:
+                if isinstance(item, str):
+                    print(item, flush=True)
+                    if logf:
+                        logf.write(item + "\n")
+                        logf.flush()
                 else:
-                    log("<- node %02x %s%s" % (node, data.hex(" "), "" if ok else "  CHECKSUM WRONG"))
-                if reply:
-                    n = w.DWORD()
-                    k.WriteFile(h, reply, len(reply), ctypes.byref(n), None)
-                    if not routine:
-                        log("-> %s" % reply.hex(" "))
-        k.DisconnectNamedPipe(h)
-    log("stopping after %d s" % seconds)
-    k.CloseHandle(h)
-    return 0
+                    write_whole(*item)
+            except OSError:
+                pass                    # that line is lost; the next ones still get written
+            if time.time() - t > SLOW:
+                slow("writing %s took %d ms - no answer waited for it" % (
+                    "the log" if isinstance(item, str) else "the outputs file", (time.time() - t) * 1000))
+
+    writing = threading.Thread(target=writer, daemon=True)
+    writing.start()
+    try:
+        from hardware.debugger import full_speed    # the same opt-out the game's debugger uses (beside this file)
+        me = k.GetCurrentProcess()
+        log("this stand-in: high priority %s, Windows' throttling off: %s" % (
+            "yes" if k.SetPriorityClass(me, HIGH_PRIORITY_CLASS) else "NO", full_speed(me) or "NO"))
+        if not os.path.exists(inpath):
+            with open(inpath, "w", encoding="utf-8") as f:
+                f.write("# JVS inputs for the player cabinet - edit and save; read by io_board.py\n"
+                        "sys=0x00\np1=0x00 0x00\np2=0x00 0x00\ncoin1=0\ncoin2=0\n")
+        inputs = Inputs(inpath)
+        inputs.refresh(log)
+        threading.Thread(target=inputs.watch, args=(log, slow), daemon=True).start()
+        h = k.CreateNamedPipeW(pipe_name, 3, 0, 1, 4096, 4096, 0, None)
+        if not h or h == INVALID:
+            log("cannot create pipe %s (err %d) - another board running?" % (pipe_name, k.GetLastError()))
+            return 2
+        log("JVS I/O board stand-in on %s for %d s; inputs from %s" % (pipe_name, seconds, inpath))
+        outpath = (inpath[:-len("_input.txt")] + "_outputs.txt") if inpath.endswith("_input.txt") else inpath + ".outputs"
+        board = Board(inputs, log, outpath, lambda path, text: disk.put((path, text)))
+        buf = (ctypes.c_char * 4096)()
+        got = w.DWORD()
+        while time.time() - t0 < seconds:
+            log("waiting for the game to open \\\\.\\mxjvs...")
+            if not k.ConnectNamedPipe(h, None) and k.GetLastError() != ERROR_PIPE_CONNECTED:
+                time.sleep(1)
+                continue
+            log("game connected")
+            raw, last_read = bytearray(), time.time()
+            while time.time() - t0 < seconds:
+                avail = w.DWORD()
+                if not k.PeekNamedPipe(h, None, 0, None, ctypes.byref(avail), None):
+                    log("game closed the port")
+                    break
+                if avail.value == 0:
+                    time.sleep(0.001)
+                    continue
+                k.ReadFile(h, buf, min(avail.value, 4096), ctypes.byref(got), None)
+                raw += buf.raw[:got.value]
+                gap, last_read, asked = time.time() - last_read, time.time(), 0
+                while True:                                     # take every complete packet
+                    s = raw.find(bytes([SYNC]))
+                    if s < 0:
+                        raw.clear()
+                        break
+                    del raw[:s]
+                    body, j, mark = bytearray(), 1, False
+                    while j < len(raw):
+                        b = raw[j]
+                        j += 1
+                        if mark:
+                            body.append(b + 1)
+                            mark = False
+                        elif b == MARK:
+                            mark = True
+                        elif b == SYNC:
+                            break
+                        else:
+                            body.append(b)
+                        if len(body) >= 2 and len(body) >= 2 + body[1]:
+                            break
+                    if len(body) < 2 or len(body) < 2 + body[1]:
+                        break                                   # wait for more bytes
+                    del raw[:j]
+                    node, length = body[0], body[1]
+                    data, total = bytes(body[2:1 + length]), body[1 + length]
+                    ok = ((node + length + sum(data)) & 0xFF) == total
+                    with inputs.lock:
+                        reply = board.handle(node, data)
+                    if reply:
+                        n = w.DWORD()
+                        k.WriteFile(h, reply, len(reply), ctypes.byref(n), None)
+                    asked += 1
+                    routine = data[:1] in (b"\x20", b"\x21") and ok      # the answer has gone: now the log lines
+                    if routine:
+                        quiet["polls"] += 1
+                        if quiet["polls"] % 600 == 1:
+                            log("<- node %02x %s (input polls so far: %d)" % (node, data.hex(" "), quiet["polls"]))
+                    else:
+                        log("<- node %02x %s%s" % (node, data.hex(" "), "" if ok else "  CHECKSUM WRONG"))
+                        if reply:
+                            log("-> %s" % reply.hex(" "))
+                if gap > SLOW and asked > 1:   # the game asks once and waits: more than one = this stand-in was late
+                    slow("%d requests were waiting - nothing was read for %d ms" % (asked, gap * 1000))
+            k.DisconnectNamedPipe(h)
+        log("stopping after %d s" % seconds)
+        k.CloseHandle(h)
+        return 0
+    finally:
+        disk.put(None)                  # what is queued is written before the stand-in ends
+        writing.join(10)
+        if logf and not writing.is_alive():
+            logf.close()
 
 
 if __name__ == "__main__":

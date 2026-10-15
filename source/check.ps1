@@ -115,6 +115,7 @@ $side = @(
     Start-Check 'the seat desk and the sign-in: optional or needed, a good or refused token, no token logged' 'test_seat_desk_signin.py'
     Start-Check 'the online club: owned cards make the CATALOGUE and a new club''s table, the slot when anything is wrong' 'test_online_club.py'
     Start-Check 'the server''s witness: a finished match tells the website whose it was, with the server''s secret' 'test_witness.py'
+    Start-Check 'the I/O board: the game answered at once while the disk hangs, a held-up answer logged' 'test_io_board.py'
 )
 
 & $py -I (Join-Path $PSScriptRoot 'test_english_pictures.py')
@@ -125,6 +126,8 @@ if ($LASTEXITCODE) { $failed += 'the Italian tables: keys, font and codes' }
 
 & (Join-Path $PSScriptRoot 'build\test_wholemsg.exe')
 if ($LASTEXITCODE) { $failed += 'whole messages: a batch in pieces waits for its rest, bytes that are no batch are skipped' }
+& (Join-Path $PSScriptRoot 'build\test_jvs.exe')
+if ($LASTEXITCODE) { $failed += 'the I/O board: the error mark off only on Sega''s bytes, late answers dropped' }
 & $py -I (Join-Path $PSScriptRoot 'test_crash_dump.py')
 if ($LASTEXITCODE) { $failed += 'a crash leaves its memory snapshots (lean + full) in data\dumps' }
 
