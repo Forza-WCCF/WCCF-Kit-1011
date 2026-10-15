@@ -181,6 +181,23 @@ def upload(token, card, folder):
     return "unreachable", body.get("error") or "HTTP %s" % status
 
 
+def send_formation(token, seat):
+    """the cards on the table and where each stands (cards\\formation.py table: the board's fpr_table0.txt in the
+    seat folder) -> wccf.online, for the account's profile (2026-10-16, the owner: "show the current formation the
+    player is playing") -> (state, detail): "kept" (n) / "empty" (no card on the table: nothing sent, the profile keeps
+    the last one) / "refused" (why) / "unreachable" (why)"""
+    from cards import formation
+    cards = [[no, x, y] for _slot, no, x, y in formation.table(seat)]
+    if not cards:
+        return "empty", 0
+    status, body = account.post("wccf_formation", {"token": token, "cards": json.dumps(cards)})
+    if status == 200:
+        return "kept", body.get("kept")
+    if status in (401, 403, 422):
+        return "refused", body.get("error") or "HTTP %s" % status
+    return "unreachable", body.get("error") or "HTTP %s" % status
+
+
 def make_blank(card):
     """a blank club card with an id of its own (card_reader.Card.blank): every card older kits made shares one id, so
     an online club starts on its own card - the website refuses the shared one"""

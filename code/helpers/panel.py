@@ -23,7 +23,9 @@ card goes to wccf.online (online\club.py upload) once the card has held still fo
 locker-room save - never mid-match - in a thread of its own; a send that cannot reach the website is tried again a
 minute later, and the next start sends what is left.  The new card a manager transfer puts beside it (NAME.new.bin,
 2026-10-15) is watched the same way: its first locker-room save goes up as the account's card at once, so the card
-that match earned is found and shown (watching only the old card, the real game's transfer showed none).
+that match earned is found and shown (watching only the old card, the real game's transfer showed none).  Once the
+website has the save, the cards on the table and where each stands go up too (online\club.py send_formation), for
+the account's profile on wccf.online (2026-10-16).
 
 THE STARTING VOLUMES (2026-10-06): sound.py - the projector muted, seat 1 very low - set once for each, as
 soon as it has opened its sound (looked for every 0.5 s for 10 minutes after the start); never again, so a change in
@@ -196,9 +198,9 @@ class ClubSync:
 
     CHECKS = (5, 15, 35, 60)    # seconds after a save: the card the match earned (phase 3: the server tells the website)
 
-    def __init__(self, card, data=None):
+    def __init__(self, card, data=None, seat=None):
         self.card, self.seen, self.since, self.done, self.retry_at, self.busy = card, None, 0.0, None, 0.0, None
-        self.data, self.checks = data or K.DATA, []
+        self.data, self.checks, self.seat = data or K.DATA, [], seat    # seat: its table goes up after each save
 
     def tick(self, now):
         if not self.card or (self.busy and self.busy.is_alive()):
@@ -238,6 +240,10 @@ class ClubSync:
         else:
             self.done = sig
             self.checks = [now + s for s in self.CHECKS]
+        if self.seat and state in ("kept", "same"):     # the website has this club: its table for the profile too
+            got, why = club.send_formation(token, self.seat)
+            say("formation -> wccf.online: %s" % {"kept": "kept (%s cards)" % why,
+                                                  "empty": "no card on the table - not sent"}.get(got, "%s - %s" % (got, why)))
 
     def look(self):
         from online import account, club
@@ -248,10 +254,11 @@ class ClubSync:
             say("new card from wccf.online: %s - in the CATALOGUE now" % ", ".join(map(str, new)))
 
 
-def club_syncs(card, data):
-    """the online club card's sends (card None: offline, nothing): the card, and the new card a manager transfer puts
-    beside it (NAME.new.bin - card_reader.py NEWCARDFILE, play.py)"""
-    return [ClubSync(card, data), ClubSync(card and os.path.splitext(card)[0] + ".new.bin", data)]
+def club_syncs(card, data, seat=None):
+    """the online club card's sends (card None: offline, nothing): the card - after each, the table in the seat folder
+    (seat None: no game folder known, no table sent) - and the new card a manager transfer puts beside it (NAME.new.bin -
+    card_reader.py NEWCARDFILE, play.py)"""
+    return [ClubSync(card, data, seat), ClubSync(card and os.path.splitext(card)[0] + ".new.bin", data)]
 
 
 def main(argv):
@@ -273,7 +280,8 @@ def main(argv):
     view = ClubView(data, os.environ.get("WCCF_CLUB_CARD"))      # online: the account's club (play.py)
     sound = SoundDefaults(os.environ.get("WCCF_GAME"), time.time())
     logs = SendLogs(data)
-    syncs = club_syncs(os.environ.get("WCCF_CLUB_CARD"), data)
+    game = os.environ.get("WCCF_GAME")                                  # play.py: the game folder; seat 1 beside it
+    syncs = club_syncs(os.environ.get("WCCF_CLUB_CARD"), data, K.seat_dir(game) if game else None)
     end = time.time() + life
     while time.time() < end:
         view.tick(time.time())

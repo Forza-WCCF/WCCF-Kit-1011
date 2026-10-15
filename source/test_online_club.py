@@ -313,6 +313,44 @@ check("the helper watches the online card and the new card a manager transfer pu
       [s.card for s in H.club_syncs(four, TMP)] == [four, os.path.join(os.path.dirname(four), "club.new.bin")] and
       [s.card for s in H.club_syncs(None, TMP)] == [None, None])
 
+# the cards on the table for the account's profile on wccf.online (2026-10-16): after each save the website has
+SEAT = os.path.join(TMP, "seat_profile")
+os.makedirs(SEAT)
+with open(os.path.join(SEAT, "fpr_table0.txt"), "w") as f:
+    f.write("# written by the in-game card board\n1 31 0.000 1.000\n2 25 -0.5 0.6\n7 40 1.240 0.340\n")
+answer["wccf_formation"] = (200, {"kept": 3})
+posts.clear()
+check("send_formation: the table goes up as [card, x, y], and is kept", C.send_formation("t", SEAT) == ("kept", 3) and
+      posts == [("wccf_formation", {"token": "t", "cards": json.dumps([[31, 0.0, 1.0], [25, -0.5, 0.6],
+                                                                       [40, 1.24, 0.34]])})], posts)
+answer["wccf_formation"] = (422, {"error": "card 40 is not owned"})
+check("send_formation: refused, and why", C.send_formation("t", SEAT) == ("refused", "card 40 is not owned"))
+answer["wccf_formation"] = (0, {"error": "timed out"})
+check("send_formation: the website out of reach", C.send_formation("t", SEAT) == ("unreachable", "timed out"))
+posts.clear()
+check("send_formation: no table - nothing sent (the profile keeps the last one)",
+      C.send_formation("t", os.path.join(TMP, "no seat")) == ("empty", 0) and not posts, posts)
+tables = []
+keep_send = C.send_formation
+C.send_formation = lambda token, seat: tables.append(seat) or ("kept", 3)
+C.upload = lambda token, card, folder: ("kept", 12)
+sync = H.ClubSync(four, TMP, SEAT)
+put(four, card_of(0xFFF0, 4))
+ticks(200, 203)
+check("the helper: after a save the website kept, the table goes up too", tables == [SEAT], tables)
+C.upload = lambda token, card, folder: ("refused", "an older save")
+put(four, card_of(0xFFEF, 4))
+ticks(210, 213)
+check("... not after a refused save", tables == [SEAT], tables)
+sync = H.ClubSync(four, TMP)
+C.upload = lambda token, card, folder: ("kept", 13)
+put(four, card_of(0xFFEE, 4))
+ticks(220, 223)
+check("... nor with no seat folder known", tables == [SEAT], tables)
+check("club_syncs: the table goes with the online card, not with a manager transfer's new card",
+      [s.seat for s in H.club_syncs(four, TMP, SEAT)] == [SEAT, None])
+C.send_formation = keep_send
+
 # phase 3: the card a finished match earned - found after the save, into the CATALOGUE and dealt.txt for the panel
 looks, found = [], [[], [77]]
 H.ClubSync.CHECKS = keep_checks
