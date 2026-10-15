@@ -12,11 +12,12 @@ game is not included. Newest first; each date is the day that kit was built.
   earned and nothing goes to the website. In friendly rounds a DREAM TEAM club is paired only with other DREAM TEAM
   clubs, so players with any card never meet players building their club from the 11 white cards there. League and
   cup rounds can still pair DREAM TEAM and ONLINE players (the game pairs those by division place and bracket).
-- Positions on the FORMATION BOARD: point at a card (on the pitch, or in the CATALOGUE) and the pitch lights up
-  where he plays well, from his card's own 16 role ratings; each card on the pitch has a tag with his rating for the
-  spot he stands in ("CB 10": green 8 or more, yellow 6-7, red below), and it follows a card you drag, so you can find
-  the spot that suits him. Which role a spot means is the kit's reading of the pitch, the same as on wccf.online's
-  squad builder.
+- Positions on the FORMATION BOARD: point at a card (on the pitch, or in the CATALOGUE) and the pitch dims a little
+  and glows where he plays well, from his card's own 16 role ratings (pale yellow for a few points, deep orange for
+  a 10); each card on the pitch has a tag with his rating for the spot he stands in ("CB 10": the number green for 8
+  or more, yellow for 6-7, red below), and it follows a card you drag, so you can find the spot that suits him. Which
+  role a spot means is the kit's reading of the pitch, with the same zones as wccf.online's squad builder: the
+  board's own 4-4-2 reads ST, SH and CH, SB and CB, GK, and a spot reads the same as its mirror on the other wing.
 
 ### Changed
 - The roles have Sega's own names now, as the game keeps them (ST striker, PP post player, WG wing, SS shadow

@@ -74,6 +74,7 @@ static void    set_tick(void);               // the SETTINGS panel's status (bel
 static void    club_tick(void);              // the CLUB CARD panel's view (below the SETTINGS panel)
 static void    deal_tick(void);              // a player card after each match (below the close warning)
 static void    deal_selftest(void);          // its odds, WCCFPANEL_DEALTEST=1 (the tests)
+static void    heat_selftest(void);          // which role a spot on the FORMATION pitch reads as (with the deal test)
 static int     pad_tick(void);               // the KEYS panel's controllers (in the KEYS panel); 1 = back soon
 static void    frame_stats_tick(void);       // seat 1's frame timing, when asked (the frame wait, below the money)
 
@@ -332,6 +333,26 @@ static void fill_vgrad(IDirect3DDevice9 *d, float x, float y, float w, float h, 
         { x,     y + h, 0.0f, 1.0f, bottom }, { x + w, y + h, 0.0f, 1.0f, bottom },
     };
     IDirect3DDevice9_DrawPrimitiveUP(d, D3DPT_TRIANGLESTRIP, 2, v, sizeof(struct VTX));
+}
+
+// a rectangle whose edges fade to nothing over f pixels, half inside it and half outside: tiles side by side melt into
+// one glow (the website blurs its tiles instead)
+static void fill_soft(IDirect3DDevice9 *d, float x, float y, float w, float h, float f, DWORD argb)
+{
+    static const int Q[6][2] = { { 0, 0 }, { 1, 0 }, { 0, 1 }, { 0, 1 }, { 1, 0 }, { 1, 1 } };   // a quad's 2 triangles
+    float X[4], Y[4]; struct VTX v[54]; int n = 0;
+    if (f > w) f = w;
+    if (f > h) f = h;
+    X[0] = x - f * 0.5f; X[1] = x + f * 0.5f; X[2] = x + w - f * 0.5f; X[3] = x + w + f * 0.5f;
+    Y[0] = y - f * 0.5f; Y[1] = y + f * 0.5f; Y[2] = y + h - f * 0.5f; Y[3] = y + h + f * 0.5f;
+    for (int j = 0; j < 3; j++)                // 3 x 3 quads: the middle one solid, the edges and corners fading out
+        for (int i = 0; i < 3; i++)
+            for (int q = 0; q < 6; q++) {
+                int a = i + Q[q][0], b = j + Q[q][1];
+                struct VTX t = { X[a], Y[b], 0.0f, 1.0f, (a == 1 || a == 2) && (b == 1 || b == 2) ? argb : argb & 0x00FFFFFF };
+                v[n++] = t;
+            }
+    IDirect3DDevice9_DrawPrimitiveUP(d, D3DPT_TRIANGLELIST, 18, v, sizeof(struct VTX));
 }
 
 static void outline(IDirect3DDevice9 *d, float x, float y, float w, float h, float t, DWORD c)
@@ -992,7 +1013,7 @@ static DWORD WINAPI board_thread(LPVOID arg)
         CoCreateInstance(&CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, &IID_IWICImagingFactory, (void **)&wic);
     if (!wic) logline("board: no picture decoder (WIC) - cards show as plain numbered tiles");
     load_catalogue();
-    { char e[8]; if (GetEnvironmentVariableA("WCCFPANEL_DEALTEST", e, sizeof e) > 0) deal_selftest(); }   // the tests
+    { char e[8]; if (GetEnvironmentVariableA("WCCFPANEL_DEALTEST", e, sizeof e) > 0) { deal_selftest(); heat_selftest(); } }
     for (;;) {
         int no = 0, i, fast;
         board_reread();
@@ -1108,8 +1129,9 @@ static void board_draw(IDirect3DDevice9 *dev)
         g_cards[i].px = RC(cx - w * 0.5f, cy - h * 0.5f, cx + w * 0.5f, cy + h * 0.5f);
     }
     board_heat(dev);                                           // where the card pointed at plays well, under the cards
-    for (int i = 0; i < g_ncards; i++)
-        if (i != g_drag) board_fit_tag(dev, draw_card(dev, i, 1.0f, 0), g_cards[i].no, g_cards[i].x, g_cards[i].y);
+    for (int i = 0; i < g_ncards; i++) if (i != g_drag) draw_card(dev, i, 1.0f, 0);
+    for (int i = 0; i < g_ncards; i++)                         // the tags over every card (a keeper's sat under his DFs)
+        if (i != g_drag) board_fit_tag(dev, g_cards[i].px, g_cards[i].no, g_cards[i].x, g_cards[i].y);
     if (g_drag >= 0 && g_drop_on >= 0 && g_drop_on < g_ncards) {   // the card it would swap with: a yellow frame
         RECT r = g_cards[g_drop_on].px;
         set_flat(dev);
@@ -1479,10 +1501,15 @@ static void board_caption(IDirect3DDevice9 *dev, RECT card, int no)
 }
 
 // ---- where a card plays (2026-10-15, the owner: "highlight those positions on the formation panel ... some what like
-// this or better", with a picture of an orange grid over the pitch).  The pitch as 8 bands down x 5 lanes across, the
-// roles of each zone (ROLE_NAME numbers, -1 none) - the website's zones (cards.js ZONES, BANDS); a zone is as bright as
-// the card's best role in it, drawn as near-square tiles.  The card has no side: a wide role lights both wings.  Which
-// role a spot means is our reading of the pitch, not the game's own (its lines come from FUN_004db340's data areas).
+// this or better", with a picture of an orange grid over the pitch; then "can we make them look better?").  The pitch
+// as 8 bands down x 5 lanes across, the roles of each zone (ROLE_NAME numbers, -1 none): the website's zones and lanes
+// (cards.js ZONES, LANES), the bands fitted to this table, where cards stand lower than on the website's pitch - "+ CARD"'s
+// 4-4-2 (formation.py SPOTS: FW y -0.45, MF 0.1-0.15, DF 0.55-0.6, GK 0.9) stands mid-band in ST, SH/CH, SB/CB and GK,
+// and the last band starts where the game's own keeper box does (y 0.8).  The first bands, fitted to the website's pitch,
+// read the test club's back four as CB, LIB, SW and SB.  A zone is lit as the card's best role in it, soft-edged, pale
+// yellow for a few points to deep orange for a 10.  The card has no side: a wide role lights both wings.  Which role a
+// spot means is our reading of the pitch, not the game's own (its DF/MF/FW lines come from FUN_004db340's data areas,
+// not decoded).
 static const signed char HEAT_ZONE[8][5][2] = {
     { { 2, -1 }, { 0, 1 }, { 0, 1 }, { 0, 1 }, { 2, -1 } },
     { { 2, -1 }, { 3, -1 }, { 3, 4 }, { 3, -1 }, { 2, -1 } },
@@ -1490,10 +1517,16 @@ static const signed char HEAT_ZONE[8][5][2] = {
     { { 8, -1 }, { 6, -1 }, { 6, -1 }, { 6, -1 }, { 8, -1 } },
     { { 9, -1 }, { 7, -1 }, { 7, -1 }, { 7, -1 }, { 9, -1 } },
     { { 10, -1 }, { 11, 12 }, { 11, 12 }, { 11, 12 }, { 10, -1 } },
-    { { -1, -1 }, { 13, 14 }, { 13, 14 }, { 13, 14 }, { -1, -1 } },
-    { { -1, -1 }, { -1, -1 }, { 15, -1 }, { -1, -1 }, { -1, -1 } } };
-static const float HEAT_BAND[9] = { 0, 26, 33, 40, 54, 62, 80, 86, 100 };          // % down from the far goal line
-static const unsigned char HEAT_ALPHA[11] = { 0, 0, 0, 10, 18, 31, 47, 67, 96, 131, 167 };  // a rating -> its tiles
+    { { 10, -1 }, { 13, 14 }, { 13, 14 }, { 13, 14 }, { 10, -1 } },
+    { { 10, -1 }, { 11, 12 }, { 15, -1 }, { 11, 12 }, { 10, -1 } } };
+static const float HEAT_BAND[9] = { 0, 33, 40, 47, 63, 70, 86, 90, 100 };   // % down from the far goal line
+static const float HEAT_LANE[6] = { 0, 22, 42, 58, 78, 100 };              // % across, touchline to touchline
+// a rating -> its zone's colour (cards.js HEAT_COLOUR) and strength; 0-2 stay dark.  The pitch is dimmed under them
+// (HEAT_VEIL): orange over the skin's bright teal came out brown
+static const DWORD HEAT_RGB[11] = { 0, 0, 0, 0xFFE08A, 0xFFD573, 0xFFC75C, 0xFFB347, 0xFF9F38, 0xFF8A2A, 0xFF7420,
+                                    0xFF5E1A };
+static const unsigned char HEAT_A[11] = { 0, 0, 0, 34, 48, 66, 88, 114, 142, 172, 200 };
+#define HEAT_VEIL D3DCOLOR_ARGB(80, 0, 0, 0)
 
 static const struct CatCard *cat_card(int no)   // the catalogue's card with this number, NULL if none
 {
@@ -1512,69 +1545,87 @@ static int zone_best(const struct CatCard *c, int band, int lane)   // a zone's 
     return k;
 }
 
-// a card's role at a table spot (x -1..1 across, y -1..1 from the far goal line): its zone's best role - an empty zone
-// (wide of the keeper or of the sweeper) counts as the nearest lane that has roles; -1 = the card has no ratings
+// a card's role at a table spot (x -1..1 across, y -1..1 from the far goal line): its zone's best role; -1 = the card
+// has no ratings.  The zones are mirror images, so the right half decides: a spot and its mirror on the other wing
+// always read alike (on lanes 20 wide, Kaladze at x -0.6 stood on an edge and read CB, Coloccini at +0.6 read SB)
 static int spot_role(const struct CatCard *c, float x, float y)
 {
-    float px = (x + 1.0f) * 50.0f, py = (y + 1.0f) * 50.0f;
-    int band = 0, lane = (int)floorf(px / 20.0f), known = 0, d, k;
+    float px = 50.0f + fabsf(x) * 50.0f, py = (y + 1.0f) * 50.0f;
+    int band = 0, lane = 2, known = 0, k;
     for (k = 0; k < 16; k++) known |= c->role[k];
     if (!known) return -1;
     while (band < 7 && py >= HEAT_BAND[band + 1]) band++;
-    if (lane < 0) lane = 0;
-    if (lane > 4) lane = 4;
-    for (d = 0; d < 5; d++) {
-        if (lane - d >= 0 && (k = zone_best(c, band, lane - d)) >= 0) return k;
-        if (lane + d <= 4 && (k = zone_best(c, band, lane + d)) >= 0) return k;
+    while (lane < 4 && px >= HEAT_LANE[lane + 1]) lane++;
+    return zone_best(c, band, lane);
+}
+
+// WCCFPANEL_DEALTEST=1 (the tests): which role a spot reads as, for a card rated alike in every role (so a zone's first
+// role) - "+ CARD"'s 4-4-2 (formation.py SPOTS) and spots from the test club the owner saw read wrong (2026-10-15);
+// and every spot reads as its mirror on the other wing
+static void heat_selftest(void)
+{
+    static const struct { float x, y; const char *want; } T[] = {
+        { 0.0f, 0.9f, "GK" }, { -0.6f, 0.55f, "SB" }, { -0.2f, 0.6f, "CB" }, { 0.2f, 0.6f, "CB" }, { 0.6f, 0.55f, "SB" },
+        { -0.6f, 0.1f, "SH" }, { -0.2f, 0.15f, "CH" }, { 0.2f, 0.15f, "CH" }, { 0.6f, 0.1f, "SH" },
+        { -0.25f, -0.45f, "ST" }, { 0.25f, -0.45f, "ST" }, { 0.47f, 0.1f, "CH" }, { -0.03f, 0.18f, "CH" },
+        { 0.0f, -0.21f, "SS" }, { 0.0f, 0.3f, "DH" }, { 0.0f, 0.75f, "SW" }, { -0.8f, -0.6f, "WG" } };
+    struct CatCard c; int i, j, k, bad = 0;
+    memset(&c, 0, sizeof c);
+    memset(c.role, 5, sizeof c.role);
+    for (i = 0; i < (int)(sizeof T / sizeof T[0]); i++) {
+        k = spot_role(&c, T[i].x, T[i].y);
+        logline("heat test: %s  (%.2f, %.2f) reads %s (want %s)", k >= 0 && !strcmp(ROLE_NAME[k], T[i].want) ? "PASS" :
+                "FAIL", T[i].x, T[i].y, k >= 0 ? ROLE_NAME[k] : "nothing", T[i].want);
     }
-    return -1;
+    for (i = -1000; i <= 1000; i++)
+        for (j = -10; j <= 10; j++)
+            if (spot_role(&c, i / 1000.0f, j / 10.0f) != spot_role(&c, -i / 1000.0f, j / 10.0f)) bad++;
+    logline("heat test: %s  every spot reads as its mirror (%d differ)", bad ? "FAIL" : "PASS", bad);
 }
 
 // the card being dragged, else the one pointed at on the pitch, else the one pointed at in the card browser: the pitch
 // lit where it plays well (drawn before the cards, so under them).  g_board_cs held.
 static void board_heat(IDirect3DDevice9 *dev)
 {
-    const struct CatCard *c; int no, b, l, t, n, k, v; float x0, y0, x1, y1, top, bot;
+    const struct CatCard *c; int no, b, l, k, v; float x0, y0, x1, y1, w, h;
     no = g_drag >= 0 && g_drag < g_ncards ? g_cards[g_drag].no : g_hover >= 0 && g_hover < g_ncards ? g_cards[g_hover].no
        : g_browse && g_bdetail >= 0 && g_bdetail < g_ncat ? g_cat[g_bdetail].no : 0;
     if (!no || !(c = cat_card(no))) return;
     table_to_canvas(-1.0f, -1.0f, &x0, &y0);                   // the field's corners, inside its lines
     table_to_canvas(1.0f, 1.0f, &x1, &y1);
+    w = (x1 - x0) / 100.0f; h = (y1 - y0) / 100.0f;            // 1 % of the field across, down
     set_flat(dev);
-    for (b = 0; b < 8; b++) {
-        n = (int)((HEAT_BAND[b + 1] - HEAT_BAND[b]) / 9.0f + 0.5f);
-        if (n < 1) n = 1;
+    fill_rect(dev, x0, y0, x1 - x0, y1 - y0, HEAT_VEIL);
+    for (b = 0; b < 8; b++)
         for (l = 0; l < 5; l++) {
             if ((k = zone_best(c, b, l)) < 0) continue;
             v = c->role[k] > 10 ? 10 : c->role[k];
-            if (!HEAT_ALPHA[v]) continue;
-            for (t = 0; t < n; t++) {
-                top = HEAT_BAND[b] + (HEAT_BAND[b + 1] - HEAT_BAND[b]) * (float)t / (float)n;
-                bot = HEAT_BAND[b] + (HEAT_BAND[b + 1] - HEAT_BAND[b]) * (float)(t + 1) / (float)n;
-                fill_rect(dev, x0 + (x1 - x0) * ((float)l * 20.0f + 0.6f) / 100.0f, y0 + (y1 - y0) * (top + 0.45f) / 100.0f,
-                          (x1 - x0) * 18.8f / 100.0f, (y1 - y0) * (bot - top - 0.9f) / 100.0f,
-                          D3DCOLOR_ARGB(HEAT_ALPHA[v], 255, 138, 42));
-            }
+            if (!HEAT_A[v]) continue;
+            fill_soft(dev, x0 + w * HEAT_LANE[l], y0 + h * HEAT_BAND[b], w * (HEAT_LANE[l + 1] - HEAT_LANE[l]),
+                      h * (HEAT_BAND[b + 1] - HEAT_BAND[b]), 9.0f * g_s, ((DWORD)HEAT_A[v] << 24) | HEAT_RGB[v]);
         }
-    }
 }
 
-// a card on the pitch: a tag with its rating for the spot it stands in ("CB 10") - green 8 or more, yellow 6-7, red
-// below; it follows a card being dragged, so the spot that suits it can be found.  Not on the bench.  g_board_cs held.
+// a card on the pitch: a tag with its rating for the spot it stands in ("CB 10"), as the website's: the role in white
+// on a dark tag, the rating green (8 or more), yellow (6-7) or red (below); it follows a card being dragged, so the spot
+// that suits it can be found.  Not on the bench.  g_board_cs held.
 static void board_fit_tag(IDirect3DDevice9 *dev, RECT card, int no, float x, float y)
 {
-    const struct CatCard *c; char t[16]; int k, v; float s = g_s, w, h = 14.0f * s, tx, ty;
+    const struct CatCard *c; char r[8], n[4]; int k, v;
+    float s = g_s, sc = 0.36f * s, pad = 4.0f * s, h = 15.0f * s, w, tx, ty;
     if (x > 1.16f || !g_font_tex || !(c = cat_card(no)) || (k = spot_role(c, x, y)) < 0) return;
     v = c->role[k];
-    _snprintf(t, sizeof t, "%s %d", ROLE_NAME[k], v); t[sizeof t - 1] = 0;
-    w = str_w(t, 0.34f * s) + 8.0f * s;
-    tx = (float)card.left - 5.0f * s; ty = (float)card.top - 7.0f * s;
+    _snprintf(r, sizeof r, "%s ", ROLE_NAME[k]); r[sizeof r - 1] = 0;
+    _snprintf(n, sizeof n, "%d", v); n[sizeof n - 1] = 0;
+    w = str_w(r, sc) + str_w(n, sc) + 2.0f * pad;
+    tx = (float)card.left - 5.0f * s; ty = (float)card.top - 8.0f * s;
     set_flat(dev);
-    fill_rect(dev, tx, ty, w, h, v >= 8 ? D3DCOLOR_ARGB(255, 126, 224, 122) : v >= 6 ? D3DCOLOR_ARGB(255, 255, 210, 60)
-                                                                                  : D3DCOLOR_ARGB(255, 229, 83, 61));
+    fill_rect(dev, tx, ty, w, h, D3DCOLOR_ARGB(235, 12, 9, 7));
+    outline(dev, tx, ty, w, h, 1.0f, D3DCOLOR_ARGB(70, 255, 255, 255));
     set_picture(dev, g_font_tex, 1);
-    put_in_rect(dev, RC(tx, ty, tx + w, ty + h), 0.34f * s, v >= 6 ? D3DCOLOR_ARGB(255, 18, 22, 16)
-                                                                   : D3DCOLOR_ARGB(255, 255, 255, 255), t);
+    put_str(dev, tx + pad, ty + (h - g_cellh * sc) * 0.5f, sc, D3DCOLOR_ARGB(255, 246, 240, 232), r);
+    put_str(dev, tx + pad + str_w(r, sc), ty + (h - g_cellh * sc) * 0.5f, sc, v >= 8 ? D3DCOLOR_ARGB(255, 126, 224, 122)
+            : v >= 6 ? D3DCOLOR_ARGB(255, 255, 210, 60) : D3DCOLOR_ARGB(255, 255, 107, 85), n);
 }
 
 static void note_locked(DWORD col, const char *fmt, ...)
