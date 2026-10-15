@@ -48,6 +48,10 @@ game is not included. Newest first; each date is the day that kit was built.
 
 ### Fixed
 - Building the kit's programs (`source\build.ps1`) in a folder whose path has a space in it.
+- Hosting a server: a match between two players no longer falls back to a CPU match when a player's router gives the
+  game a new port as the match starts. The relay took the new port for a stranger and held the seat for 30 seconds,
+  so the game gave up ("Network disconnected. Switching to CPU match."). The same address on a new port is now taken
+  at once; another address is still refused while the seat is in use.
 - Closing the game normally no longer sends its logs to the server as a run that went wrong. As the game ended, the
   panel sometimes saw the server link go and wrote it as lost; now nothing is written once you have closed the
   window. A link lost while you play is still written, and still sends the logs.

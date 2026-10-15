@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """test_relay.py - the match relay's seat-ownership rule (A6): a live seat cannot be taken over by another address,
-so no one can hijack a player's match by sending "WRL1R" + a seat (check.ps1 runs it; no sockets, no game).
+so no one can hijack a player's match by sending "WRL1R" + a seat - while the same public address on a new port takes
+its seat at once (2026-10-15) (check.ps1 runs it; no sockets, no game).
     python source\\test_relay.py"""
 import os
 import sys
@@ -47,6 +48,22 @@ check(seats[3][0] == ATTACKER, "the new address now owns the seat")
 # a different seat is independent
 check(R.claim(seats, 5, OWNER, 100.0, rejects) is True, "another seat is unaffected")
 
-n = 10
+# 2026-10-15 on the live server: a player's seat said hello from one port, then his match data came from another port
+# of the SAME public address - 92 packets rejected in 30 s, and both games fell back to a CPU match. Now: at once.
+seats, rejects = {}, {}
+HOME_A, HOME_B = ("163.5.171.50", 7411), ("163.5.171.50", 17389)
+check(R.claim(seats, 2, HOME_A, 0.0, rejects) is True, "a hello takes the free seat")
+check(R.claim(seats, 2, HOME_B, 0.4, rejects, data=True) is True,
+      "the same public address on a new port: its match data is taken at once")
+check(seats[2][0] == HOME_B and not rejects, "... the seat moves to the port that plays, nothing rejected")
+check(R.claim(seats, 2, HOME_A, 3.0, rejects) is True and seats[2][0] == HOME_B,
+      "a hello from the other port while the match plays: the seat stays on the port that plays")
+check(R.claim(seats, 2, HOME_B, 3.1, rejects, data=True) is True and seats[2][0] == HOME_B, "the playing port goes on")
+check(R.claim(seats, 2, ATTACKER, 3.2, rejects, data=True) is False and seats[2][0] == HOME_B,
+      "another public address is still refused (A6)")
+check(R.claim(seats, 2, HOME_A, 3.1 + R.HELLO_HOLD + 1, rejects) is True and seats[2][0] == HOME_A,
+      "no data for a while: a hello from another port of the same address moves the seat")
+
+n = 17
 print("relay: %d of %d checks passed" % (n - len(fails), n))
 sys.exit(1 if fails else 0)

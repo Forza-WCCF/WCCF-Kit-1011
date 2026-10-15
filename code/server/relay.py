@@ -18,11 +18,15 @@ Packets (binary; "WRL1" = 57 52 4C 31):
 A seat not heard from for 30 s is forgotten; a packet for a seat the relay does not know is dropped (and counted) -
 the game resends lost packets.  It never looks inside a payload.
 
-A live seat belongs to the address that holds it (A6, 2026-10-11): while the owner is still heard from (within 30 s),
-a packet that claims its seat from a DIFFERENT address is rejected, so no one on the internet can send "WRL1R" + a
-seat and redirect another player's match to themselves. Once the owner goes quiet (> 30 s) the seat is free for a new
-address (a player whose public address changed waits at most that long). The stronger tie - a token the seat desk
-gives each PC, carried in the packet - is deferred to the online rebuild (it needs the overlay and a client update).
+A live seat belongs to the public address that holds it (A6, 2026-10-11): while the owner is still heard from (within
+30 s), a packet that claims its seat from ANOTHER public address is rejected, so no one on the internet can send
+"WRL1R" + a seat and redirect another player's match to themselves. Once the owner goes quiet (> 30 s) the seat is
+free for a new address (a player whose public address changed waits at most that long). The same public address on a
+NEW PORT takes the seat at once (2026-10-15: a player's router gave the game a new port at kick-off, the relay rejected
+his packets for 30 s, and both games fell back to a CPU match) - but a hello ("R") from another port does not move a
+seat whose data ("D") came within HELLO_HOLD seconds: one player's other socket must not pull the match off the
+socket that plays. The stronger tie - a token the seat desk gives each PC, carried in the packet - is deferred to the
+online rebuild (it needs the overlay and a client update).
 """
 import os
 import socket
@@ -31,6 +35,7 @@ import time
 
 PORT = int(os.environ.get("WCCF_RELAY_PORT", "20040"))
 FORGET = float(os.environ.get("WCCF_RELAY_FORGET", "30"))
+HELLO_HOLD = 5.0                        # seconds after a seat's last data in which a hello from another port is not followed
 MAGIC = b"WRL1"
 log_file = None
 
@@ -46,17 +51,21 @@ def log(msg):
             pass
 
 
-def claim(seats, seat, addr, now, rejects):
-    """Record addr as the owner of `seat`, unless a DIFFERENT address holds it and was heard within FORGET: a live
-    seat cannot be taken over by another address (A6). Returns True when addr owns the seat (so its packet is handled),
-    False when the claim is rejected (a stranger). The owner refreshing, or claiming a free/forgotten seat, is allowed."""
+def claim(seats, seat, addr, now, rejects, data=False):
+    """Record addr as where `seat` is, unless ANOTHER public address holds it and was heard within FORGET: a live seat
+    cannot be taken over from elsewhere (A6). The same public address on a new port takes it at once; a hello (data
+    False) from another port leaves a seat whose data came within HELLO_HOLD where it is. seats[seat] = [address,
+    last heard, last data]. Returns True when the packet is the seat's (so it is handled), False when it is rejected."""
     known = seats.get(seat)
-    if known and known[0] != addr and now - known[1] <= FORGET:
+    if known and known[0][0] != addr[0] and now - known[1] <= FORGET:
         rejects[seat] = rejects.get(seat, 0) + 1
         return False
+    if known and known[0] != addr and not data and now - known[2] <= HELLO_HOLD:
+        known[1] = now                  # the same player's other socket: alive, the match stays on the one that plays
+        return True
     if not known or known[0] != addr:
         log("seat %d is at %s:%d" % (seat, addr[0], addr[1]))
-    seats[seat] = [addr, now]
+    seats[seat] = [addr, now, now if data else (known[2] if known and known[0] == addr else 0.0)]
     return True
 
 
@@ -110,7 +119,7 @@ def main(argv):
             claim(seats, data[5], addr, now, rejects)       # a stranger's claim of a live seat is rejected (A6)
         elif kind == b"D" and len(data) >= 7 and 1 <= data[5] <= 8 and 1 <= data[6] <= 8:
             to_seat, from_seat = data[5], data[6]
-            if not claim(seats, from_seat, addr, now, rejects):
+            if not claim(seats, from_seat, addr, now, rejects, data=True):
                 continue                                    # not this seat's owner: drop the packet
             target = seats.get(to_seat)
             if not target or now - target[1] > FORGET:
