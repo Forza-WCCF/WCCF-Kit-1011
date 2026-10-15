@@ -7,16 +7,16 @@ game is not included. Newest first; each date is the day that kit was built.
 ## Unreleased
 
 ### Added
-- FREE online: SETTINGS' PLAY ON has a third choice, FREE (or `PLAY.exe remote ADDRESS free`). FREE plays on the
+- DREAM TEAM: SETTINGS' PLAY ON has a third choice, DREAM TEAM (or `PLAY.exe remote ADDRESS dream`). It plays on the
   server with your PC's own club card and any card from the CATALOGUE, without your wccf.online account: no cards are
-  earned and nothing goes to the website. In friendly rounds a FREE club is paired only with other FREE clubs, so
-  players with any card never meet players building their club from the 11 white cards there. League and cup rounds
-  can still pair FREE and ONLINE players (the game pairs those by division place and bracket).
+  earned and nothing goes to the website. In friendly rounds a DREAM TEAM club is paired only with other DREAM TEAM
+  clubs, so players with any card never meet players building their club from the 11 white cards there. League and
+  cup rounds can still pair DREAM TEAM and ONLINE players (the game pairs those by division place and bracket).
 
 ### Changed
 - Hosting a server: random pairing in a free round now pairs two clubs whose matching values are at most 6500 apart
   (was: any two). Every real club seen so far is within 4,050 of every other, so ONLINE players still meet each other;
-  a FREE club reports the top value, 16383, so it meets only FREE clubs.
+  a DREAM TEAM club reports the top value, 16383, so it meets only DREAM TEAM clubs.
 
 ## Kit 7 - 2026-10-15
 

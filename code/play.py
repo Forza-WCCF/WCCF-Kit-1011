@@ -17,12 +17,12 @@ player cabinet (seat 1) with the overlay and your keyboard.  PLAY.exe runs it; r
                               it again. "play.py local" puts this PC back.
     python play.py remote ADDRESS seat N
                               seat N (1-8), if it is free there
-    python play.py remote ADDRESS free
-                              FREE online (2026-10-15; the SETTINGS panel's FREE chip does the same): this PC's own
-                              club card and any card, no wccf.online sign-in and no cards earned; in friendlies the
-                              server pairs a FREE club only with other FREE clubs (the game reports the top matching
-                              number, 16383 - docs\research\ARRANGE-FIXTURE-2010-11.md 9.2); league and cup rounds can
-                              still pair FREE and ONLINE players
+    python play.py remote ADDRESS dream
+                              DREAM TEAM (2026-10-15; the SETTINGS panel's DREAM TEAM chip does the same): online
+                              with this PC's own club card and any card, no wccf.online sign-in and no cards earned;
+                              in friendlies the server pairs a DREAM TEAM club only with other DREAM TEAM clubs (the
+                              game reports the top matching number, 16383 - docs\research\ARRANGE-FIXTURE-2010-11.md
+                              9.2); league and cup rounds can still pair DREAM TEAM and ONLINE players
     python play.py debug      the same with full logs (the card reader then logs every byte, ~60 MB an hour) and
                               every window open (the server's console and settings window, the key driver's);
                               "debug" also goes with server or remote
@@ -45,7 +45,7 @@ the panel helper (panel.py: RESTART NOW).
 Only the game's own windows open (since 2026-10-06): the server's two windows and every script's start hidden,
 unless "debug".
 The SETTINGS panel in seat 1's window writes data\panel.txt (2026-10-06): "play_on=this_pc" or "play_on=online" with
-"server=ADDRESS" (and "online_mode=free" for its FREE chip) - what a plain start does - and "english=on" /
+"server=ADDRESS" (and "online_mode=dream" for its DREAM TEAM chip) - what a plain start does - and "english=on" /
 "english=it" / "english=off", a request done at the next start
 (by english.py, while nothing runs) and then taken out of the file.
 "remote" next to a server started on this PC with "server" uses that server's scene service and keeps its logs
@@ -258,12 +258,12 @@ PANEL_DLL = os.path.join(K.PROGRAMS, "wccfpanel.dll")     # not PANEL: that is d
                                                           # name, so a plain start read the dll and never went online)
 
 
-def kit_env(game, online=None, free=False):
+def kit_env(game, online=None, dream=False):
     """what every program of a run gets: this PC's environment without an earlier run's MXHOOK_ / WCCF settings, and
     where the game and the logs are.  online (online\\club.py): the account's club card (WCCF_CLUB_CARD - the card
-    reader, the panel and its helper use it instead of the slot card) and a CATALOGUE of its own cards only.  free
-    (FREE online): WCCF_FREE_MODE=1 - the seat lease asks without the sign-in, and the panel has the game report the top
-    matching number (wccfpanel.c free_mode_install)"""
+    reader, the panel and its helper use it instead of the slot card) and a CATALOGUE of its own cards only.  dream
+    (DREAM TEAM): WCCF_DREAM_TEAM=1 - the seat lease asks without the sign-in, and the panel has the game report the top
+    matching number (wccfpanel.c dream_team_install)"""
     env = {k: v for k, v in os.environ.items() if not k.upper().startswith(("MXHOOK_", "WCCF"))}
     env.update(WCCF_GAME=game, WCCF_LOGS=K.LOGS, MXHOOK_LOG_DIR=os.path.join(K.LOGS, "hook"),
                # where the panel (wccfpanel.dll, now in programs\) finds its own data, no longer beside the DLL:
@@ -274,8 +274,8 @@ def kit_env(game, online=None, free=False):
             env[k] = os.environ[k]
     if online:
         env.update(WCCF_CLUB_CARD=online["card"], WCCF_CATALOGUE=online["catalogue"])
-    if free:
-        env["WCCF_FREE_MODE"] = "1"
+    if dream:
+        env["WCCF_DREAM_TEAM"] = "1"
     from online import account                # SETTINGS' ACCOUNT row: the name only - the panel never sees the token
     env["WCCF_ACCOUNT_NAME"] = str((online or account.load() or {}).get("username") or "")
     return env
@@ -404,12 +404,12 @@ def ensure_hook(game, seat):
     return False
 
 
-def write_running(roles, mode, ip, seat_no=1, online=None, free=False):
+def write_running(roles, mode, ip, seat_no=1, online=None, dream=False):
     """online: the account's club in play (online\\club.py) - a stop, a cabinet restart and the card rule read it here;
-    free: a FREE online run (a cabinet restart keeps it FREE)"""
+    dream: a DREAM TEAM run (a cabinet restart keeps it DREAM TEAM)"""
     with open(RUNNING, "w", encoding="utf-8") as f:
         json.dump(dict({"started": time.strftime("%Y-%m-%d %H:%M:%S"), "mode": mode, "server": ip, "seat": seat_no,
-                        "processes": roles}, **({"online": online} if online else {}), **({"free": True} if free else {})),
+                        "processes": roles}, **({"online": online} if online else {}), **({"dream": True} if dream else {})),
                   f, indent=1)
 
 
@@ -673,13 +673,13 @@ def start_cabinet(debug, env, mode, ip, seat_no, seat, roles):
     roles[k.pid] = "key driver"
 
 
-def play(debug, mode="local", ip=None, seat_no=None, free=False):
+def play(debug, mode="local", ip=None, seat_no=None, dream=False):
     """mode "local": everything on this PC; "server": the server side only; "remote": the cabinets only, on the
     server at ip - seat_no None: the next free seat from the server's seat desk (2026-10-06), and the projector if this
     PC is the first; 1-8: that seat (the game reads it from the cabinet's settings, SATELLITE_NO -
-    docs\\NETWORK-MAP-2010-11.md section 6; the projector is seat 0 and a server has one).  free (remote only): FREE
-    online - the slot card and the whole catalogue, no sign-in (see the top of this file)"""
-    free = bool(free) and mode == "remote"
+    docs\\NETWORK-MAP-2010-11.md section 6; the projector is seat 0 and a server has one).  dream (remote only): DREAM
+    TEAM - the slot card and the whole catalogue, no sign-in (see the top of this file)"""
+    dream = bool(dream) and mode == "remote"
     projector = True
     game, seat = setup_state()
     if not game:
@@ -693,9 +693,9 @@ def play(debug, mode="local", ip=None, seat_no=None, free=False):
         return 3
     apply_account_request()                  # SETTINGS' SIGN OUT: before the sign-in below asks
     online = None
-    if free:                                 # FREE online (2026-10-15): no sign-in, no account club - the slot card
-        say("FREE online: your own club card and any card. No wccf.online cards are earned, and in friendlies the "
-            "server pairs you only with other FREE players (league and cup rounds can still mix).")
+    if dream:                                # DREAM TEAM (2026-10-15): no sign-in, no account club - the slot card
+        say("DREAM TEAM: your own club card and any card. No wccf.online cards are earned, and in friendlies the "
+            "server pairs you only with other DREAM TEAM players (league and cup rounds can still mix).")
     elif mode == "remote":                   # the wccf.online sign-in and the account's own club, before anything
         from online import account, club     # starts (2026-10-14): the token goes to the server's seat desk with the
         online, why = online_club(account.ensure, club.prepare)       # seat request (online\seat.py)
@@ -721,7 +721,7 @@ def play(debug, mode="local", ip=None, seat_no=None, free=False):
     apply_card_fix()
     if mode != "server":
         apply_board(seat, online)              # ... nor FPR_Emu or the overlay: the club's cards on the table
-    env = kit_env(game, online, free)
+    env = kit_env(game, online, dream)
     roles = {p[0]: known[p[0]] for p in running if p[0] in known}
     steps = 2 if mode == "server" else 6
     confs = (os.path.join(game, "local", "client_user_option.conf"),
@@ -842,10 +842,10 @@ def play(debug, mode="local", ip=None, seat_no=None, free=False):
 
     h = start(os.path.join("helpers", "panel.py"), [LIFE], "run_helper.txt", env)      # the panels' RESTART NOW (from outside the game)
     roles[h.pid] = "panel helper"
-    write_running(roles, mode, ip, seat_no, online, free)
+    write_running(roles, mode, ip, seat_no, online, dream)
     say("")
     if mode == "remote":
-        say("Playing %son the server at %s%s." % ("FREE " if free else "", ip,
+        say("Playing %son the server at %s%s." % ("DREAM TEAM " if dream else "", ip,
                                                  "" if projector else " as seat %d (no projector on this PC)" % seat_no))
     say("Running. Click the cabinet's window, then play with the keyboard (it works only while a game window is in "
         "front):")
@@ -1111,9 +1111,9 @@ def cabinet_restart_fits():
     if panel.get("account", "").lower() == "signout":    # SIGN OUT: the seat lease holds the old sign-in - a full start
         return False
     online = panel.get("play_on", "").lower() == "online"
-    if info["mode"] == "remote":                     # FREE <-> ONLINE: the seat lease and the club change - a full start
+    if info["mode"] == "remote":               # DREAM TEAM <-> ONLINE: the seat lease and the club change - a full start
         return online and panel.get("server", "") == info.get("server") and \
-            (panel.get("online_mode", "").lower() == "free") == bool(info.get("free"))
+            (panel.get("online_mode", "").lower() == "dream") == bool(info.get("dream"))
     return not online
 
 
@@ -1127,7 +1127,7 @@ def restart_cabinet():
         return 2
     info = running_info()
     roles = {int(k): v for k, v in (info.get("processes") or {}).items()}
-    mode, ip, online, free = info.get("mode"), info.get("server"), online_of(info), bool(info.get("free"))
+    mode, ip, online, dream = info.get("mode"), info.get("server"), online_of(info), bool(info.get("dream"))
     try:
         seat_no = int(info.get("seat", 1))
     except (TypeError, ValueError):
@@ -1156,7 +1156,7 @@ def restart_cabinet():
         roles.pop(pid, None)
     left = seat_side() + [p for p in kit_pythons() if p[0] in doomed]
     if left:
-        write_running(roles, mode, ip, seat_no, online, free)
+        write_running(roles, mode, ip, seat_no, online, dream)
         say("Still running: %s - the cabinet was not started again (PLAY.exe stop, then PLAY.exe)." % ", ".join(
             "%s %d" % (p[2], p[0]) for p in left))
         return 1
@@ -1164,8 +1164,8 @@ def restart_cabinet():
     apply_card_fix()                         # and its CLEAR BAD ENDINGS
     apply_board(seat, online)                # and the new club's cards onto the table, before FPR_Emu and the overlay
     time.sleep(1.0)                          # Windows frees the cabinet's ports and pipes
-    start_cabinet(False, kit_env(game, online, free), mode, ip, seat_no, seat, roles)
-    write_running(roles, mode, ip, seat_no, online, free)
+    start_cabinet(False, kit_env(game, online, dream), mode, ip, seat_no, seat, roles)
+    write_running(roles, mode, ip, seat_no, online, dream)
     say("")
     say("Seat %d's cabinet is back; the projector was not touched." % seat_no)
     return 0
@@ -1217,16 +1217,17 @@ def show():
     return 0
 
 
-def play_online(debug, ip, seat_no=None, free=False):
+def play_online(debug, ip, seat_no=None, dream=False):
     """play on the server at ip; when its seat desk wants a wccf.online sign-in or refuses this PC's (SignInRefused),
-    stop what was started and play on this PC instead, saying why - never a dead end (2026-10-14).  free: FREE online"""
+    stop what was started and play on this PC instead, saying why - never a dead end (2026-10-14).  dream: DREAM TEAM"""
     try:
-        return play(debug, "remote", ip, seat_no, free)
+        return play(debug, "remote", ip, seat_no, dream)
     except SignInRefused as ex:
         detail = str(ex)
-        if free:                                     # FREE asks without a sign-in: this server takes signed-in PCs only
-            say("The server at %s takes only signed-in players, so FREE cannot play there: %s" % (ip, detail))
-            say("Playing on this PC instead; ONLINE (not FREE) in SETTINGS plays there with your wccf.online account.")
+        if dream:                                    # DREAM TEAM asks without a sign-in: this server takes signed-in only
+            say("The server at %s takes only signed-in players, so DREAM TEAM cannot play there: %s" % (ip, detail))
+            say("Playing on this PC instead; ONLINE (not DREAM TEAM) in SETTINGS plays there with your wccf.online "
+                "account.")
         else:
             if " again" in detail:                   # the website refused the saved sign-in: a fresh one next start
                 from online import account
@@ -1279,10 +1280,10 @@ def main(argv):
                     say("The SETTINGS panel says play online, but the server at %s does not answer - playing on this "
                         "PC instead. (The panel keeps ONLINE for next time; THIS PC there stops this try.)" % ip)
                     return play(debug)
-                free = panel.get("online_mode", "").lower() == "free"
-                say("%s, as the SETTINGS panel chose (PLAY.exe local plays on this PC)." % ("FREE online" if free
+                dream = panel.get("online_mode", "").lower() == "dream"
+                say("%s, as the SETTINGS panel chose (PLAY.exe local plays on this PC)." % ("DREAM TEAM online" if dream
                                                                                           else "Online"))
-                return play_online(debug, ip, free=free)       # the server's seat desk picks the seat
+                return play_online(debug, ip, dream=dream)     # the server's seat desk picks the seat
             return play(debug)
         if rest == ["local"]:
             return play(debug)
@@ -1290,8 +1291,8 @@ def main(argv):
             return play(debug, "server")
         if rest[0] == "remote":
             words, seat_no = rest[1:], None
-            free = bool(words) and words[-1] == "free"           # "remote ADDRESS free": FREE online
-            if free:
+            dream = bool(words) and words[-1] == "dream"         # "remote ADDRESS dream": DREAM TEAM
+            if dream:
                 words = words[:-1]
             if len(words) >= 2 and words[-2] == "seat":          # a second player's PC: "remote ADDRESS seat 2"
                 if not (words[-1].isdigit() and 1 <= int(words[-1]) <= 8):
@@ -1313,7 +1314,7 @@ def main(argv):
             if s.get("server") != ip:
                 s["server"] = ip
                 K.save_settings(s)
-            return play_online(debug, ip, seat_no, free)    # seat_no None: the server's seat desk picks
+            return play_online(debug, ip, seat_no, dream)   # seat_no None: the server's seat desk picks
         print(__doc__)
         return 2
     except Failed as ex:

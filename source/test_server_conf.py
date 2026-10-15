@@ -30,10 +30,10 @@ lines = [x for x in S.CONF_CONTROL.split("\r\n") if x and not x.startswith("#")]
 check(all("=" in x and x.split("=", 1)[1] != "" for x in lines), "every setting has a value (an empty one may crash control)")
 fm1 = [x for x in lines if x.startswith("MATCHING_PARA_FM1=")]
 fm1v = int(fm1[0].split("=", 1)[1]) if len(fm1) == 1 and fm1[0].split("=", 1)[1].isdigit() else None
-# FREE online (2026-10-15): real clubs' values 2,004-6,054 (21 cards), the widest gap 4,050; a FREE club reports 16383
+# DREAM TEAM (2026-10-15): real clubs' values 2,004-6,054 (21 cards), the widest gap 4,050; a DREAM TEAM club reports 16383
 check(fm1v is not None and fm1v >= 4050, "MATCHING_PARA_FM1 once, at least the widest gap seen between two real clubs")
 check(fm1v is not None and 16383 - fm1v > 6054 + 2000,
-      "... and a FREE club's 16383 stays out of its reach from every real club seen, with room to grow")
+      "... and a DREAM TEAM club's 16383 stays out of its reach from every real club seen, with room to grow")
 check("MATCHING_HISTORY_CHECK" not in S.CONF_CONTROL, "MATCHING_HISTORY_CHECK left out (control never reads it)")
 
 NEW = S.CONF_CONTROL.encode("ascii")

@@ -22,8 +22,8 @@ token, "CARD <id>", so the server can tell two signed-in players behind one addr
 before that answers "ERR say ...": the same claim again without the card, the sign-in kept (then, for a desk from
 before sign-ins, without the token too).
 
-FREE online (2026-10-15, play.py WCCF_FREE_MODE=1): no TOKEN, even on a signed-in PC - a FREE match earns no card and
-saves nothing to wccf.online.
+DREAM TEAM (2026-10-15, play.py WCCF_DREAM_TEAM=1): no TOKEN, even on a signed-in PC - a DREAM TEAM match earns no
+card and saves nothing to wccf.online.
 """
 import json
 import os
@@ -40,8 +40,8 @@ ACCOUNT = os.environ.get("WCCF_ACCOUNT_FILE") or os.path.join(
 
 def signed():
     """b" TOKEN <token>" when this PC is signed in (online\\account.py), else b"" - a token that is not plain hex is
-    not sent, and FREE online (WCCF_FREE_MODE=1) sends none"""
-    if os.environ.get("WCCF_FREE_MODE") == "1":
+    not sent, and DREAM TEAM (WCCF_DREAM_TEAM=1) sends none"""
+    if os.environ.get("WCCF_DREAM_TEAM") == "1":
         return b""
     try:
         with open(ACCOUNT, encoding="utf-8") as f:

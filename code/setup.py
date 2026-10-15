@@ -87,13 +87,13 @@ CONF_CONTROL_KIT7 = CONF_CONTROL_BEFORE_KIT7 + (
     "# MATCHING_PARA_FM1 = the largest matching-value gap at which two free players are paired at random (the game's\r\n"
     "# own: 600; a club's value runs 0-16383). 20000 lets any two players in a free round play each other.\r\n"
     "MATCHING_PARA_FM1=20000\r\n")
-# FREE online (2026-10-15, the owner: free players "cant be playing against people that are playing the game as it
-# should be"; his choice: one server, friendlies only): a FREE club reports the top value, 16383 (wccfpanel.c
-# free_mode_install).  Real clubs: 2,004-6,054, gaps up to 4,050 (docs\PLAN-FREE-MODE.md on the PC).
+# DREAM TEAM (2026-10-15, the owner: its players "cant be playing against people that are playing the game as it
+# should be"; his choice: one server, friendlies only): a DREAM TEAM club reports the top value, 16383 (wccfpanel.c
+# dream_team_install).  Real clubs: 2,004-6,054, gaps up to 4,050 (docs\PLAN-DREAM-TEAM.md on the PC).
 CONF_CONTROL = CONF_CONTROL_BEFORE_KIT7 + (
     "# MATCHING_PARA_FM1 = the largest matching-value gap at which two free players are paired at random (the game's\r\n"
     "# own: 600; a club's value runs 0-16383, real ones 2000-6100). 6500: any two clubs as strong as those still play\r\n"
-    "# each other; a FREE club (it reports 16383) meets only clubs above 9883 - in practice only FREE ones.\r\n"
+    "# each other; a DREAM TEAM club (it reports 16383) meets only clubs above 9883 - in practice only DREAM TEAM ones.\r\n"
     "MATCHING_PARA_FM1=6500\r\n")
 EARLIER_KIT_CONFS = {   # byte for byte what an earlier kit wrote (play.py's own lines aside): replaced without keeping
     # a copy (any other text is a hand edit and is kept as .before-kit).  The first kit's, before FIX_REST_ENTRY_TIME:

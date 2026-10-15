@@ -2967,11 +2967,12 @@ static char g_club_card[MAX_PATH], g_club_new[MAX_PATH], g_club_baks[MAX_PATH];
 static int  g_online_club = 0;
 static int  g_set = 0;                   // the SETTINGS panel is open
 static int  g_on_online = 0;             // play_on: 0 this PC, 1 online
-// FREE (2026-10-15, the owner: "people want a free mode ... if they pick the free mode, they cant be playing against
-// people that are playing the game as it should be"): online with this PC's own club card and any card, no wccf.online
-// account used and no cards earned; in friendlies a FREE club meets only FREE clubs (free_mode_install, below)
-static int  g_free = 0;                  // online_mode=free: the FREE chip (with play_on=online)
-static int  g_free_run = 0;              // this run is FREE online (play.py WCCF_FREE_MODE=1)
+// DREAM TEAM (2026-10-15, the owner: "people want a free mode ... if they pick the free mode, they cant be playing
+// against people that are playing the game as it should be"; he named it DREAM TEAM): online with this PC's own club
+// card and any card, no wccf.online account used and no cards earned; in friendlies a DREAM TEAM club meets only DREAM
+// TEAM clubs (dream_team_install, below)
+static int  g_dream = 0;                 // online_mode=dream: the DREAM TEAM chip (with play_on=online)
+static int  g_dream_run = 0;             // this run is DREAM TEAM (play.py WCCF_DREAM_TEAM=1)
 static char g_server[64];                // server= as the file holds it (checked before use)
 static char g_addr[16];                  // the address box while typing
 static int  g_typing = 0;                // the address box has the keyboard
@@ -3021,7 +3022,7 @@ static void set_load_locked(void)
 {
     FILE *f = fopen(g_panel_path, "rb"); char line[256];
     g_on_online = 0; g_server[0] = 0; g_eng_req = -1; g_card_req[0] = 0; g_fix_req = 0; g_compact = 0; g_auto_off = 0;
-    g_signout_req = 0; g_free = 0;
+    g_signout_req = 0; g_dream = 0;
     if (!f) return;
     while (fgets(line, sizeof line, f)) {
         char *p = strchr(line, '#'), *eq, *name, *val;
@@ -3030,7 +3031,7 @@ static void set_load_locked(void)
         if (!eq) continue;
         *eq = 0; name = trim(line); val = trim(eq + 1);
         if (!_stricmp(name, "play_on")) g_on_online = !_stricmp(val, "online");
-        else if (!_stricmp(name, "online_mode")) g_free = !_stricmp(val, "free");
+        else if (!_stricmp(name, "online_mode")) g_dream = !_stricmp(val, "dream");
         else if (!_stricmp(name, "server")) lstrcpynA(g_server, val, sizeof g_server);
         else if (!_stricmp(name, "english")) g_eng_req = !_stricmp(val, "on") ? 1 : !_stricmp(val, "off") ? 0 : -1;
         else if (!_stricmp(name, "card")) lstrcpynA(g_card_req, val, sizeof g_card_req);
@@ -3049,7 +3050,7 @@ static int set_save_locked(void)
     n = _snprintf(text, sizeof text, "# WCCF 2010-11 kit - written by the SETTINGS panel in seat 1's window, read by "
                   "PLAY.exe at its next\n# plain start (play.py). english= is a change asked for that start; PLAY "
                   "takes the line out once it is done.\nplay_on=%s\n", g_on_online ? "online" : "this_pc");
-    if (g_on_online && g_free) n += _snprintf(text + n, sizeof text - n, "online_mode=free\n");
+    if (g_on_online && g_dream) n += _snprintf(text + n, sizeof text - n, "online_mode=dream\n");
     if (g_server[0]) n += _snprintf(text + n, sizeof text - n, "server=%s\n", g_server);
     if (g_eng_req >= 0) n += _snprintf(text + n, sizeof text - n, "english=%s\n", g_eng_req ? "on" : "off");
     if (g_card_req[0]) n += _snprintf(text + n, sizeof text - n, "card=%s\n", g_card_req);
@@ -3091,18 +3092,18 @@ static void set_selftest(void)
     logline("settings test: %s  a save keeps auto_logs=0", ok && strstr(buf, "\nauto_logs=0\n") ? "PASS" : "FAIL");
     logline("settings test: %s  a save keeps ONLINE and the server", ok && strstr(buf, "\nplay_on=online\n") &&
             strstr(buf, "\nserver=1.2.3.4\n") ? "PASS" : "FAIL");
-    // FREE (2026-10-15): kept with ONLINE; THIS PC drops it (a later ONLINE is the normal one)
-    if ((f = fopen(g_panel_path, "wb")) != NULL) { fputs("play_on=online\nonline_mode=free\nserver=1.2.3.4\n", f); fclose(f); }
+    // DREAM TEAM (2026-10-15): kept with ONLINE; THIS PC drops it (a later ONLINE is the normal one)
+    if ((f = fopen(g_panel_path, "wb")) != NULL) { fputs("play_on=online\nonline_mode=dream\nserver=1.2.3.4\n", f); fclose(f); }
     EnterCriticalSection(&g_board_cs);
     set_load_locked();
-    ok = g_free && g_on_online && set_save_locked();
+    ok = g_dream && g_on_online && set_save_locked();
     LeaveCriticalSection(&g_board_cs);
     got = 0;
     if ((f = fopen(g_panel_path, "rb")) != NULL) { got = fread(buf, 1, sizeof buf - 1, f); fclose(f); }
     buf[got] = 0;
-    logline("settings test: %s  a save keeps FREE with ONLINE", ok && strstr(buf, "\nplay_on=online\n") &&
-            strstr(buf, "\nonline_mode=free\n") ? "PASS" : "FAIL");
-    if ((f = fopen(g_panel_path, "wb")) != NULL) { fputs("play_on=this_pc\nonline_mode=free\nserver=1.2.3.4\n", f); fclose(f); }
+    logline("settings test: %s  a save keeps DREAM TEAM with ONLINE", ok && strstr(buf, "\nplay_on=online\n") &&
+            strstr(buf, "\nonline_mode=dream\n") ? "PASS" : "FAIL");
+    if ((f = fopen(g_panel_path, "wb")) != NULL) { fputs("play_on=this_pc\nonline_mode=dream\nserver=1.2.3.4\n", f); fclose(f); }
     EnterCriticalSection(&g_board_cs);
     set_load_locked();
     ok = set_save_locked();
@@ -3110,7 +3111,7 @@ static void set_selftest(void)
     got = 0;
     if ((f = fopen(g_panel_path, "rb")) != NULL) { got = fread(buf, 1, sizeof buf - 1, f); fclose(f); }
     buf[got] = 0;
-    logline("settings test: %s  THIS PC drops FREE", ok && strstr(buf, "\nplay_on=this_pc\n") &&
+    logline("settings test: %s  THIS PC drops DREAM TEAM", ok && strstr(buf, "\nplay_on=this_pc\n") &&
             !strstr(buf, "online_mode") ? "PASS" : "FAIL");
 }
 
@@ -3604,10 +3605,10 @@ static void fmt_when(char *out, size_t cap, ULONGLONG t)   // a file time as the
 }
 
 // the panel's parts, in canvas pixels over the middle column: title + help + X; "NOW" with seven rows (the last,
-// ACCOUNT, with SIGN OUT at its right end); "NEXT START" with two rows of choices (THIS PC / ONLINE / FREE + the address
-// box, ENGLISH / JAPANESE) and RESTART NOW; "VIEW" with the LAYOUT (CABINET / COMPACT, 2026-10-06), which changes at once
+// ACCOUNT, with SIGN OUT at its right end); "NEXT START" with two rows of choices (THIS PC / ONLINE / DREAM TEAM + the
+// address box, ENGLISH / JAPANESE) and RESTART NOW; "VIEW" with the LAYOUT (CABINET / COMPACT, 2026-10-06), at once
 #define SET_ROWS 7
-struct SGeo { float x0, x1, lx, vx, rowh, ynow, ynext, yview; RECT close, pc, online, free, addr, eng, jap, restart, cab, cmp, logs, signout; };
+struct SGeo { float x0, x1, lx, vx, rowh, ynow, ynext, yview; RECT close, pc, online, dream, addr, eng, jap, restart, cab, cmp, logs, signout; };
 
 static void set_geo(struct SGeo *g)
 {
@@ -3622,8 +3623,8 @@ static void set_geo(struct SGeo *g)
     y = g->ynext + 36.0f * s;
     g->pc = RC(g->vx, y, g->vx + 130.0f * s, y + 36.0f * s);
     g->online = RC(g->vx + 140.0f * s, y, g->vx + 270.0f * s, y + 36.0f * s);
-    g->free = RC(g->vx + 280.0f * s, y, g->vx + 380.0f * s, y + 36.0f * s);   // FREE (2026-10-15): the row had 616 px
-    g->addr = RC(g->vx + 394.0f * s, y, g->vx + 614.0f * s, y + 36.0f * s);
+    g->dream = RC(g->vx + 280.0f * s, y, g->vx + 390.0f * s, y + 36.0f * s);  // DREAM TEAM (2026-10-15): the row has 616 px
+    g->addr = RC(g->vx + 404.0f * s, y, g->vx + 614.0f * s, y + 36.0f * s);
     y += 52.0f * s;
     g->eng = RC(g->vx, y, g->vx + 130.0f * s, y + 36.0f * s);
     g->jap = RC(g->vx + 140.0f * s, y, g->vx + 270.0f * s, y + 36.0f * s);
@@ -3680,8 +3681,8 @@ static void set_draw(IDirect3DDevice9 *dev)
     }
     LeaveCriticalSection(&g_board_cs);
     set_chip(dev, g.pc, "THIS PC", !g_on_online, s);
-    set_chip(dev, g.online, "ONLINE", g_on_online && !g_free, s);
-    set_chip(dev, g.free, "FREE", g_on_online && g_free, s);
+    set_chip(dev, g.online, "ONLINE", g_on_online && !g_dream, s);
+    set_chip(dev, g.dream, "DREAM TEAM", g_on_online && g_dream, s);
     {
         int want = g_eng_req >= 0 ? g_eng_req : st.english;
         set_chip(dev, g.eng, "ENGLISH", want == 1, s);
@@ -3722,7 +3723,7 @@ static void set_draw(IDirect3DDevice9 *dev)
         switch (i) {
         case 0:
             if (st.link == 1 && !strcmp(st.peer, "127.0.0.1")) { _snprintf(v, sizeof v, "THIS PC - connected"); col = green; }
-            else if (st.link == 1) { _snprintf(v, sizeof v, "%sONLINE %s - connected", g_free_run ? "FREE " : "", st.peer); col = green; }
+            else if (st.link == 1) { _snprintf(v, sizeof v, "%s %s - connected", g_dream_run ? "DREAM TEAM" : "ONLINE", st.peer); col = green; }
             else if (st.link == 0) { _snprintf(v, sizeof v, "NOT CONNECTED to the server"); col = red; }
             else { _snprintf(v, sizeof v, "cannot tell"); col = grey; }
             break;
@@ -3756,7 +3757,7 @@ static void set_draw(IDirect3DDevice9 *dev)
             _snprintf(v, sizeof v, "%s", st.english ? "English" : "Japanese (Sega's original)");
             break;
         case 6:
-            if (g_free_run) { _snprintf(v, sizeof v, "FREE - %s, no cards earned", g_account[0] ? "not used" : "none needed"); col = grey; }
+            if (g_dream_run) { _snprintf(v, sizeof v, "DREAM TEAM - %s, no cards earned", g_account[0] ? "not used" : "none needed"); col = grey; }
             else if (!g_account[0]) { _snprintf(v, sizeof v, "not signed in - ONLINE asks for a wccf.online code at its start"); col = grey; }
             else if (g_signout_req) { _snprintf(v, sizeof v, "%s - signs out at the next start", g_account); col = yellow; }
             else if (g_online_club) { _snprintf(v, sizeof v, "%s on wccf.online - you play your online club", g_account); col = green; }
@@ -3779,9 +3780,9 @@ static void set_draw(IDirect3DDevice9 *dev)
     y = (float)g.addr.bottom + 8.0f * s;
     if (g_typing) put_str(dev, (float)g.addr.left, y, 0.40f * s, grey, "digits and dots, Enter keeps it, Esc cancels");
     else if (g_on_online && !valid_ipv4(g_server)) put_str(dev, (float)g.addr.left, y, 0.40f * s, red, "not an address - click to type it");
-    if (g_on_online && g_free)                       // what FREE means, on NEXT START's own line (under the chips it
-        put_str(dev, g.vx, g.ynext + 4.0f * s, 0.40f * s, grey,   // ran into the GAME TEXT buttons)
-                "FREE: any card, no cards earned - in friendlies you meet only FREE players");
+    if (g_on_online && g_dream)                      // what DREAM TEAM means, on NEXT START's own line (under the chips
+        put_str(dev, g.vx, g.ynext + 4.0f * s, 0.40f * s, grey,   // it ran into the GAME TEXT buttons)
+                "DREAM TEAM: any card, no cards earned - in friendlies you meet only DREAM TEAM players");
     {                                    // under the chips: beside them it ran into the right strip in a small window
         int want = g_eng_req >= 0 ? g_eng_req : st.english;
         _snprintf(v, sizeof v, "%s", want != st.english ? "changes at the next start - that start takes a moment longer"
@@ -3859,8 +3860,8 @@ static void set_commit_locked(void)      // the typed address: kept if it is one
     }
     lstrcpynA(g_server, g_addr, sizeof g_server);
     g_on_online = 1;
-    if (set_save_locked()) note_locked(green, g_free ? "next start: FREE online, on the server at %s"
-                                                     : "next start: online, on the server at %s", g_server);
+    if (set_save_locked()) note_locked(green, g_dream ? "next start: DREAM TEAM, on the server at %s"
+                                                      : "next start: online, on the server at %s", g_server);
     else note_locked(red, "could not save data\\panel.txt - try again");
 }
 
@@ -3895,15 +3896,15 @@ static void set_click(HWND h, int x, int y)                     // a press insid
     } else {
         if (g_typing) set_commit_locked();                      // a click elsewhere keeps a good address
         if (in_rect(&g.pc, x, y)) {
-            g_on_online = 0; g_free = 0;
+            g_on_online = 0; g_dream = 0;
             if (set_save_locked()) note_locked(green, "next start: this PC");
             else note_locked(red, "could not save data\\panel.txt - try again");
-        } else if (in_rect(&g.online, x, y) || in_rect(&g.free, x, y)) {
-            g_free = in_rect(&g.free, x, y);                    // FREE: online, any card, no account (kept for the address)
+        } else if (in_rect(&g.online, x, y) || in_rect(&g.dream, x, y)) {
+            g_dream = in_rect(&g.dream, x, y);                  // DREAM TEAM: online, any card, no account (kept for the address)
             if (valid_ipv4(g_server)) {
                 g_on_online = 1;
                 if (!set_save_locked()) note_locked(red, "could not save data\\panel.txt - try again");
-                else if (g_free) note_locked(green, "next start: FREE online at %s - any card, no cards earned", g_server);
+                else if (g_dream) note_locked(green, "next start: DREAM TEAM at %s - any card, no cards earned", g_server);
                 else note_locked(green, "next start: online, on the server at %s", g_server);
             } else {                                            // no address yet: type it first
                 g_typing = 1; g_addr[0] = 0;
@@ -6126,12 +6127,12 @@ static void free_play_tick(void)                         // every 2 s on the ren
     }
 }
 
-// ---------------------------------------------------------------- FREE online (2026-10-15)
-// The owner's choice for FREE: one server, kept apart in friendlies.  Control pairs two free seats at random only when
-// their clubs' matching numbers (CLUB_MATCHING_PARAMETER, 0-16383) are at most MATCHING_PARA_FM1 apart (setup.py: 6500;
-// docs\research\ARRANGE-FIXTURE-2010-11.md 9.2).  The game works its number out before every save - the cards' ratings
-// and the six tactics, 2,004-6,054 on real clubs - in FUN_005e7a20 and FUN_005e49d0, each through FUN_005e2310.  In a
-// FREE run (play.py WCCF_FREE_MODE=1) both store the top, 16383, instead: "push the club; call FUN_005e2310" becomes
+// ---------------------------------------------------------------- DREAM TEAM (2026-10-15)
+// The owner's choice for DREAM TEAM: one server, kept apart in friendlies.  Control pairs two free seats at random only
+// when their clubs' matching numbers (CLUB_MATCHING_PARAMETER, 0-16383) are at most MATCHING_PARA_FM1 apart (setup.py:
+// 6500; docs\research\ARRANGE-FIXTURE-2010-11.md 9.2).  The game works its number out before every save - the cards'
+// ratings and the six tactics, 2,004-6,054 on real clubs - in FUN_005e7a20 and FUN_005e49d0, each through FUN_005e2310.
+// In a DREAM TEAM run (play.py WCCF_DREAM_TEAM=1) both store the top, 16383, instead: "push the club; call FUN_005e2310" becomes
 // "mov eax, 16383; nop" (FUN_005e2310 ends "ret 4", so its push goes too: the stack stays as it was).  The game's own
 // team strength (チーム戦力, three other calls) stays as it is.  Only in client_Release.exe, and only if both places are
 // byte for byte the ones studied - both or neither.
@@ -6148,22 +6149,22 @@ static int match_site_ok(const BYTE *at, const BYTE *sig)
            (BYTE *)mi.BaseAddress + mi.RegionSize >= at + 15 && memcmp(at, sig, 15) == 0;
 }
 
-static void free_mode_install(void)
+static void dream_team_install(void)
 {
     BYTE *a = (BYTE *)0x005E4A23, *b = (BYTE *)0x005E7B36; DWORD oa, ob; char exe[MAX_PATH], *nm, e[8];
-    if (!GetEnvironmentVariableA("WCCF_FREE_MODE", e, sizeof e) || strcmp(e, "1") != 0) return;
-    g_free_run = 1;
+    if (!GetEnvironmentVariableA("WCCF_DREAM_TEAM", e, sizeof e) || strcmp(e, "1") != 0) return;
+    g_dream_run = 1;
     GetModuleFileNameA(NULL, exe, MAX_PATH);
     nm = strrchr(exe, '\\'); nm = nm ? nm + 1 : exe;
-    if (_stricmp(nm, "client_Release.exe") != 0) { logline("free mode: not the game (%s) - nothing changed", nm); return; }
+    if (_stricmp(nm, "client_Release.exe") != 0) { logline("dream team: not the game (%s) - nothing changed", nm); return; }
     if (!match_site_ok(a, MATCH_SIG_A) || !match_site_ok(b, MATCH_SIG_B)) {
-        logline("free mode: the matching number's code is not the one studied - nothing changed (friendlies may mix)");
+        logline("dream team: the matching number's code is not the one studied - nothing changed (friendlies may mix)");
         return;
     }
-    if (!VirtualProtect(a + 2, 6, PAGE_EXECUTE_READWRITE, &oa)) { logline("free mode: code not writable - nothing changed"); return; }
+    if (!VirtualProtect(a + 2, 6, PAGE_EXECUTE_READWRITE, &oa)) { logline("dream team: code not writable - nothing changed"); return; }
     if (!VirtualProtect(b + 2, 6, PAGE_EXECUTE_READWRITE, &ob)) {
         VirtualProtect(a + 2, 6, oa, &oa);
-        logline("free mode: code not writable - nothing changed");
+        logline("dream team: code not writable - nothing changed");
         return;
     }
     memcpy(a + 2, MATCH_TOP, sizeof MATCH_TOP);
@@ -6172,7 +6173,7 @@ static void free_mode_install(void)
     VirtualProtect(b + 2, 6, ob, &ob);
     FlushInstructionCache(GetCurrentProcess(), a + 2, 6);
     FlushInstructionCache(GetCurrentProcess(), b + 2, 6);
-    logline("free mode: the club reports the top matching number (16383) - in friendlies it meets only FREE clubs");
+    logline("dream team: the club reports the top matching number (16383) - in friendlies it meets only DREAM TEAM clubs");
 }
 
 // ---------------------------------------------------------------- install the Present hook
@@ -6256,7 +6257,7 @@ static DWORD WINAPI init_thread(LPVOID arg)
     ping_install();                              // on a server: the ping meter (its own socket, every 2 s)
     dispenser_install();                         // no player card owed to a dispenser that is not there
     free_play_install();                         // Sega's own FREE PLAY: no coin needed anywhere
-    free_mode_install();                         // FREE online: the club reports the top matching number
+    dream_team_install();                        // DREAM TEAM: the club reports the top matching number
     CreateThread(NULL, 0, board_thread, NULL, 0, NULL);
     if (install_hook()) hook_mouse();
     return 0;
