@@ -12,8 +12,18 @@ game is not included. Newest first; each date is the day that kit was built.
   earned and nothing goes to the website. In friendly rounds a DREAM TEAM club is paired only with other DREAM TEAM
   clubs, so players with any card never meet players building their club from the 11 white cards there. League and
   cup rounds can still pair DREAM TEAM and ONLINE players (the game pairs those by division place and bracket).
+- Positions on the FORMATION BOARD: point at a card (on the pitch, or in the CATALOGUE) and the pitch lights up
+  where he plays well, from his card's own 16 role ratings; each card on the pitch has a tag with his rating for the
+  spot he stands in ("CB 10": green 8 or more, yellow 6-7, red below), and it follows a card you drag, so you can find
+  the spot that suits him. Which role a spot means is the kit's reading of the pitch, the same as on wccf.online's
+  squad builder.
 
 ### Changed
+- The roles have Sega's own names now, as the game keeps them (ST striker, PP post player, WG wing, SS shadow
+  striker, BT behind the top, OH offensive half, CH centre half, DH defensive half, SH side half, WB wing back,
+  SB side back, CB centre back, STP stopper, SW sweeper, LIB libero, GK goalkeeper); the CATALOGUE's pane shows the
+  full names. The guessed names before them (CF, TM, OMF, CMF, DMF, SMF, CVR) still work as search words; "sw" now
+  finds sweepers (it found liberos).
 - Hosting a server: random pairing in a free round now pairs two clubs whose matching values are at most 6500 apart
   (was: any two). Every real club seen so far is within 4,050 of every other, so ONLINE players still meet each other;
   a DREAM TEAM club reports the top value, 16383, so it meets only DREAM TEAM clubs.

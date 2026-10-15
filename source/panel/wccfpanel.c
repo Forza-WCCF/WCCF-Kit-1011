@@ -1079,6 +1079,8 @@ static RECT draw_card(IDirect3DDevice9 *dev, int i, float grow, int lifted)
 }
 
 static void board_caption(IDirect3DDevice9 *dev, RECT card, int no);    // with the catalogue (below)
+static void board_heat(IDirect3DDevice9 *dev);                           // with the catalogue (below)
+static void board_fit_tag(IDirect3DDevice9 *dev, RECT card, int no, float x, float y);
 static DWORD line_colour(const char *pos);
 
 // ---- moving cards: drag = move; drop ONTO another card = the two swap places (a bench card onto a pitch card is a
@@ -1105,14 +1107,17 @@ static void board_draw(IDirect3DDevice9 *dev)
         table_to_canvas(g_cards[i].x, g_cards[i].y, &cx, &cy);
         g_cards[i].px = RC(cx - w * 0.5f, cy - h * 0.5f, cx + w * 0.5f, cy + h * 0.5f);
     }
-    for (int i = 0; i < g_ncards; i++) if (i != g_drag) draw_card(dev, i, 1.0f, 0);
+    board_heat(dev);                                           // where the card pointed at plays well, under the cards
+    for (int i = 0; i < g_ncards; i++)
+        if (i != g_drag) board_fit_tag(dev, draw_card(dev, i, 1.0f, 0), g_cards[i].no, g_cards[i].x, g_cards[i].y);
     if (g_drag >= 0 && g_drop_on >= 0 && g_drop_on < g_ncards) {   // the card it would swap with: a yellow frame
         RECT r = g_cards[g_drop_on].px;
         set_flat(dev);
         outline(dev, (float)r.left - 3.0f * e, (float)r.top - 3.0f * e, (float)(r.right - r.left) + 6.0f * e,
                 (float)(r.bottom - r.top) + 6.0f * e, 3.0f * e, D3DCOLOR_ARGB(255, 255, 214, 40));
     }
-    if (g_drag >= 0 && g_drag < g_ncards) draw_card(dev, g_drag, 1.12f, 1);
+    if (g_drag >= 0 && g_drag < g_ncards)                      // its tag follows it: the spot under it as it moves
+        board_fit_tag(dev, draw_card(dev, g_drag, 1.12f, 1), g_cards[g_drag].no, g_cards[g_drag].x, g_cards[g_drag].y);
     else if (g_hover >= 0 && g_hover < g_ncards && GetTickCount() - g_hover_since >= 3000)
         board_caption(dev, draw_card(dev, g_hover, 2.4f, 1), g_cards[g_hover].no);   // resting on a card 3 s: shown big
                                                // with who it is (350 ms was too eager, 8 s too slow, 1 s too soon -
@@ -1220,14 +1225,18 @@ struct CatCard { int no; char full[48]; char shown[24]; char pos[4]; char club[2
 // The roles a card suits - what the back of the real card shows on its pitch (the community, 2026-10-08: "a
 // back-of-card preview (to check field positions)").  The game keeps them as the first 16 of the player record's
 // hidden values (2010-11 catalogue column hidden_params = record +0x237; 2017-18 hidden_4df_523 = record +0x4DF, the
-// same field), 1..10.  It names none of them: the names are INFERRED from the players rated 10 in each: CF Drogba
-// Ronaldo, TM Ibrahimovic Toni Klose, WG Robben Ribery, SS Del Piero Totti Eto'o, OMF Rui Costa Riquelme Ozil, OH Xavi
-// Iniesta Nedved, CMF Lampard Fabregas Alonso, DMF Makelele, SMF Giggs Beckham, WB Cafu Sorin, SB A.Cole Maxwell, CB
-// Terry Ferdinand Puyol, STP Cannavaro, CVR Nesta Carvalho Samuel, SW Matthaus Koeman Passarella, GK (only goalkeepers).
+// same field), 1..10.  Their names are Sega's own (UNIQ_STRIKER .. UNIQ_GK, read by FUN_005e6480 - WCCF research
+// CARD-PICTURES-AND-POSITIONS-2010-11.md section 4, 2026-10-14), as the website's card pages show them (cards.js
+// ROLES).  The names first used here were inferred from the players rated 10 (CF TM WG SS OMF OH CMF DMF SMF WB SB CB
+// STP CVR SW GK): those still work as search words, all but SW, which is now Sega's sweeper (it was the libero).
 // No side: Robben and Ribery rate alike.  2017-18's own new cards (2015-16 on) hold 0 there: no ROLES for them.
-static const char *ROLE_NAME[16] = { "CF", "TM", "WG", "SS", "OMF", "OH", "CMF", "DMF", "SMF", "WB", "SB", "CB",
-                                     "STP", "CVR", "SW", "GK" };
-#define ROLE_GOOD 8                      // a role search word ("dmf") lists cards rated at least this in it
+static const char *ROLE_NAME[16] = { "ST", "PP", "WG", "SS", "BT", "OH", "CH", "DH", "SH", "WB", "SB", "CB",
+                                     "STP", "SW", "LIB", "GK" };
+static const char *ROLE_FULL[16] = { "Striker", "Post player", "Wing", "Shadow striker", "Behind the top",
+                                     "Offensive half", "Centre half", "Defensive half", "Side half", "Wing back",
+                                     "Side back", "Centre back", "Stopper", "Sweeper", "Libero", "Goalkeeper" };
+static const char *ROLE_OLD[16] = { "CF", "TM", "", "", "OMF", "", "CMF", "DMF", "SMF", "", "", "", "", "CVR", "", "" };
+#define ROLE_GOOD 8                      // a role search word ("dh") lists cards rated at least this in it
 static struct CatCard *g_cat = NULL;     // the catalogue, placeholders left out, sorted by the shown name
 static int   g_ncat = 0;
 static int   g_browse = 0;               // the browser is open
@@ -1315,8 +1324,8 @@ static int res_cmp(const void *a, const void *b)   // the chosen stat, best firs
 }
 
 // One search word against one card (2026-10-08): a name, a club or a country containing it ("milan", "brazil"), a
-// season ("2004-05", "2004"), the line exactly ("fw"), or a role exactly ("dmf": rated ROLE_GOOD or more); digits also
-// match the card number's start.
+// season ("2004-05", "2004"), the line exactly ("fw"), or a role exactly ("dh", or the older "dmf": rated ROLE_GOOD or
+// more); digits also match the card number's start.
 static int word_matches(const struct CatCard *c, const char *w)
 {
     int k, digits = 1; char num[16];
@@ -1324,7 +1333,9 @@ static int word_matches(const struct CatCard *c, const char *w)
     if (digits) { _snprintf(num, sizeof num, "%d", c->no); if (strncmp(num, w, strlen(w)) == 0) return 1; }
     if (has_text(c->full, w) || has_text(c->shown, w) || has_text(c->club, w) || has_text(c->nat, w) ||
         has_text(c->season, w) || _stricmp(c->pos, w) == 0) return 1;
-    for (k = 0; k < 16; k++) if (c->role[k] >= ROLE_GOOD && _stricmp(ROLE_NAME[k], w) == 0) return 1;
+    for (k = 0; k < 16; k++)
+        if (c->role[k] >= ROLE_GOOD && (_stricmp(ROLE_NAME[k], w) == 0 || (ROLE_OLD[k][0] && _stricmp(ROLE_OLD[k], w) == 0)))
+            return 1;
     return 0;
 }
 
@@ -1429,8 +1440,9 @@ static void load_catalogue(void)
     logline("browser: catalogue %d cards, %d countries, %d clubs", n, npn, npc);
 }
 
-// "ROLES  DMF 10   CMF 7   CVR 5": a card's best three roles (ROLE_NAME), "" when the catalogue has none
-static void role_line(const struct CatCard *c, char *out, size_t cap)
+// "ROLES  DH 10   CH 7   SW 5": a card's best three roles (ROLE_NAME), "" when the catalogue has none; full = 1: their
+// full names ("Defensive half - Centre half - Sweeper")
+static void role_line_as(const struct CatCard *c, char *out, size_t cap, int full)
 {
     int best[3] = { -1, -1, -1 }, b, k, n = 0;
     for (b = 0; b < 3; b++)
@@ -1438,9 +1450,11 @@ static void role_line(const struct CatCard *c, char *out, size_t cap)
             if (c->role[k] && k != best[0] && k != best[1] && (best[b] < 0 || c->role[k] > c->role[best[b]])) best[b] = k;
     out[0] = 0;
     for (b = 0; b < 3 && best[b] >= 0 && n >= 0 && (size_t)n < cap; b++)
-        n += _snprintf(out + n, cap - (size_t)n, "%s%s %d", b ? "   " : "ROLES  ", ROLE_NAME[best[b]], c->role[best[b]]);
+        n += full ? _snprintf(out + n, cap - (size_t)n, "%s%s", b ? "  -  " : "", ROLE_FULL[best[b]])
+                  : _snprintf(out + n, cap - (size_t)n, "%s%s %d", b ? "   " : "ROLES  ", ROLE_NAME[best[b]], c->role[best[b]]);
     out[cap - 1] = 0;
 }
+static void role_line(const struct CatCard *c, char *out, size_t cap) { role_line_as(c, out, cap, 0); }
 
 // under (or over) the big card on the board - resting on a card 8 s - who it is, its line and total, its best roles
 // (the community, 2026-10-08: "many new cards are unfamiliar").  g_board_cs held.
@@ -1462,6 +1476,105 @@ static void board_caption(IDirect3DDevice9 *dev, RECT card, int no)
     set_picture(dev, g_font_tex, 1);
     put_in_rect(dev, RC(x, y + 3.0f * s, x + w, y + 23.0f * s), 0.44f * s, line_colour(c->pos), a);
     if (b[0]) put_in_rect(dev, RC(x, y + 23.0f * s, x + w, y + 43.0f * s), 0.40f * s, D3DCOLOR_ARGB(255, 240, 240, 245), b);
+}
+
+// ---- where a card plays (2026-10-15, the owner: "highlight those positions on the formation panel ... some what like
+// this or better", with a picture of an orange grid over the pitch).  The pitch as 8 bands down x 5 lanes across, the
+// roles of each zone (ROLE_NAME numbers, -1 none) - the website's zones (cards.js ZONES, BANDS); a zone is as bright as
+// the card's best role in it, drawn as near-square tiles.  The card has no side: a wide role lights both wings.  Which
+// role a spot means is our reading of the pitch, not the game's own (its lines come from FUN_004db340's data areas).
+static const signed char HEAT_ZONE[8][5][2] = {
+    { { 2, -1 }, { 0, 1 }, { 0, 1 }, { 0, 1 }, { 2, -1 } },
+    { { 2, -1 }, { 3, -1 }, { 3, 4 }, { 3, -1 }, { 2, -1 } },
+    { { 8, -1 }, { 5, -1 }, { 4, 5 }, { 5, -1 }, { 8, -1 } },
+    { { 8, -1 }, { 6, -1 }, { 6, -1 }, { 6, -1 }, { 8, -1 } },
+    { { 9, -1 }, { 7, -1 }, { 7, -1 }, { 7, -1 }, { 9, -1 } },
+    { { 10, -1 }, { 11, 12 }, { 11, 12 }, { 11, 12 }, { 10, -1 } },
+    { { -1, -1 }, { 13, 14 }, { 13, 14 }, { 13, 14 }, { -1, -1 } },
+    { { -1, -1 }, { -1, -1 }, { 15, -1 }, { -1, -1 }, { -1, -1 } } };
+static const float HEAT_BAND[9] = { 0, 26, 33, 40, 54, 62, 80, 86, 100 };          // % down from the far goal line
+static const unsigned char HEAT_ALPHA[11] = { 0, 0, 0, 10, 18, 31, 47, 67, 96, 131, 167 };  // a rating -> its tiles
+
+static const struct CatCard *cat_card(int no)   // the catalogue's card with this number, NULL if none
+{
+    // ponytail: a straight search per call (17 a frame over ~3,900 cards); an index by number if a profile ever shows it
+    for (int i = 0; i < g_ncat; i++) if (g_cat[i].no == no) return &g_cat[i];
+    return NULL;
+}
+
+static int zone_best(const struct CatCard *c, int band, int lane)   // a zone's best role for this card, -1 = none
+{
+    int k = -1;
+    for (int j = 0; j < 2; j++) {
+        int r = HEAT_ZONE[band][lane][j];
+        if (r >= 0 && (k < 0 || c->role[r] > c->role[k])) k = r;
+    }
+    return k;
+}
+
+// a card's role at a table spot (x -1..1 across, y -1..1 from the far goal line): its zone's best role - an empty zone
+// (wide of the keeper or of the sweeper) counts as the nearest lane that has roles; -1 = the card has no ratings
+static int spot_role(const struct CatCard *c, float x, float y)
+{
+    float px = (x + 1.0f) * 50.0f, py = (y + 1.0f) * 50.0f;
+    int band = 0, lane = (int)floorf(px / 20.0f), known = 0, d, k;
+    for (k = 0; k < 16; k++) known |= c->role[k];
+    if (!known) return -1;
+    while (band < 7 && py >= HEAT_BAND[band + 1]) band++;
+    if (lane < 0) lane = 0;
+    if (lane > 4) lane = 4;
+    for (d = 0; d < 5; d++) {
+        if (lane - d >= 0 && (k = zone_best(c, band, lane - d)) >= 0) return k;
+        if (lane + d <= 4 && (k = zone_best(c, band, lane + d)) >= 0) return k;
+    }
+    return -1;
+}
+
+// the card being dragged, else the one pointed at on the pitch, else the one pointed at in the card browser: the pitch
+// lit where it plays well (drawn before the cards, so under them).  g_board_cs held.
+static void board_heat(IDirect3DDevice9 *dev)
+{
+    const struct CatCard *c; int no, b, l, t, n, k, v; float x0, y0, x1, y1, top, bot;
+    no = g_drag >= 0 && g_drag < g_ncards ? g_cards[g_drag].no : g_hover >= 0 && g_hover < g_ncards ? g_cards[g_hover].no
+       : g_browse && g_bdetail >= 0 && g_bdetail < g_ncat ? g_cat[g_bdetail].no : 0;
+    if (!no || !(c = cat_card(no))) return;
+    table_to_canvas(-1.0f, -1.0f, &x0, &y0);                   // the field's corners, inside its lines
+    table_to_canvas(1.0f, 1.0f, &x1, &y1);
+    set_flat(dev);
+    for (b = 0; b < 8; b++) {
+        n = (int)((HEAT_BAND[b + 1] - HEAT_BAND[b]) / 9.0f + 0.5f);
+        if (n < 1) n = 1;
+        for (l = 0; l < 5; l++) {
+            if ((k = zone_best(c, b, l)) < 0) continue;
+            v = c->role[k] > 10 ? 10 : c->role[k];
+            if (!HEAT_ALPHA[v]) continue;
+            for (t = 0; t < n; t++) {
+                top = HEAT_BAND[b] + (HEAT_BAND[b + 1] - HEAT_BAND[b]) * (float)t / (float)n;
+                bot = HEAT_BAND[b] + (HEAT_BAND[b + 1] - HEAT_BAND[b]) * (float)(t + 1) / (float)n;
+                fill_rect(dev, x0 + (x1 - x0) * ((float)l * 20.0f + 0.6f) / 100.0f, y0 + (y1 - y0) * (top + 0.45f) / 100.0f,
+                          (x1 - x0) * 18.8f / 100.0f, (y1 - y0) * (bot - top - 0.9f) / 100.0f,
+                          D3DCOLOR_ARGB(HEAT_ALPHA[v], 255, 138, 42));
+            }
+        }
+    }
+}
+
+// a card on the pitch: a tag with its rating for the spot it stands in ("CB 10") - green 8 or more, yellow 6-7, red
+// below; it follows a card being dragged, so the spot that suits it can be found.  Not on the bench.  g_board_cs held.
+static void board_fit_tag(IDirect3DDevice9 *dev, RECT card, int no, float x, float y)
+{
+    const struct CatCard *c; char t[16]; int k, v; float s = g_s, w, h = 14.0f * s, tx, ty;
+    if (x > 1.16f || !g_font_tex || !(c = cat_card(no)) || (k = spot_role(c, x, y)) < 0) return;
+    v = c->role[k];
+    _snprintf(t, sizeof t, "%s %d", ROLE_NAME[k], v); t[sizeof t - 1] = 0;
+    w = str_w(t, 0.34f * s) + 8.0f * s;
+    tx = (float)card.left - 5.0f * s; ty = (float)card.top - 7.0f * s;
+    set_flat(dev);
+    fill_rect(dev, tx, ty, w, h, v >= 8 ? D3DCOLOR_ARGB(255, 126, 224, 122) : v >= 6 ? D3DCOLOR_ARGB(255, 255, 210, 60)
+                                                                                  : D3DCOLOR_ARGB(255, 229, 83, 61));
+    set_picture(dev, g_font_tex, 1);
+    put_in_rect(dev, RC(tx, ty, tx + w, ty + h), 0.34f * s, v >= 6 ? D3DCOLOR_ARGB(255, 18, 22, 16)
+                                                                   : D3DCOLOR_ARGB(255, 255, 255, 255), t);
 }
 
 static void note_locked(DWORD col, const char *fmt, ...)
@@ -1661,11 +1774,11 @@ static void draw_pane(IDirect3DDevice9 *dev, RECT pane, const struct CatCard *c,
     _snprintf(line, sizeof line, "TOTAL  %d", c->total);
     put_in_rect(dev, RC(px, y, px + pw, y + 30.0f * s), 0.66f * s, D3DCOLOR_ARGB(255, 255, 138, 42), line);
     y += 34.0f * s;
-    role_line(c, line, sizeof line);                                    // its best three roles (ROLE_NAME)
+    role_line(c, line, sizeof line);                                    // its best three roles (ROLE_NAME), out of 10
     if (line[0]) {
         put_in_rect(dev, RC(px, y, px + pw, y + 22.0f * s), 0.46f * s, white, line);
-        put_in_rect(dev, RC(px, y + 22.0f * s, px + pw, y + 38.0f * s), 0.34f * s, grey,
-                    "out of 10 - role names inferred, not the game's");
+        role_line_as(c, line, sizeof line, 1);                          // and what they are called in full
+        put_in_rect(dev, RC(px, y + 22.0f * s, px + pw, y + 38.0f * s), 0.34f * s, grey, line);
         y += 44.0f * s;
     }
     if (foot) put_in_rect(dev, RC(px, y, px + pw, y + 20.0f * s), 0.40f * s, grey, foot);
@@ -1918,7 +2031,7 @@ static void browse_draw(IDirect3DDevice9 *dev)
             const char *typed = g_pick ? g_pq : g_query;      // the open COUNTRY / CLUB list takes the typing
             if (typed[0]) _snprintf(line, sizeof line, "%s%s", typed, (now / 500) & 1 ? "_" : "");
             else _snprintf(line, sizeof line, "%s%s", g_pick == 1 ? "type to find a country" : g_pick == 2 ?
-                           "type to find a club" : "name, club, country, season, FW, DMF... or a card number", (now / 500) & 1 ? "_" : "");
+                           "type to find a club" : "name, club, country, season, FW, DH... or a card number", (now / 500) & 1 ? "_" : "");
             put_str(dev, (float)g.box.left + 10.0f * s, (float)g.box.top + 6.0f * s, 0.72f * s, typed[0] ? white : grey, line);
         }
         put_str(dev, g.lab_nat, 24.0f * s, 0.42f * s, g_fnat[0] ? orange : grey, "COUNTRY");

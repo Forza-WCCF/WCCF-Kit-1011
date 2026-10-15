@@ -6,7 +6,9 @@ WHAT IT IS
   and an in-game panel, so the game's server, the projector (the shared big screen) and a player cabinet (seat 1)
   run on one Windows PC. The game itself is not part of the kit. Around seat 1's picture there is a panel with
   the cabinet's buttons, a FORMATION BOARD for your cards (drag to move, drop on another card to swap, right-click
-  to take a card off), a CATALOGUE of all 3,909 player cards (search, position, rarity, country and club filters,
+  to take a card off; each card on the pitch has a tag with his rating for the spot he stands in, and the pitch
+  lights up where the card you point at plays well), a CATALOGUE of all 3,909 player cards (search, position, role
+  (dh, cb, ...), rarity, country and club filters,
   sort, a slider per stat, a stats pane; a click puts the card on your table), KEYS, where you choose your own keys
   or a game controller's buttons, SETTINGS, and CLUB CARD, your club card and your other clubs.
   The kit holds none of Sega's files. Everything that comes from the game is made by setup from YOUR copy.
