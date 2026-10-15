@@ -616,6 +616,11 @@ def start_cabinet(debug, env, mode, ip, seat_no, seat, roles):
     if debug:
         senv["MXHOOK_VERBOSE"] = "1"
     senv["WCCF_PANEL"] = PANEL_DLL
+    # the English pictures the hook gives the game as it loads Sega's (english.py's "memory" pictures, made by SETUP's
+    # ENGLISH / ITALIANO): named only while there are some - in Japanese the hook changes no picture
+    pics = K.ENGLISH_PICTURES
+    if os.path.isdir(pics) and any(n.lower().endswith(".dds") for n in os.listdir(pics)):
+        senv["WCCF_PICTURES_DIR"] = pics
     # the cabinet in the seat1 folder SETUP made, whatever its seat number: the number is only its command line
     p = start(os.path.join("hardware", "debugger.py"), [LIFE, "client", "follow", "arg=%d" % seat_no, "dir=" + seat], "run_seat1.txt", senv)
     roles[p.pid] = "seat 1 launcher" if seat_no == 1 else "seat %d launcher" % seat_no

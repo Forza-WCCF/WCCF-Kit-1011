@@ -44,6 +44,7 @@
 #include <string.h>
 #include "winmm_fwd.h"   /* forwards the game's 3 timer functions to Windows' own winmm */
 #include "jvs.h"         /* the I/O board's guards: the error mark off, late answers dropped (2026-10-15) */
+#include "pictures.h"    /* English pictures handed to the game as it loads Sega's (2026-10-15) */
 #pragma comment(lib, "user32.lib")   /* the overlay: EnumWindows, to see the game's window */
 
 /* ---- logging ----------------------------------------------------------- */
@@ -1327,6 +1328,47 @@ static void install_jvs_unlatch(HMODULE exe)
                                 "the board's error mark left as it is - not the bytes this kit knows (not Rev D?)");
 }
 
+/* The English pictures (pictures.h): D3DX's own call, 15 arguments, the picture file's bytes and size second and third */
+typedef long (WINAPI *pfn_TexFromMem)(void *, const void *, UINT, UINT, UINT, UINT, DWORD, DWORD, DWORD, DWORD, DWORD,
+                                      DWORD, void *, void *, void **);
+static pfn_TexFromMem real_TexFromMem;
+static pic_t g_pics[PIC_MAX];
+static int   g_npics;
+static LONG  g_pics_given;
+
+static long WINAPI hook_TexFromMem(void *dev, const void *src, UINT size, UINT w, UINT h, UINT mips, DWORD usage,
+                                   DWORD fmt, DWORD pool, DWORD filter, DWORD mipfilter, DWORD key, void *info,
+                                   void *pal, void **tex)
+{
+    const pic_t *p = pic_find(g_pics, g_npics, src, size);
+    long hr;
+    if (p) {
+        hr = real_TexFromMem(dev, p->eng, p->eng_size, w, h, mips, usage, fmt, pool, filter, mipfilter, key, info,
+                             pal, tex);
+        if (hr == 0) {
+            if (InterlockedIncrement(&g_pics_given) <= 20)
+                logline("pictures: %s given in place of Sega's", p->name);
+            return hr;
+        }
+        logline("pictures: %s refused by D3DX (0x%08lX) - Sega's picture used", p->name, (unsigned long)hr);
+    }
+    return real_TexFromMem(dev, src, size, w, h, mips, usage, fmt, pool, filter, mipfilter, key, info, pal, tex);
+}
+
+static void install_pictures(HMODULE exe)
+{
+    char dir[MAX_PATH];
+    DWORD n = GetEnvironmentVariableA("WCCF_PICTURES_DIR", dir, sizeof(dir));
+    if (n == 0 || n >= sizeof(dir))
+        return;
+    g_npics = pic_load(dir, g_pics, PIC_MAX);
+    if (g_npics)
+        real_TexFromMem = (pfn_TexFromMem)patch_iat(exe, "d3dx9_40.dll", "D3DXCreateTextureFromFileInMemoryEx",
+                                                    hook_TexFromMem);
+    logline("pictures: %d English picture(s) in %s - %s", g_npics, dir, !g_npics ? "the game's own pictures" :
+            real_TexFromMem ? "given as the game loads Sega's" : "NOT used (this program loads no pictures that way)");
+}
+
 static void install_hooks(void)
 {
     HMODULE exe = GetModuleHandleW(NULL);
@@ -1348,6 +1390,7 @@ static void install_hooks(void)
     }
     install_vcom_hooks(exe);
     install_jvs_unlatch(exe);
+    install_pictures(exe);
     if (g_ringedge && !real_CloseHandle) {
         int n = 0;
         real_CloseHandle = (pfn_CloseHandle)hook_k32(exe, "CloseHandle", hook_CloseHandle, &n);

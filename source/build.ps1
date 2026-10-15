@@ -78,6 +78,7 @@ Build-C 'panel\wccfpanel.c' "$kit\programs\wccfpanel.dll" "the kit's on-screen p
 Build-C 'panel\fakegame.c' "$obj\fakegame.exe" '' @() @('d3d9.lib', 'user32.lib', 'ws2_32.lib')
 Build-C 'hook\test_wholemsg.c' "$obj\test_wholemsg.exe" ''
 Build-C 'hook\test_jvs.c' "$obj\test_jvs.exe" ''
+Build-C 'hook\test_pictures.c' "$obj\test_pictures.exe" ''
 Build-C 'crashme.c' "$obj\crashme.exe" ''
 
 # the launchers: the toolchain is pinned by source\launcher\rust-toolchain.toml, every crate by Cargo.lock, the static

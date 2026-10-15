@@ -11,6 +11,8 @@ The game's programs load this DLL because setup.py renames their import of `WINM
 | `test_wholemsg.c` | not shipped: 18 checks of `wholemsg.h` - a batch split at every byte waits, garbage is skipped, the crash's wild length is refused (check.ps1 runs it) |
 | `jvs.h` | the I/O board's guards (2026-10-15, "no input"): in client_Release.exe Sega's error mark (10 failed polls in a row = the buttons never read again that run) is switched off at start, only on Sega's exact bytes; before each new request, late answers still waiting on the pipe are dropped. Why: `docs\research\NO-INPUT-2010-11.md` |
 | `test_jvs.c` | not shipped: `jvs.h` on its own - the mark off only on Sega's bytes and never half, late answers dropped from a real named pipe (check.ps1 runs it) |
+| `pictures.h` | English pictures (2026-10-15): with `WCCF_PICTURES_DIR` (play.py, seat 1, only while `data\english_pictures\` has some) the hook loads english.py's pictures, each named by Sega's picture (size + FNV-1a 64), and hooks D3DX's `D3DXCreateTextureFromFileInMemoryEx`: when the game hands over exactly that Sega picture it gets the English one; refused by D3DX = Sega's own. The game's files are never changed |
+| `test_pictures.c` | not shipped: `pictures.h` on its own - the fingerprint against FNV's published values (english.py's is checked against the same), names, a folder with good and bad files, only Sega's exact bytes swapped (check.ps1 runs it) |
 
 ## Careful
 - Keep the log line `mxhook attached` (it was named mxhook.c): setup.py recognises its own hook by it.

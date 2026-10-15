@@ -14,6 +14,7 @@ ART = os.path.join(KIT, "art")             # shipped art: skin.tex (was overlay\
 LANGUAGES = os.path.join(KIT, "languages")  # one folder per language: english\ (was english\ at the top)
 DATA = os.path.join(KIT, "data")
 CACHE = os.path.join(DATA, "cache")        # made by SETUP from the player's game: catalogue.tsv, cards\ (was overlay\)
+ENGLISH_PICTURES = os.path.join(DATA, "english_pictures")   # english.py's pictures the hook gives the game (play.py)
 LOGS = os.path.join(DATA, "logs")
 SAVE = os.path.join(DATA, "save")
 SETTINGS = os.path.join(DATA, "settings.json")

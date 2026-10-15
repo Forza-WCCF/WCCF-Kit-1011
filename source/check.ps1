@@ -128,6 +128,8 @@ if ($LASTEXITCODE) { $failed += 'the Italian tables: keys, font and codes' }
 if ($LASTEXITCODE) { $failed += 'whole messages: a batch in pieces waits for its rest, bytes that are no batch are skipped' }
 & (Join-Path $PSScriptRoot 'build\test_jvs.exe')
 if ($LASTEXITCODE) { $failed += 'the I/O board: the error mark off only on Sega''s bytes, late answers dropped' }
+& (Join-Path $PSScriptRoot 'build\test_pictures.exe')
+if ($LASTEXITCODE) { $failed += 'the English pictures: only Sega''s exact picture swapped, the fingerprint as english.py''s' }
 & $py -I (Join-Path $PSScriptRoot 'test_crash_dump.py')
 if ($LASTEXITCODE) { $failed += 'a crash leaves its memory snapshots (lean + full) in data\dumps' }
 

@@ -59,6 +59,11 @@ game is not included. Newest first; each date is the day that kit was built.
   drops the stand-in's late answers (after a shorter pause every press stayed late until the game was closed, and
   later each pause made it later still), and the stand-in answers without ever waiting for the disk. Checked in the
   real game: after a 6-second pause the buttons work at once.
+- In English (and Italian), the bar under the screen between matches now says "Please wait for the next match"
+  ("Attendi la prossima partita") where it was Japanese. The kit's hook hands the game an English picture as it loads
+  Sega's, at Sega's size and with its reflection; no game file is changed for it (the English pictures that were added
+  to the game's archive stay off: with them the game gave club cards straight back). After UPDATE, say yes when SETUP
+  offers to put the English in again.
 - Online: two signed-in players in one house (one internet address) now each get their cards and keep their club
   saves. The server could not tell them apart and sent nothing for either; kit 7 now tells the server which club card
   it plays, and the server matches it with the card in each match. (A server must update too; an older one is asked

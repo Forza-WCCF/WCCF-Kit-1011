@@ -19,6 +19,10 @@ What changes, in the game's extracted\ folder (seat 1 reads the same files throu
   data\wccf_data.xaf                      pictures with writing (languages\english\pictures.tsv: the six team stats, OK / BACK),
                                           redrawn in Windows' Arial Bold and ADDED at the archive's end; only their
                                           table-of-contents entries change, and "off" cuts the added end away again
+                                          (switched OFF - see PICTURES below)
+  data\english_pictures\ (the kit's)      pictures.tsv's "memory" pictures (the bar's "please wait for the next match"),
+                                          redrawn as the same kind of picture; the kit's hook gives the game the English
+                                          one as it loads Sega's (source\hook\pictures.h) - no game file changes for them
 The first "on" COPIES Sega's files to data\english_backup\ - only files whose fingerprint shows they are Sega's Rev D
 originals; later runs build from that backup again.  Each game file is then replaced in ONE step ("off" too), so a
 switch stopped half way (a crash, a kill, a full disk) leaves every file in place - some English, some not - and
@@ -54,6 +58,10 @@ BACK = os.path.join(K.DATA, "english_backup")
 # finds why; WCCF_PICTURES=1 turns it on for that test.  Never on by default before a running game reads a card with it.
 PICTURES = os.environ.get("WCCF_PICTURES") == "1"
 PICTURES_OFF = "pictures stay Japanese: their English is switched off (with it the game did not read a club card)"
+# The "memory" pictures (2026-10-15) never touch the archive: each is redrawn into this folder, named by Sega's picture
+# (its size and FNV-1a 64-bit fingerprint, as the hook computes it), and the hook hands the game the English file
+# when the game loads Sega's (D3DXCreateTextureFromFileInMemoryEx). play.py names the folder to seat 1's hook.
+PIC_DIR = K.ENGLISH_PICTURES
 LANGS = {"en": "English", "it": "Italian"}         # "on it": Italian, with the English wherever a line has none
 LANG_FILE = os.path.join(BACK, "language.txt")    # the language that is on (kit_common.game_language reads it)
 MANIFEST = os.path.join(BACK, "manifest.json")
@@ -386,7 +394,13 @@ XAF_STATE = os.path.join(BACK, "wccf_data.xaf.json")
 SECTOR, ENTRY, TOC_AT = 2048, 0xB0, 0x100
 # the writing's colour, its halo (colour + strength, or none) and the halo's width, as Sega drew each picture
 STYLES = {"glow": ((242, 228, 150), (223, 198, 57, 200), 4), "outline": ((240, 240, 245), (18, 17, 17, 220), 2),
-          "grey": ((80, 80, 80), None, 0), "white": ((255, 255, 255), None, 0)}
+          "grey": ((80, 80, 80), None, 0), "white": ((255, 255, 255), None, 0),
+          # the bar's wait line (client_common\SCM_Foot\SCM_Foot_Wait.dds): Sega's off-white, left-aligned, the last line
+          # mirrored below as Sega drew it (reflect_last)
+          "wait": ((216, 225, 216), None, 0)}
+# Sega's reflection in SCM_Foot_Wait.dds (measured 2026-10-15): the line on rows 19-31 mirrored onto rows 42-54, i.e.
+# its top 11 rows below the line's last row, at 25% of the line's strength fading by 1.9% a row
+REFLECT_GAP, REFLECT_TOP, REFLECT_FADE = 11, 0.25, 0.019
 
 
 def arial_bold():
@@ -394,8 +408,9 @@ def arial_bold():
     return p if os.path.isfile(p) else None
 
 
-def draw_label(im, box, text, style, font_path):
-    """Sega's writing in box cleared, the English drawn in its place: as tall as the box allows, squeezed to fit"""
+def draw_label(im, box, text, style, font_path, left=False):
+    """Sega's writing in box cleared, the English drawn in its place: as tall as the box allows, squeezed to fit;
+    centred, or from the box's left edge"""
     from PIL import Image, ImageDraw, ImageFilter, ImageFont
     core, halo, spread = STYLES[style]
     x0, y0, x1, y1 = box
@@ -408,7 +423,8 @@ def draw_label(im, box, text, style, font_path):
     ImageDraw.Draw(m).text((-l, -t), text, font=font, fill=255)
     mw, mh = max(1, round(m.width * min(1.0, w / m.width) / s)), max(1, round(m.height / s))
     mask = Image.new("L", im.size)
-    mask.paste(m.resize((mw, mh), Image.LANCZOS), (x0 + (x1 - x0 + 1 - mw) // 2, y0 + (y1 - y0 + 1 - mh) // 2))
+    mask.paste(m.resize((mw, mh), Image.LANCZOS), (x0 + (0 if left else (x1 - x0 + 1 - mw) // 2),
+                                                   y0 + (y1 - y0 + 1 - mh) // 2))
     if halo:
         g = mask.filter(ImageFilter.MaxFilter(2 * (spread // 2) + 1)).filter(ImageFilter.GaussianBlur(spread / 2))
         im.alpha_composite(Image.merge("RGBA", Image.new("RGB", im.size, halo[:3]).split() +
@@ -432,17 +448,70 @@ def load_state():
         return None
 
 
-def build_pictures(game, lang="en"):
-    """{archive path: (entry number, English DDS)} from Sega's pictures, each checked against languages\\english\\pictures.tsv"""
+def dxt5(im, header):
+    """im (RGBA, sides a multiple of 4) as DXT5 blocks after Sega's own 128-byte DDS header: the same kind and size of
+    picture as Sega's.  Per 4x4 block: alpha between the block's highest and lowest (8 steps), colour between its
+    brightest and darkest inked pixel (4 steps), each pixel the nearest step."""
+    w, h = im.size
+    px = im.load()
+    out = bytearray(header)
+    to565 = lambda c: ((c[0] >> 3) << 11) | ((c[1] >> 2) << 5) | (c[2] >> 3)
+    from565 = lambda v: ((v >> 11) * 255 // 31, ((v >> 5) & 63) * 255 // 63, (v & 31) * 255 // 31)
+    for by in range(0, h, 4):
+        for bx in range(0, w, 4):
+            blk = [px[bx + i % 4, by + i // 4] for i in range(16)]
+            alphas = [p[3] for p in blk]
+            a0, a1 = max(alphas), min(alphas)
+            steps = [a0, a1] + [((7 - k) * a0 + k * a1) // 7 for k in range(1, 7)] if a0 > a1 else [a0] * 8
+            bits = sum(min(range(8), key=lambda k: abs(steps[k] - a)) << (3 * i) for i, a in enumerate(alphas))
+            out += bytes((a0, a1)) + bits.to_bytes(6, "little")
+            inked = [p[:3] for p in blk if p[3]] or [(0, 0, 0)]
+            e0, e1 = to565(max(inked, key=sum)), to565(min(inked, key=sum))
+            c0, c1 = from565(e0), from565(e1)
+            pal = [c0, c1] + [tuple((2 * a + b) // 3 for a, b in zip(c0, c1)), tuple((a + 2 * b) // 3 for a, b in zip(c0, c1))]
+            idx = [min(range(4), key=lambda k: sum((pal[k][j] - p[j]) ** 2 for j in range(3))) for p in blk]
+            out += struct.pack("<HHI", e0, e1, sum(v << (2 * i) for i, v in enumerate(idx)))
+    return bytes(out)
+
+
+def fnv64(data):
+    """FNV-1a 64-bit, as source\\hook\\pictures.h computes it over the bytes the game loads"""
+    h = 0xCBF29CE484222325
+    for b in data:
+        h = ((h ^ b) * 0x100000001B3) & 0xFFFFFFFFFFFFFFFF
+    return h
+
+
+def memory_name(sega):
+    """the English picture's file name in PIC_DIR: Sega's picture's size and fingerprint (the hook matches both)"""
+    return "%d-%016X.dds" % (len(sega), fnv64(sega))
+
+
+def reflect_last(im, box):
+    """the last line mirrored under itself, as Sega drew the wait line's (REFLECT_*)"""
     from PIL import Image
-    font = arial_bold()
-    if not font:
-        return {}, "pictures stay Japanese: Windows' Arial Bold (Fonts\\arialbd.ttf) is missing"
+    x0, y0, x1, y1 = box
+    line = im.crop((0, y0, im.width, y1 + 1)).transpose(Image.FLIP_TOP_BOTTOM)
+    a = line.getchannel("A")
+    for y in range(line.height):
+        f = max(0.0, REFLECT_TOP - REFLECT_FADE * y)
+        for x in range(line.width):
+            a.putpixel((x, y), int(a.getpixel((x, y)) * f))
+    line.putalpha(a)
+    top = y1 + REFLECT_GAP
+    if top < im.height:
+        im.alpha_composite(line.crop((0, 0, line.width, min(line.height, im.height - top))), (0, top))
+
+
+def sega_pictures(game, how):
+    """(row, archive path, entry, Sega's bytes) for each picture of pictures.tsv drawn `how` ("archive": added to the
+    archive, off - PICTURES; "memory": given by the hook), each checked to be Sega's Rev D picture"""
     xaf, state = where(game, XAF), load_state() or {"entries": {}}
     ents = {e["path"]: e for e in catalogue.xaf_toc(xaf) if e["is_file"]}
-    out, labels = {}, 0
     with open(xaf, "rb") as f:
         for row in sheet("pictures.tsv"):
+            if row.get("how", "archive") != how:
+                continue
             for p in row["files"].split():
                 if p not in ents:
                     raise Failed("the archive has no %s" % p)
@@ -456,18 +525,79 @@ def build_pictures(game, lang="en"):
                 data = unpack.decompress(data, e["size"]) if e["stored"] < e["size"] else data
                 if sha(data) != row["sega_sha256"]:
                     raise Failed("%s in the archive is not Sega's Rev D picture" % p)
-                im = Image.open(io.BytesIO(data)).convert("RGBA")
-                boxes = [[int(v) for v in lab.split("=")[0].split(",")] for lab in row["labels"].split(";")]
-                if any(a[0] <= b[2] and b[0] <= a[2] and a[1] <= b[3] and b[1] <= a[3]
-                       for i, a in enumerate(boxes) for b in boxes[i + 1:]):
-                    raise Failed("english\\pictures.tsv: two boxes of %s overlap - one would clear the other" % p)
-                words = row["italiano"].split(";") if lang == "it" and row.get("italiano") else None
-                for n, lab in enumerate(row["labels"].split(";")):
-                    box, text = lab.split("=")
-                    draw_label(im, [int(v) for v in box.split(",")], words[n] if words else text, row["style"], font)
-                    labels += 1
-                out[p] = (e["i"], dds_argb(im))
+                yield row, p, e, data
+
+
+def draw_row(data, row, lang, font):
+    """Sega's picture with the row's English (or Italian) drawn in: (the picture, how many words)"""
+    from PIL import Image
+    im = Image.open(io.BytesIO(data)).convert("RGBA")
+    labels = row["labels"].split(";")
+    boxes = [[int(v) for v in lab.split("=")[0].split(",")] for lab in labels]
+    if any(a[0] <= b[2] and b[0] <= a[2] and a[1] <= b[3] and b[1] <= a[3]
+           for i, a in enumerate(boxes) for b in boxes[i + 1:]):
+        raise Failed("english\\pictures.tsv: two boxes of %s overlap - one would clear the other" % row["files"])
+    words = row["italiano"].split(";") if lang == "it" and row.get("italiano") else None
+    wait = row["style"] == "wait"
+    if wait:                                             # the whole picture is writing: all of Sega's goes, its mirror too
+        im.paste((0, 0, 0, 0), (0, 0) + im.size)
+    for n, lab in enumerate(labels):
+        draw_label(im, boxes[n], words[n] if words else lab.split("=")[1], row["style"], font, left=wait)
+    if wait:
+        reflect_last(im, boxes[-1])
+    return im, len(labels)
+
+
+def build_pictures(game, lang="en"):
+    """{archive path: (entry number, English DDS)} from Sega's pictures, each checked against languages\\english\\pictures.tsv"""
+    font = arial_bold()
+    if not font:
+        return {}, "pictures stay Japanese: Windows' Arial Bold (Fonts\\arialbd.ttf) is missing"
+    out, labels = {}, 0
+    for row, p, e, data in sega_pictures(game, "archive"):
+        im, n = draw_row(data, row, lang, font)
+        labels += n
+        out[p] = (e["i"], dds_argb(im))
     return out, "%d pictures with their writing in %s (%d words)" % (len(out), LANGS[lang], labels)
+
+
+def build_memory_pictures(game, lang="en"):
+    """{file name in PIC_DIR: English picture} for pictures.tsv's "memory" rows: the same kind and size of picture as
+    Sega's (a DXT5 one without smaller copies: DXT5 after Sega's own header; others as A8R8G8B8)"""
+    font = arial_bold()
+    if not font:
+        return {}, "the bar's wait line stays Japanese: Windows' Arial Bold (Fonts\\arialbd.ttf) is missing"
+    out = {}
+    for row, p, e, data in sega_pictures(game, "memory"):
+        im, _ = draw_row(data, row, lang, font)
+        same = data[84:88] == b"DXT5" and struct.unpack_from("<I", data, 28)[0] <= 1
+        out[memory_name(data)] = dxt5(im, data[:128]) if same else dds_argb(im)
+    return out, "%d picture(s) the game is given in %s as it loads them (the bar's wait line)" % (len(out), LANGS[lang])
+
+
+def memory_pictures_off():
+    """PIC_DIR's pictures removed (the game then loads Sega's): how many"""
+    gone = 0
+    for n in (os.listdir(PIC_DIR) if os.path.isdir(PIC_DIR) else []):
+        if n.lower().endswith(".dds"):
+            os.remove(os.path.join(PIC_DIR, n))
+            gone += 1
+    if os.path.isdir(PIC_DIR) and not os.listdir(PIC_DIR):
+        os.rmdir(PIC_DIR)
+    return gone
+
+
+def memory_pictures_on(pics):
+    """PIC_DIR holds exactly these pictures, each read back"""
+    memory_pictures_off()
+    if not pics:
+        return
+    os.makedirs(PIC_DIR, exist_ok=True)
+    for name, blob in pics.items():
+        put(os.path.join(PIC_DIR, name), blob)
+        with open(os.path.join(PIC_DIR, name), "rb") as f:
+            if f.read() != blob:
+                raise Failed("%s did not write correctly - press JAPANESE in SETUP.exe" % name)
 
 
 def pictures_off(game):
@@ -683,6 +813,7 @@ def main(argv):
                 raise Failed("the game is running - close its window first, then run this again")
             print("  NOTE  the game is running: \"on\" and \"off\" will refuse until it is closed")
         if mode == "off":
+            m = memory_pictures_off()                    # the game loads Sega's own pictures again
             if not load_manifest() and not load_state():
                 print("  English is not on - nothing to do.")
                 return 0
@@ -691,11 +822,13 @@ def main(argv):
             if os.path.isfile(LANG_FILE):
                 os.remove(LANG_FILE)
                 os.rmdir(BACK)                           # empty now: turn_off took everything else out
-            print("  ok    Sega's Japanese files are back (%d files, %d pictures)." % (n, p))
+            print("  ok    Sega's Japanese files are back (%d files, %d pictures)." % (n, p + m))
             return 0
         print("  building from your game files ...", flush=True)
         files, notes = build_all(game, lang)
         pics, note = build_pictures(game, lang) if PICTURES else ({}, PICTURES_OFF)
+        notes.append(note)
+        mem, note = build_memory_pictures(game, lang)
         notes.append(note)
         for n in notes:
             print("  ok    " + n)
@@ -706,10 +839,12 @@ def main(argv):
             return 0
         turn_on(game, files)
         pictures_on(game, pics)
+        memory_pictures_on(mem)
         with open(LANG_FILE, "w", encoding="ascii") as f:
             f.write(lang + "\n")
-        print("  ok    %d files in place and %d pictures in the archive, each read back.  Sega's are in "
-              "data\\english_backup (JAPANESE in SETUP.exe puts them back)." % (len(files), len(pics)))
+        print("  ok    %d files in place, %d pictures in the archive and %d in data\\english_pictures, each read back.  "
+              "Sega's are in data\\english_backup (JAPANESE in SETUP.exe puts them back)."
+              % (len(files), len(pics), len(mem)))
     except Failed as ex:
         print("  FAIL  %s" % ex)
         return 1
