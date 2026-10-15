@@ -23,7 +23,8 @@ The source of every compiled program the kit ships, the scripts that build, chec
 | `test_log_archive.py` | the run before last is zipped into the archive, never just deleted |
 | `test_old_layout.py` | a kit updated from before kit 6 is tidied: old folders, catalogue moved |
 | `test_patch_hook_import.py` | the game's import renamed to `wccfk.dll` and back (the antivirus fix) |
-| `test_relay.py` | a live seat cannot be taken over by another address |
+| `test_relay.py` | a live seat cannot be taken over by another address; the same address on a new port takes its seat at once |
+| `test_server_conf.py` | the server's settings file: kit 7's random-pairing line (`MATCHING_PARA_FM1`) with a value, an older kit's file (also with play.py's `WAIT_PROJECTOR`) replaced without a copy, a hand edit kept |
 | `test_rotate_logs.py` | a log file held open never stops a start |
 | `test_seat_desk_game.py` | the seat desk never gives a seat that is in the game |
 | `test_online_club.py` | the online club: the owned cards make the CATALOGUE (only those, each once), the list kept for when the website is down, refused / unknown / empty answers play with the slot card, a new club's cards laid out on the table, formation finds the online board, play.py's run record and environment carry it |

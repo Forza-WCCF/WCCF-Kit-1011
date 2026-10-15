@@ -41,6 +41,11 @@ game is not included. Newest first; each date is the day that kit was built.
   code.
 
 ### Changed
+- Hosting a server: in a round where clubs are free (no league or cup match of their own), any two free players are
+  now paired with each other at random, whatever their clubs' strength - the game's own rule paired only close
+  strengths and gave the rest computer clubs (`MATCHING_PARA_FM1=20000` in the server's settings, written by SETUP;
+  the server takes it at its next start). The game still keeps two players apart for about 10 rounds after they met
+  at random, and the league and cups pair as before: to play a friend again, use ARRANGE FIXTURE in a free round.
 - The game's red notice "This cabinet is offline. Network features cannot be used." now says what is true: "Sega's
   network is closed. No nationwide play or rankings." (in Italian too). The old words made players on a community
   server think they were not connected. It shows the same on your own PC, so it does not name a server. New words

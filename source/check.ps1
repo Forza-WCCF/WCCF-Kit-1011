@@ -76,6 +76,9 @@ if ($LASTEXITCODE) { $failed += 'the seat lease reconnects and re-claims its sea
 & $py -I (Join-Path $PSScriptRoot 'test_relay.py') | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'the match relay: a live seat cannot be taken over by another address' }
 
+& $py -I (Join-Path $PSScriptRoot 'test_server_conf.py') | Select-Object -Last 1
+if ($LASTEXITCODE) { $failed += 'the server settings: the random-pairing line, and an older kit''s file replaced' }
+
 & $py -I (Join-Path $PSScriptRoot 'test_rotate_logs.py')
 if ($LASTEXITCODE) { $failed += 'log rotation never stops a start when a log file is held open' }
 

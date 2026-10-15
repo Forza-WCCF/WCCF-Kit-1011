@@ -72,19 +72,28 @@ CLIENT_KEYS = ("IS_RINGEDGE=%d\r\nALLNET_AUTH=0\r\nDHCP=0\r\nCONTROL_IP=127.0.0.
                "MATCH_IP=127.0.0.1\r\nMATCH_PORT=20003\r\nFPR_MODE=2\r\nFULL_SCREEN_MODE=0\r\n%sSATELLITE_NO=%d\r\n")
 CONF_PROJECTOR = CONF_HEAD % "the PROJECTOR (seat 0)" + CLIENT_KEYS % (0, "", 0)
 CONF_SEAT1 = CONF_HEAD % "the PLAYER CABINET (seat 1)" + CLIENT_KEYS % (1, "MANAGEMENT_0910=0\r\n", 1)
-CONF_CONTROL = ("# WCCF 2010-11 - the SERVER (control) - written by the kit's setup.py: everything on this PC.\r\n"
-                "# CLIENT_MAX must stay 9 (the game's own default): fewer made the server crash.\r\n"
-                "# FIX_REST_ENTRY_TIME = seconds the entry window stays open each cycle (the game's own: 40). Longer, so\r\n"
-                "# seat 1 can still enter the first match after starting and the projector does not wait a whole\r\n"
-                "# 12-minute cycle on \"Now Synchronizing\".\r\n"
-                "DHCP=0\r\nIS_RINGEDGE=0\r\nALLNET_AUTH=0\r\nACCEPT_ALL_IP=1\r\nCLIENT_MAX=9\r\nACCEPT_IP_0=127.0.0.1\r\n"
-                "CONTROL_PORT=20002\r\nMATCH_PORT=20003\r\nGAME_SVR_IP=127.0.0.1\r\nFIX_REST_ENTRY_TIME=120\r\n")
-EARLIER_KIT_CONFS = {   # byte for byte what an earlier kit wrote: replaced without keeping a copy (any other text is
-    # a hand edit and is kept as .before-kit).  The first kit's server settings, before FIX_REST_ENTRY_TIME:
+CONF_CONTROL_BEFORE_KIT7 = (
+    "# WCCF 2010-11 - the SERVER (control) - written by the kit's setup.py: everything on this PC.\r\n"
+    "# CLIENT_MAX must stay 9 (the game's own default): fewer made the server crash.\r\n"
+    "# FIX_REST_ENTRY_TIME = seconds the entry window stays open each cycle (the game's own: 40). Longer, so\r\n"
+    "# seat 1 can still enter the first match after starting and the projector does not wait a whole\r\n"
+    "# 12-minute cycle on \"Now Synchronizing\".\r\n"
+    "DHCP=0\r\nIS_RINGEDGE=0\r\nALLNET_AUTH=0\r\nACCEPT_ALL_IP=1\r\nCLIENT_MAX=9\r\nACCEPT_IP_0=127.0.0.1\r\n"
+    "CONTROL_PORT=20002\r\nMATCH_PORT=20003\r\nGAME_SVR_IP=127.0.0.1\r\nFIX_REST_ENTRY_TIME=120\r\n")
+# Kit 7 (2026-10-15, the owner: "anytime there is a chance of playing against each other it should be done"): random
+# pairing in a free round no longer needs close club strengths (docs\research\ARRANGE-FIXTURE-2010-11.md section 9).
+# Control reads the value with atoi and no limit; never write the key with an empty value (a likely crash at start).
+CONF_CONTROL = CONF_CONTROL_BEFORE_KIT7 + (
+    "# MATCHING_PARA_FM1 = the largest matching-value gap at which two free players are paired at random (the game's\r\n"
+    "# own: 600; a club's value runs 0-16383). 20000 lets any two players in a free round play each other.\r\n"
+    "MATCHING_PARA_FM1=20000\r\n")
+EARLIER_KIT_CONFS = {   # byte for byte what an earlier kit wrote (play.py's own lines aside): replaced without keeping
+    # a copy (any other text is a hand edit and is kept as .before-kit).  The first kit's, before FIX_REST_ENTRY_TIME:
     b"# WCCF 2010-11 - the SERVER (control) - written by the kit's setup.py: everything on this PC.\r\n"
     b"# CLIENT_MAX must stay 9 (the game's own default): fewer made the server crash.\r\n"
     b"DHCP=0\r\nIS_RINGEDGE=0\r\nALLNET_AUTH=0\r\nACCEPT_ALL_IP=1\r\nCLIENT_MAX=9\r\nACCEPT_IP_0=127.0.0.1\r\n"
-    b"CONTROL_PORT=20002\r\nMATCH_PORT=20003\r\nGAME_SVR_IP=127.0.0.1\r\n"}
+    b"CONTROL_PORT=20002\r\nMATCH_PORT=20003\r\nGAME_SVR_IP=127.0.0.1\r\n",
+    CONF_CONTROL_BEFORE_KIT7.encode("ascii")}
 ENGLISH_BACKUP = os.path.join(K.DATA, "english_backup")     # english.py keeps Sega's files here while English is on
 
 
@@ -154,7 +163,8 @@ def write_text(path, text, what):
     if os.path.isfile(path) and RUNTIME_LINES.sub(b"", open(path, "rb").read()) == RUNTIME_LINES.sub(b"", text.encode("ascii")):
         ok("%s already in place (with the server address / seat play.py set)" % what)
         return
-    if os.path.isfile(path) and open(path, "rb").read() not in EARLIER_KIT_CONFS:
+    if os.path.isfile(path) and RUNTIME_LINES.sub(b"", open(path, "rb").read()) not in {
+            RUNTIME_LINES.sub(b"", c) for c in EARLIER_KIT_CONFS}:      # a server's file also holds WAIT_PROJECTOR
         shutil.copyfile(path, path + ".before-kit")
         note("%s: the old one is kept as %s" % (what, os.path.basename(path) + ".before-kit"))
     put_file(text.encode("ascii"), path)
