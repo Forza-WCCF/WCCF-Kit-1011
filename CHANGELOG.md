@@ -18,6 +18,10 @@ game is not included. Newest first; each date is the day that kit was built.
   or more, yellow for 6-7, red below), and it follows a card you drag, so you can find the spot that suits him. Which
   role a spot means is the kit's reading of the pitch, with the same zones as wccf.online's squad builder: the
   board's own 4-4-2 reads ST, SH and CH, SB and CB, GK, and a spot reads the same as its mirror on the other wing.
+- Names and links on the FORMATION BOARD: each card has its player's name under it (on the pitch and on the bench),
+  and your club's links are drawn between the cards on the pitch as the game draws them - a thin white line from a
+  link of 151, a thick white line from 201, gold at 255. They are read from your club card (the CLUB CARD panel's
+  view), so a club that has not built a pair up yet shows no line for it, as in the game.
 
 ### Changed
 - The roles have Sega's own names now, as the game keeps them (ST striker, PP post player, WG wing, SS shadow

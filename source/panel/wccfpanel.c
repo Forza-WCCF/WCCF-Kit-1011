@@ -355,6 +355,17 @@ static void fill_soft(IDirect3DDevice9 *d, float x, float y, float w, float h, f
     IDirect3DDevice9_DrawPrimitiveUP(d, D3DPT_TRIANGLELIST, 18, v, sizeof(struct VTX));
 }
 
+// a straight band w pixels wide from (x0,y0) to (x1,y1): a link line
+static void fill_line(IDirect3DDevice9 *d, float x0, float y0, float x1, float y1, float w, DWORD argb)
+{
+    float dx = x1 - x0, dy = y1 - y0, n = sqrtf(dx * dx + dy * dy), ox, oy;
+    if (n < 0.5f) return;
+    ox = -dy / n * w * 0.5f; oy = dx / n * w * 0.5f;
+    struct VTX v[4] = { { x0 + ox, y0 + oy, 0.0f, 1.0f, argb }, { x1 + ox, y1 + oy, 0.0f, 1.0f, argb },
+                        { x0 - ox, y0 - oy, 0.0f, 1.0f, argb }, { x1 - ox, y1 - oy, 0.0f, 1.0f, argb } };
+    IDirect3DDevice9_DrawPrimitiveUP(d, D3DPT_TRIANGLESTRIP, 2, v, sizeof(struct VTX));
+}
+
 static void outline(IDirect3DDevice9 *d, float x, float y, float w, float h, float t, DWORD c)
 {
     fill_rect(d, x, y, w, t, c); fill_rect(d, x, y + h - t, w, t, c);
@@ -1018,7 +1029,7 @@ static DWORD WINAPI board_thread(LPVOID arg)
         int no = 0, i, fast;
         board_reread();
         set_tick();                                            // the SETTINGS panel's status, while it is open
-        club_tick();                                           // the CLUB CARD panel's view, while it is open
+        club_tick();                                           // the club card's view: CLUB CARD, the board's links
         deal_tick();                                           // a match finished: a player card is shown
         fast = pad_tick();                                     // the KEYS panel's controllers, while it is open
         EnterCriticalSection(&g_board_cs);                    // one wanted picture at a time, decoded unlocked
@@ -1102,6 +1113,13 @@ static RECT draw_card(IDirect3DDevice9 *dev, int i, float grow, int lifted)
 static void board_caption(IDirect3DDevice9 *dev, RECT card, int no);    // with the catalogue (below)
 static void board_heat(IDirect3DDevice9 *dev);                           // with the catalogue (below)
 static void board_fit_tag(IDirect3DDevice9 *dev, RECT card, int no, float x, float y);
+static void board_name(IDirect3DDevice9 *dev, RECT card, int no);
+static void board_links(IDirect3DDevice9 *dev);
+// the club's links the game draws, two card numbers and the value 151-255 (data\club_view.txt "link" lines, view.py;
+// club_read fills them, g_board_cs held)
+struct CLink { int a, b, v; };
+static struct CLink g_clink[120];
+static int g_nclink = 0;
 static DWORD line_colour(const char *pos);
 
 // ---- moving cards: drag = move; drop ONTO another card = the two swap places (a bench card onto a pitch card is a
@@ -1129,8 +1147,11 @@ static void board_draw(IDirect3DDevice9 *dev)
         g_cards[i].px = RC(cx - w * 0.5f, cy - h * 0.5f, cx + w * 0.5f, cy + h * 0.5f);
     }
     board_heat(dev);                                           // where the card pointed at plays well, under the cards
+    board_links(dev);                                          // the club's links, as the game draws them
     for (int i = 0; i < g_ncards; i++) if (i != g_drag) draw_card(dev, i, 1.0f, 0);
-    for (int i = 0; i < g_ncards; i++)                         // the tags over every card (a keeper's sat under his DFs)
+    for (int i = 0; i < g_ncards; i++)                         // the names and tags over every card (a keeper's tag
+        if (i != g_drag) board_name(dev, g_cards[i].px, g_cards[i].no);      // sat under his defenders)
+    for (int i = 0; i < g_ncards; i++)
         if (i != g_drag) board_fit_tag(dev, g_cards[i].px, g_cards[i].no, g_cards[i].x, g_cards[i].y);
     if (g_drag >= 0 && g_drop_on >= 0 && g_drop_on < g_ncards) {   // the card it would swap with: a yellow frame
         RECT r = g_cards[g_drop_on].px;
@@ -1138,8 +1159,11 @@ static void board_draw(IDirect3DDevice9 *dev)
         outline(dev, (float)r.left - 3.0f * e, (float)r.top - 3.0f * e, (float)(r.right - r.left) + 6.0f * e,
                 (float)(r.bottom - r.top) + 6.0f * e, 3.0f * e, D3DCOLOR_ARGB(255, 255, 214, 40));
     }
-    if (g_drag >= 0 && g_drag < g_ncards)                      // its tag follows it: the spot under it as it moves
-        board_fit_tag(dev, draw_card(dev, g_drag, 1.12f, 1), g_cards[g_drag].no, g_cards[g_drag].x, g_cards[g_drag].y);
+    if (g_drag >= 0 && g_drag < g_ncards) {                    // its name and tag follow it: the spot under it as it moves
+        RECT r = draw_card(dev, g_drag, 1.12f, 1);
+        board_name(dev, r, g_cards[g_drag].no);
+        board_fit_tag(dev, r, g_cards[g_drag].no, g_cards[g_drag].x, g_cards[g_drag].y);
+    }
     else if (g_hover >= 0 && g_hover < g_ncards && GetTickCount() - g_hover_since >= 3000)
         board_caption(dev, draw_card(dev, g_hover, 2.4f, 1), g_cards[g_hover].no);   // resting on a card 3 s: shown big
                                                // with who it is (350 ms was too eager, 8 s too slow, 1 s too soon -
@@ -1626,6 +1650,59 @@ static void board_fit_tag(IDirect3DDevice9 *dev, RECT card, int no, float x, flo
     put_str(dev, tx + pad, ty + (h - g_cellh * sc) * 0.5f, sc, D3DCOLOR_ARGB(255, 246, 240, 232), r);
     put_str(dev, tx + pad + str_w(r, sc), ty + (h - g_cellh * sc) * 0.5f, sc, v >= 8 ? D3DCOLOR_ARGB(255, 126, 224, 122)
             : v >= 6 ? D3DCOLOR_ARGB(255, 255, 210, 60) : D3DCOLOR_ARGB(255, 255, 107, 85), n);
+}
+
+// a card's name on a dark label under it, as on wccf.online's squad builder (2026-10-15, the owner: "add the names
+// like you did with squad builder but in the formation panel"): the catalogue's name, the card's number without one;
+// at most 1.6 cards wide (a longer name is drawn smaller).  On the pitch and on the bench.  g_board_cs held.
+static void board_name(IDirect3DDevice9 *dev, RECT card, int no)
+{
+    const struct CatCard *c = cat_card(no); char t[28]; float s = g_s, sc = 0.34f * s, h = 13.0f * s, cw, w, x, y;
+    if (!g_font_tex) return;
+    if (c && c->shown[0]) lstrcpynA(t, c->shown, sizeof t);
+    else { _snprintf(t, sizeof t, "#%d", no); t[sizeof t - 1] = 0; }
+    cw = (float)(card.right - card.left);
+    w = str_w(t, sc) + 8.0f * s;
+    if (w < cw) w = cw;
+    if (w > cw * 1.6f) w = cw * 1.6f;
+    x = (float)(card.left + card.right) * 0.5f - w * 0.5f; y = (float)card.bottom + 1.0f * s;
+    set_flat(dev);
+    fill_rect(dev, x, y, w, h, D3DCOLOR_ARGB(225, 12, 9, 7));
+    set_picture(dev, g_font_tex, 1);
+    put_in_rect(dev, RC(x, y, x + w, y + h), sc, D3DCOLOR_ARGB(255, 246, 240, 232), t);
+}
+
+static int board_pitch_card(int no)      // the card on the pitch with this number, -1 = none there (or on the bench)
+{
+    for (int i = 0; i < g_ncards; i++) if (g_cards[i].no == no && g_cards[i].x <= 1.16f) return i;
+    return -1;
+}
+
+// the club's links between two cards on the pitch, as the game draws them (2026-10-15, the owner: "add the links on
+// the formation panel ... include the gold and strong white, and light white"): 151-200 thin white (RGB 255,255,211
+// at alpha 150), 201-254 thick white (255,255,216, alpha 230), 255 thick gold (244,192,18) - WCCF research
+// AFFINITY-2010-11.md 4.2 - each on a dark edge, so it stands apart from the pitch's own white lines; thin first, gold
+// last, all under the cards.  The values are the club card's, as the game keeps them (view.py's "link" lines): a club
+// that has not built a pair up to 151 shows no line, as in the game.  g_board_cs held.
+static void board_links(IDirect3DDevice9 *dev)
+{
+    static const int LOW[3] = { 151, 201, 255 }, HIGH[3] = { 200, 254, 255 };
+    static const DWORD COL[3] = { D3DCOLOR_ARGB(150, 255, 255, 211), D3DCOLOR_ARGB(230, 255, 255, 216),
+                                  D3DCOLOR_ARGB(255, 244, 192, 18) };
+    float e = g_s > 1.0f ? g_s : 1.0f;
+    if (!g_nclink) return;
+    set_flat(dev);
+    for (int pass = -1; pass < 3; pass++)          // -1: every line's dark edge; then thin white, thick white, gold
+        for (int k = 0; k < g_nclink; k++) {
+            int i = board_pitch_card(g_clink[k].a), j = board_pitch_card(g_clink[k].b), v = g_clink[k].v;
+            float w = (v >= 201 ? 4.0f : 2.5f) * e;
+            if (i < 0 || j < 0 || v < 151 || (pass >= 0 && (v < LOW[pass] || v > HIGH[pass]))) continue;
+            fill_line(dev, (float)(g_cards[i].px.left + g_cards[i].px.right) * 0.5f,
+                      (float)(g_cards[i].px.top + g_cards[i].px.bottom) * 0.5f,
+                      (float)(g_cards[j].px.left + g_cards[j].px.right) * 0.5f,
+                      (float)(g_cards[j].px.top + g_cards[j].px.bottom) * 0.5f,
+                      pass < 0 ? w + 2.0f * e : w, pass < 0 ? D3DCOLOR_ARGB(110, 0, 0, 0) : COL[pass]);
+        }
 }
 
 static void note_locked(DWORD col, const char *fmt, ...)
@@ -4197,14 +4274,16 @@ static void club_read(void)
 {
     char p[MAX_PATH], *buf, *line, *next; HANDLE h; DWORD got = 0, size; BY_HANDLE_FILE_INFORMATION fi;
     struct CLine cl[48]; struct CSq sq[16]; struct CWal cw[MAXWAL]; char bak[8][24], state[16], reason[128], sess[16] = "";
-    int ncl = 0, nsq = 0, nbak = 0, ncw = 0, bad = 0;
+    struct CLink lk[120];
+    int ncl = 0, nsq = 0, nbak = 0, ncw = 0, bad = 0, nlk = 0;
     _snprintf(p, MAX_PATH, "%s\\club_view.txt", g_data_dir); p[MAX_PATH - 1] = 0;
     h = CreateFileA(p, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING,
                     FILE_ATTRIBUTE_NORMAL, NULL);
     if (h == INVALID_HANDLE_VALUE) {
         EnterCriticalSection(&g_board_cs);
         if (g_cview_at || strcmp(g_cstate, "noview")) logline("club: no view yet (%s)", p);
-        lstrcpynA(g_cstate, "noview", sizeof g_cstate); g_creason[0] = 0; g_ncl = g_ncsq = g_ncbak = 0; g_cview_at = 0;
+        lstrcpynA(g_cstate, "noview", sizeof g_cstate); g_creason[0] = 0; g_ncl = g_ncsq = g_ncbak = g_nclink = 0;
+        g_cview_at = 0;
         LeaveCriticalSection(&g_board_cs);
         return;
     }
@@ -4247,6 +4326,8 @@ static void club_read(void)
             lstrcpynA(cw[ncw].file, f[1], sizeof cw[0].file); lstrcpynA(cw[ncw].club, f[2], sizeof cw[0].club);
             lstrcpynA(cw[ncw].summary, f[3], sizeof cw[0].summary);
             cw[ncw].dead = nf >= 5 && !strcmp(f[4], "transferred"); ncw++;
+        } else if (!strcmp(f[0], "link") && nf >= 4 && nlk < 120) {
+            lk[nlk].a = atoi(f[1]); lk[nlk].b = atoi(f[2]); lk[nlk].v = atoi(f[3]); nlk++;
         }
     }
     free(buf);
@@ -4255,6 +4336,7 @@ static void club_read(void)
     memcpy(g_csq, sq, sizeof sq[0] * (size_t)nsq); g_ncsq = nsq;
     memcpy(g_cbak, bak, sizeof bak[0] * (size_t)nbak); g_ncbak = nbak;
     memcpy(g_wal, cw, sizeof cw[0] * (size_t)ncw); g_nwal = ncw;
+    memcpy(g_clink, lk, sizeof lk[0] * (size_t)nlk); g_nclink = nlk;
     if (g_wal_armed >= ncw && g_wal_armed != WAL_NEW && g_wal_armed != WAL_FIX) g_wal_armed = -1;   // the list changed
     g_cbad = bad;
     if (g_wal_top >= ncw) g_wal_top = 0;                                       // fewer cards now: back to the first
@@ -4262,13 +4344,13 @@ static void club_read(void)
     lstrcpynA(g_cstate, state, sizeof g_cstate); lstrcpynA(g_creason, reason, sizeof g_creason);
     g_cview_at = ft_q(fi.ftLastWriteTime);
     LeaveCriticalSection(&g_board_cs);
-    logline("club: view read (state %s, %d lines, %d players, %d backups, session %s, %d other cards)", state, ncl,
-            nsq, nbak, sess[0] ? sess : "-", ncw);
+    logline("club: view read (state %s, %d lines, %d players, %d links, %d backups, session %s, %d other cards)", state,
+            ncl, nsq, nlk, nbak, sess[0] ? sess : "-", ncw);
 }
 
-static void club_tick(void)              // the board thread, every pass: the view while the panel is open
+static void club_tick(void)              // the board thread, every pass: the view, for the panel and the board's links
 {
-    if (g_club && (InterlockedExchange(&g_club_dirty, 0) || GetTickCount() - g_cview_check > 1000)) {
+    if (InterlockedExchange(&g_club_dirty, 0) || GetTickCount() - g_cview_check > 1000) {    // (unchanged: no read)
         g_cview_check = GetTickCount();
         club_read();
     }

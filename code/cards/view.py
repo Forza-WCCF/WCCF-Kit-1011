@@ -13,6 +13,8 @@ The view (data\club_view.txt) is ASCII lines for the overlay's ASCII font:
   head|TITLE                               a section
   row|LABEL|VALUE|COLOUR                   w white, g green, y yellow, r red, o orange, d dim
   squad|NUMBER|NAME|POSITION|APPS|GOALS|ASSISTS|CONDITION|INJURY
+  link|CARD|CARD|VALUE                     two of the club's players whose link the game draws as a line: 151-200
+                                           thin white, 201-254 thick white, 255 gold (the FORMATION board's lines)
   session|open / closed / cut / new / none / unreadable      the slot's card session (kit_common.card_session)
   backup|WHEN
   wallet|FILE|CLUB|SUMMARY[|transferred]   your other cards (wallet.py), with every state; "transferred": a
@@ -211,6 +213,12 @@ def build(card=CARD, catalogue=CATALOGUE, backups=BACKUPS, running=RUNNING, card
             p("PLAYER_BACK_NUMBER"), name or "card %d" % no, pos or "?", p("PLAYER_PARTICIPATE_NUM"),
             p("PLAYER_OFFICIAL_GOAL"), p("PLAYER_OFFICIAL_ASSIST"), p("PLAYER_CONDITION"), injury)))
     lines += [s for _o, _i, s in sorted(squad)]                         # GK, DF, MF, FW, then card order: the game's
+    # the links (2026-10-15, the owner: "add the links on the formation panel ... include the gold and strong white, and
+    # light white"): one value 0..255 per pair of the 16 slots, in the order (0,1) (0,2) ... (0,15) (1,2) ... (14,15),
+    # drawn by the game from 151 (WCCF research AFFINITY-2010-11.md 3.1, 4.2)
+    coop, nos = d[("Club", 0, "CLUB_PLAYER_COOPERATION_INFO")], [d[("Player", i, "PLAYER_CARD_NO")][0] for i in range(16)]
+    pairs = [(i, j) for i in range(16) for j in range(i + 1, 16)]
+    lines += ["link|%d|%d|%d" % (nos[i], nos[j], v) for (i, j), v in zip(pairs, coop) if v >= 151 and nos[i] and nos[j]]
     return lines + tail
 
 

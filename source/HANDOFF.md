@@ -37,6 +37,7 @@ The source of every compiled program the kit ships, the scripts that build, chec
 | `test_witness.py` | the server's witness (a card per finished match): who sat where (leases.json, a seat freed a moment ago, one address with two accounts), what goes to the website (a session's start, each match's start, its end), refusals, out of reach and tried again, files to done\ and never sent twice, the secret in no line, no secret = not started |
 | `test_take_seat.py` | the seat an online PC takes from the seat desk's answer |
 | `test_wallet_transferred.py` | after a manager transfer the old card shows as transferred |
+| `test_club_links.py` | the club card's links reach the CLUB CARD view (from 151, the game's pair order), for the FORMATION board's lines |
 
 | Folder | What is in it |
 |---|---|

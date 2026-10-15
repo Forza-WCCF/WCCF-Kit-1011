@@ -7,7 +7,7 @@ catalogue of every player card.
 |---|---|
 | `catalogue.py` | makes the CATALOGUE (`data\cache\catalogue.tsv` and a picture per card) from the player's own game files - only reads the game (setup.py runs it) |
 | `formation.py` | every club card keeps its own cards on the table (the FORMATION board); play.py lays the slot card's table out at a start and keeps it at a stop (the online club's board too: `online\u<account>\club.board`) |
-| `view.py` | writes `data\club_view.txt`, the club card as the game reads it, for the CLUB CARD panel - read-only (the panel's helper runs it when the card changes) |
+| `view.py` | writes `data\club_view.txt`, the club card as the game reads it, for the CLUB CARD panel and the FORMATION board's link lines - read-only (the panel's helper runs it when the card changes) |
 | `wallet.py` | your other club cards (`data\save\cards\`) and the card in the slot: switching cards, and a manager transfer's second card |
 | `decode.py` | reads a club card file and checks it the way the game does - read-only; also a command-line tool |
 | `edit.py` | changes fields on a club card with the game's own checks, a backup first (CLEAR BAD ENDINGS uses it; also a command-line tool) |
