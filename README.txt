@@ -11,6 +11,22 @@ WHAT IT IS
   or a game controller's buttons, SETTINGS, and CLUB CARD, your club card and your other clubs.
   The kit holds none of Sega's files. Everything that comes from the game is made by setup from YOUR copy.
 
+NEW IN KIT 7
+  - Online with a wccf.online account. The first time you play online, PLAY shows a short code and opens wccf.online:
+    log in there (or register) and approve the code - the game carries on by itself. Online you then play your
+    account's own club, a fresh start with 11 white cards; every finished online match earns a card (NEW CARD after
+    the locker room), and your club card is kept on wccf.online, so it is the same on any PC. Your other club cards
+    keep playing on your PC. (ONLINE, below.)
+  - Fixed: the game could stop taking your buttons for the rest of a session after a short freeze of the kit's I/O
+    board helper. A freeze now costs only the moment it lasts.
+  - Online: a match against another player no longer turns into a CPU match when a router changes the game's port at
+    kick-off, and two players signed in from one house both get their cards.
+  - English and Italian: the bar under the screen between matches no longer says "please wait" in Japanese, and the
+    red notice says what is true: Sega's network is closed. After UPDATE, say yes when SETUP offers to put the
+    English in again.
+  - Hosting a server: any two free players are paired with each other at random, whatever their clubs' strength.
+  - Updating from kit 6: SETUP's UPDATE, then yes to "set up now?". Your clubs, keys and settings stay.
+
 NEW IN KIT 6
   - Your club card is safer: a file held by another program (an antivirus scan, a backup tool) can no longer leave
     a half-written card, and a damaged card no longer stops the game - you get a fresh card and the old one is kept.
@@ -170,7 +186,8 @@ PLAY
   when you report a problem.
 
 SETTINGS (left side, under CARD)
-  NOW: the link to the server, your card's session, its bad endings, its last save and backup, the game's text.
+  NOW: the link to the server, your card's session, its bad endings, its last save and backup, the game's text, and
+  your wccf.online ACCOUNT with SIGN OUT (click twice; done at the next start).
   NEXT START: THIS PC (everything on this PC) or ONLINE with a server's address (the cabinets on this PC play on
   that server), and ENGLISH or JAPANESE (does what SETUP.exe's GAME LANGUAGE does, at the next start). They are kept in
   data\panel.txt. RESTART NOW (click it twice) starts the game again with them - not during a match. When the
@@ -193,6 +210,8 @@ CLUB CARD (left side, under SETTINGS)
   CLEAR BAD ENDINGS (under CARD HEALTH, while the card has a bad ending or its last session was cut): click twice,
   and the game restarts with the card's bad endings back to 0 (the old card goes to data\save\backup first). Not
   during a match. Trade rights or money the game already took for them stay as they are.
+  Your online club (ONLINE, below) is kept on wccf.online: YOUR CARDS, NEW CLUB CARD and CLEAR BAD ENDINGS are off
+  for it.
   Any other field of the card: python\python.exe code\cards\edit.py data\save\seat1_club.bin --help
   (close the game first; it shows what it would change and writes only with --write).
 
@@ -218,6 +237,13 @@ ONLINE (play with others on one server)
   in SETTINGS. Online, each PC runs only its own cabinet - no projector window; the server does not wait for one
   (PLAY.exe local still has its own projector). The PC that hosts can play too: "PLAY.exe remote"
   with its own local address (ipconfig shows it).
+  Your wccf.online account: the first time you play online, PLAY shows a short code (in its window and in a small
+  Windows box) and opens wccf.online in your browser. Log in there - or register - and approve the code: the game
+  starts by itself, and this PC stays signed in (data\account.json, never sent with your logs). Online you play your
+  account's own club (data\save\online\): a new account gets 11 white cards (1 GK, 4 DF, 4 MF, 2 FW), the CATALOGUE
+  lists only the cards your account owns, and every finished online match adds one - shown after the locker room
+  (NEW CARD). Your club card goes up to wccf.online after each match and comes back at each online start, so it is
+  the same on any PC. Not signed in: PLAY plays on this PC instead, with your own club cards, and says why.
   When an online game ends badly - the game crashed, or its link to the server was lost (Error 3000) - the kit sends
   this PC's logs to that server by itself, the same as SEND LOGS: never your club card, and your Windows user name and
   PC name are blanked out. If the game crashed, a memory snapshot of that moment goes with them, so the cause can be
@@ -307,5 +333,6 @@ FOLDERS
              source\launcher) - source\README.txt: how they were built
   python\    Python 3.13 (python.org's embeddable build) with Pillow
   data\      made on your PC: settings (panel.txt), your club card (save\, with backup\ and your other clubs in
-             cards\), your keys (keys.txt), logs, and cache\ (the catalogue and card pictures setup makes from
-             your game - made again if deleted)
+             cards\, and your online club in online\), your keys (keys.txt), your wccf.online sign-in
+             (account.json), logs, and cache\ (the catalogue and card pictures setup makes from your game - made
+             again if deleted); with English or Italian on, english_pictures\ (pictures the kit hands the game)

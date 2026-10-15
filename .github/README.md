@@ -19,14 +19,14 @@ Community-developed launcher, hardware compatibility tools and an in-game panel 
 
 > **The game is not included, and the kit holds none of Sega's files.** It works with your own copy: what it needs from the game, SETUP makes from that copy, on your PC.
 
-## New in Kit 6
+## New in Kit 7
 
-- **Safe with Windows Defender** - the kit's helper has its own name (`wccfk.dll`) instead of posing as a Windows file, and every program carries its name and version.
-- **Online, just your game** - no projector window on the players' PCs; the server no longer waits for one.
-- **A safer club card** - never half-written by another program holding the file, a damaged card never stops the game, and no 12-hour cut mid-match.
-- **A steadier server** - it takes the players' messages only whole: the likely cause of "WCCF CONTROL NOT FOUND" removed.
-- **Problems report themselves** - when an online game ends badly, its logs (with a memory snapshot of a crash) reach the server by themselves. Never your club card.
-- **ITALIANO**, the players' full names in English, and simpler folders.
+- **Play online with a wccf.online account** - sign in once with a short code; online you play your account's own club, kept on wccf.online, starting with 11 cards and earning a card for every finished match.
+- **Buttons that never stop** - a short freeze of the kit's I/O helper could leave the game ignoring every button until it was closed; now a freeze costs only the moment it lasts.
+- **More player against player** - a router changing the game's port at kick-off no longer turns the match into a CPU match, the server pairs any two free players at random, and two players in one house both get their cards.
+- **More English** - the "please wait for the next match" line between matches, and an honest notice: Sega's network is closed.
+
+Every change, kit by kit: [CHANGELOG.md](/CHANGELOG.md).
 
 ## What you get
 
@@ -39,6 +39,7 @@ Community-developed launcher, hardware compatibility tools and an in-game panel 
 | **Club card** | your club as the game reads it, more than one club, safe saves with backups, CLEAR BAD ENDINGS |
 | **Languages** | English (about 7,200 lines of screen text, the players' names, money in dollars) or Italiano - built from your own game files |
 | **Online play** | one PC hosts, the others join; matches between players go through the host, so nobody installs anything else |
+| **A wccf.online account** | online, your own club kept on [wccf.online](https://wccf.online): 11 starter cards and a card for every finished match |
 
 ## Quick start
 
@@ -62,6 +63,7 @@ Or in the game: SETTINGS > NEXT START > **ONLINE**, type the server's address, t
 - The host lets in **TCP 20002, 20030 and 20050** and **UDP 20040** (at home behind a router: forward them to the host).
 - Each PC runs only its own cabinet - online there is no projector window on the players' PCs.
 - The host can play too: `PLAY.exe remote` with its own local address.
+- **Your wccf.online account:** the first online start shows a short code and opens wccf.online - log in or register, approve the code, and the game starts. Online you play your account's own club; without a sign-in, PLAY plays on your PC instead.
 
 ```mermaid
 flowchart LR

@@ -15,7 +15,8 @@ tells you if it is missing). Python is inside the kit.
 ### Play
 `PLAY.exe` (two windows: the projector and seat 1; online only seat 1 - no projector on players' PCs). Quit by
 closing the game's window. Online: SETTINGS > NEXT START: **ONLINE**, type the server's address, then **RESTART
-NOW** (click it twice).
+NOW** (click it twice). The first online start asks you to sign in to [wccf.online](https://wccf.online): PLAY shows a
+short code - log in (or register) there and approve it.
 
 The zip's SHA-256: `{SHA256}`
 
