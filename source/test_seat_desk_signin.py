@@ -3,7 +3,9 @@
 website's who-am-I beside it. Without data\\require_signin.txt a PC that is not signed in still gets a seat; with it,
 "ERR sign in: ..."; a good token gets a seat and the log names the account; a refused token gets "ERR sign in
 again"; the website down lets a token in unchecked; the token is never in the desk's log; and the real seat.py, signed
-in, holds a seat as its account (check.ps1 runs it; loopback only, no game, no real website).
+in, holds a seat as its account.  The club card word (2026-10-15): the lease keeps the card a signed-in seat plays,
+seat.py says it, and a desk from before it is asked again without it, the sign-in kept (check.ps1 runs it; loopback
+only, no game, no real website).
     python source\\test_seat_desk_signin.py"""
 import json
 import os
@@ -38,7 +40,7 @@ sys.path.insert(0, os.path.join(KIT, "code"))
 from server import seat_desk as D  # noqa: E402
 from online import seat as S  # noqa: E402
 
-fails = []
+fails, checks = [], [0]
 GOOD = {"a1" * 32: (7, "Tester"), "b2" * 32: (8, "Second"), "c3" * 32: (9, "Third"), "d4" * 32: (10, "Fourth")}
 REVOKED = "e5" * 32
 UNCHECKED = "f6" * 32
@@ -46,6 +48,7 @@ site = {"down": False}
 
 
 def check(cond, what):
+    checks[0] += 1
     if not cond:
         fails.append(what)
         print("FAILED: " + what)
@@ -126,6 +129,18 @@ reply, c = ask("WANT SEAT 5 TOKEN " + "b2" * 32)
 check(reply == "SEAT 5 PROJECTOR 0", "WANT SEAT 5 + a good token gets seat 5 (%r)" % reply)
 c.close()
 
+# the club card word (2026-10-15): a signed-in seat's lease keeps the card it plays (leases.json, for the witness)
+reply, c = ask("WANT CARD 26548962 TOKEN " + good)
+check(reply.startswith("SEAT "), "WANT CARD c + a good token gets a seat (%r)" % reply)
+with open(os.environ["WCCF_LEASES_FILE"], encoding="utf-8") as f:
+    lease = json.load(f).get(reply.split()[1] if reply.startswith("SEAT ") else "", {})
+check(lease.get("card") == 26548962 and lease.get("uid") == 7, "leases.json: the seat's club card (%r)" % lease)
+check("club card 26548962" in log_text(), "the desk's log names the club card")
+c.close()
+reply, c = ask("WANT SEAT 6 CARD 26548962")
+check(reply == "SEAT 6 PROJECTOR 0", "a card word without a sign-in: a seat as before (%r)" % reply)
+c.close()
+
 # a token the website refuses: no seat
 reply, c = ask("WANT TOKEN " + REVOKED)
 check(reply.startswith("ERR sign in again"), "a refused token: ERR sign in again (%r)" % reply)
@@ -148,9 +163,15 @@ check("let in unchecked" in log_text(), "the log says it was let in unchecked")
 c.close()
 site["down"] = False
 
-# the real seat.py, signed in: it holds a seat, and the desk knows who it is
+# the real seat.py, signed in: it holds a seat, and the desk knows who it is - and which club card it plays
 with open(os.environ["WCCF_ACCOUNT_FILE"], "w", encoding="utf-8") as f:
     json.dump({"token": "d4" * 32, "username": "Fourth"}, f)
+CARDFILE = os.path.join(TMP, "club.bin")
+card_raw = bytearray(4112)
+card_raw[124:128] = (22481763).to_bytes(4, "big")              # block 6, bytes 12-15: the card's serial
+with open(CARDFILE, "wb") as f:
+    f.write(card_raw)
+os.environ["WCCF_CLUB_CARD"] = CARDFILE
 out = os.path.join(TMP, "lease.json")
 threading.Thread(target=S.main, args=(["127.0.0.1", out, "3"],), daemon=True).start()
 for _ in range(50):
@@ -163,7 +184,8 @@ try:
 except (OSError, ValueError):
     got = {}
 check("seat" in got, "seat.py, signed in, holds a seat (%r)" % got)
-check("signed in as Fourth (uid 10)" in log_text(), "the desk knows seat.py's account")
+check("signed in as Fourth (uid 10), club card 22481763" in log_text(), "the desk knows seat.py's account and club card")
+del os.environ["WCCF_CLUB_CARD"]
 
 # seat.py when the desk refuses the sign-in: the answer play.py turns into "play on this PC"
 with open(os.environ["WCCF_ACCOUNT_FILE"], "w", encoding="utf-8") as f:
@@ -220,10 +242,58 @@ check(got3.get("seat") == 2, "an older seat desk: seat.py still gets a seat (%r)
 check(len(old_lines) == 2 and "TOKEN" in old_lines[0] and old_lines[1] == "WANT",
       "it asked once with the token, then again without it (%r)" % [ln[:12] for ln in old_lines])
 
+# a seat desk from before the club card word (kit 7 test builds before 2026-10-15) knows TOKEN, not CARD: seat.py asks
+# again without the card - and keeps its sign-in
+MID = free_port()
+mid_lines, mid_kept = [], []
+
+
+def mid_desk():
+    srv = socket.socket()
+    srv.bind(("127.0.0.1", MID))
+    srv.listen(4)
+    srv.settimeout(10)
+    for _ in range(2):
+        try:
+            c, _addr = srv.accept()
+        except OSError:
+            return
+        line = c.recv(256).decode("ascii", "replace").strip()
+        mid_lines.append(line)
+        if "CARD" in line:
+            c.sendall(b"ERR say WANT or WANT SEAT n\n")
+            c.close()
+        else:
+            c.sendall(b"SEAT 3 PROJECTOR 0\n")
+            mid_kept.append(c)
+
+
+threading.Thread(target=mid_desk, daemon=True).start()
+os.environ["WCCF_CLUB_CARD"] = CARDFILE
+S.PORT, desk_port = MID, S.PORT
+out4 = os.path.join(TMP, "lease4.json")
+threading.Thread(target=S.main, args=(["127.0.0.1", out4, "2"],), daemon=True).start()
+for _ in range(50):
+    if os.path.exists(out4):
+        break
+    time.sleep(0.1)
+S.PORT = desk_port
+del os.environ["WCCF_CLUB_CARD"]
+try:
+    with open(out4, encoding="utf-8") as f:
+        got4 = json.load(f)
+except (OSError, ValueError):
+    got4 = {}
+check(got4.get("seat") == 3, "a seat desk without the card word: seat.py still gets a seat (%r)" % got4)
+check(len(mid_lines) == 2 and "CARD 22481763" in mid_lines[0] and "TOKEN" in mid_lines[0] and "CARD" not in mid_lines[1]
+      and "TOKEN" in mid_lines[1], "it asked with the card, then again without it - the sign-in kept (%r)" %
+      [ln[:24] for ln in mid_lines])
+
 # never a token in the desk's log
 text = log_text()
 check(not any(t in text for t in list(GOOD) + [REVOKED, UNCHECKED]), "no token is ever written to the desk's log")
 
 web.shutdown()
-print("seat desk sign-in: %d failed" % len(fails) if fails else "seat desk sign-in: all 18 checks passed")
+print("seat desk sign-in: %d of %d failed" % (len(fails), checks[0]) if fails else
+      "seat desk sign-in: all %d checks passed" % checks[0])
 sys.exit(1 if fails else 0)

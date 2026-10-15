@@ -52,6 +52,10 @@ game is not included. Newest first; each date is the day that kit was built.
   need the English (or Italian) put in again: after UPDATE, SETUP offers it.
 
 ### Fixed
+- Online: two signed-in players in one house (one internet address) now each get their cards and keep their club
+  saves. The server could not tell them apart and sent nothing for either; kit 7 now tells the server which club card
+  it plays, and the server matches it with the card in each match. (A server must update too; an older one is asked
+  again without the card.)
 - Building the kit's programs (`source\build.ps1`) in a folder whose path has a space in it.
 - Hosting a server: a match between two players no longer falls back to a CPU match when a player's router gives the
   game a new port as the match starts. The relay took the new port for a stranger and held the seat for 30 seconds,

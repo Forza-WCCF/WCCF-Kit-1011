@@ -16,6 +16,11 @@ or refused this PC's (play.py then plays on this PC and says why).
 THE SIGN-IN (2026-10-14): when this PC is signed in (online\account.py, data\account.json) every WANT line ends with
 "TOKEN <the token>" - the first claim and every reclaim. The token is read from the file here, so it never travels on
 a command line, and it is never written to a log.
+
+THE CLUB CARD (2026-10-15): online, play.py gives the account's club card (WCCF_CLUB_CARD); its id goes before the
+token, "CARD <id>", so the server can tell two signed-in players behind one address (one house) apart.  A desk from
+before that answers "ERR say ...": the same claim again without the card, the sign-in kept (then, for a desk from
+before sign-ins, without the token too).
 """
 import json
 import os
@@ -41,6 +46,18 @@ def signed():
     if not (isinstance(token, str) and 0 < len(token) <= 128 and all(c in "0123456789abcdef" for c in token)):
         return b""
     return b" TOKEN " + token.encode("ascii")
+
+
+def card_word():
+    """b" CARD <id>" - the club card this PC plays online (WCCF_CLUB_CARD): its serial (block 6, bytes 12-15, big-endian),
+    which the game writes into the club's data as SYSTEM_CARD_ID - else b"" (offline, or not a card file)"""
+    try:
+        with open(os.environ.get("WCCF_CLUB_CARD") or "", "rb") as f:
+            raw = f.read(4113)
+    except OSError:
+        return b""
+    serial = int.from_bytes(raw[124:128], "big") if len(raw) == 4112 else 0
+    return b" CARD %d" % serial if serial >= 10000000 else b""
 
 
 def log(msg):
@@ -82,10 +99,10 @@ def hold(conn, end):
 def main(argv):
     ip, out, life = argv[0], argv[1], float(argv[2])
     asked = int(argv[3]) if len(argv) > 3 else None
-    sign = signed()
+    sign, card = signed(), card_word()
 
     def want(seat):
-        return (b"WANT SEAT %d" % seat if seat else b"WANT") + sign + b"\n"
+        return (b"WANT SEAT %d" % seat if seat else b"WANT") + card + sign + b"\n"
     end = time.time() + life
 
     # the first claim - the only write to OUT_FILE (play.py reads it to set up the game)
@@ -96,6 +113,12 @@ def main(argv):
         return 1
     try:
         words = send_want(conn, want(asked))
+        if card and words[:2] == ["ERR", "say"]:                    # a seat desk from before the card word: the same
+            conn.close()                                            # claim again without it, the sign-in kept
+            card = b""
+            log("this server's seat desk does not know the club card word - asking without it")
+            conn = socket.create_connection((ip, PORT), timeout=6)
+            words = send_want(conn, want(asked))
         if sign and words[:2] == ["ERR", "say"]:                    # a seat desk from before the sign-in (kit 6 and
             conn.close()                                            # older servers - hosts update when they like):
             sign = b""                                              # the same claim again, without the token

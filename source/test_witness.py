@@ -69,6 +69,41 @@ seats.look(2000.0)
 check("two accounts at one address (one house): whose it was cannot be told", seats.at("1.2.3.4")[0] == "none" and
       "2 signed-in accounts" in seats.at("1.2.3.4")[1], seats.at("1.2.3.4"))
 
+# one house, two players (2026-10-15): kit 7's seat lease says which club card each seat plays; the card id in the
+# message names the seat
+leases({"1": {"ip": "1.2.3.4", "uid": 7, "username": "a", "card": 26548962},
+        "3": {"ip": "1.2.3.4", "uid": 8, "username": "b", "card": 22481763}})
+seats.look(2100.0)
+check("one house: the message's club card names the player", seats.at("1.2.3.4", 22481763) ==
+      ("ok", {"seat": "3", "uid": 8, "username": "b"}) and seats.at("1.2.3.4", 26548962)[1].get("uid") == 7,
+      (seats.at("1.2.3.4", 22481763), seats.at("1.2.3.4", 26548962)))
+check("... a card neither seat plays, or none in the message: cannot be told", seats.at("1.2.3.4", 12345678)[0] == "none"
+      and seats.at("1.2.3.4")[0] == "none", seats.at("1.2.3.4", 12345678))
+
+
+def club(card_id):
+    """a club's data (1,676 bytes) with SYSTEM_CARD_ID = card_id at bit 263, the bits in the website's order"""
+    data = bytearray(0x68C)
+    for k in range(32):
+        if card_id >> (31 - k) & 1:
+            data[(263 + k) >> 3] |= 0x80 >> ((263 + k) & 7)
+    return bytes(data)
+
+
+def start_msg(card_id):                        # ENTRY SVR / TEAM DATA: +0x38 the size (u16), +0x3a the data
+    return bytes(0x38) + (0x68C).to_bytes(2, "little") + club(card_id) + bytes(0x1044 - 0x3a - 0x68C)
+
+
+def end_msg(card_id):                          # TEAM DATA RSLT: +0 the size (u32), +4 the data
+    return (0x68C).to_bytes(4, "little") + club(card_id) + bytes(0x1490 - 4 - 0x68C)
+
+
+check("the club card's id read from a session's start, a match's start and a match's end",
+      W.msg_card("entry", start_msg(22481763)) == 22481763 and W.msg_card("team", start_msg(26548962)) == 26548962 and
+      W.msg_card("rslt", end_msg(22481763)) == 22481763)
+check("... and none from a message too short to hold it", W.msg_card("rslt", b"RS") is None and
+      W.msg_card("entry", b"E" * 0x40) is None)
+
 seats = W.Seats(LEASES)
 leases({"1": {"ip": "127.0.0.1", "uid": 7, "username": "tester"}})
 rslt = kept("20261014-120000-1-rslt-127.0.0.1_52046.bin", b"RSLT" * 100)
@@ -113,6 +148,20 @@ kept("20261014-122000-5-rslt-127.0.0.1_52046.bin")
 _r, out = run(W.tick, FOLDER, IDENT, seats, retry, 4000.0)
 check("refused by the website (a wrong secret): said, not tried again", "refused by wccf.online" in out and
       not [f for f in os.listdir(FOLDER) if f.endswith(".bin")], out)
+
+# one house end to end: two signed-in players behind 1.2.3.4 finish their matches; each end goes to its own account
+answer.update(status=200, body={"card_no": 77, "why": "a finished match"})
+posts.clear()
+seats = W.Seats(LEASES)
+leases({"1": {"ip": "1.2.3.4", "uid": 7, "username": "a", "card": 26548962},
+        "3": {"ip": "1.2.3.4", "uid": 8, "username": "b", "card": 22481763}})
+kept("20261015-010000-7-rslt-1.2.3.4_5000.bin", end_msg(22481763))
+kept("20261015-010001-8-rslt-1.2.3.4_5001.bin", end_msg(26548962))
+kept("20261015-010002-9-entry-1.2.3.4_5000.bin", start_msg(99999999))     # a card neither plays: not sent
+_r, out = run(W.tick, FOLDER, IDENT, seats, retry, 5000.0)
+check("one house end to end: each match's end goes to its own player's account, an unknown card nowhere",
+      sorted((p[1]["kind"], p[1]["uid"]) for p in posts) == [("rslt", 7), ("rslt", 8)] and "cannot be told" in out,
+      (posts, out))
 
 data = os.path.join(TMP, "data")
 os.makedirs(data)

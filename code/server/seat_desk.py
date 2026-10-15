@@ -41,6 +41,11 @@ website refuses (revoked, banned): "ERR sign in again: ..." and no seat.  The we
 (never lock everyone out because the website is down).  No token: let in - unless data\require_signin.txt exists
 (looked at on every claim, so switching it needs no restart): then "ERR sign in: ...", and kit 7 plays on its own PC
 instead and says why.  The lease remembers the account; the log names it, never the token.
+
+THE CLUB CARD WORD (2026-10-15): kit 7 also says which club card it plays: "WANT [SEAT n] [CARD c] [TOKEN t]", c = the
+card's id (its serial, which the game writes into the club's data as SYSTEM_CARD_ID).  A signed-in seat's lease keeps
+it (leases.json "card"), so the witness can tell two signed-in players behind ONE address (one house) apart by the card
+id in each message.  An older desk answers a CARD word with "ERR say ..."; online\seat.py then asks without it.
 """
 import hashlib
 import json
@@ -142,7 +147,8 @@ def publish():
     match): each seat's address and account - never a token.  Lock held.  Never raises."""
     if not leases_file:
         return
-    out = {str(s): {"ip": p.rsplit(":", 1)[0], "uid": (a or {}).get("uid"), "username": (a or {}).get("username")}
+    out = {str(s): dict({"ip": p.rsplit(":", 1)[0], "uid": (a or {}).get("uid"), "username": (a or {}).get("username")},
+                        **({"card": a["card"]} if a and a.get("card") else {}))      # the club card it plays (kit 7)
            for s, (p, _lid, a) in leases.items()}
     try:
         with open(leases_file + ".tmp", "w", encoding="utf-8") as f:
@@ -287,6 +293,10 @@ def serve(conn, peer):
             conn.sendall(b"ERR sign in: this server needs a wccf.online account - update the kit and start again\n")
             log("%s: refused - not signed in, and this server needs it" % peer)
             return
+        if len(words) >= 3 and words[-2] == "CARD" and words[-1].isdigit():  # the club card it plays (2026-10-15)
+            if account:
+                account = dict(account, card=int(words[-1]))
+            words = words[:-2]
         with lock:
             game = in_game.now()
             others = {s: a for s, a in game.items() if a != ip}     # seats another address has in the game
@@ -317,8 +327,9 @@ def serve(conn, peer):
             publish()
             conn.sendall(b"SEAT %d PROJECTOR 0\n" % seat)
             log("%s: seat %d - taken now: %s" % (peer, seat, taken()))
-            log("%s: seat %d is %s" % (peer, seat, "signed in as %s (uid %s)" % (account["username"], account["uid"])
-                                        if account else "not signed in"))
+            log("%s: seat %d is %s" % (peer, seat, "signed in as %s (uid %s)%s" % (
+                account["username"], account["uid"], ", club card %s" % account["card"] if account.get("card") else "")
+                if account else "not signed in"))
         while True:
             if read_line(conn, buf) == "PING":
                 conn.sendall(b"PONG\n")
