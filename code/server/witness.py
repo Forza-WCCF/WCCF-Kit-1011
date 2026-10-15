@@ -86,9 +86,18 @@ class Seats:
         except (OSError, ValueError):
             leases = {}
         for seat, lease in (leases.items() if isinstance(leases, dict) else []):
-            if isinstance(lease, dict) and isinstance(lease.get("uid"), int) and lease.get("ip"):
+            if not isinstance(lease, dict) or not lease.get("ip"):
+                continue
+            uid = lease["uid"] if isinstance(lease.get("uid"), int) else None
+            # the desk gave this seat again at the same address, to nobody signed in or to another account: whoever
+            # sat there before stops counting at once - a freed seat counts RECENT seconds only until it is taken again
+            # (2026-10-15, the owner's test: ONLINE, then RESTART NOW into DREAM TEAM - the seat taken again 7 s later,
+            # not signed in - and the DREAM TEAM session's first two reports went to the website as his account's)
+            for k in [k for k in self.seen if k[0] == seat and k[1] == lease["ip"] and k[2] != uid]:
+                del self.seen[k]
+            if uid is not None:
                 card = lease.get("card") if isinstance(lease.get("card"), int) else None
-                self.seen[(seat, lease["ip"], lease["uid"])] = (now, lease.get("username") or "?", card)
+                self.seen[(seat, lease["ip"], uid)] = (now, lease.get("username") or "?", card)
         self.seen = {k: v for k, v in self.seen.items() if now - v[0] <= RECENT}
 
     def at(self, ip, card=None):

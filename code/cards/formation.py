@@ -38,11 +38,13 @@ CARD = os.path.join(K.SAVE, "seat1_club.bin")
 UNKNOWN = "boards_unknown"
 MATCH = 11                     # a card's registered players among a table's cards that make an unowned table its own
 # where the board's "+ CARD" puts a card (wccfpanel.c board_add_locked: x -1..+1 touchline to touchline, y -1 the far
-# goal line .. +1 the own goal line); the bench boxes beside the pitch (BENCH_X, BENCH_Y)
+# goal line .. +1 the own goal line); the bench boxes beside the pitch (BENCH_X, BENCH_Y). Each inside the game's own
+# line for it (2026-10-16, read from the game: FW from y -0.4762 up - 25 m past halfway; MF down to y 0.2857 - 15 m
+# inside the own half; the keeper box y > 0.8): the forwards stood at y -0.45, inside the game's MF line, until then
 SPOTS = [("GK", 0.0, 0.9),
          ("DF", -0.6, 0.55), ("DF", -0.2, 0.6), ("DF", 0.2, 0.6), ("DF", 0.6, 0.55),
-         ("MF", -0.6, 0.1), ("MF", -0.2, 0.15), ("MF", 0.2, 0.15), ("MF", 0.6, 0.1),
-         ("FW", -0.25, -0.45), ("FW", 0.25, -0.45)]
+         ("MF", -0.6, 0.0), ("MF", -0.2, 0.05), ("MF", 0.2, 0.05), ("MF", 0.6, 0.0),
+         ("FW", -0.25, -0.7), ("FW", 0.25, -0.7)]
 BENCH = [(1.24, -0.68), (1.24, -0.34), (1.24, 0.0), (1.24, 0.34), (1.24, 0.68)]
 
 

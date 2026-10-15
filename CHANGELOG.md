@@ -15,9 +15,12 @@ game is not included. Newest first; each date is the day that kit was built.
 - Positions on the FORMATION BOARD: point at a card (on the pitch, or in the CATALOGUE) and the pitch dims a little
   and glows where he plays well, from his card's own 16 role ratings (pale yellow for a few points, deep orange for
   a 10); each card on the pitch has a tag with his rating for the spot he stands in ("CB 10": the number green for 8
-  or more, yellow for 6-7, red below), and it follows a card you drag, so you can find the spot that suits him. Which
-  role a spot means is the kit's reading of the pitch, with the same zones as wccf.online's squad builder: the
-  board's own 4-4-2 reads ST, SH and CH, SB and CB, GK, and a spot reads the same as its mirror on the other wing.
+  or more, yellow for 6-7, red below), and it follows a card you drag, so you can find the spot that suits him. The
+  lines are the game's own, read out of the game: FW from 25 m past halfway, MF down to 15 m inside your half (the
+  board's darker band), DF below, and the game's keeper box - so a tag turns from a midfield role to a defence role
+  exactly where the game's own colour does. Which role a spot means inside a line is the kit's reading (FW: ST/PP,
+  then SS by the MF line; MF: BT/OH, CH, then DH by the DF line; DF: WB/CB, CB/SB, SW/LIB), the same as on
+  wccf.online's squad builder; a spot reads the same as its mirror on the other wing.
 - Names and links on the FORMATION BOARD: each card has its player's name under it (on the pitch and on the bench),
   and your club's links are drawn between the cards on the pitch as the game draws them - a thin white line from a
   link of 151, a thick white line from 201, gold at 255. They are read from your club card (the CLUB CARD panel's
@@ -32,6 +35,14 @@ game is not included. Newest first; each date is the day that kit was built.
 - Hosting a server: random pairing in a free round now pairs two clubs whose matching values are at most 6500 apart
   (was: any two). Every real club seen so far is within 4,050 of every other, so ONLINE players still meet each other;
   a DREAM TEAM club reports the top value, 16383, so it meets only DREAM TEAM clubs.
+
+### Fixed
+- The FORMATION BOARD's "+ CARD" (and a new club laid out by the kit) put its two forwards inside the game's own MF
+  line, so the game played them as midfielders. The forwards now stand in the FW line, and the midfield at halfway.
+- Hosting a server: a player who switched from ONLINE to DREAM TEAM with RESTART NOW had the DREAM TEAM session's
+  first two reports sent to wccf.online as his account's: the server kept counting a seat for two minutes after it
+  was freed, even once the same seat was taken again without a sign-in. A seat given again now stops counting the
+  account that sat there at once (and a second account at that address is no longer "cannot be told" meanwhile).
 
 ## Kit 7 - 2026-10-15
 

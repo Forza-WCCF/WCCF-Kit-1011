@@ -64,6 +64,30 @@ seats.look(1000.0 + W.RECENT - 1)
 check("a seat freed a moment ago still counts (a quick quit after the locker room)", seats.at("1.2.3.4")[0] == "ok")
 seats.look(1000.0 + W.RECENT + 1)
 check("... not after RECENT seconds", seats.at("1.2.3.4")[0] == "none")
+
+# the owner's test (2026-10-15): ONLINE, then RESTART NOW into DREAM TEAM - the desk gave the same seat at the same
+# address again 7 s later, not signed in, and the DREAM TEAM session's first reports went out as his account's
+seats = W.Seats(LEASES)
+leases({"2": {"ip": "1.2.3.4", "uid": 7, "username": "tester", "card": 21094842}})
+seats.look(1500.0)
+leases({})
+seats.look(1501.0)
+check("a seat just freed still counts", seats.at("1.2.3.4")[0] == "ok")
+leases({"2": {"ip": "1.2.3.4", "uid": None, "username": None}})
+seats.look(1507.0)
+check("... until the desk gives that seat again, not signed in (into DREAM TEAM): nobody, at once",
+      seats.at("1.2.3.4")[0] == "none", seats.at("1.2.3.4"))
+leases({"2": {"ip": "1.2.3.4", "uid": 7, "username": "tester"}})
+seats.look(1600.0)
+leases({"2": {"ip": "1.2.3.4", "uid": 9, "username": "other"}})
+seats.look(1610.0)
+check("... or to another account: only the new one counts (both would be 'cannot be told' for RECENT seconds)",
+      seats.at("1.2.3.4") == ("ok", {"seat": "2", "uid": 9, "username": "other"}), seats.at("1.2.3.4"))
+seats = W.Seats(LEASES)
+leases({"1": {"ip": "1.2.3.4", "uid": 7, "username": "a"}, "3": {"ip": "1.2.3.4", "uid": None, "username": None}})
+seats.look(1700.0)
+check("... another seat at the same address (one house) does not clear it",
+      seats.at("1.2.3.4") == ("ok", {"seat": "1", "uid": 7, "username": "a"}), seats.at("1.2.3.4"))
 leases({"1": {"ip": "1.2.3.4", "uid": 7, "username": "a"}, "3": {"ip": "1.2.3.4", "uid": 8, "username": "b"}})
 seats.look(2000.0)
 check("two accounts at one address (one house): whose it was cannot be told", seats.at("1.2.3.4")[0] == "none" and

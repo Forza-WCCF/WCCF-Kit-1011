@@ -1525,25 +1525,31 @@ static void board_caption(IDirect3DDevice9 *dev, RECT card, int no)
 }
 
 // ---- where a card plays (2026-10-15, the owner: "highlight those positions on the formation panel ... some what like
-// this or better", with a picture of an orange grid over the pitch; then "can we make them look better?").  The pitch
-// as 8 bands down x 5 lanes across, the roles of each zone (ROLE_NAME numbers, -1 none): the website's zones and lanes
-// (cards.js ZONES, LANES), the bands fitted to this table, where cards stand lower than on the website's pitch - "+ CARD"'s
-// 4-4-2 (formation.py SPOTS: FW y -0.45, MF 0.1-0.15, DF 0.55-0.6, GK 0.9) stands mid-band in ST, SH/CH, SB/CB and GK,
-// and the last band starts where the game's own keeper box does (y 0.8).  The first bands, fitted to the website's pitch,
-// read the test club's back four as CB, LIB, SW and SB.  A zone is lit as the card's best role in it, soft-edged, pale
-// yellow for a few points to deep orange for a 10.  The card has no side: a wide role lights both wings.  Which role a
-// spot means is our reading of the pitch, not the game's own (its DF/MF/FW lines come from FUN_004db340's data areas,
-// not decoded).
+// this or better", with a picture of an orange grid over the pitch; then "can we make them look better?"; then, on the
+// tags: "when i move certain players to dmf ... in game it shows them as green which is for defenders ... i only get ch
+// and i cant get dmf ... make it pixel perfect").  The game's own lines first - FUN_004db340, the line a table spot
+// plays in: its keeper box (y > 0.8 and -0.2 < x < 0.2), else the spot in metres (x * 34 across, -y * 52.5 along) in area
+// 10 of the game's area list = FW, in area 11 = MF, else DF.  Both areas are rectangles across the whole pitch, read
+// out of a running seat's memory (WCCF .work\release1011\_read_areas.py, 2026-10-16): area 10 from 25 to 67 m along,
+// area 11 from -15 to 25 m, edges inclusive and FW asked first - so FW down to 25 m past halfway (LINE_FW, 26.19 % from
+// the far goal line), MF down to 15 m inside the own half (LINE_DF, 64.29 %), DF below.  Inside each line our own split,
+// 8 bands down x 5 lanes across, the roles of each zone (ROLE_NAME numbers, -1 none): FW - ST/PP, then SS by the MF
+// line; MF - BT/OH, CH, then DH by the DF line; DF - WB/CB, CB/SB, SW/LIB; the keeper box GK.  The first bands were
+// guessed: they read the test club's back four as CB, LIB, SW and SB, and put DH inside the game's DF line.  A zone is
+// lit as the card's best role in it, soft-edged, pale yellow for a few points to deep orange for a 10.  The card has no
+// side: a wide role lights both wings.  The lines are the game's; which role inside a line is our reading.
+#define LINE_FW (50.0f * (1.0f - 25.0f / 52.5f))   // % down: where the game's FW line ends (25 m past halfway)
+#define LINE_DF (50.0f * (1.0f + 15.0f / 52.5f))   // % down: where its MF line ends (15 m inside the own half)
 static const signed char HEAT_ZONE[8][5][2] = {
-    { { 2, -1 }, { 0, 1 }, { 0, 1 }, { 0, 1 }, { 2, -1 } },
-    { { 2, -1 }, { 3, -1 }, { 3, 4 }, { 3, -1 }, { 2, -1 } },
-    { { 8, -1 }, { 5, -1 }, { 4, 5 }, { 5, -1 }, { 8, -1 } },
-    { { 8, -1 }, { 6, -1 }, { 6, -1 }, { 6, -1 }, { 8, -1 } },
-    { { 9, -1 }, { 7, -1 }, { 7, -1 }, { 7, -1 }, { 9, -1 } },
-    { { 10, -1 }, { 11, 12 }, { 11, 12 }, { 11, 12 }, { 10, -1 } },
-    { { 10, -1 }, { 13, 14 }, { 13, 14 }, { 13, 14 }, { 10, -1 } },
-    { { 10, -1 }, { 11, 12 }, { 15, -1 }, { 11, 12 }, { 10, -1 } } };
-static const float HEAT_BAND[9] = { 0, 33, 40, 47, 63, 70, 86, 90, 100 };   // % down from the far goal line
+    { { 2, -1 }, { 0, 1 }, { 0, 1 }, { 0, 1 }, { 2, -1 } },           // FW: WG | ST, PP
+    { { 2, -1 }, { 3, -1 }, { 3, -1 }, { 3, -1 }, { 2, -1 } },        // FW by the MF line: WG | SS
+    { { 8, -1 }, { 5, -1 }, { 4, 5 }, { 5, -1 }, { 8, -1 } },         // MF: SH | OH | BT, OH
+    { { 8, -1 }, { 6, -1 }, { 6, -1 }, { 6, -1 }, { 8, -1 } },        // MF: SH | CH
+    { { 8, -1 }, { 7, -1 }, { 7, -1 }, { 7, -1 }, { 8, -1 } },        // MF by the DF line: SH | DH
+    { { 9, -1 }, { 11, 12 }, { 11, 12 }, { 11, 12 }, { 9, -1 } },     // DF: WB | CB, STP
+    { { 10, -1 }, { 11, 12 }, { 11, 12 }, { 11, 12 }, { 10, -1 } },   // DF: SB | CB, STP
+    { { 10, -1 }, { 13, 14 }, { 13, 14 }, { 13, 14 }, { 10, -1 } } }; // DF by the goal: SB | SW, LIB (keeper box: GK)
+static const float HEAT_BAND[9] = { 0, 20, LINE_FW, 44, 56, LINE_DF, 72, 86, 100 };   // % down from the far goal line
 static const float HEAT_LANE[6] = { 0, 22, 42, 58, 78, 100 };              // % across, touchline to touchline
 // a rating -> its zone's colour (cards.js HEAT_COLOUR) and strength; 0-2 stay dark.  The pitch is dimmed under them
 // (HEAT_VEIL): orange over the skin's bright teal came out brown
@@ -1569,30 +1575,36 @@ static int zone_best(const struct CatCard *c, int band, int lane)   // a zone's 
     return k;
 }
 
-// a card's role at a table spot (x -1..1 across, y -1..1 from the far goal line): its zone's best role; -1 = the card
-// has no ratings.  The zones are mirror images, so the right half decides: a spot and its mirror on the other wing
-// always read alike (on lanes 20 wide, Kaladze at x -0.6 stood on an edge and read CB, Coloccini at +0.6 read SB)
+// a card's role at a table spot (x -1..1 across, y -1..1 from the far goal line): the game's keeper box, else its
+// zone's best role; -1 = the card has no ratings.  A spot exactly on a band's edge reads as the band nearer the far
+// goal - the game's own rule at its two lines (FW at 25 m, MF at -15 m).  The zones are mirror images, so the right half
+// decides: a spot and its mirror on the other wing always read alike (on lanes 20 wide, Kaladze at x -0.6 stood on an
+// edge and read CB, Coloccini at +0.6 read SB)
 static int spot_role(const struct CatCard *c, float x, float y)
 {
     float px = 50.0f + fabsf(x) * 50.0f, py = (y + 1.0f) * 50.0f;
     int band = 0, lane = 2, known = 0, k;
     for (k = 0; k < 16; k++) known |= c->role[k];
     if (!known) return -1;
-    while (band < 7 && py >= HEAT_BAND[band + 1]) band++;
+    if (y > 0.8f && x > -0.2f && x < 0.2f) return 15;                  // the game's keeper box (FUN_004db340): GK
+    while (band < 7 && py > HEAT_BAND[band + 1]) band++;
     while (lane < 4 && px >= HEAT_LANE[lane + 1]) lane++;
     return zone_best(c, band, lane);
 }
 
 // WCCFPANEL_DEALTEST=1 (the tests): which role a spot reads as, for a card rated alike in every role (so a zone's first
-// role) - "+ CARD"'s 4-4-2 (formation.py SPOTS) and spots from the test club the owner saw read wrong (2026-10-15);
-// and every spot reads as its mirror on the other wing
+// role) - "+ CARD"'s 4-4-2 (formation.py SPOTS), each side of the game's own lines and keeper box, spots from the test
+// club (2026-10-15); and every spot reads as its mirror on the other wing
 static void heat_selftest(void)
 {
     static const struct { float x, y; const char *want; } T[] = {
         { 0.0f, 0.9f, "GK" }, { -0.6f, 0.55f, "SB" }, { -0.2f, 0.6f, "CB" }, { 0.2f, 0.6f, "CB" }, { 0.6f, 0.55f, "SB" },
-        { -0.6f, 0.1f, "SH" }, { -0.2f, 0.15f, "CH" }, { 0.2f, 0.15f, "CH" }, { 0.6f, 0.1f, "SH" },
-        { -0.25f, -0.45f, "ST" }, { 0.25f, -0.45f, "ST" }, { 0.47f, 0.1f, "CH" }, { -0.03f, 0.18f, "CH" },
-        { 0.0f, -0.21f, "SS" }, { 0.0f, 0.3f, "DH" }, { 0.0f, 0.75f, "SW" }, { -0.8f, -0.6f, "WG" } };
+        { -0.6f, 0.0f, "SH" }, { -0.2f, 0.05f, "CH" }, { 0.2f, 0.05f, "CH" }, { 0.6f, 0.0f, "SH" },
+        { -0.25f, -0.7f, "ST" }, { 0.25f, -0.7f, "ST" },
+        // the game's lines: FW to y -0.4762 (25 m), MF to y 0.2857 (-15 m); its keeper box y > 0.8, -0.2 < x < 0.2
+        { 0.0f, -0.477f, "SS" }, { 0.0f, -0.476f, "BT" }, { 0.0f, 0.285f, "DH" }, { 0.0f, 0.286f, "CB" },
+        { 0.0f, 0.81f, "GK" }, { 0.0f, 0.8f, "SW" }, { 0.199f, 0.9f, "GK" }, { 0.2f, 0.9f, "SW" }, { -0.2f, 0.9f, "SW" },
+        { 0.47f, 0.1f, "CH" }, { -0.03f, 0.18f, "DH" }, { 0.0f, -0.21f, "BT" }, { -0.8f, -0.6f, "WG" } };
     struct CatCard c; int i, j, k, bad = 0;
     memset(&c, 0, sizeof c);
     memset(c.role, 5, sizeof c.role);
@@ -1622,12 +1634,16 @@ static void board_heat(IDirect3DDevice9 *dev)
     fill_rect(dev, x0, y0, x1 - x0, y1 - y0, HEAT_VEIL);
     for (b = 0; b < 8; b++)
         for (l = 0; l < 5; l++) {
+            float bot = b == 7 && l == 2 ? 90.0f : HEAT_BAND[b + 1];   // below it, the keeper box (next)
             if ((k = zone_best(c, b, l)) < 0) continue;
             v = c->role[k] > 10 ? 10 : c->role[k];
             if (!HEAT_A[v]) continue;
             fill_soft(dev, x0 + w * HEAT_LANE[l], y0 + h * HEAT_BAND[b], w * (HEAT_LANE[l + 1] - HEAT_LANE[l]),
-                      h * (HEAT_BAND[b + 1] - HEAT_BAND[b]), 9.0f * g_s, ((DWORD)HEAT_A[v] << 24) | HEAT_RGB[v]);
+                      h * (bot - HEAT_BAND[b]), 9.0f * g_s, ((DWORD)HEAT_A[v] << 24) | HEAT_RGB[v]);
         }
+    v = c->role[15] > 10 ? 10 : c->role[15];                   // the game's keeper box: x -0.2..0.2, y 0.8..1
+    if (HEAT_A[v]) fill_soft(dev, x0 + w * 40.0f, y0 + h * 90.0f, w * 20.0f, h * 10.0f, 9.0f * g_s,
+                             ((DWORD)HEAT_A[v] << 24) | HEAT_RGB[v]);
 }
 
 // a card on the pitch: a tag with its rating for the spot it stands in ("CB 10"), as the website's: the role in white
@@ -1726,8 +1742,8 @@ static void board_add_locked(const struct CatCard *c)
     static const struct { char line[3]; float x, y; } spots[11] = {
         { "GK", 0.0f, 0.9f },
         { "DF", -0.6f, 0.55f }, { "DF", -0.2f, 0.6f }, { "DF", 0.2f, 0.6f }, { "DF", 0.6f, 0.55f },
-        { "MF", -0.6f, 0.1f }, { "MF", -0.2f, 0.15f }, { "MF", 0.2f, 0.15f }, { "MF", 0.6f, 0.1f },
-        { "FW", -0.25f, -0.45f }, { "FW", 0.25f, -0.45f } };
+        { "MF", -0.6f, 0.0f }, { "MF", -0.2f, 0.05f }, { "MF", 0.2f, 0.05f }, { "MF", 0.6f, 0.0f },
+        { "FW", -0.25f, -0.7f }, { "FW", 0.25f, -0.7f } };   // inside the game's own lines (formation.py SPOTS)
     const char *order[5] = { c->pos, "DF", "MF", "FW", "GK" };
     int i, l, slot, on_field = 0, found = 0; float x = 0.0f, y = 0.0f;
     for (i = 0; i < g_ncards; i++)
