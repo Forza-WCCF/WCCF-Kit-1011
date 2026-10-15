@@ -188,8 +188,9 @@ PLAY
 SETTINGS (left side, under CARD)
   NOW: the link to the server, your card's session, its bad endings, its last save and backup, the game's text, and
   your wccf.online ACCOUNT with SIGN OUT (click twice; done at the next start).
-  NEXT START: THIS PC (everything on this PC) or ONLINE with a server's address (the cabinets on this PC play on
-  that server), and ENGLISH or JAPANESE (does what SETUP.exe's GAME LANGUAGE does, at the next start). They are kept in
+  NEXT START: THIS PC (everything on this PC), ONLINE with a server's address (the cabinets on this PC play on
+  that server), or FREE (online with any card - ONLINE, below), and ENGLISH or JAPANESE (does what SETUP.exe's GAME
+  LANGUAGE does, at the next start). They are kept in
   data\panel.txt. RESTART NOW (click it twice) starts the game again with them - not during a match. When the
   server and the language stay the same, only your cabinet restarts and the projector keeps running.
   VIEW, changes at once: LAYOUT CABINET (the cabinet's buttons around the game) or COMPACT (the game larger,
@@ -244,6 +245,10 @@ ONLINE (play with others on one server)
   lists only the cards your account owns, and every finished online match adds one - shown after the locker room
   (NEW CARD). Your club card goes up to wccf.online after each match and comes back at each online start, so it is
   the same on any PC. Not signed in: PLAY plays on this PC instead, with your own club cards, and says why.
+  FREE (SETTINGS > PLAY ON > FREE, or "PLAY.exe remote ADDRESS free"): online on the same server with your PC's own
+  club card and any card in the CATALOGUE, without your account - no cards are earned and nothing goes to
+  wccf.online. In friendly rounds a FREE club meets only other FREE clubs, so any-card teams never meet the clubs
+  built from the 11 white cards there; league and cup rounds can still pair FREE and ONLINE players.
   When an online game ends badly - the game crashed, or its link to the server was lost (Error 3000) - the kit sends
   this PC's logs to that server by itself, the same as SEND LOGS: never your club card, and your Windows user name and
   PC name are blanked out. If the game crashed, a memory snapshot of that moment goes with them, so the cause can be

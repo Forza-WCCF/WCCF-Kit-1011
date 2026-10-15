@@ -29,8 +29,11 @@ def check(cond, what):
 lines = [x for x in S.CONF_CONTROL.split("\r\n") if x and not x.startswith("#")]
 check(all("=" in x and x.split("=", 1)[1] != "" for x in lines), "every setting has a value (an empty one may crash control)")
 fm1 = [x for x in lines if x.startswith("MATCHING_PARA_FM1=")]
-check(len(fm1) == 1 and int(fm1[0].split("=", 1)[1]) > 16383,
-      "MATCHING_PARA_FM1 once, above every club's matching value (0-16383): any two free players may pair")
+fm1v = int(fm1[0].split("=", 1)[1]) if len(fm1) == 1 and fm1[0].split("=", 1)[1].isdigit() else None
+# FREE online (2026-10-15): real clubs' values 2,004-6,054 (21 cards), the widest gap 4,050; a FREE club reports 16383
+check(fm1v is not None and fm1v >= 4050, "MATCHING_PARA_FM1 once, at least the widest gap seen between two real clubs")
+check(fm1v is not None and 16383 - fm1v > 6054 + 2000,
+      "... and a FREE club's 16383 stays out of its reach from every real club seen, with room to grow")
 check("MATCHING_HISTORY_CHECK" not in S.CONF_CONTROL, "MATCHING_HISTORY_CHECK left out (control never reads it)")
 
 NEW = S.CONF_CONTROL.encode("ascii")
@@ -64,6 +67,8 @@ try:
     check(write(None) == (NEW, None), "no file: written")
     check(write(old) == (NEW, None), "the file kits before 7 wrote: replaced, no copy kept")
     check(write(old + SERVER) == (NEW, None), "... on a server too (with play.py's WAIT_PROJECTOR line)")
+    kit7 = S.CONF_CONTROL_KIT7.encode("ascii")
+    check(write(kit7 + SERVER) == (NEW, None), "kit 7's file (FM1=20000) on a server: replaced, no copy kept")
     check(len(first_kit) == 1 and write(first_kit[0] + SERVER) == (NEW, None), "the first kit's file: replaced, no copy")
     hand = old + b"MATCHING_PARA_FM1=600\r\n"
     check(write(hand) == (NEW, hand), "a hand edit: replaced, and kept as .before-kit")

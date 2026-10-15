@@ -83,17 +83,25 @@ CONF_CONTROL_BEFORE_KIT7 = (
 # Kit 7 (2026-10-15, the owner: "anytime there is a chance of playing against each other it should be done"): random
 # pairing in a free round no longer needs close club strengths (docs\research\ARRANGE-FIXTURE-2010-11.md section 9).
 # Control reads the value with atoi and no limit; never write the key with an empty value (a likely crash at start).
-CONF_CONTROL = CONF_CONTROL_BEFORE_KIT7 + (
+CONF_CONTROL_KIT7 = CONF_CONTROL_BEFORE_KIT7 + (
     "# MATCHING_PARA_FM1 = the largest matching-value gap at which two free players are paired at random (the game's\r\n"
     "# own: 600; a club's value runs 0-16383). 20000 lets any two players in a free round play each other.\r\n"
     "MATCHING_PARA_FM1=20000\r\n")
+# FREE online (2026-10-15, the owner: free players "cant be playing against people that are playing the game as it
+# should be"; his choice: one server, friendlies only): a FREE club reports the top value, 16383 (wccfpanel.c
+# free_mode_install).  Real clubs: 2,004-6,054, gaps up to 4,050 (docs\PLAN-FREE-MODE.md on the PC).
+CONF_CONTROL = CONF_CONTROL_BEFORE_KIT7 + (
+    "# MATCHING_PARA_FM1 = the largest matching-value gap at which two free players are paired at random (the game's\r\n"
+    "# own: 600; a club's value runs 0-16383, real ones 2000-6100). 6500: any two clubs as strong as those still play\r\n"
+    "# each other; a FREE club (it reports 16383) meets only clubs above 9883 - in practice only FREE ones.\r\n"
+    "MATCHING_PARA_FM1=6500\r\n")
 EARLIER_KIT_CONFS = {   # byte for byte what an earlier kit wrote (play.py's own lines aside): replaced without keeping
     # a copy (any other text is a hand edit and is kept as .before-kit).  The first kit's, before FIX_REST_ENTRY_TIME:
     b"# WCCF 2010-11 - the SERVER (control) - written by the kit's setup.py: everything on this PC.\r\n"
     b"# CLIENT_MAX must stay 9 (the game's own default): fewer made the server crash.\r\n"
     b"DHCP=0\r\nIS_RINGEDGE=0\r\nALLNET_AUTH=0\r\nACCEPT_ALL_IP=1\r\nCLIENT_MAX=9\r\nACCEPT_IP_0=127.0.0.1\r\n"
     b"CONTROL_PORT=20002\r\nMATCH_PORT=20003\r\nGAME_SVR_IP=127.0.0.1\r\n",
-    CONF_CONTROL_BEFORE_KIT7.encode("ascii")}
+    CONF_CONTROL_BEFORE_KIT7.encode("ascii"), CONF_CONTROL_KIT7.encode("ascii")}
 ENGLISH_BACKUP = os.path.join(K.DATA, "english_backup")     # english.py keeps Sega's files here while English is on
 
 
