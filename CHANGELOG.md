@@ -13,6 +13,12 @@ game is not included. Newest first; each date is the day that kit was built.
   club's links. Only cards your account owns are taken; an empty table is never sent, so your profile keeps the last
   one.
 
+### Fixed
+- English: the message after every session ("Ejecting your Club Card") broke "you" across two lines - the game wraps
+  a line that is wider than its box, even mid-word. It and 11 other card warnings that ran wider than their box are
+  written to fit now (the box taken as wide as Sega's own Japanese line); none has more rows than before. After
+  UPDATE, say yes when SETUP offers to put the English in again.
+
 ## Kit 8 - 2026-10-16
 
 ### Added

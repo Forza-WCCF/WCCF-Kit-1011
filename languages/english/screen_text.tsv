@@ -169,20 +169,20 @@ SYS_SYS_caution_0004	This is a new Club Card.\nYou can create a club.
 SYS_SYS_caution_0006	Your contract has %d matches left.
 SYS_SYS_caution_0007	You can carry over manager data from WCCF 2005-2006.\n\n\n[Manager]\n%s\n\n[Club]\n%s
 SYS_SYS_caution_0008	Insert this Club Card together with a new one\nto transfer your manager data.\n\n[Manager]\n%s\n\n[Club]\n%s
-SYS_SYS_warning_0004	Ejecting your Club Card.\nDon't forget to take it with you.
+SYS_SYS_warning_0004	Ejecting your Club Card.\nPlease take it with you.
 SYS_SYS_warning_0008	Error 5109\nInsert this Club Card together with a new one\nto transfer your manager data.
-SYS_SYS_warning_0010	Error 5110\nManager data has already been transferred from this Club Card.
+SYS_SYS_warning_0010	Error 5110\nThis Club Card's manager data\nhas already been transferred.
 SYS_SYS_warning_0012	Error 5110\nThis version of Club Card cannot be used.\nClub Card discharged.
-SYS_SYS_warning_0013	Error 5113\nDo not insert 2 or more cards.\nTransferring manager data needs an expired card and a new card.
+SYS_SYS_warning_0013	Error 5113\nDo not insert 2 or more cards.\nA transfer needs an expired card and a new card.
 SYS_SYS_warning_0014	Error 5104\nThis is not a WORLD CLUB Champion Football card.\nClub Card discharged.
-SYS_SYS_warning_0015	You cannot transfer manager data\nduring the WCCF Cup.
+SYS_SYS_warning_0015	No manager transfer\nduring the WCCF Cup.
 SYS_SYS_warning_0017	Club Card data is corrupt.
 SYS_SYS_warning_0019	Do not insert 2 or more cards.
-SYS_SYS_warning_0020	This Club Card is for location tests only.\nManager data cannot be transferred.
+SYS_SYS_warning_0020	This card is for location tests.\nIt cannot transfer manager data.
 SYS_SYS_warning_0021	Club Card Recovery Mode
 SYS_SYS_warning_0022	Error 5103\nCould not write the club data.\nClub Card discharged.\n\nThe Club Card may be recoverable.\nPlease call staff.
 SYS_SYS_warning_0023	Error 5106\nThe card may be damaged.\nClub Card discharged.\n\nThe Club Card may be recoverable.\nPlease call staff.
-SYS_SYS_warning_0024	Insert the Club Card to recover.\n\nPress SW2 to return to the opening screen.
+SYS_SYS_warning_0024	Insert the Club Card to recover.\n\nPress SW2 for the opening screen.
 SYS_SYS_warning_0025	Write the backup data over the Club Card?\n\n[SW1] Yes (overwrite)\n[SW2] No (back)
 SYS_SYS_warning_0026	Writing the backup data to the Club Card...
 SYS_SYS_warning_0027	The backup data was written to the Club Card.\nClub Card discharged.\n\nPress SW2 to return to the opening screen.
@@ -190,15 +190,15 @@ SYS_SYS_warning_0028	Error 5115\nThis Club Card cannot be recovered.\nClub Card 
 SYS_SYS_warning_0030	Checking the Club Card...
 SYS_SYS_warning_0031	Error %d\nCould not read the Club Card.\nClub Card discharged.
 SYS_SYS_warning_0033	The card was not recovered.\nClub Card discharged.
-SYS_SYS_warning_0034	Switching to the WCCF CUP
+SYS_SYS_warning_0034	Switching to\nthe WCCF CUP
 SYS_SYS_warning_0035	Ending the WCCF CUP
-SYS_SYS_warning_0036	This is a new Club Card.\nYou cannot sign a manager contract during the WCCF Cup.
-SYS_SYS_warning_0037	Error 3084\nCould not write the manager data transfer.\nClub Card discharged.\n\nThe Club Card may be recoverable.\nPlease call staff.\n\nIn card recovery mode, insert together the two\nClub Cards used for the transfer.
-SYS_SYS_warning_0038	Error 3085\nCould not write the manager data transfer.\nClub Card discharged.\n\nThe Club Card may be recoverable.\nPlease call staff.\n\nIn card recovery mode, insert together the two\nClub Cards used for the transfer.
-SYS_SYS_warning_0039	Insert together the Club Card used for the transfer\nand the new Club Card.\nClub Card discharged.\n
+SYS_SYS_warning_0036	A new Club Card: no manager\ncontract during the WCCF Cup.
+SYS_SYS_warning_0037	Error 3084\nCould not write the manager data transfer.\nClub Card discharged.\n\nThe Club Card may be recoverable.\nPlease call staff.\n\nIn recovery mode, insert together the two\nClub Cards used for the transfer.
+SYS_SYS_warning_0038	Error 3085\nCould not write the manager data transfer.\nClub Card discharged.\n\nThe Club Card may be recoverable.\nPlease call staff.\n\nIn recovery mode, insert together the two\nClub Cards used for the transfer.
+SYS_SYS_warning_0039	Insert the Club Card used for the transfer\ntogether with the new Club Card.\nClub Card discharged.\n
 SYS_SYS_warning_0040	Match entry has closed.\nYou cannot enter now.
 SYS_SYS_warning_0041	This IC card and its play log show many sessions\nthat did not end normally,\nso a penalty was applied to some play data.
-SYS_SYS_warning_0042	If you start the game now,\nthis card can no longer be played in WCCF 2007-2008.
+SYS_SYS_warning_0042	If you start the game now,\nthis card cannot be played\nin WCCF 2007-2008 any more.
 SYS_SYS_warning_0043	This IC card and its play log show many sessions\nthat did not end normally,\nso the penalty $c[FF6347FF]loss of trade rights$c was applied.
 SYS_SYS_error_0001	Press the TEST BUTTON to restart the system
 SYS_SYS_error_0002	Error 5111\nThe Club Card could not be read during the game.\nPlease call staff.\n\nPress the TEST button to restart the system.
