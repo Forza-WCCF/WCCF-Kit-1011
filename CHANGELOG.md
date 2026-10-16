@@ -6,13 +6,18 @@ game is not included. Newest first; each date is the day that kit was built.
 
 ## Unreleased
 
+### Added
+- SETTINGS > GAME TEXT has ITALIANO too (ENGLISH, ITALIANO, JAPANESE), done at the next start as SETUP.exe's GAME
+  LANGUAGE does - before, Italian was only in SETUP.exe. NOW's GAME TEXT line says Italian when the game is in
+  Italian (it said English).
+
 ### Fixed
 - English: the six team stats round the hexagon (OFFENCE, TACKLING, SPEED, POWER, CONTROL, DEFENCE - the white ones
   on the menu's View Data and the gold ones) and the menu's button names under Manager License (OK and BACK, beside
-  KEY) were still Japanese. Their English lettering was made
-  to match Sega's - an image tool drew it from Sega's pictures, then it was measured against them: the same places,
-  sizes and colours, nothing else in the pictures changed. The kit's hook gives them to the game as it loads Sega's
-  pictures, so the game's files do not change. After UPDATE, say yes when SETUP offers to put the English in again.
+  KEY) were still Japanese. Their English lettering was made to match Sega's - an image tool drew it from Sega's
+  pictures, then it was measured against them: the same places, sizes and colours, nothing else in the pictures
+  changed. The kit's hook gives them to the game as it loads Sega's pictures, so the game's files do not change.
+  After UPDATE, say yes when SETUP offers to put the English in again.
 
 ## Kit 8.1 - 2026-10-16
 

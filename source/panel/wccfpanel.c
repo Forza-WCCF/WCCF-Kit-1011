@@ -3202,7 +3202,7 @@ static void keys_hover(int x, int y)
 // The button under CARD and COIN opens it over the middle column, like KEYS.  "NOW": what the hidden windows used to
 // tell - the link to the server, the club card's session mark and bad endings, its last save and backup, the game's
 // text.  "NEXT START": the two settings the player chose - where a plain PLAY.exe plays (THIS PC / ONLINE + an address) and
-// the game's text (ENGLISH / JAPANESE).  They go to data\panel.txt at once; play.py reads it at its next plain start
+// the game's text (ENGLISH / ITALIANO / JAPANESE).  They go to data\panel.txt at once; play.py reads it at its next plain start
 // (read_panel, apply_english_request).  Nothing here changes the running game.
 #define SET_X0 14.0f                     // the SETTINGS button on the design sheet (measure_skin.js)
 #define SET_Y0 135.0f
@@ -3233,7 +3233,10 @@ static int  g_dream_run = 0;             // this run is DREAM TEAM (play.py WCCF
 static char g_server[64];                // server= as the file holds it (checked before use)
 static char g_addr[16];                  // the address box while typing
 static int  g_typing = 0;                // the address box has the keyboard
-static int  g_eng_req = -1;              // english=: -1 no request, 0 off (Japanese), 1 on
+static int  g_eng_req = -1;              // english=: -1 no request, else the text asked for: 0 off (Japanese), 1 on
+                                         // (English), 2 it (Italian, 2026-10-16) - play.py TEXT_LANGUAGE's three
+static const char *const ENG_VAL[3]  = { "off", "on", "it" };            // english= in data\panel.txt
+static const char *const ENG_NAME[3] = { "Japanese", "English", "Italian" };
 static char g_card_req[64] = "";         // card=: the CLUB CARD panel's choice for the next start ("" none, "new")
 static int  g_fix_req = 0;               // card_fix=bad_endings: CLEAR BAD ENDINGS, done by play.py at the next start
 // ACCOUNT (SETTINGS, 2026-10-14 - the owner: "why dont i see the website login, in the settings"): the wccf.online name
@@ -3290,7 +3293,8 @@ static void set_load_locked(void)
         if (!_stricmp(name, "play_on")) g_on_online = !_stricmp(val, "online");
         else if (!_stricmp(name, "online_mode")) g_dream = !_stricmp(val, "dream");
         else if (!_stricmp(name, "server")) lstrcpynA(g_server, val, sizeof g_server);
-        else if (!_stricmp(name, "english")) g_eng_req = !_stricmp(val, "on") ? 1 : !_stricmp(val, "off") ? 0 : -1;
+        else if (!_stricmp(name, "english"))
+            g_eng_req = !_stricmp(val, "on") ? 1 : !_stricmp(val, "it") ? 2 : !_stricmp(val, "off") ? 0 : -1;
         else if (!_stricmp(name, "card")) lstrcpynA(g_card_req, val, sizeof g_card_req);
         else if (!_stricmp(name, "card_fix")) g_fix_req = !_stricmp(val, "bad_endings");
         else if (!_stricmp(name, "account")) g_signout_req = !_stricmp(val, "signout");
@@ -3309,7 +3313,7 @@ static int set_save_locked(void)
                   "takes the line out once it is done.\nplay_on=%s\n", g_on_online ? "online" : "this_pc");
     if (g_on_online && g_dream) n += _snprintf(text + n, sizeof text - n, "online_mode=dream\n");
     if (g_server[0]) n += _snprintf(text + n, sizeof text - n, "server=%s\n", g_server);
-    if (g_eng_req >= 0) n += _snprintf(text + n, sizeof text - n, "english=%s\n", g_eng_req ? "on" : "off");
+    if (g_eng_req >= 0) n += _snprintf(text + n, sizeof text - n, "english=%s\n", ENG_VAL[g_eng_req]);
     if (g_card_req[0]) n += _snprintf(text + n, sizeof text - n, "card=%s\n", g_card_req);
     if (g_fix_req) n += _snprintf(text + n, sizeof text - n, "card_fix=bad_endings\n");
     if (g_signout_req) n += _snprintf(text + n, sizeof text - n, "account=signout\n");
@@ -3323,7 +3327,7 @@ static int set_save_locked(void)
     for (k = 0; k < 40; k++) {
         if (MoveFileExA(g_panel_tmp, g_panel_path, MOVEFILE_REPLACE_EXISTING)) {
             logline("settings: saved play_on=%s server=%s english=%s%s%s%s layout=%s", g_on_online ? "online" : "this_pc",
-                    g_server[0] ? g_server : "-", g_eng_req < 0 ? "-" : g_eng_req ? "on" : "off",
+                    g_server[0] ? g_server : "-", g_eng_req < 0 ? "-" : ENG_VAL[g_eng_req],
                     g_card_req[0] ? " card=" : "", g_card_req, g_fix_req ? " card_fix=bad_endings" : "",
                     g_compact ? "compact" : "cabinet");
             return 1;
@@ -3718,6 +3722,15 @@ static void set_refresh(void)
     }
     _snprintf(p, MAX_PATH, "%s\\english_backup\\manifest.json", g_data_dir); p[MAX_PATH - 1] = 0;
     st.english = GetFileAttributesExA(p, GetFileExInfoStandard, &fa) && fa.nFileSizeLow > 2;   // = kit_common.english_on
+    if (st.english) {                    // which: english.py's language.txt, "it" = Italian (= kit_common.game_language)
+        FILE *lf; char lang[8] = "";
+        _snprintf(p, MAX_PATH, "%s\\english_backup\\language.txt", g_data_dir); p[MAX_PATH - 1] = 0;
+        if ((lf = fopen(p, "rb")) != NULL) {
+            if (!fgets(lang, sizeof lang, lf)) lang[0] = 0;
+            fclose(lf);
+        }
+        if (!_strnicmp(trim(lang), "it", 2)) st.english = 2;
+    }
     st.at = GetTickCount();
     EnterCriticalSection(&g_board_cs);
     g_st = st;
@@ -3863,9 +3876,9 @@ static void fmt_when(char *out, size_t cap, ULONGLONG t)   // a file time as the
 
 // the panel's parts, in canvas pixels over the middle column: title + help + X; "NOW" with seven rows (the last,
 // ACCOUNT, with SIGN OUT at its right end); "NEXT START" with two rows of choices (THIS PC / ONLINE / DREAM TEAM + the
-// address box, ENGLISH / JAPANESE) and RESTART NOW; "VIEW" with the LAYOUT (CABINET / COMPACT, 2026-10-06), at once
+// address box, ENGLISH / ITALIANO / JAPANESE) and RESTART NOW; "VIEW" with the LAYOUT (CABINET / COMPACT, 2026-10-06), at once
 #define SET_ROWS 7
-struct SGeo { float x0, x1, lx, vx, rowh, ynow, ynext, yview; RECT close, pc, online, dream, addr, eng, jap, restart, cab, cmp, logs, signout; };
+struct SGeo { float x0, x1, lx, vx, rowh, ynow, ynext, yview; RECT close, pc, online, dream, addr, eng, ita, jap, restart, cab, cmp, logs, signout; };
 
 static void set_geo(struct SGeo *g)
 {
@@ -3884,7 +3897,8 @@ static void set_geo(struct SGeo *g)
     g->addr = RC(g->vx + 404.0f * s, y, g->vx + 614.0f * s, y + 36.0f * s);
     y += 52.0f * s;
     g->eng = RC(g->vx, y, g->vx + 130.0f * s, y + 36.0f * s);
-    g->jap = RC(g->vx + 140.0f * s, y, g->vx + 270.0f * s, y + 36.0f * s);
+    g->ita = RC(g->vx + 140.0f * s, y, g->vx + 270.0f * s, y + 36.0f * s);   // ITALIANO (2026-10-16), as PLAY ON's three
+    g->jap = RC(g->vx + 280.0f * s, y, g->vx + 410.0f * s, y + 36.0f * s);
     y += 66.0f * s;                                        // under the text's note
     g->restart = RC(g->vx, y, g->vx + 270.0f * s, y + 38.0f * s);
     g->yview = y + 38.0f * s + 72.0f * s;                  // under RESTART NOW's note and the "Saved at once" line
@@ -3943,6 +3957,7 @@ static void set_draw(IDirect3DDevice9 *dev)
     {
         int want = g_eng_req >= 0 ? g_eng_req : st.english;
         set_chip(dev, g.eng, "ENGLISH", want == 1, s);
+        set_chip(dev, g.ita, "ITALIANO", want == 2, s);
         set_chip(dev, g.jap, "JAPANESE", want == 0, s);
     }
     {
@@ -4011,7 +4026,7 @@ static void set_draw(IDirect3DDevice9 *dev)
             else { _snprintf(v, sizeof v, "none yet - one is made when a session starts"); col = grey; }
             break;
         case 5:
-            _snprintf(v, sizeof v, "%s", st.english ? "English" : "Japanese (Sega's original)");
+            _snprintf(v, sizeof v, "%s", st.english == 2 ? "Italian" : st.english ? "English" : "Japanese (Sega's original)");
             break;
         case 6:
             if (g_dream_run) { _snprintf(v, sizeof v, "DREAM TEAM - %s, no cards earned", g_account[0] ? "not used" : "none needed"); col = grey; }
@@ -4168,14 +4183,14 @@ static void set_click(HWND h, int x, int y)                     // a press insid
                 note_locked(D3DCOLOR_ARGB(255, 255, 214, 40), "type the server's address, then Enter");
                 logline("settings: typing an address");
             }
-        } else if ((in_rect(&g.eng, x, y) || in_rect(&g.jap, x, y)) && !g_st.at) {
+        } else if ((in_rect(&g.eng, x, y) || in_rect(&g.ita, x, y) || in_rect(&g.jap, x, y)) && !g_st.at) {
             note_locked(D3DCOLOR_ARGB(255, 255, 214, 40), "one moment - reading which text the game has now");
-        } else if (in_rect(&g.eng, x, y) || in_rect(&g.jap, x, y)) {
-            int want = in_rect(&g.eng, x, y) ? 1 : 0;
+        } else if (in_rect(&g.eng, x, y) || in_rect(&g.ita, x, y) || in_rect(&g.jap, x, y)) {
+            int want = in_rect(&g.eng, x, y) ? 1 : in_rect(&g.ita, x, y) ? 2 : 0;
             g_eng_req = want == g_st.english ? -1 : want;       // the text it has now: no request
             if (!set_save_locked()) note_locked(red, "could not save data\\panel.txt - try again");
-            else if (g_eng_req < 0) note_locked(green, "the game's text stays %s", want ? "English" : "Japanese");
-            else note_locked(green, "the game's text becomes %s at the next start", want ? "English" : "Japanese");
+            else if (g_eng_req < 0) note_locked(green, "the game's text stays %s", ENG_NAME[want]);
+            else note_locked(green, "the game's text becomes %s at the next start", ENG_NAME[want]);
         } else if (in_rect(&g.cab, x, y) || in_rect(&g.cmp, x, y)) {     // LAYOUT: at once, and kept
             int want = in_rect(&g.cmp, x, y);
             if (want == g_compact) note_locked(D3DCOLOR_ARGB(255, 255, 214, 40), "the layout is %s already",

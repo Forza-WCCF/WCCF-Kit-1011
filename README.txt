@@ -217,8 +217,8 @@ SETTINGS (left side, under CARD)
   NOW: the link to the server, your card's session, its bad endings, its last save and backup, the game's text, and
   your wccf.online ACCOUNT with SIGN OUT (click twice; done at the next start).
   NEXT START: THIS PC (everything on this PC), ONLINE with a server's address (the cabinets on this PC play on
-  that server), or DREAM TEAM (online with any card - ONLINE, below), and ENGLISH or JAPANESE (does what SETUP.exe's
-  GAME LANGUAGE does, at the next start). They are kept in
+  that server), or DREAM TEAM (online with any card - ONLINE, below), and ENGLISH, ITALIANO or JAPANESE (does what
+  SETUP.exe's GAME LANGUAGE does, at the next start). They are kept in
   data\panel.txt. RESTART NOW (click it twice) starts the game again with them - not during a match. When the
   server and the language stay the same, only your cabinet restarts and the projector keeps running.
   VIEW, changes at once: LAYOUT CABINET (the cabinet's buttons around the game) or COMPACT (the game larger,
@@ -308,8 +308,8 @@ ITALIANO (optional)
   Sega's own Italian of the older European WCCF (lines with the same Japanese), else the English - never Japanese.
   The game's font has no accented letters, so they are written with an apostrophe (perche', citta'). Names of players, CPU teams and supporters' nicknames
   stay as in English (the game puts a nickname's adjective first, which Italian cannot follow); money stays in
-  dollars. JAPANESE puts Sega's files back, ENGLISH switches to English. The SETTINGS panel in the game offers
-  only ENGLISH and JAPANESE for now.
+  dollars. JAPANESE puts Sega's files back, ENGLISH switches to English. The SETTINGS panel in the game has the
+  same three under GAME TEXT, done at the next start.
 
 WHAT SETUP CHANGES   (UNDO SETUP in SETUP.exe takes all of it back out)
   game folder     adds winmm.dll (the kit's hook) and winmm_orig.dll (a copy of your Windows' own winmm.dll)
