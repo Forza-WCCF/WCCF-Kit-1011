@@ -4,6 +4,15 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
+## Unreleased
+
+### Fixed
+- English: the six team stats round the hexagon (OFFENCE, TACKLING, SPEED, POWER, CONTROL, DEFENCE) and the menu's
+  button names under Manager License (OK and BACK, beside KEY) were still Japanese. Their English lettering was made
+  to match Sega's - an image tool drew it from Sega's pictures, then it was measured against them: the same places,
+  sizes and colours, nothing else in the pictures changed. The kit's hook gives them to the game as it loads Sega's
+  pictures, so the game's files do not change. After UPDATE, say yes when SETUP offers to put the English in again.
+
 ## Kit 8.1 - 2026-10-16
 
 ### Added

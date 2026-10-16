@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """test_english_pictures.py - English writing in the game's pictures (check.ps1 runs it; no game, nothing live): a
 scratch archive with one picture gets the English added at its end and its entry pointed at it; "on" twice gives the
-same file; "off" gives back Sega's archive byte for byte, also after an "on" stopped before the entries were written.
+same file; "off" gives back Sega's archive byte for byte, also after an "on" stopped before the entries were written;
+the "memory" pictures; the `art` rows' lettering laid into Sega's picture, and the kit's art files hold only our words.
     python source\\test_english_pictures.py"""
 import io
 import os
@@ -16,6 +17,7 @@ import english as E  # noqa: E402
 import kit_common as K  # noqa: E402
 from PIL import Image  # noqa: E402
 
+REAL_SHEET = E.sheet                                          # the kit's own pictures.tsv (the art checks below)
 scratch = tempfile.mkdtemp(prefix="wccf_pictures_")
 E.BACK = os.path.join(scratch, "english_backup")             # never the kit's own data\english_backup
 E.XAF_STATE = os.path.join(E.BACK, "wccf_data.xaf.json")
@@ -139,7 +141,50 @@ assert E.memory_pictures_off() == 1 and not os.path.exists(E.PIC_DIR), "off: the
 assert E.memory_pictures_off() == 0, "off again: nothing to do"
 assert os.path.basename(K.ENGLISH_PICTURES) == "english_pictures", "the folder play.py names to the hook"
 
+# --- English lettering made to match Sega's (pictures.tsv's art column, 2026-10-16): a picture of our words only,
+# laid into Sega's picture box by box; the kit's art files hold nothing outside their boxes, so no Sega pixel ships --
+for row in REAL_SHEET("pictures.tsv"):
+    if not row.get("art"):
+        continue
+    art = Image.open(os.path.join(K.LANGUAGES, "english", row["art"]))
+    boxes = [[int(v) for v in lab.split("=")[0].split(",")] for lab in row["labels"].split(";")]
+    assert art.mode == "RGBA" and all(b[2] < art.width and b[3] < art.height for b in boxes), \
+        row["art"] + ": a picture with alpha, every box inside it"
+    alpha = art.getchannel("A")
+    a = alpha.load()
+    outside = sum(1 for y in range(art.height) for x in range(art.width)
+                  if a[x, y] and not any(b[0] <= x <= b[2] and b[1] <= y <= b[3] for b in boxes))
+    assert outside == 0, "%s: %d pixels outside its boxes - only our words ship, never Sega's" % (row["art"], outside)
+    assert all(alpha.crop((b[0], b[1], b[2] + 1, b[3] + 1)).getbbox() for b in boxes), row["art"] + ": a word in every box"
+
+K.LANGUAGES = os.path.join(scratch, "languages")              # never the kit's own languages\
+os.makedirs(os.path.join(K.LANGUAGES, "english"))
+sega_pic = Image.new("RGBA", (32, 16), (0, 0, 0, 0))
+sega_pic.paste((255, 255, 255, 255), (2, 2, 10, 8))           # "Sega's" word in the first box
+sega_pic.paste((255, 255, 255, 255), (20, 2, 28, 8))          # ... and in the second
+sega_pic.putpixel((31, 15), (9, 9, 9, 255))                   # outside every box
+ours = Image.new("RGBA", (32, 16), (0, 0, 0, 0))
+ours.paste((10, 200, 30, 255), (3, 3, 8, 6))                  # our word: the first box only
+ours.save(os.path.join(K.LANGUAGES, "english", "art.png"))
+row = {"sega_sha256": "", "style": "white", "labels": "1,1,11,9=OK;19,1,29,9=BACK", "files": "",
+       "italiano": "OK;TORNA", "how": "memory", "art": "art.png"}
+sega_data = E.dds_argb(sega_pic)
+got, n = E.draw_row(sega_data, row, "en", E.arial_bold())
+assert n == 2 and got.getpixel((5, 4)) == (10, 200, 30, 255), "art: our word in its box"
+assert got.getpixel((2, 2))[3] == 0 and got.crop((19, 1, 30, 10)).getchannel("A").getbbox() is None, \
+    "art: Sega's writing cleared in every box, also where ours has nothing"
+assert got.getpixel((31, 15)) == (9, 9, 9, 255), "art: a pixel outside every box stays Sega's"
+it_pic = E.draw_row(sega_data, row, "it", E.arial_bold())[0]
+assert it_pic.getpixel((5, 4)) != (10, 200, 30, 255) and it_pic.crop((19, 1, 30, 10)).getchannel("A").getbbox(), \
+    "Italian: its own words in Arial, not the English lettering"
+Image.new("RGBA", (16, 16)).save(os.path.join(K.LANGUAGES, "english", "art.png"))
+try:
+    E.draw_row(sega_data, row, "en", E.arial_bold())
+    raise AssertionError("an art file of another size than Sega's picture must be refused")
+except E.Failed:
+    pass
+
 shutil.rmtree(scratch)
 # off by default: with the redrawn pictures in the archive the game did not read a club card (2026-10-11, a real start)
 assert E.PICTURES == (os.environ.get("WCCF_PICTURES") == "1"), "the pictures must stay off unless WCCF_PICTURES=1"
-print("english pictures: 27 checks passed")
+print("english pictures: 35 checks passed")

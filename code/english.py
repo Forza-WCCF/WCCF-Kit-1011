@@ -20,9 +20,12 @@ What changes, in the game's extracted\ folder (seat 1 reads the same files throu
                                           redrawn in Windows' Arial Bold and ADDED at the archive's end; only their
                                           table-of-contents entries change, and "off" cuts the added end away again
                                           (switched OFF - see PICTURES below)
-  data\english_pictures\ (the kit's)      pictures.tsv's "memory" pictures (the bar's "please wait for the next match"),
-                                          redrawn as the same kind of picture; the kit's hook gives the game the English
-                                          one as it loads Sega's (source\hook\pictures.h) - no game file changes for them
+  data\english_pictures\ (the kit's)      pictures.tsv's "memory" pictures (the six team stats round the hexagon, the
+                                          menu's OK / BACK, the bar's "please wait for the next match"), redrawn as the
+                                          same kind of picture; the kit's hook gives the game the English one as it loads
+                                          Sega's (source\hook\pictures.h) - no game file changes for them.  A row with
+                                          `art` takes its English lettering from that file in languages\english\ (our
+                                          words only, made to match Sega's), the others are drawn in Arial Bold
 The first "on" COPIES Sega's files to data\english_backup\ - only files whose fingerprint shows they are Sega's Rev D
 originals; later runs build from that backup again.  Each game file is then replaced in ONE step ("off" too), so a
 switch stopped half way (a crash, a kill, a full disk) leaves every file in place - some English, some not - and
@@ -538,6 +541,14 @@ def draw_row(data, row, lang, font):
            for i, a in enumerate(boxes) for b in boxes[i + 1:]):
         raise Failed("english\\pictures.tsv: two boxes of %s overlap - one would clear the other" % row["files"])
     words = row["italiano"].split(";") if lang == "it" and row.get("italiano") else None
+    if row.get("art") and not words:                     # the English lettering made to match Sega's (2026-10-16): a
+        art = Image.open(os.path.join(K.LANGUAGES, "english", row["art"])).convert("RGBA")   # picture of our words
+        if art.size != im.size:                          # only - each box cleared, then filled from it
+            raise Failed("languages\\english\\%s is %dx%d, Sega's picture %dx%d" % ((row["art"],) + art.size + im.size))
+        for x0, y0, x1, y1 in boxes:
+            im.paste((0, 0, 0, 0), (x0, y0, x1 + 1, y1 + 1))
+            im.alpha_composite(art.crop((x0, y0, x1 + 1, y1 + 1)), (x0, y0))
+        return im, len(labels)
     wait = row["style"] == "wait"
     if wait:                                             # the whole picture is writing: all of Sega's goes, its mirror too
         im.paste((0, 0, 0, 0), (0, 0) + im.size)
@@ -572,7 +583,7 @@ def build_memory_pictures(game, lang="en"):
         im, _ = draw_row(data, row, lang, font)
         same = data[84:88] == b"DXT5" and struct.unpack_from("<I", data, 28)[0] <= 1
         out[memory_name(data)] = dxt5(im, data[:128]) if same else dds_argb(im)
-    return out, "%d picture(s) the game is given in %s as it loads them (the bar's wait line)" % (len(out), LANGS[lang])
+    return out, "%d picture(s) the game is given in %s as it loads them" % (len(out), LANGS[lang])
 
 
 def memory_pictures_off():
