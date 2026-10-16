@@ -88,6 +88,8 @@ if ($LASTEXITCODE) { $failed += 'log rotation never stops a start when a log fil
 
 & $py -I (Join-Path $PSScriptRoot 'test_setup_state.py') | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'a missing card catalogue does not stop a start' }
+& $py -I (Join-Path $PSScriptRoot 'test_setup_kit_english.py') | Select-Object -Last 1
+if ($LASTEXITCODE) { $failed += 'SETUP tells a game another copy of the kit made English from a foreign file' }
 
 & $py -I (Join-Path $PSScriptRoot 'test_old_layout.py') | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'an older kit''s scripts\ bin\ overlay\ tidied, the catalogue moved to data\cache\' }

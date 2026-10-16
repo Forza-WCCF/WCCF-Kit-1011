@@ -21,6 +21,7 @@ What it changes, and nothing else on the PC:
                   card pictures moved to data\cache\ (tidy_old_layout)
 Exit: 0 done; 1 a step failed (the message says which); 2 no usable game folder.
 """
+import csv
 import json
 import os
 import re
@@ -206,6 +207,26 @@ def sega_client(game):
     return p
 
 
+def kit_language_in(path):
+    """the kit's own words in a client_Release.exe that is not Sega's: "Italian" or "English" when english.py's
+    build_exe wrote them at languages\\english\\exe_text.tsv's places (the text, then a zero byte), else None.  A game
+    that another copy of the kit made English: this kit folder has no copy of Sega's original then (2026-10-16, a
+    player unzipped the new kit into a new folder over a game his old kit had made English - SETUP said "not Rev D")"""
+    try:
+        with open(path, "rb") as f:
+            d = f.read()
+        with open(os.path.join(K.LANGUAGES, "english", "exe_text.tsv"), encoding="utf-8", newline="") as f:
+            rows = [r for r in csv.DictReader(f, delimiter="\t", quoting=csv.QUOTE_NONE) if r["program"] == "client"]
+        for lang, col in (("Italian", "italiano"), ("English", "english")):
+            for r in rows:
+                t, o = (r.get(col) or "").encode("ascii", "replace"), int(r["offset"], 16)
+                if t and d[o:o + len(t)] == t and d[o + len(t):o + len(t) + 1] == b"\0":
+                    return lang
+    except (OSError, ValueError, KeyError):
+        pass
+    return None
+
+
 def english_copy(rel):
     """SHA-256 of the English file english.py put at rel (its manifest), or None when English is off"""
     try:
@@ -239,6 +260,12 @@ def check_game(game):
         raise Failed("the game folder's client_Release.exe is already PATCHED - setup needs the unchanged exe there "
                      "(only seat1\\ gets the patched copy). Put your own unchanged client_Release.exe back first.")
     if h != SEGA_CLIENT:
+        lang = kit_language_in(sega_client(game))
+        if lang:
+            raise Failed("the game folder's client_Release.exe has the kit's %s in it - another copy of the kit put it "
+                         "there, and THAT kit folder's data\\english_backup keeps Sega's originals (this one has none). "
+                         "Open SETUP.exe in that kit folder and update it to this kit (UPDATE), or press JAPANESE there "
+                         "first, then set up here. Without that folder: put your unchanged game files back." % lang)
         raise Failed("the game folder's client_Release.exe is not Rev D (SHA-256 %s...) - this kit is for Rev D only"
                      % h[:16])
     ok("client_Release.exe is Sega's Rev D")

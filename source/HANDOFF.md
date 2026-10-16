@@ -34,6 +34,7 @@ The source of every compiled program the kit ships, the scripts that build, chec
 | `test_seat_lease.py` | the seat lease reconnects and asks for the same seat after a break |
 | `test_send_logs.py` | SEND LOGS packs and sends, the inbox keeps, and both refuse what they must |
 | `test_setup_state.py` | what a start needs; a game an older kit set up is set up once |
+| `test_setup_kit_english.py` | SETUP on a game another copy of the kit made English: the kit's English or Italian found in client_Release.exe, so SETUP says so instead of "not Rev D" |
 | `test_witness.py` | the server's witness (a card per finished match): who sat where (leases.json, a seat freed a moment ago, one address with two accounts), what goes to the website (a session's start, each match's start, its end), refusals, out of reach and tried again, files to done\ and never sent twice, the secret in no line, no secret = not started |
 | `test_take_seat.py` | the seat an online PC takes from the seat desk's answer |
 | `test_wallet_transferred.py` | after a manager transfer the old card shows as transferred |

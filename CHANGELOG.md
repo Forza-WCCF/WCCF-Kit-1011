@@ -4,6 +4,14 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
+## Unreleased
+
+### Fixed
+- SETUP on a game that another copy of the kit made English (a new kit unzipped into a new folder, the old one
+  still holding Sega's originals) said "client_Release.exe is not Rev D", as if the game were wrong. It now says
+  what happened and what to do: update the old kit folder with UPDATE, or press JAPANESE there first, then set up
+  in the new one.
+
 ## Kit 8.2 - 2026-10-16
 
 ### Added
