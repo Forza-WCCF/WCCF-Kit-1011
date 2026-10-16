@@ -30,7 +30,9 @@
  *    window is up, for seat 1 and the projector (2026-10-09; before, the
  *    kit's inject.exe wrote it into the game from outside);
  *  - gives the server (control_Release) the players' messages only whole
- *    (2026-10-11): a message in pieces crashed it - see "whole messages".
+ *    (2026-10-11): a message in pieces crashed it - see "whole messages";
+ *  - lets the link to the server wait out an internet outage (2026-10-16)
+ *    instead of ending in Error 3000: see "patience".
  *
  * Load method : the game's renamed import (wccfk.dll in its folder; no process injection).
  * Hook method : IAT patch of the game module's imports (in-process), by name
@@ -1067,6 +1069,7 @@ static BOOL WINAPI hook_CreateProcessA(LPCSTR app, LPSTR cmd, LPSECURITY_ATTRIBU
  * WCCF_WHOLEMSG=0 turns it off. */
 
 #include "wholemsg.h"
+#include "patience.h"   /* the link waits out an internet outage (2026-10-16) - "patience" below */
 #pragma comment(lib, "ws2_32.lib")
 
 #define WM_PORT  20002                  /* the players' port: CONTROL port in the kit's settings */
@@ -1080,6 +1083,7 @@ typedef int    (WINAPI *pfn_closesocket)(SOCKET);
 static pfn_accept      real_accept;
 static pfn_recv        real_recv;
 static pfn_closesocket real_closesocket;
+static void            patience_tcp(SOCKET s);          /* below, with the rest of "patience" */
 
 #define WM_IDS   24                     /* message names followed per connection (the witness's match flow) */
 
@@ -1185,6 +1189,7 @@ static SOCKET WINAPI hook_accept(SOCKET ls, struct sockaddr *addr, int *alen)
     if (s == INVALID_SOCKET || getsockname(ls, (struct sockaddr *)&me, &n) != 0 || me.sin_family != AF_INET
             || ntohs(me.sin_port) != WM_PORT)
         return s;
+    patience_tcp(s);
     b = (unsigned char *)HeapAlloc(GetProcessHeap(), 0, WM_CAP);
     EnterCriticalSection(&g_wm_lock);
     for (i = 0; b && i < WM_SOCKS && g_wm[i].buf; i++)
@@ -1299,6 +1304,74 @@ static void install_wholemsg(HMODULE exe)
             g_witness_dir);
 }
 
+/* ---- patience (2026-10-16, patience.h) -------------------------------------------------------------------------
+ * The game's link to the server waits out an internet outage instead of ending in Error 3000: Windows keeps resending
+ * for PATIENCE_TCP_S on both ends (the server's side in hook_accept, the game's as it connects), and Sega's two "quiet
+ * for too long" limits are raised in memory - only on Sega's exact bytes, never the files on disk. */
+typedef int (WINAPI *pfn_connect)(SOCKET, const struct sockaddr *, int);
+static pfn_connect real_connect;
+
+static void patience_tcp(SOCKET s)
+{
+    static LONG said;
+    DWORD secs = PATIENCE_TCP_S;
+    if (setsockopt(s, IPPROTO_TCP, TCP_MAXRT, (const char *)&secs, sizeof(secs)) != 0)
+        logline("patience: Windows refused the link's waiting time (error %d) - its own (~24 s) stays", WSAGetLastError());
+    else if (InterlockedExchange(&said, 1) == 0)
+        logline("patience: the link to the server keeps resending for %d s (Windows' own: ~24 s)", PATIENCE_TCP_S);
+}
+
+static int WINAPI hook_connect(SOCKET s, const struct sockaddr *name, int len)
+{
+    if (name && len >= (int)sizeof(struct sockaddr_in) && name->sa_family == AF_INET
+            && ntohs(((const struct sockaddr_in *)name)->sin_port) == WM_PORT)
+        patience_tcp(s);
+    return real_connect(s, name, len);
+}
+
+static void install_patience(HMODULE exe)
+{
+    char me[MAX_PATH], *base;
+    unsigned char *a, *b;
+    DWORD prot;
+    int server, r;
+    me[0] = 0;
+    GetModuleFileNameA(NULL, me, MAX_PATH);
+    base = strrchr(me, '\\');
+    base = base ? base + 1 : me;
+    server = lstrcmpiA(base, "control_Release.exe") == 0;
+    if (!server && lstrcmpiA(base, "client_Release.exe") != 0)
+        return;
+    if (!server) {      /* ws2_32 ordinal 4: connect (the game imports it by ordinal) */
+        real_connect = (pfn_connect)patch_iat_any(exe, "ws2_32.dll", NULL, 4, hook_connect);
+        if (!real_connect)
+            logline("patience: the game's connect NOT followed - Windows' own waiting time (~24 s) stays");
+    }
+    if (exe != (HMODULE)(UINT_PTR)0x00400000) {
+        logline("patience: Sega's limits left as they are - the program is not at its usual address");
+        return;
+    }
+    a = (unsigned char *)(UINT_PTR)(server ? PAT_SERVER_1 : PAT_GAME_AT);
+    b = (unsigned char *)(UINT_PTR)(server ? PAT_SERVER_2 : PAT_GAME_AT);
+    if (!VirtualProtect(a, (SIZE_T)(b - a) + 6, PAGE_EXECUTE_READWRITE, &prot)) {
+        logline("patience: Sega's limits left as they are - their code could not be opened (error %lu)", GetLastError());
+        return;
+    }
+    r = server ? patience_server(a, b) : patience_game(a);
+    VirtualProtect(a, (SIZE_T)(b - a) + 6, prot, &prot);
+    FlushInstructionCache(GetCurrentProcess(), a, (SIZE_T)(b - a) + 6);
+    if (server)
+        logline(r == 1 ? "patience: a quiet seat is kept %d ticks (~2 min; Sega's: 12, ~36 s), TRUNCATION one tick before"
+                : r == 2 ? "patience: a quiet seat is already kept %d ticks"
+                : "patience: the seat limit left as it is (not the bytes this kit knows - not Rev D?); wanted %d ticks",
+                PATIENCE_SERVER_TICKS);
+    else
+        logline(r == 1 ? "patience: the game waits %d s for the server before Error 3000 (Sega's: 30 s)"
+                : r == 2 ? "patience: the game already waits %d s for the server"
+                : "patience: the game's limit left as it is (not the bytes this kit knows - not Rev D?); wanted %d s",
+                PATIENCE_GAME_MS / 1000);
+}
+
 /* The I/O board's error mark off in the game itself (jvs.h): only in client_Release.exe, at its usual base, and only on
  * Sega's exact bytes - in any other program the two places hold other code and nothing is touched. */
 static void install_jvs_unlatch(HMODULE exe)
@@ -1409,6 +1482,7 @@ static void install_hooks(void)
         }
     }
     install_wholemsg(exe);
+    install_patience(exe);
     logline("hooks installed: CreateFileW=%d CreateFileA=%d CreateFileMappingA=%d OpenFileMappingA=%d DeviceIoControl=%d  IpRelease=%d IpRenew=%d  CreateProcessA=%d  gethostbyname=%d inet_addr=%d",
             real_CreateFileW != 0, real_CreateFileA != 0, real_CreateFileMappingA != 0,
             real_OpenFileMappingA != 0, real_DeviceIoControl != 0,
