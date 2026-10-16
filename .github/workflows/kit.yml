@@ -83,8 +83,9 @@ jobs:
           # any other build of a commit -> WCCF-2010-11-kit-6-test-<commit>.zip, "KIT 6-test-<commit>" in the game (Ali,
           # 2026-10-11: a test build says which release it leads to). NEXT = the release this branch is working towards:
           # change it when that release is out. SETUP's UPDATE reads kit-7-test-... as a test build of 7 (release.rs).
-          # Kit 8 released 2026-10-16: the next is 9.
-          $next = '9'
+          # Kit 8.1 released 2026-10-16: the next is 8.2 - small changes make a point release, not a new kit (Ali, that
+          # day: "we didnt make a big change to jump kits ... it was a minor update").
+          $next = '8.2'
           if ($env:PRERELEASE -and $env:RELEASE) { throw 'Run workflow: a pre-release or a release, not both' }
           if ($env:PRERELEASE -and $env:PRERELEASE -cnotmatch '^kit-[0-9][0-9.]*-test[0-9]*$') {
             throw "a pre-release's tag looks like kit-5.4-test1, not '$env:PRERELEASE'"
