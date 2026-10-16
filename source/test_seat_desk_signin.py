@@ -99,22 +99,30 @@ def ask(line):
 
 
 def log_text():
-    time.sleep(0.2)
     with open(LOG, encoding="utf-8") as f:
         return f.read()
+
+
+def log_has(text, wait=5.0):
+    """the desk writes its line just after its answer (seat_desk.py: the reply, then the log), so the line is waited
+    for - a fixed 0.2 s was too short once on GitHub's machine (2026-10-16, main's build of a6d60e3)"""
+    end = time.time() + wait
+    while text not in log_text() and time.time() < end:
+        time.sleep(0.05)
+    return text in log_text()
 
 
 # sign-in not needed (no require_signin.txt): a PC that is not signed in gets a seat, as kit 6's do
 reply, c = ask("WANT")
 check(reply == "SEAT 1 PROJECTOR 0", "not needed: a plain WANT gets a seat (%r)" % reply)
-check("seat 1 is not signed in" in log_text(), "the log says the seat is not signed in")
+check(log_has("seat 1 is not signed in"), "the log says the seat is not signed in")
 c.close()
 
 # a signed-in PC: a seat, and the log names the account
 good = "a1" * 32
 reply, c = ask("WANT TOKEN " + good)
 check(reply.startswith("SEAT "), "a good token gets a seat (%r)" % reply)
-check("signed in as Tester (uid 7)" in log_text(), "the log names the account")
+check(log_has("signed in as Tester (uid 7)"), "the log names the account")
 with open(os.environ["WCCF_LEASES_FILE"], encoding="utf-8") as f:     # for server\witness.py (2026-10-14)
     leased = f.read()
 check(json.loads(leased).get(reply.split()[1]) == {"ip": "127.0.0.1", "uid": 7, "username": "Tester"} and
@@ -135,7 +143,7 @@ check(reply.startswith("SEAT "), "WANT CARD c + a good token gets a seat (%r)" %
 with open(os.environ["WCCF_LEASES_FILE"], encoding="utf-8") as f:
     lease = json.load(f).get(reply.split()[1] if reply.startswith("SEAT ") else "", {})
 check(lease.get("card") == 26548962 and lease.get("uid") == 7, "leases.json: the seat's club card (%r)" % lease)
-check("club card 26548962" in log_text(), "the desk's log names the club card")
+check(log_has("club card 26548962"), "the desk's log names the club card")
 c.close()
 reply, c = ask("WANT SEAT 6 CARD 26548962")
 check(reply == "SEAT 6 PROJECTOR 0", "a card word without a sign-in: a seat as before (%r)" % reply)
@@ -159,7 +167,7 @@ c.close()
 site["down"] = True
 reply, c = ask("WANT TOKEN " + UNCHECKED)
 check(reply.startswith("SEAT "), "the website down: a token is let in (%r)" % reply)
-check("let in unchecked" in log_text(), "the log says it was let in unchecked")
+check(log_has("let in unchecked"), "the log says it was let in unchecked")
 c.close()
 site["down"] = False
 
@@ -184,7 +192,7 @@ try:
 except (OSError, ValueError):
     got = {}
 check("seat" in got, "seat.py, signed in, holds a seat (%r)" % got)
-check("signed in as Fourth (uid 10), club card 22481763" in log_text(), "the desk knows seat.py's account and club card")
+check(log_has("signed in as Fourth (uid 10), club card 22481763"), "the desk knows seat.py's account and club card")
 del os.environ["WCCF_CLUB_CARD"]
 
 # seat.py when the desk refuses the sign-in: the answer play.py turns into "play on this PC"
@@ -289,7 +297,8 @@ check(len(mid_lines) == 2 and "CARD 22481763" in mid_lines[0] and "TOKEN" in mid
       and "TOKEN" in mid_lines[1], "it asked with the card, then again without it - the sign-in kept (%r)" %
       [ln[:24] for ln in mid_lines])
 
-# never a token in the desk's log
+# never a token in the desk's log (read once its last lines are written: each comes just after its answer)
+time.sleep(0.5)
 text = log_text()
 check(not any(t in text for t in list(GOOD) + [REVOKED, UNCHECKED]), "no token is ever written to the desk's log")
 
