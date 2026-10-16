@@ -11,6 +11,7 @@
 | `pictures.tsv` | writing inside the game's pictures - the six team stats round the hexagon, OK / BACK, the bar's "please wait for the next match": each picture by Sega's fingerprint, each word's box and the word (an Italian column too). `how`: `archive` = ENGLISH redraws it and adds it at the end of `data\wccf_data.xaf` (peakx, #29 - off, below); `memory` = redrawn as the same kind and size of picture into `data\english_pictures\`, which seat 1's hook hands the game as it loads Sega's (2026-10-15, on). `art`: a file here holding our English lettering (only inside the row's boxes), laid into Sega's picture instead of drawing the words in Arial Bold - English only, Italian draws its own words |
 | `pictures_SCM_Parameta_max.png` | the English lettering of the six team stats round the hexagon (seat 1's row): OFFENCE, TACKLING, SPEED, POWER, CONTROL, DEFENCE - our words only, each in its box, nothing of Sega's. Made 2026-10-16 with Codex's image tool from Sega's picture (enlarged on black), then made Sega's size, the alpha taken from the brightness, only the boxes kept and the colours matched to Sega's measured cream and gold; every word within half a pixel of Sega's centre |
 | `pictures_SCM_Parameta.png` | the six team stats in the white letters with a soft dark edge that the management menu's View Data shows round its hexagon (SCM_Parameta.dds, a column at its right edge; both copies of that picture have the same column, so both rows use this file) - made the same way on magenta (grey writing on #FF00FF gives its alpha back exactly), words within half a pixel of Sega's centres. Seen 2026-10-16: Ali's View Data still showed Japanese with only the gold `_max` picture done - the hook's log had swapped `_max`, which is not that screen's |
+| `pictures_Credit_1.png` | the yellow credit lines under the screen (`texture\Credit\Credit_1.dds`, a sheet of the credit messages): INSERT CLUB CARD for クラブチームカードを挿入してください, made with Codex on pure green (yellow + grey writing comes back exactly) and its colours fitted to Sega's own lines of the same sheet (2,083 pixel pairs). The sheet's other two Japanese lines need no art: pictures.tsv's `@x0,y0,x1,y1` copies Sega's own INSERT COIN(S) and PRESS START BUTTON lines into their boxes at setup (english.py draw_row), so no Sega pixel ships |
 | `pictures_MNG_Base_MenuTex.png` | the same for the management menu's button names: OK and BACK beside Sega's own KEY (under Manager License), in Sega's thin white letters at KEY's height, OK moved 2 px to its box's centre |
 
 ## Careful
@@ -22,6 +23,11 @@
   menu's OK / BACK was added (both `memory`, with `art`); their check with a card is the real game on that branch.
 - A word box must hold ALL of Sega's word, its faintest edge too: the menu's first boxes, measured where the writing
   was bright, left a dot of 決定 and 戻る beside OK and BACK. Measure at alpha 1 and over.
+- The image tool's flat background is not quite flat: its noise comes back as a faint haze over the whole box (alpha
+  up to 10 of 255, away from the letters) - Kit 8.2's View Data words shipped with it. Clear alpha under 16 where
+  Sega's own picture has none there (View Data's white words, the credit sheet: Sega's alpha comes in steps of 17),
+  never where Sega's glow fades out (the gold hexagon: Sega's own has 1,414 such pixels). Measure it away from the
+  letters (more than 3 px from alpha 48): OK / BACK had none, only the letters' own soft edges.
 - `pictures.tsv`'s `archive` rows are NOT USED by default (`english.py` PICTURES, off): with the redrawn pictures in the game's archive
   the game gave the club card straight back instead of reading it (2026-10-11, a real start on the test game - English
   text alone read the card, Japanese read it, English with the pictures did not, every try). `WCCF_PICTURES=1` turns

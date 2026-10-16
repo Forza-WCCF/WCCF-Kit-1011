@@ -7,6 +7,11 @@ game is not included. Newest first; each date is the day that kit was built.
 ## Unreleased
 
 ### Fixed
+- English: the yellow lines at the bottom of the screen were still Japanese. INSERT CLUB CARD
+  (クラブチームカードを挿入してください) is new lettering made to match Sega's own lines below it; INSERT COIN(S) and
+  PRESS START BUTTON are Sega's own English lines, copied from the same picture of your copy as SETUP puts the English in.
+- English: the hexagon's white words on View Data (Kit 8.2) had a faint see-through rectangle round each word (at
+  most 4% dark, left over from making them); gone.
 - SETUP on a game that another copy of the kit made English (a new kit unzipped into a new folder, the old one
   still holding Sega's originals) said "client_Release.exe is not Rev D", as if the game were wrong. It now says
   what happened and what to do: update the old kit folder with UPDATE, or press JAPANESE there first, then set up

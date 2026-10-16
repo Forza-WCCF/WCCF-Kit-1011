@@ -147,15 +147,17 @@ for row in REAL_SHEET("pictures.tsv"):
     if not row.get("art"):
         continue
     art = Image.open(os.path.join(K.LANGUAGES, "english", row["art"]))
-    boxes = [[int(v) for v in lab.split("=")[0].split(",")] for lab in row["labels"].split(";")]
+    labs = row["labels"].split(";")
+    boxes = [[int(v) for v in lab.split("=")[0].split(",")] for lab in labs]
+    ours = [b for b, lab in zip(boxes, labs) if not lab.split("=", 1)[1].startswith("@")]   # "@box": Sega's own,
     assert art.mode == "RGBA" and all(b[2] < art.width and b[3] < art.height for b in boxes), \
-        row["art"] + ": a picture with alpha, every box inside it"
+        row["art"] + ": a picture with alpha, every box inside it"                       # copied at setup
     alpha = art.getchannel("A")
     a = alpha.load()
     outside = sum(1 for y in range(art.height) for x in range(art.width)
-                  if a[x, y] and not any(b[0] <= x <= b[2] and b[1] <= y <= b[3] for b in boxes))
+                  if a[x, y] and not any(b[0] <= x <= b[2] and b[1] <= y <= b[3] for b in ours))
     assert outside == 0, "%s: %d pixels outside its boxes - only our words ship, never Sega's" % (row["art"], outside)
-    assert all(alpha.crop((b[0], b[1], b[2] + 1, b[3] + 1)).getbbox() for b in boxes), row["art"] + ": a word in every box"
+    assert all(alpha.crop((b[0], b[1], b[2] + 1, b[3] + 1)).getbbox() for b in ours), row["art"] + ": a word in every box"
 
 K.LANGUAGES = os.path.join(scratch, "languages")              # never the kit's own languages\
 os.makedirs(os.path.join(K.LANGUAGES, "english"))
@@ -184,7 +186,24 @@ try:
 except E.Failed:
     pass
 
+# "@x0,y0,x1,y1": Sega's own English line of the same picture copied into the box, centred (the credit sheet)
+sheet = Image.new("RGBA", (40, 24), (0, 0, 0, 0))
+sheet.paste((200, 0, 0, 255), (4, 1, 36, 7))                  # "Sega's Japanese line" (the box to fill)
+sheet.paste((0, 200, 0, 255), (12, 14, 28, 18))               # "Sega's English line" (16 x 4, at 12-27 x 14-17)
+crow = {"sega_sha256": "", "style": "credit", "labels": "2,0,37,8=@12,14,27,17", "files": "", "italiano": "",
+        "how": "memory", "art": ""}
+got = E.draw_row(E.dds_argb(sheet), crow, "en", E.arial_bold())[0]
+assert got.getpixel((5, 1))[3] == 0 and got.getpixel((35, 6))[3] == 0, "copy: Sega's line in the box cleared"
+assert got.crop((12, 2, 28, 6)).tobytes() == sheet.crop((12, 14, 28, 18)).tobytes(), \
+    "copy: the English line lands centred in the box, pixel for pixel"
+assert got.crop((12, 14, 28, 18)).tobytes() == sheet.crop((12, 14, 28, 18)).tobytes(), "copy: its source stays"
+try:
+    E.draw_row(E.dds_argb(sheet), dict(crow, labels="2,0,9,8=@12,14,27,17"), "en", E.arial_bold())
+    raise AssertionError("a copy wider than its box must be refused")
+except E.Failed:
+    pass
+
 shutil.rmtree(scratch)
 # off by default: with the redrawn pictures in the archive the game did not read a club card (2026-10-11, a real start)
 assert E.PICTURES == (os.environ.get("WCCF_PICTURES") == "1"), "the pictures must stay off unless WCCF_PICTURES=1"
-print("english pictures: 35 checks passed")
+print("english pictures: 39 checks passed")

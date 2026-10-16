@@ -400,7 +400,9 @@ STYLES = {"glow": ((242, 228, 150), (223, 198, 57, 200), 4), "outline": ((240, 2
           "grey": ((80, 80, 80), None, 0), "white": ((255, 255, 255), None, 0),
           # the bar's wait line (client_common\SCM_Foot\SCM_Foot_Wait.dds): Sega's off-white, left-aligned, the last line
           # mirrored below as Sega drew it (reflect_last)
-          "wait": ((216, 225, 216), None, 0)}
+          "wait": ((216, 225, 216), None, 0),
+          # the yellow credit lines under the screen (texture\Credit\Credit_1.dds), Sega's measured yellow and edge
+          "credit": ((238, 255, 0), (68, 68, 68, 200), 2)}
 # Sega's reflection in SCM_Foot_Wait.dds (measured 2026-10-15): the line on rows 19-31 mirrored onto rows 42-54, i.e.
 # its top 11 rows below the line's last row, at 25% of the line's strength fading by 1.9% a row
 REFLECT_GAP, REFLECT_TOP, REFLECT_FADE = 11, 0.25, 0.019
@@ -541,11 +543,31 @@ def draw_row(data, row, lang, font):
            for i, a in enumerate(boxes) for b in boxes[i + 1:]):
         raise Failed("english\\pictures.tsv: two boxes of %s overlap - one would clear the other" % row["files"])
     words = row["italiano"].split(";") if lang == "it" and row.get("italiano") else None
+    texts = [lab.split("=", 1)[1] for lab in labels]
+    # "@x0,y0,x1,y1" (2026-10-16): Sega's own English lettering, taken from that box of the same picture and centred in
+    # the box - the credit sheet holds PRESS START BUTTON beside the Japanese line it stands for; read from Sega's
+    # picture as it came, never from a box already redrawn. A given Italian word takes the box instead.
+    sega_im = im.copy()
+    copies = {}
+    for n, t in enumerate(texts):
+        if t.startswith("@") and not (words and words[n]):
+            src = [int(v) for v in t[1:].split(",")]
+            if (len(src) != 4 or src[2] >= im.width or src[3] >= im.height or src[2] - src[0] > boxes[n][2] - boxes[n][0]
+                    or src[3] - src[1] > boxes[n][3] - boxes[n][1]):
+                raise Failed("english\\pictures.tsv: %s's copy %s does not fit its box" % (row["files"], t))
+            copies[n] = src
+    for n, (sx0, sy0, sx1, sy1) in copies.items():
+        x0, y0, x1, y1 = boxes[n]
+        im.paste((0, 0, 0, 0), (x0, y0, x1 + 1, y1 + 1))
+        im.alpha_composite(sega_im.crop((sx0, sy0, sx1 + 1, sy1 + 1)),
+                           (x0 + (x1 - x0 - (sx1 - sx0)) // 2, y0 + (y1 - y0 - (sy1 - sy0)) // 2))
     if row.get("art") and not words:                     # the English lettering made to match Sega's (2026-10-16): a
         art = Image.open(os.path.join(K.LANGUAGES, "english", row["art"])).convert("RGBA")   # picture of our words
         if art.size != im.size:                          # only - each box cleared, then filled from it
             raise Failed("languages\\english\\%s is %dx%d, Sega's picture %dx%d" % ((row["art"],) + art.size + im.size))
-        for x0, y0, x1, y1 in boxes:
+        for n, (x0, y0, x1, y1) in enumerate(boxes):
+            if n in copies:
+                continue
             im.paste((0, 0, 0, 0), (x0, y0, x1 + 1, y1 + 1))
             im.alpha_composite(art.crop((x0, y0, x1 + 1, y1 + 1)), (x0, y0))
         return im, len(labels)
@@ -553,7 +575,8 @@ def draw_row(data, row, lang, font):
     if wait:                                             # the whole picture is writing: all of Sega's goes, its mirror too
         im.paste((0, 0, 0, 0), (0, 0) + im.size)
     for n, lab in enumerate(labels):
-        draw_label(im, boxes[n], words[n] if words else lab.split("=")[1], row["style"], font, left=wait)
+        if n not in copies:
+            draw_label(im, boxes[n], words[n] if words else texts[n], row["style"], font, left=wait)
     if wait:
         reflect_last(im, boxes[-1])
     return im, len(labels)
