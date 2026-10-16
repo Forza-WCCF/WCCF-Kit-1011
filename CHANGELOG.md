@@ -7,6 +7,11 @@ game is not included. Newest first; each date is the day that kit was built.
 ## Unreleased
 
 ### Fixed
+- Online: a short internet drop in the middle of a match ended in "Error 3000 - WCCF CONTROL NOT FOUND", and the
+  game never came back. Three things gave up on a quiet link: Windows (after ~24 s), the game (30 s without word from
+  the server) and the server (~36 s without word from the PC). Now the link waits out a drop of up to about 75
+  seconds instead of being cut; a longer drop is still cut, as before (after ~2 minutes). Needs both halves: this
+  kit on your PC, and the same on the server.
 - English: the yellow lines at the bottom of the screen were still Japanese. INSERT CLUB CARD
   (クラブチームカードを挿入してください) is new lettering made to match Sega's own lines below it; INSERT COIN(S) and
   PRESS START BUTTON are Sega's own English lines, copied from the same picture of your copy as SETUP puts the English in.

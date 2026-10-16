@@ -139,6 +139,8 @@ if ($LASTEXITCODE) { $failed += 'whole messages: a batch in pieces waits for its
 if ($LASTEXITCODE) { $failed += 'the I/O board: the error mark off only on Sega''s bytes, late answers dropped' }
 & (Join-Path $PSScriptRoot 'build\test_pictures.exe')
 if ($LASTEXITCODE) { $failed += 'the English pictures: only Sega''s exact picture swapped, the fingerprint as english.py''s' }
+& (Join-Path $PSScriptRoot 'build\test_patience.exe')
+if ($LASTEXITCODE) { $failed += 'patience: Sega''s link limits raised only on their bytes, Windows takes the waiting time' }
 & $py -I (Join-Path $PSScriptRoot 'test_crash_dump.py')
 if ($LASTEXITCODE) { $failed += 'a crash leaves its memory snapshots (lean + full) in data\dumps' }
 
