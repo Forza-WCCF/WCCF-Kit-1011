@@ -19,6 +19,11 @@ Community-developed launcher, hardware compatibility tools and an in-game panel 
 
 > **The game is not included, and the kit holds none of Sega's files.** It works with your own copy: what it needs from the game, SETUP makes from that copy, on your PC.
 
+## New in Kit 8.3
+
+- **No more Error 3000 from a short internet drop** - online, the link waits out a drop of up to about 75 seconds instead of being cut.
+- **More English** - the yellow lines under the screen, and a cup your club is in says Entered / Requested / Competing.
+
 ## New in Kit 8.2
 
 - **The hexagon and the menu's buttons in English** - the six team stats round the hexagon and OK / BACK under Manager License, in lettering made to match Sega's.
