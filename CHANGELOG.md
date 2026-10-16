@@ -11,6 +11,9 @@ game is not included. Newest first; each date is the day that kit was built.
   still holding Sega's originals) said "client_Release.exe is not Rev D", as if the game were wrong. It now says
   what happened and what to do: update the old kit folder with UPDATE, or press JAPANESE there first, then set up
   in the new one.
+- English: a cup your club IS in said "Not available" (Sega's own European English for five lines of the entry
+  screen and the projector's schedule), so cups looked locked. They say Entered (出場確定), Requested (出場申請中) and
+  Competing (出場中) now.
 
 ## Kit 8.2 - 2026-10-16
 

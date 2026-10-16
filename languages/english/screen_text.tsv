@@ -3311,6 +3311,9 @@ INF_STADIUMF_message_0013	%s is now\none of the world's $c[FF6347FF]great domed 
 INF_STADIUMF_message_0014	%s now has\nan $c[FF6347FF]arch$c symbolizing the club's prestige.
 INF_STADIUMF_contents_0000	Max capacity: %d
 MAN_APPLICATION_seat_0003	Available
+MAN_APPLICATION_seat_0004	Requested
+MAN_APPLICATION_seat_0005	Competing
+MAN_APPLICATION_seat_0006	Entered
 MAN_APPLICATION_seat_0007	$%dM + $%d00
 MAN_APPLICATION_seat_0008	Requested
 MAN_APPLICATION_seat_0009	Can challenge
@@ -4133,7 +4136,9 @@ PRO_PRO_condition_0016	Entry Rules
 PRO_PRO_condition_0023	Titles Won
 PRO_PRO_condition_0026	Played in 1st Division
 PRO_PRO_condition_0027	Won Nations Cup
+PRO_PRO_seat_0000	Entered
 PRO_PRO_seat_0001	No Entry
+PRO_PRO_seat_0002	Requested
 PRO_PRO_seat_0003	Entry Open
 PRO_PRO_seat_0006	Entry closes in %ss
 PRO_PRO_seat_0007	Entry closes in
