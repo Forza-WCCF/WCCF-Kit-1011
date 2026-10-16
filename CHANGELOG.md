@@ -7,8 +7,9 @@ game is not included. Newest first; each date is the day that kit was built.
 ## Unreleased
 
 ### Fixed
-- English: the six team stats round the hexagon (OFFENCE, TACKLING, SPEED, POWER, CONTROL, DEFENCE) and the menu's
-  button names under Manager License (OK and BACK, beside KEY) were still Japanese. Their English lettering was made
+- English: the six team stats round the hexagon (OFFENCE, TACKLING, SPEED, POWER, CONTROL, DEFENCE - the white ones
+  on the menu's View Data and the gold ones) and the menu's button names under Manager License (OK and BACK, beside
+  KEY) were still Japanese. Their English lettering was made
   to match Sega's - an image tool drew it from Sega's pictures, then it was measured against them: the same places,
   sizes and colours, nothing else in the pictures changed. The kit's hook gives them to the game as it loads Sega's
   pictures, so the game's files do not change. After UPDATE, say yes when SETUP offers to put the English in again.
