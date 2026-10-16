@@ -18,6 +18,8 @@ game is not included. Newest first; each date is the day that kit was built.
   pictures, then it was measured against them: the same places, sizes and colours, nothing else in the pictures
   changed. The kit's hook gives them to the game as it loads Sega's pictures, so the game's files do not change.
   After UPDATE, say yes when SETUP offers to put the English in again.
+- English: TEAM TRAINING's PRESSING was called "Possession" - Sega's own European English for プレス, the training that
+  presses to win the ball back (its line under the menu said so). Possession is what CONTROL means on the hexagon.
 
 ## Kit 8.1 - 2026-10-16
 

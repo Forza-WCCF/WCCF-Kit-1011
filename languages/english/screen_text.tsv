@@ -3906,6 +3906,7 @@ TRA_THEME_message_0001	Choose $c[FF6347FF]3 training themes$c for the players.
 TRA_THEME_message_0002	Choose $c[FF6347FF]2 training themes$c for the players.
 TRA_THEME_message_0003	Choose a $c[FF6347FF]training theme$c for the players.
 TRA_THEME_message_0004	Choose an event to hold.
+TRA_THEME_menu_0004	Pressing
 TRA_THEME_menu_0007	Team Play
 TRA_THEME_menu_0008	Solo Play
 TRA_THEME_menu_0009	Set Pieces
