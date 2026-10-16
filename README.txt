@@ -14,6 +14,15 @@ WHAT IT IS
   or a game controller's buttons, SETTINGS, and CLUB CARD, your club card and your other clubs.
   The kit holds none of Sega's files. Everything that comes from the game is made by setup from YOUR copy.
 
+NEW IN KIT 8.3
+  - Online: a short internet drop in the middle of a match no longer ends in "Error 3000 - WCCF CONTROL NOT FOUND".
+    The link waits out a drop of up to about 75 seconds instead of being cut (a longer one is still cut).
+  - English: the yellow lines under the screen (INSERT CLUB CARD, INSERT COIN(S), PRESS START BUTTON), and a cup your
+    club is in says Entered / Requested / Competing instead of "Not available".
+  - SETUP says plainly when another copy of the kit already made the game English, and what to do.
+  - Updating from kit 8.2: SETUP's UPDATE, then yes to "set up now, and put its English in?". Your clubs, keys and
+    settings stay.
+
 NEW IN KIT 8.2
   - English: the six team stats round the hexagon (OFFENCE, TACKLING, SPEED, POWER, CONTROL, DEFENCE) and the
     menu's OK and BACK under Manager License, in lettering made to match Sega's.
