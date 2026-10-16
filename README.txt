@@ -14,6 +14,13 @@ WHAT IT IS
   or a game controller's buttons, SETTINGS, and CLUB CARD, your club card and your other clubs.
   The kit holds none of Sega's files. Everything that comes from the game is made by setup from YOUR copy.
 
+NEW IN KIT 8.2
+  - English: the six team stats round the hexagon (OFFENCE, TACKLING, SPEED, POWER, CONTROL, DEFENCE) and the
+    menu's OK and BACK under Manager License, in lettering made to match Sega's.
+  - SETTINGS > GAME TEXT has ITALIANO too, beside ENGLISH and JAPANESE (done at the next start).
+  - Updating from kit 8.1: SETUP's UPDATE, then yes to "set up now, and put its English in?". Your clubs, keys and
+    settings stay.
+
 NEW IN KIT 8.1
   - Your formation on your wccf.online profile: online and signed in, after each match the kit also sends the cards
     on your table and where each one stands, so your profile shows the formation you play - with your bench and

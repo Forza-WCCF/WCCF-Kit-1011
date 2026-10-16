@@ -4,7 +4,7 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
-## Unreleased
+## Kit 8.2 - 2026-10-16
 
 ### Added
 - SETTINGS > GAME TEXT has ITALIANO too (ENGLISH, ITALIANO, JAPANESE), done at the next start as SETUP.exe's GAME

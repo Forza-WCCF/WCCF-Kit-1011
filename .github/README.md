@@ -19,6 +19,11 @@ Community-developed launcher, hardware compatibility tools and an in-game panel 
 
 > **The game is not included, and the kit holds none of Sega's files.** It works with your own copy: what it needs from the game, SETUP makes from that copy, on your PC.
 
+## New in Kit 8.2
+
+- **The hexagon and the menu's buttons in English** - the six team stats round the hexagon and OK / BACK under Manager License, in lettering made to match Sega's.
+- **ITALIANO in SETTINGS** - switch the game's text to Italian from inside the game too.
+
 ## New in Kit 8.1
 
 - **Your formation on your wccf.online profile** - online and signed in, the kit sends your table after each match: your profile shows the formation you play, with your bench and your club's links.
