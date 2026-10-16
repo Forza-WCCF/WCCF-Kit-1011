@@ -4,14 +4,14 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
-## Unreleased
+## Kit 8.1 - 2026-10-16
 
 ### Added
 - Your formation on your wccf.online profile: online and signed in, after each match the website keeps (the club card
   save it already gets), the kit also sends the cards on your table and where each stands, so your profile shows the
   formation you play on its FORMATION board picture - with the bench, each starter's rating for his spot and your
-  club's links. Only cards your account owns are taken; an empty table is never sent, so your profile keeps the last
-  one.
+  club's links. Only a table of cards your account owns is taken; an empty table is never sent, so your profile
+  keeps the last one.
 
 ### Fixed
 - English: the message after every session ("Ejecting your Club Card") broke "you" across two lines - the game wraps

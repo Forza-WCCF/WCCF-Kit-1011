@@ -14,6 +14,15 @@ WHAT IT IS
   or a game controller's buttons, SETTINGS, and CLUB CARD, your club card and your other clubs.
   The kit holds none of Sega's files. Everything that comes from the game is made by setup from YOUR copy.
 
+NEW IN KIT 8.1
+  - Your formation on your wccf.online profile: online and signed in, after each match the kit also sends the cards
+    on your table and where each one stands, so your profile shows the formation you play - with your bench and
+    your club's links. Only a table of cards your account owns is taken.
+  - English: the message after every session no longer breaks "you" across two lines; it and 11 other card warnings
+    fit their boxes now.
+  - Updating from kit 8: SETUP's UPDATE, then yes to "set up now, and put its English in?". Your clubs, keys and
+    settings stay.
+
 NEW IN KIT 8
   - DREAM TEAM: a third choice under SETTINGS > PLAY ON. It plays on the server with your PC's own club card and any
     card from the CATALOGUE, without your wccf.online account - no cards are earned and nothing goes to the website.
@@ -263,7 +272,8 @@ ONLINE (play with others on one server)
   account's own club (data\save\online\): a new account gets 11 white cards (1 GK, 4 DF, 4 MF, 2 FW), the CATALOGUE
   lists only the cards your account owns, and every finished online match adds one - shown after the locker room
   (NEW CARD). Your club card goes up to wccf.online after each match and comes back at each online start, so it is
-  the same on any PC. Not signed in: PLAY plays on this PC instead, with your own club cards, and says why.
+  the same on any PC; the cards on your table and where they stand go too, and your profile there shows that
+  formation. Not signed in: PLAY plays on this PC instead, with your own club cards, and says why.
   DREAM TEAM (SETTINGS > PLAY ON > DREAM TEAM, or "PLAY.exe remote ADDRESS dream"): online on the same server with
   your PC's own club card and any card in the CATALOGUE, without your account - no cards are earned and nothing goes
   to wccf.online. In friendly rounds a DREAM TEAM club meets only other DREAM TEAM clubs, so any-card teams never meet

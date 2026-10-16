@@ -19,6 +19,11 @@ Community-developed launcher, hardware compatibility tools and an in-game panel 
 
 > **The game is not included, and the kit holds none of Sega's files.** It works with your own copy: what it needs from the game, SETUP makes from that copy, on your PC.
 
+## New in Kit 8.1
+
+- **Your formation on your wccf.online profile** - online and signed in, the kit sends your table after each match: your profile shows the formation you play, with your bench and your club's links.
+- **English card warnings that fit** - "Ejecting your Club Card" and 11 other warnings no longer break a word across two lines.
+
 ## New in Kit 8
 
 - **DREAM TEAM** - a third way to play: online on the same server with your PC's own club card and any card, no account needed and nothing earned; in friendlies DREAM TEAM clubs only meet each other.
