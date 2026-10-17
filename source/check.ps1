@@ -9,6 +9,7 @@
 #   the club card's links reach the view the FORMATION board draws (source\test_club_links.py: a scratch card)
 #   the seat desk never gives a seat that is in the game (source\test_seat_desk_game.py: a scratch control log, the
 #   desk on 127.0.0.1:20932)
+#   the projector relay: a fake control and fake projectors (source\test_projector_relay.py: 127.0.0.1:20960-1)
 #   the projector box held off the game until a player is in (source\test_hold_projector.py: the desk on 127.0.0.1:20933-6,
 #   the firewall rule written to a scratch file)
 #   SEND LOGS: packed without the club card, names taken out, kept by the log inbox - which refuses junk, too big, not
@@ -119,6 +120,7 @@ function Start-Check([string]$what, [string]$script) {
 $side = @(
     Start-Check 'the seat desk: never a seat that is in the game' 'test_seat_desk_game.py'
     Start-Check 'the projector box: held until a player is in' 'test_hold_projector.py'
+    Start-Check 'the projector relay: one connection to control, every player''s projector fed, a slow one shed' 'test_projector_relay.py'
     Start-Check 'SEND LOGS: packed, sent, kept - and refused when it must be' 'test_send_logs.py'
     Start-Check 'the wccf.online sign-in: a code, approved, kept, never printed' 'test_account.py'
     Start-Check 'the seat desk and the sign-in: optional or needed, a good or refused token, no token logged' 'test_seat_desk_signin.py'
