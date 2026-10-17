@@ -233,6 +233,26 @@ def listening_ports():
     return set()
 
 
+class _TcpRowPid(ctypes.Structure):
+    _fields_ = _TcpRow._fields_ + [("pid", w.DWORD)]
+
+
+def links_of(pid):
+    """the remote TCP ports a process has an ESTABLISHED link to (IPv4) - as wccfpanel.c's server_link reads the
+    cabinet's (2026-10-17: the projector's link to the server, helpers\\panel.py ProjectorKeeper); None: cannot tell"""
+    ip = ctypes.WinDLL("iphlpapi")
+    for _ in range(5):
+        size = w.DWORD(0)
+        ip.GetExtendedTcpTable(None, ctypes.byref(size), False, 2, 5, 0)    # AF_INET, TCP_TABLE_OWNER_PID_ALL
+        buf = ctypes.create_string_buffer(size.value + 4096)
+        size = w.DWORD(len(buf))
+        if ip.GetExtendedTcpTable(buf, ctypes.byref(size), False, 2, 5, 0) == 0:
+            n = ctypes.c_uint32.from_buffer(buf).value
+            rows = (_TcpRowPid * n).from_buffer(buf, 4)
+            return {((r.rport & 0xFF) << 8) | ((r.rport >> 8) & 0xFF) for r in rows if r.pid == pid and r.state == 5}
+    return None
+
+
 def pipes():
     try:
         return {n.lower() for n in os.listdir("\\\\.\\pipe\\")}

@@ -37,6 +37,8 @@ player cabinet (seat 1) with the overlay and your keyboard.  PLAY.exe runs it; r
     python play.py status     what is running
     python play.py show       show the server's hidden windows again: its console (the round-by-round log) and its
                               settings window - to look at; they are hidden again at the next start
+    python play.py projector  what the panel helper runs when the online projector has lost the server for good
+                              (Error 3000): that projector ends and a fresh one starts; the cabinet is not touched
     python play.py restart    what the panels' RESTART NOW runs, through panel.py, in a window of its own: when a
                               plain start would play the same way (same THIS PC / ONLINE server, no English switch) -
                               a club card switch, say - only the cabinet restarts and the projector keeps running;
@@ -699,6 +701,14 @@ def start_cabinet(debug, env, mode, ip, seat_no, seat, roles):
     return found["pid"]
 
 
+def launch_projector(env, roles):
+    """the projector (seat 0) under its launcher, the overlay too in its money-only mode (below in play)"""
+    p = start(os.path.join("hardware", "debugger.py"), [LIFE, "client", "follow", "arg=0"], "run_projector.txt",
+              dict(env, WCCF_PANEL=PANEL_DLL))
+    roles[p.pid] = "projector launcher"
+    return p.pid
+
+
 def play(debug, mode="local", ip=None, seat_no=None, dream=False):
     """mode "local": everything on this PC; "server": the server side only; "remote": the cabinets only, on the
     server at ip - seat_no None: the next free seat from the server's seat desk (2026-10-06), and the projector if this
@@ -875,9 +885,7 @@ def play(debug, mode="local", ip=None, seat_no=None, dream=False):
         return 0
 
     def start_projector(step):
-        p = start(os.path.join("hardware", "debugger.py"), [LIFE, "client", "follow", "arg=0"], "run_projector.txt",
-                  dict(env, WCCF_PANEL=PANEL_DLL))     # the overlay too, in its money-only mode (below)
-        roles[p.pid] = "projector launcher"
+        launch_projector(env, roles)
         say("  %s projector (seat 0) - its window opens in a few seconds" % step)
 
     # online the projector starts after the cabinet (2026-10-17, match_slot): started first it made slot 0, ran no
@@ -1257,6 +1265,45 @@ def restart_cabinet():
     return 0
 
 
+def restart_projector():
+    """the online projector, ended and started again (2026-10-17): what the panel helper runs when the projector's link
+    to the server is gone for good (helpers\\panel.py ProjectorKeeper - Error 3000, the game never reconnects by itself).
+    A fresh projector joins the server's relay again and shows the next phase.  The cabinet, the scene service, the
+    seat lease and the panel helper are never touched; the log of the projector before goes to
+    run_projector_lost.txt.  Exit 3: no online run with a projector on this PC - nothing done"""
+    game, _seat = setup_state()
+    if not game:
+        return 2
+    info = running_info()
+    roles = {int(k): v for k, v in (info.get("processes") or {}).items()}
+    old = [pid for pid, r in roles.items() if r == "projector launcher"]
+    if info.get("mode") != "remote" or not old:
+        say("No online projector in this run (data\\running.json) - nothing restarted.")
+        return 3
+    say("%s The projector has lost the server - starting it again; the cabinet is not touched." % time.strftime("%H:%M:%S"))
+    mine = os.path.normcase(os.path.join(game, "client_Release.exe"))
+    clients = {p[0] for p in K.game_processes(game) if os.path.normcase(p[3]) == mine}
+    alive = {p[0] for p in kit_pythons()}    # a launcher that has ended: its pid may be another program's by now
+    for pid in old:                          # its launcher, a debugger: the projector (and its match engines) end with it
+        if pid in alive:
+            K.kill(pid)
+        roles.pop(pid)
+    time.sleep(1.5)
+    for p in K.game_processes(game):         # what is left of it: the projector and its children
+        if p[0] in clients or p[1] in clients:
+            K.kill(p[0])
+    time.sleep(1.0)
+    try:
+        os.replace(os.path.join(K.LOGS, "run_projector.txt"), os.path.join(K.LOGS, "run_projector_lost.txt"))
+    except OSError:
+        pass
+    pid = launch_projector(kit_env(game, online_of(info), bool(info.get("dream"))), roles)
+    seat_no = info.get("seat", 1)
+    write_running(roles, info["mode"], info.get("server"), seat_no, online_of(info), bool(info.get("dream")))
+    say("The projector is starting again (launcher %d)." % pid)
+    return 0
+
+
 def status():
     game, _seat = setup_state()
     if not game:
@@ -1341,6 +1388,8 @@ def main(argv):
             return status()
         if a == ["show"]:
             return show()
+        if a == ["projector"]:                # the panel helper: the online projector lost the server for good
+            return restart_projector()
         if a[:1] == ["restart"]:              # RESTART NOW: stop by the card rule (asked during a session), then start
             if a == ["restart"] and cabinet_restart_fits():   # the projector would come back the same: it is kept
                 return restart_cabinet()
