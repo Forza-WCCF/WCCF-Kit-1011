@@ -215,14 +215,14 @@ def old_desk():
     srv.bind(("127.0.0.1", OLD))
     srv.listen(4)
     srv.settimeout(10)
-    for _ in range(2):
+    for _ in range(3):
         try:
             c, _addr = srv.accept()
         except OSError:
             return
         line = c.recv(256).decode("ascii", "replace").strip()
         old_lines.append(line)
-        if "TOKEN" in line:
+        if "TOKEN" in line or "RELAY" in line:
             c.sendall(b"ERR say WANT or WANT SEAT n\n")                 # kit 6's answer to anything it does not know
             c.close()
         else:
@@ -247,8 +247,9 @@ try:
 except (OSError, ValueError):
     got3 = {}
 check(got3.get("seat") == 2, "an older seat desk: seat.py still gets a seat (%r)" % got3)
-check(len(old_lines) == 2 and "TOKEN" in old_lines[0] and old_lines[1] == "WANT",
-      "it asked once with the token, then again without it (%r)" % [ln[:12] for ln in old_lines])
+check(len(old_lines) == 3 and "RELAY" in old_lines[0] and "TOKEN" in old_lines[1] and "RELAY" not in old_lines[1]
+      and old_lines[2] == "WANT", "it asked with the relay word and the token, then without each (%r)" %
+      [ln[:18] for ln in old_lines])
 
 # a seat desk from before the club card word (kit 7 test builds before 2026-10-15) knows TOKEN, not CARD: seat.py asks
 # again without the card - and keeps its sign-in
@@ -261,14 +262,14 @@ def mid_desk():
     srv.bind(("127.0.0.1", MID))
     srv.listen(4)
     srv.settimeout(10)
-    for _ in range(2):
+    for _ in range(3):
         try:
             c, _addr = srv.accept()
         except OSError:
             return
         line = c.recv(256).decode("ascii", "replace").strip()
         mid_lines.append(line)
-        if "CARD" in line:
+        if "CARD" in line or "RELAY" in line:                           # it knows neither
             c.sendall(b"ERR say WANT or WANT SEAT n\n")
             c.close()
         else:
@@ -293,9 +294,10 @@ try:
 except (OSError, ValueError):
     got4 = {}
 check(got4.get("seat") == 3, "a seat desk without the card word: seat.py still gets a seat (%r)" % got4)
-check(len(mid_lines) == 2 and "CARD 22481763" in mid_lines[0] and "TOKEN" in mid_lines[0] and "CARD" not in mid_lines[1]
-      and "TOKEN" in mid_lines[1], "it asked with the card, then again without it - the sign-in kept (%r)" %
-      [ln[:24] for ln in mid_lines])
+check(len(mid_lines) == 3 and "RELAY CARD 22481763" in mid_lines[0] and "TOKEN" in mid_lines[0] and
+      "RELAY" not in mid_lines[1] and "CARD 22481763" in mid_lines[1] and "CARD" not in mid_lines[2] and
+      "TOKEN" in mid_lines[2], "it asked with the relay word and the card, then without each - the sign-in kept (%r)" %
+      [ln[:30] for ln in mid_lines])
 
 # never a token in the desk's log (read once its last lines are written: each comes just after its answer)
 time.sleep(0.5)

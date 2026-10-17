@@ -7,7 +7,7 @@ game. The end of the run ends the lease and the seat is free again at once.
 
     python code\online\seat.py ADDRESS OUT_FILE LIFE_SECONDS [SEAT]
 
-OUT_FILE gets {"seat": n, "projector": 1|0}, or {"error": "no broker" | "no answer" | "full" | "taken" | "signin" |
+OUT_FILE gets {"seat": n, "projector": 1|0, "relay": port|0}, or {"error": "no broker" | "no answer" | "full" | "taken" | "signin" |
 "refused", "detail": "..."} - written ONCE, from the first claim, for play.py. "no broker" = nothing answered on the
 port (a server without the desk - play.py then plays as before); "no answer" = the desk was reached but did not
 reply in time (play.py stops rather than risk two PCs on one seat); "signin" = the desk wants a wccf.online sign-in,
@@ -21,6 +21,11 @@ THE CLUB CARD (2026-10-15): online, play.py gives the account's club card (WCCF_
 token, "CARD <id>", so the server can tell two signed-in players behind one address (one house) apart.  A desk from
 before that answers "ERR say ...": the same claim again without the card, the sign-in kept (then, for a desk from
 before sign-ins, without the token too).
+
+THE PROJECTOR RELAY (2026-10-17): every claim says "RELAY" after the seat - this PC can show the projector through the
+server's projector relay - and the desk answers "SEAT n PROJECTOR 20031", the relay's port ("relay" in OUT_FILE;
+"projector" 1 stays kit 5's desk: this PC is the projector, straight to control).  A desk from before that answers
+"ERR say ...": the same claim again without the word, then as above.
 
 DREAM TEAM (2026-10-15, play.py WCCF_DREAM_TEAM=1): no TOKEN, even on a signed-in PC - a DREAM TEAM match earns no
 card and saves nothing to wccf.online.
@@ -104,10 +109,10 @@ def hold(conn, end):
 def main(argv):
     ip, out, life = argv[0], argv[1], float(argv[2])
     asked = int(argv[3]) if len(argv) > 3 else None
-    sign, card = signed(), card_word()
+    sign, card, relay = signed(), card_word(), b" RELAY"
 
     def want(seat):
-        return (b"WANT SEAT %d" % seat if seat else b"WANT") + card + sign + b"\n"
+        return (b"WANT SEAT %d" % seat if seat else b"WANT") + relay + card + sign + b"\n"
     end = time.time() + life
 
     # the first claim - the only write to OUT_FILE (play.py reads it to set up the game)
@@ -118,6 +123,12 @@ def main(argv):
         return 1
     try:
         words = send_want(conn, want(asked))
+        if words[:2] == ["ERR", "say"]:                             # a seat desk from before the relay word: the same
+            conn.close()                                            # claim again without it
+            relay = b""
+            log("this server's seat desk does not know the projector relay - asking without it")
+            conn = socket.create_connection((ip, PORT), timeout=6)
+            words = send_want(conn, want(asked))
         if card and words[:2] == ["ERR", "say"]:                    # a seat desk from before the card word: the same
             conn.close()                                            # claim again without it, the sign-in kept
             card = b""
@@ -140,8 +151,8 @@ def main(argv):
         write(out, {"error": kind, "detail": " ".join(words)})
         conn.close()
         return 1
-    seat = int(words[1])
-    write(out, {"seat": seat, "projector": int(words[3])})
+    seat, proj = int(words[1]), int(words[3]) if words[3].isdigit() else 0
+    write(out, {"seat": seat, "projector": int(proj == 1), "relay": proj if proj > 1 else 0})
     log("seat %d held (projector %s)" % (seat, words[3]))
     want_reclaim = want(seat)
 

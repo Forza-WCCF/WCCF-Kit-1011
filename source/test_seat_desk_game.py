@@ -83,6 +83,13 @@ try:
     a, s = ask("WANT")
     socks.append(s)
     check("the next: seat 6 (5 skipped)", a == "SEAT 6 PROJECTOR 0", a)
+    a, s = ask("WANT RELAY")
+    socks.append(s)
+    check("a PC that says RELAY is told the projector relay's port (2026-10-17): seat 7, PROJECTOR 20031",
+          a == "SEAT 7 PROJECTOR 20031", a)
+    a, s = ask("WANT SEAT 8 RELAY CARD 26548962")
+    socks.append(s)
+    check("WANT SEAT n RELAY CARD c: that seat and the relay's port", a == "SEAT 8 PROJECTOR 20031", a)
 
     for x in socks:
         x.close()

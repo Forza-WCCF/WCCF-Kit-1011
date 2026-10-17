@@ -95,9 +95,9 @@ try:
     lease.join(timeout=8)
     check(not lease.is_alive(), "the lease finished within its life (did not hang)")
     got = json.load(open(out))
-    check(got == {"seat": 3, "projector": 0}, "the lease wrote its seat once: %r" % got)
+    check(got == {"seat": 3, "projector": 0, "relay": 0}, "the lease wrote its seat once: %r" % got)
     check(len(claims) >= 2, "the lease reconnected after the drop (got %d connections)" % len(claims))
-    check(all(c == "WANT SEAT 3" for c in claims), "every claim re-asked for the same seat 3: %r" % claims)
+    check(all(c == "WANT SEAT 3 RELAY" for c in claims), "every claim re-asked for the same seat 3: %r" % claims)
 finally:
     stop[0] = True
     srv.close()
