@@ -70,7 +70,9 @@ import kit_common as K
 
 CONTROL_PORT = 20002
 RELAY_PORT = 20040                                    # UDP, the server's match relay (server\relay.py)
-SERVER_ROLES = ("scene service", "server launcher", "seat desk", "match relay", "log inbox", "witness")
+PROJECTOR_PORT = 20031                                # TCP, the server's projector relay (server\projector_relay.py)
+SERVER_ROLES = ("scene service", "server launcher", "seat desk", "match relay", "log inbox", "witness",
+                "projector relay")
 WITNESS = os.path.join(K.DATA, "witness")      # a server with a wccf.online secret keeps each match's club data here
                                                # (the hook, source\hook\wccfk.c) for server\witness.py (2026-10-14)
 
@@ -802,6 +804,17 @@ def play(debug, mode="local", ip=None, seat_no=None, dream=False):
             say("     match relay: UDP %d - a match between two players goes through this machine" % RELAY_PORT)
         else:
             say("     the match relay did not start (data\\logs\\run_match_relay.txt) - two players then play the CPU")
+        # the projector relay (2026-10-17): control's one projector connection, passed on to every player's projector
+        pr = start(os.path.join("server", "projector_relay.py"), [life + 60, os.path.join(K.LOGS, "projector_relay.txt")],
+                   "run_projector_relay.txt", env)
+        time.sleep(1.0)
+        if pr.poll() is None:
+            roles[pr.pid] = "projector relay"
+            say("     projector relay: TCP %d - each player's PC can show the projector through this machine" %
+                PROJECTOR_PORT)
+        else:
+            say("     the projector relay did not start (data\\logs\\run_projector_relay.txt) - players then see no "
+                "projector")
         # the log inbox (2026-10-09): the logs players send with SEND LOGS (SETTINGS) are kept in data\player_logs
         li = start(os.path.join("server", "log_inbox.py"), [life + 60, os.path.join(K.LOGS, "log_inbox.txt")], "run_log_inbox.txt", env)
         time.sleep(1.0)
@@ -823,8 +836,8 @@ def play(debug, mode="local", ip=None, seat_no=None, dream=False):
         write_running(roles, mode, None)
         say("")
         say("Server running. On each player's PC: PLAY.exe remote, then this machine's address - the one their PC")
-        say("can reach. This machine must let in TCP ports %d, 20030 and 20050, and UDP %d. PLAY.exe stop ends it." % (
-            CONTROL_PORT, RELAY_PORT))
+        say("can reach. This machine must let in TCP ports %d, 20030, 20050 and %d, and UDP %d. PLAY.exe stop ends it." %
+            (CONTROL_PORT, PROJECTOR_PORT, RELAY_PORT))
         return 0
 
     if projector:
