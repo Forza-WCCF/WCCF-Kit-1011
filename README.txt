@@ -230,6 +230,12 @@ SETTINGS (left side, under CARD)
   server and the language stay the same, only your cabinet restarts and the projector keeps running.
   VIEW, changes at once: LAYOUT CABINET (the cabinet's buttons around the game) or COMPACT (the game larger,
   without them - your keys or controller press them; SETTINGS and CLUB CARD move under CATALOGUE and KEYS).
+  Beside it SHOW PROJECTOR (on unless you switch it off): online, this PC shows the projector too, from the next
+  online start, when the server has a projector relay (ONLINE, below). THIS PC always shows it. Changing it, then
+  RESTART NOW, starts everything again so the projector comes or goes.
+  OPEN / CLOSE PROJECTOR (beside RESTART NOW, online with a projector on this PC; click it twice): CLOSE ends the
+  projector now, as its window's X would; OPEN starts a fresh one through the server's relay (about a minute),
+  also after you closed it. Your cabinet plays on either way, and SHOW PROJECTOR is not changed.
   LOGS: SEND LOGS (click twice) sends this game's logs to the server you play on (the address under PLAY ON) -
   never your club card, and your Windows user name and PC name are taken out of them. You get a short code: post
   it in Discord with what went wrong.
@@ -252,13 +258,13 @@ CLUB CARD (left side, under SETTINGS)
   (close the game first; it shows what it would change and writes only with --write).
 
 QUIT
-  After a match the card comes out by itself (or press I). Then close the game's window (its X, or Alt+F4): the game
+  After a match the card comes out by itself (or press I). Then close seat 1's window (its X, or Alt+F4): the game
   ends, and everything the kit started with it stops too - the projector, the server, its match engines and the
-  kit's helpers (data\logs\run_ended.txt says what was stopped). Closing the projector's window does the same.
+  kit's helpers (data\logs\run_ended.txt says what was stopped). Closing the projector's window stops nothing else:
+  seat 1 plays on without it, here and online, and the next round does not wait for it.
   During a match (the game marks a card session open from START to the locker-room save) closing seat 1's window
   would end that match without its save, and the card gets a "bad ending" (trade rights are lost at 2). So the first
-  close only shows a warning over the game; close again within 8 seconds to quit anyway. (Closing the projector's
-  window during a match leaves seat 1 playing; close seat 1 after the match.)
+  close only shows a warning over the game; close again within 8 seconds to quit anyway.
   A server started with "PLAY.exe server" has no window: "PLAY.exe stop" ends it. A cabinet that played on it from
   this same PC leaves it running for the other players when its window closes.
   A game window that goes by itself (a crash, not a close) stops nothing else: the projector keeps running. Its log
@@ -268,10 +274,14 @@ QUIT
 ONLINE (play with others on one server)
   One PC hosts: "PLAY.exe server" starts only the server, in the background - no game window opens, and the
   window that started it closes by itself after 30 seconds while the server keeps running ("PLAY.exe stop" ends
-  it). That PC must let in TCP ports 20002, 20030 and 20050 and UDP 20040; at home behind a router, forward those
+  it). That PC must let in TCP ports 20002, 20030, 20050 and 20031 and UDP 20040; at home behind a router, forward those
   ports to it. Logs that players send with SEND LOGS are kept there in data\player_logs. Each player: "PLAY.exe remote" and the server's address (e.g. PLAY.exe remote 192.168.1.20), or ONLINE
-  in SETTINGS. Online, each PC runs only its own cabinet - no projector window; the server does not wait for one
-  (PLAY.exe local still has its own projector). The PC that hosts can play too: "PLAY.exe remote"
+  in SETTINGS. Online, each PC runs its own cabinet and its own projector window: the server's projector relay
+  (TCP 20031) passes the server's one projector picture to every player's PC. SHOW PROJECTOR off in SETTINGS, or a
+  server from before the relay: no projector window on this PC. The server never waits for a projector. A projector
+  that loses the server (Error 3000) is closed and opened again by itself, up to three times; one you closed stays
+  closed until OPEN PROJECTOR in SETTINGS (data\logs\run_projector_restart.txt says when). Closing
+  your projector's window, or your whole game, never stops the other players. The PC that hosts can play too: "PLAY.exe remote"
   with its own local address (ipconfig shows it).
   Your wccf.online account: the first time you play online, PLAY shows a short code (in its window and in a small
   Windows box) and opens wccf.online in your browser. Log in there - or register - and approve the code: the game

@@ -34,7 +34,9 @@ files ship.** SETUP builds whatever it needs from the player's own copy of the g
 projector, the cabinet's stand-ins (keychip, card reader, I/O board), the cabinet (`client_Release.exe`) with the
 hook and the panel, and the key driver. The game loads the hook (`programs\wccfk.dll`, placed in the game's folder
 by SETUP, which also renames the game's import to it) - the hook stands in for the cabinet hardware and loads the
-panel. Closing the game window ends the whole run.
+panel. Closing the cabinet's window ends the whole run; closing the projector's stops nothing else. Online, a
+projector that lost the server is started again by the panel helper (`helpers\panel.py` ProjectorKeeper, `play.py
+projector`), and SETTINGS' OPEN / CLOSE PROJECTOR asks the helper for `play.py projector open|close`.
 
 ## The redesign
 
