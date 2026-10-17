@@ -2,12 +2,13 @@
 """test_projector_restart.py - play.py's projector restart, OPEN and CLOSE (restart_projector) against a scratch
 running.json and stand-in processes (check.ps1 runs it; nothing starts, nothing is ended): the card session's start
 stays, a pid Windows gave to another of the kit's Pythons is never ended, an old projector that will not end gets no
-second one beside it, an automatic restart leaves a projector the player closed alone, and a restart for another
-run does nothing.
+second one beside it, an automatic restart leaves a projector the player closed alone, and a restart waits for a stop
+under the run lock - then finds the run gone and starts nothing.
     python source\\test_projector_restart.py"""
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import time
@@ -31,7 +32,7 @@ def check(cond, what):
 
 GAME = os.path.join(T, "extracted")
 PY = os.path.join(T, "python.exe")
-play.RUNNING, K.LOGS = os.path.join(T, "running.json"), T
+play.RUNNING, play.LOCK, K.LOGS = os.path.join(T, "running.json"), os.path.join(T, "run.lock"), T
 play.setup_state = lambda: (GAME, os.path.join(T, "seat1"))
 play.kit_env = lambda *a: {}
 play.time.sleep = lambda s: None
@@ -119,9 +120,24 @@ try:
     run()
     check(play.restart_projector(None, "r1") == 0 and launched, "lost the server, still open: restarted")
 
-    # H2: a restart for another run does nothing
+    # H2: a restart for another run, or a run gone, does nothing; a stop holding the lock is waited for
     run()
     check(play.main(["projector", "run=r0"]) == 3 and not launched and not kills, "another run's restart: nothing")
+    run()
+    held = os.path.join(T, "held")
+    stopper = subprocess.Popen([sys.executable, "-c", (
+        "import os, sys, time; sys.path.insert(0, %r); import play; play.LOCK = %r\n"
+        "with play.run_lock():\n"
+        "    open(%r, 'w').close(); time.sleep(2); os.remove(%r)\n") % (
+        os.path.join(KIT, "code"), play.LOCK, held, play.RUNNING)])
+    end = time.time() + 30
+    while not os.path.exists(held) and time.time() < end:
+        time.sleep(0.05)
+    t0 = time.time()
+    rc = play.restart_projector(None, "r1")
+    stopper.wait()
+    check(time.time() - t0 > 1 and rc == 3 and not launched and not kills and not os.path.exists(play.RUNNING),
+          "a stop under the run lock: the restart waits, then finds the run gone and starts nothing (%r)" % rc)
 finally:
     shutil.rmtree(T, ignore_errors=True)
 

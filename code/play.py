@@ -64,6 +64,7 @@ Logs: data\logs\ (the run before: data\logs\previous\; older runs zipped in data
 past ARCHIVE_LIMIT); the key driver's is run_keys.txt.
 Exit: 0 ok, 1 a step failed, 2 not set up, 3 refused.
 """
+import contextlib
 import filecmp
 import json
 import os
@@ -451,6 +452,50 @@ def live_roles(info):
     born, alive = info.get("born") or {}, {p[0] for p in kit_pythons()}
     return {int(k): r for k, r in (info.get("processes") or {}).items()
             if int(k) in alive and born.get(str(k)) in (None, K.started(int(k)))}
+
+
+class Busy(Exception):
+    """the run lock stayed taken: another stop or restart of this run is busy"""
+
+
+LOCK = os.path.join(K.DATA, "run.lock")
+_locked = [0]
+
+
+@contextlib.contextmanager
+def run_lock(seconds=120):
+    """one change of the run at a time (2026-10-17): a stop, the end of a run, RESTART NOW's cabinet and the
+    projector's restart each read running.json, end or start programs and write it back under this lock, so none
+    writes back what another changed, or a stopped run back.  Taken once per play.py (a nested one goes through)"""
+    if _locked[0]:
+        _locked[0] += 1
+        try:
+            yield
+        finally:
+            _locked[0] -= 1
+        return
+    import msvcrt
+    os.makedirs(os.path.dirname(LOCK), exist_ok=True)
+    f = open(LOCK, "a+b")
+    end = time.time() + seconds
+    while True:
+        try:
+            f.seek(0)
+            msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
+            break
+        except OSError:
+            if time.time() > end:
+                f.close()
+                raise Busy("another stop or restart of this run is still busy (data\\run.lock) - nothing done")
+            time.sleep(0.2)
+    _locked[0] = 1
+    try:
+        yield
+    finally:
+        _locked[0] = 0
+        f.seek(0)
+        msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
+        f.close()
 
 
 def online_of(info):
@@ -1056,6 +1101,25 @@ def stop(force, check=False, keep_server=False):
     rc, c, sess = stop_guard(force, check, game, seat)
     if rc:
         return rc
+    with run_lock():
+        r = _stop(game, c, sess, check, keep_server)
+    if isinstance(r, int):
+        return r
+    ours, left, still = r
+    if still:
+        say("Still running: %s" % ", ".join("%s %d" % (p[2], p[0]) for p in still))
+        return 1
+    say("Stopped (%d kit processes, %d game processes)." % (len(ours), len(left)))
+    try:                         # the cards on the table kept with their club (formation.py): data\save holds the latest
+        from cards import formation
+        formation.keep(seat)
+    except Exception as ex:
+        say("  (the cards on the table were not copied to their club: %s)" % ex)
+    return 0
+
+
+def _stop(game, c, sess, check, keep_server):
+    """stop()'s part under the run lock: (kit processes, game processes, what still runs), or check's 0"""
     roles = running_roles() if keep_server else None
 
     def mine(procs):
@@ -1079,16 +1143,7 @@ def stop(force, check=False, keep_server=False):
         write_running({pid: r for pid, r in roles.items() if r in SERVER_ROLES}, "server", None)
     elif os.path.exists(RUNNING):
         os.remove(RUNNING)
-    if still:
-        say("Still running: %s" % ", ".join("%s %d" % (p[2], p[0]) for p in still))
-        return 1
-    say("Stopped (%d kit processes, %d game processes)." % (len(ours), len(left)))
-    try:                         # the cards on the table kept with their club (formation.py): data\save holds the latest
-        from cards import formation
-        formation.keep(seat)
-    except Exception as ex:
-        say("  (the cards on the table were not copied to their club: %s)" % ex)
-    return 0
+    return ours, left, still
 
 
 WINDOW_CLOSED = "its window was closed"   # debugger.py's line when it ends a game because its window was closed
@@ -1204,6 +1259,11 @@ def ended():
     game, _seat = setup_state()
     if not game:
         return 2
+    with run_lock():
+        return _ended(game)
+
+
+def _ended(game):
     info = running_info()
     launchers, alive = window_launchers(running_roles()), set(live_roles(info))
     if projector_only(launchers, alive):
@@ -1261,7 +1321,12 @@ def restart_cabinet():
     rc, _c, _sess = stop_guard(False, False, game, seat)
     if rc:
         return rc
-    info = running_info()
+    with run_lock():
+        return _restart_cabinet(game, seat)
+
+
+def _restart_cabinet(game, seat):
+    info = running_info()                    # read under the run lock: a projector's restart just before is in it
     roles = {int(k): v for k, v in (info.get("processes") or {}).items()}
     mode, ip, online, dream = info.get("mode"), info.get("server"), online_of(info), bool(info.get("dream"))
     keep = carried(info)                     # a new run_start: a session the old cabinet had open was cut
@@ -1315,10 +1380,16 @@ def restart_projector(word=None, run_id=None):
     projector would not end - no second one is started.
     word (SETTINGS' OPEN / CLOSE PROJECTOR, the panel helper): "open" - the same, also for a projector the player
     closed; "close" - the projector ends as if the player closed its window (its log says so: no crash, no report,
-    the run goes on); running.json's "projector" stays, so OPEN PROJECTOR can bring it back"""
+    the run goes on); running.json's "projector" stays, so OPEN PROJECTOR can bring it back.  All of it under the run
+    lock: a stop, the end of the run and RESTART NOW's cabinet wait for it, and it for them"""
     game, _seat = setup_state()
     if not game:
         return 2
+    with run_lock():
+        return _restart_projector(game, word, run_id)
+
+
+def _restart_projector(game, word, run_id):
     info = running_info()
     roles = {int(k): v for k, v in (info.get("processes") or {}).items()}
     old = [pid for pid, r in roles.items() if r == "projector launcher"]
@@ -1528,6 +1599,9 @@ def main(argv):
             return play_online(debug, ip, seat_no, dream)   # seat_no None: the server's seat desk picks
         print(__doc__)
         return 2
+    except Busy as ex:                        # the run is another stop's or restart's: nothing of it is touched
+        say("NOT done: %s" % ex)
+        return 1
     except Failed as ex:
         say("FAILED: %s" % ex)
         say("Stopping what was started ...")

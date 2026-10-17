@@ -36,7 +36,9 @@ hook and the panel, and the key driver. The game loads the hook (`programs\wccfk
 by SETUP, which also renames the game's import to it) - the hook stands in for the cabinet hardware and loads the
 panel. Closing the cabinet's window ends the whole run; closing the projector's stops nothing else. Online, a
 projector that lost the server is started again by the panel helper (`helpers\panel.py` ProjectorKeeper, `play.py
-projector`), and SETTINGS' OPEN / CLOSE PROJECTOR asks the helper for `play.py projector open|close`.
+projector`), and SETTINGS' OPEN / CLOSE PROJECTOR asks the helper for `play.py projector open|close`. Stops, the end
+of a run, RESTART NOW's cabinet restart and the projector's restarts take `data\run.lock` in turn: each reads
+`data\running.json`, ends or starts programs and writes it back alone.
 
 ## The redesign
 
