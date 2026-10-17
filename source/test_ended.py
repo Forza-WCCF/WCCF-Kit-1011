@@ -39,6 +39,10 @@ EXIT0 = "  t+ 61.0s %s\n" % play.CLEAN_EXIT
 assert play.projector_only(win, {13}) and play.went_wrong(["run_projector.txt"], logs(run_projector=EXIT0)) == []
 assert play.crashed_logs(win, {13}, logs(run_projector=EXIT0)) is None, "a clean quit is a close"
 
+# the stop after the cabinet's close judges only what has ended: the projector alive at the stop is no crash
+assert play.gone_logs(win, {12}) == ["run_seat1.txt"] and play.gone_logs(win, set()) == sorted(win.values())
+assert play.went_wrong(play.gone_logs(win, {12}), logs(run_seat1=CLOSED)) == [], "the projector the stop ends"
+
 with open(os.path.join(KIT, "code", "hardware", "debugger.py"), encoding="utf-8") as f:
     dbg = f.read()
 assert play.WINDOW_CLOSED in dbg and 'process exited, %s' in dbg and '"exit code 0x%08X"' in dbg, \
@@ -60,4 +64,4 @@ for sign in play.CRASH_SIGNS:                                    # the words mus
     assert sign in dbg, "debugger.py no longer prints %r" % sign
 with open(os.path.join(KIT, "source", "panel", "wccfpanel.c"), encoding="utf-8") as f:
     assert " LOST (it was up " in f.read(), "wccfpanel.c no longer writes the LOST line play.py looks for"
-print("ended: 24 checks passed")
+print("ended: 26 checks passed")

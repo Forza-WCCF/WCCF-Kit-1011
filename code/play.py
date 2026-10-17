@@ -1082,12 +1082,17 @@ def projector_only(launchers, alive):
         any(pid in alive for pid in launchers)
 
 
+def gone_logs(launchers, alive):
+    """the logs of the run's game-window launchers that have ended (alive: the kit's Pythons that still run)"""
+    return sorted({log for pid, log in launchers.items() if pid not in alive})
+
+
 def crashed_logs(launchers, alive, read_log):
     """the logs of the launchers that ended WITHOUT their window being closed (a crash), when another game window of
     the run still runs - then nothing may stop (the player, 2026-10-07: "no one cabinet can restart or stop the
     projector"); None when a window was closed, or when no game window is left to keep running.  An empty list: none
     has ended (a hand-run "ended") - nothing stops then either"""
-    gone = sorted({log for pid, log in launchers.items() if pid not in alive})
+    gone = gone_logs(launchers, alive)
     if any(closed(read_log(log)) for log in gone) or not any(pid in alive for pid in launchers):
         return None
     return gone
@@ -1179,7 +1184,7 @@ def ended():
     say("%s - stopping the rest%s." % ("A game window was closed" if any(pid in alive for pid in launchers) else
                                        "No game window is left", " (the server on this PC keeps running)"
                                        if server_here else ""))
-    info, why = running_info(), went_wrong(sorted(set(launchers.values())))
+    info, why = running_info(), went_wrong(gone_logs(launchers, alive))   # not a game the stop is about to end
     r = stop(False, keep_server=server_here)
     if info.get("mode") == "remote":                 # online: the server's people get this PC's side of it
         report_bad_run(info.get("server"), why, game)
