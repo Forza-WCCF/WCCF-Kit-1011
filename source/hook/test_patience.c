@@ -27,6 +27,18 @@ int main(void)
     CHECK(patience_game(game) == 2, "a second time: already raised, nothing changed");
     CHECK(patience_game(odd) == 0 && odd[2] == 0x31, "another value: refused, untouched");
 
+    /* the projector: 30 s -> PATIENCE_GAME_MS, only between its own sub and jbe */
+    {
+        unsigned char prj[9] = {0x2B, 0x45, 0x74, 0x3D, 0x30, 0x75, 0x00, 0x00, 0x76};
+        unsigned char lone[9] = {0x90, 0x90, 0x90, 0x3D, 0x30, 0x75, 0x00, 0x00, 0x76};
+        CHECK(patience_projector(prj) == 1, "the projector's original bytes: raised");
+        memcpy(&ms, prj + 4, 4);
+        CHECK(ms == PATIENCE_GAME_MS && prj[3] == 0x3D && prj[2] == 0x74 && prj[8] == 0x76,
+              "... to PATIENCE_GAME_MS, the sub, compare and jump kept");
+        CHECK(patience_projector(prj) == 2, "a second time: already raised");
+        CHECK(patience_projector(lone) == 0 && lone[4] == 0x30, "the same compare elsewhere: refused, untouched");
+    }
+
     /* the server: 11/12 -> PATIENCE_SERVER_TICKS - 1 at both places, or neither */
     CHECK(patience_server(a, b) == 1, "the server's Sega bytes: raised");
     CHECK(a[3] == PATIENCE_SERVER_TICKS - 1 && b[3] == PATIENCE_SERVER_TICKS - 1 && a[0] == 0x83 && b[2] == 0xB9,

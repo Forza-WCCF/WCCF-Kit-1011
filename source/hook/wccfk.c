@@ -1323,8 +1323,9 @@ static void patience_tcp(SOCKET s)
 
 static int WINAPI hook_connect(SOCKET s, const struct sockaddr *name, int len)
 {
-    if (name && len >= (int)sizeof(struct sockaddr_in) && name->sa_family == AF_INET
-            && ntohs(((const struct sockaddr_in *)name)->sin_port) == WM_PORT)
+    u_short port = name && len >= (int)sizeof(struct sockaddr_in) && name->sa_family == AF_INET
+                   ? ntohs(((const struct sockaddr_in *)name)->sin_port) : 0;
+    if (port == WM_PORT || port == 20031)   /* 20031: the online projector's link, the server's projector relay */
         patience_tcp(s);
     return real_connect(s, name, len);
 }
@@ -1370,6 +1371,20 @@ static void install_patience(HMODULE exe)
                 : r == 2 ? "patience: the game already waits %d s for the server"
                 : "patience: the game's limit left as it is (not the bytes this kit knows - not Rev D?); wanted %d s",
                 PATIENCE_GAME_MS / 1000);
+    if (server)
+        return;
+    a = (unsigned char *)(UINT_PTR)PAT_PROJECTOR_AT;     /* the projector's own timer (2026-10-17) */
+    if (!VirtualProtect(a, 9, PAGE_EXECUTE_READWRITE, &prot)) {
+        logline("patience: the projector's limit left as it is - its code could not be opened (error %lu)", GetLastError());
+        return;
+    }
+    r = patience_projector(a);
+    VirtualProtect(a, 9, prot, &prot);
+    FlushInstructionCache(GetCurrentProcess(), a, 9);
+    logline(r == 1 ? "patience: the projector waits %d s for the server before Error 3000 (the original: 30 s)"
+            : r == 2 ? "patience: the projector already waits %d s for the server"
+            : "patience: the projector's limit left as it is (not the bytes this kit knows - not Rev D?); wanted %d s",
+            PATIENCE_GAME_MS / 1000);
 }
 
 /* The I/O board's error mark off in the game itself (jvs.h): only in client_Release.exe, at its usual base, and only on
