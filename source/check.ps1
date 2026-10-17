@@ -3,6 +3,7 @@
 #   the key driver's self-test (hardware\keyboard.py --selftest: a scratch file, nothing live)
 #   play.py's choice when a game window ends: a closed window stops the rest, a crash does not (source\test_ended.py)
 #   the online projector that lost the server comes back, one the player closed does not (source\test_projector_keeper.py)
+#   its restart, OPEN and CLOSE keep the card session's start and never end another process (test_projector_restart.py)
 #   the club card editor's self-test (cards\edit.py --self-test: cards made in memory, no real card)
 #   a missing club-card helper file never stops a start (source\test_card_fix.py: a scratch panel.txt)
 #   the run before last zipped into data\logs\archive, the archive kept to its size (source\test_log_archive.py)
@@ -63,6 +64,9 @@ if ($LASTEXITCODE) { $failed += 'play.py ended: a closed window vs a crash' }
 
 & $py -I (Join-Path $PSScriptRoot 'test_projector_keeper.py')
 if ($LASTEXITCODE) { $failed += 'the online projector: restarted once it lost the server, never after the player closed it' }
+
+& $py -I (Join-Path $PSScriptRoot 'test_projector_restart.py')
+if ($LASTEXITCODE) { $failed += 'the online projector: its restart, OPEN and CLOSE (play.py restart_projector)' }
 
 & $py -I (Join-Path $kit 'code\cards\edit.py') --self-test | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'club card editor self-test' }

@@ -32,6 +32,9 @@ is looked at every 2 s.  Once it is gone - the game puts up Error 3000 and never
 "play.py projector" (hidden, output to data\logs\run_projector_restart.txt): that projector ends and a fresh one
 starts, joins the relay again and shows the next phase.  The cabinet is never touched.  A projector whose window the
 player closed is gone, and stays gone: only a projector that still has its window is ever restarted.  See keep_projector.
+SETTINGS' OPEN / CLOSE PROJECTOR (2026-10-17): the panel writes data\projector.request ("open" or "close"); this
+helper runs "play.py projector open|close" - a fresh projector (the tries back), or the projector closed as the player
+would, never brought back.  data\projector.state ("open" / "closed") tells the panel which the button offers.
 
 THE STARTING VOLUMES (2026-10-06): sound.py - the projector muted, seat 1 very low - set once for each, as
 soon as it has opened its sound (looked for every 0.5 s for 10 minutes after the start); never again, so a change in
@@ -281,7 +284,7 @@ def keep_projector(st, now, pid, window, linked):
     after WAIT_LINK) waits BACKOFF[tries] before the restart; after the last try nothing more until the run ends"""
     if pid != st.get("pid"):                             # a new projector (the first, or one restarted): its start
         st.update(pid=pid, due=now + WAIT_LINK, up=None)
-    if pid is None or not window:                        # gone, or its window closing: never brought back
+    if pid is None or not window or st.get("closed"):   # (closed: CLOSE PROJECTOR - the player's close too)                        # gone, or its window closing: never brought back
         return False
     tries = st.get("tries", 0)
     if linked:
@@ -299,6 +302,23 @@ def keep_projector(st, now, pid, window, linked):
     return True
 
 
+def projector_request(st, text):
+    """Pure: SETTINGS' OPEN / CLOSE PROJECTOR - text: data\\projector.request's ("open ..." / "close ...").  The word for
+    "play.py projector WORD", or None: no such word - the press is dropped.  open gives keep_projector its tries back;
+    close is the player's close, at once: never brought back until an open (2026-10-17: also while a restart runs)"""
+    word = (text.split() or [""])[0].lower()
+    if word not in ("open", "close"):
+        return None
+    st.update(closed=word == "close", tries=0 if word == "open" else st.get("tries", 0), due=None)
+    return word
+
+
+def projector_up(st, pid, linked):
+    """Pure: what the panel's button offers - True: CLOSE PROJECTOR (one runs), False: OPEN PROJECTOR (none, closed,
+    or given up: out of tries and not linked)"""
+    return bool(pid) and not st.get("closed") and (linked or st.get("tries", 0) < len(BACKOFF))
+
+
 class ProjectorKeeper:
     """the online projector, restarted once it has lost the server for good (keep_projector); game None or not an
     online run with a projector: nothing to do"""
@@ -308,29 +328,72 @@ class ProjectorKeeper:
         self.exe = os.path.normcase(os.path.join(os.path.abspath(game), "client_Release.exe")) if game else None
         self.running, self.logs = os.path.join(data, "running.json"), os.path.join(data, "logs")
         self.run = run or self.restart                   # tests: a stand-in
-        self.st, self.next, self.job = {}, 0.0, None
+        self.st, self.next, self.job, self.shown, self.want, self.run_id = {}, 0.0, None, None, None, None
+        self.state = os.path.join(data, "projector.state")
 
     def online_projector(self):
+        """an online run with a projector on this PC (running.json); its id kept for play.py projector run=ID"""
         try:
             import json
             with open(self.running, encoding="utf-8") as f:
                 info = json.load(f)
-            return info.get("mode") == "remote" and "projector launcher" in info.get("processes", {}).values()
+            self.run_id = info.get("run")
+            return info.get("mode") == "remote" and (bool(info.get("projector")) or
+                                                     "projector launcher" in info.get("processes", {}).values())
         except (OSError, ValueError, AttributeError):
             return False
 
-    def restart(self, tries):
-        say("the projector has lost the server - starting it again (try %d of %d)" % (tries, len(BACKOFF)))
+    def busy(self):
+        return bool(self.job and self.job.poll() is None)
+
+    def asked(self, text):
+        """data\\projector.request: SETTINGS' OPEN / CLOSE PROJECTOR.  While a restart runs, the last press waits for it
+        (tick) - a CLOSE then closes the projector that restart brings"""
+        word = projector_request(self.st, text)
+        if word is None:
+            say("projector request %r dropped (not open/close)" % text.strip())
+            return
+        self.next = 0.0
+        if word == "close":
+            self.show(False)                             # the panel offers OPEN at once: no restart comes now
+        if self.busy():
+            self.want = word
+            say("%s PROJECTOR asked in SETTINGS - after the restart under way" % word.upper())
+            return
+        self.online_projector()
+        self.run(self.st.get("tries", 0), word)
+
+    def show(self, up):
+        """data\\projector.state for the panel's OPEN / CLOSE PROJECTOR"""
+        if up != self.shown:
+            with open(self.state, "w", encoding="utf-8") as f:
+                f.write("open\n" if up else "closed\n")
+            self.shown = up
+
+    def restart(self, tries, word=None):
+        if word:
+            say("%s PROJECTOR asked in SETTINGS" % word.upper())
+        else:
+            say("the projector has lost the server - starting it again (try %d of %d)" % (tries, len(BACKOFF)))
         try:
             with open(os.path.join(self.logs, "run_projector_restart.txt"), "a", encoding="utf-8") as out:
                 self.job = subprocess.Popen([sys.executable, "-u", os.path.join(os.path.dirname(HERE), "play.py"),
-                                             "projector"], stdout=out, stderr=subprocess.STDOUT,
-                                            creationflags=CREATE_NO_WINDOW, close_fds=True)
+                                             "projector"] + ([word] if word else []) +
+                                            (["run=%s" % self.run_id] if self.run_id else []),
+                                            stdout=out, stderr=subprocess.STDOUT, creationflags=CREATE_NO_WINDOW,
+                                            close_fds=True)
         except OSError as ex:
             say("could not run play.py projector: %s" % ex)
 
     def tick(self, now):
-        if not self.exe or now < self.next or (self.job and self.job.poll() is None):
+        if not self.exe or self.busy():
+            return
+        if self.want:                                   # a press that waited for a restart: it goes first
+            word, self.want = self.want, None
+            self.online_projector()
+            self.run(self.st.get("tries", 0), word)
+            return
+        if now < self.next:
             return
         self.next = now + self.LOOK
         try:
@@ -340,8 +403,10 @@ class ProjectorKeeper:
             links = K.links_of(pid) if pid else set()
             if links is None:                           # Windows' table unreadable: no decision on that
                 return
-            if keep_projector(self.st, now, pid, bool(pid and K.windows_of(pid)), any(p in links for p in PROJECTOR_PORTS)):
+            linked = any(p in links for p in PROJECTOR_PORTS)
+            if keep_projector(self.st, now, pid, bool(pid and K.windows_of(pid)), linked):
                 self.run(self.st["tries"])
+            self.show(projector_up(self.st, pid, linked))
         except Exception as ex:                         # never stops the helper
             say("projector watch: %r" % ex)
 
@@ -361,13 +426,14 @@ def main(argv):
     data = argv[1] if len(argv) > 1 else K.DATA
     play = argv[2] if len(argv) > 2 else os.path.join(K.KIT, "PLAY.exe")
     flags = CREATE_NO_WINDOW if argv[3:] == ["hidden"] else CREATE_NEW_CONSOLE
-    req = os.path.join(data, "restart.request")
-    if os.path.exists(req):
-        try:
-            os.remove(req)
-            say("an old restart request (from a run that ended) removed - not carried out")
-        except OSError as ex:
-            say("an old restart request could not be removed: %s" % ex)
+    req, preq = os.path.join(data, "restart.request"), os.path.join(data, "projector.request")
+    for old in (req, preq, os.path.join(data, "projector.state")):
+        if os.path.exists(old):
+            try:
+                os.remove(old)
+                say("an old %s (from a run that ended) removed - not carried out" % os.path.basename(old))
+            except OSError as ex:
+                say("an old %s could not be removed: %s" % (os.path.basename(old), ex))
     say("watching %s" % req)
     view = ClubView(data, os.environ.get("WCCF_CLUB_CARD"))      # online: the account's club (play.py)
     sound = SoundDefaults(os.environ.get("WCCF_GAME"), time.time())
@@ -375,9 +441,23 @@ def main(argv):
     game = os.environ.get("WCCF_GAME")                                  # play.py: the game folder; seat 1 beside it
     syncs = club_syncs(os.environ.get("WCCF_CLUB_CARD"), data, K.seat_dir(game) if game else None)
     keeper = ProjectorKeeper(game, data)
-    keeper.run = lambda tries: (keeper.restart(tries), sound.again(time.time()))   # the new projector starts muted too
+
+    def run(tries, word=None):
+        keeper.restart(tries, word)
+        if word != "close":
+            sound.again(time.time())                                    # the new projector starts muted too
+    keeper.run = run
     end = time.time() + life
     while time.time() < end:
+        if os.path.exists(preq):                # SETTINGS' OPEN / CLOSE PROJECTOR: before the keeper's own
+            try:
+                with open(preq, encoding="utf-8", errors="replace") as f:
+                    text = f.read()
+                os.remove(preq)                 # taken first: one press, one action
+            except OSError:
+                text = ""
+            if text:
+                keeper.asked(text)
         keeper.tick(time.time())
         view.tick(time.time())
         sound.tick(time.time())

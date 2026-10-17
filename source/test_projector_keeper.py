@@ -85,7 +85,57 @@ assert s.set[2:] == [(3, True)], "the projector started again is muted too, noth
 sd.tick(902)
 assert len(s.set) == 3
 
-# play.py has the command the helper runs
+# SETTINGS' OPEN / CLOSE PROJECTOR (data\\projector.request)
+req, up = panel.projector_request, panel.projector_up
+st = {"tries": len(B), "pid": 300}
+assert not up(st, 300, False), "out of tries, not linked: the button offers OPEN"
+assert req(st, "nonsense") is None and req(st, "") is None
+assert req(st, "OPEN PROJECTOR - asked\n") == "open" and st["tries"] == 0, "open: the tries come back"
+assert up(st, 301, False) and up(st, 301, True), "a fresh projector: CLOSE"
+assert req(st, "CLOSE PROJECTOR - asked\n") == "close" and not up(st, 301, True), "closed: OPEN"
+assert not keep(st, 400, 301, True, False) and not keep(st, 400 + W + 100, 301, True, False), "closed: never brought back"
+assert not keep(st, 1000, None, False, False) and not up(st, None, False)
+assert req(st, "open") == "open" and not st["closed"], "open after a close: the keeper looks after it again"
+assert not keep(st, 1001, 302, True, False) and keep(st, 1001 + W, 302, True, False), "... restarts it when it never links"
+assert not up({}, None, True), "no projector: OPEN"
+
+# CLOSE PROJECTOR while an automatic restart runs (2026-10-17): kept, no restart of its own meanwhile, and it closes the
+# projector that restart brings once it has finished; a press waiting goes before the keeper's own look
+import tempfile  # noqa: E402
+
+
+class Job:
+    def __init__(self):
+        self.code = None
+
+    def poll(self):
+        return self.code
+
+
+ran, data = [], tempfile.mkdtemp(prefix="keeper_")
+k = panel.ProjectorKeeper(game, data, lambda tries, word=None: ran.append(word))
+k.job = Job()                                     # the automatic restart under way
+k.asked("CLOSE PROJECTOR - asked\n")
+assert ran == [] and k.st["closed"], "CLOSE while one runs: kept, and no restart of the keeper's own from now"
+with open(os.path.join(data, "projector.state")) as f:
+    assert f.read() == "closed\n", "the panel offers OPEN at once"
+k.tick(10)
+assert ran == [], "... nothing while the restart runs"
+k.job.code = 0
+k.tick(11)
+assert ran == ["close"], "the restart done: the projector it brought is closed (%r)" % ran
+k.asked("OPEN PROJECTOR")
+k.job = Job()
+k.asked("CLOSE PROJECTOR")
+k.asked("OPEN PROJECTOR")
+k.job.code = 0
+k.tick(20)
+assert ran == ["close", "open", "open"] and not k.st["closed"], "the last press counts: %r" % ran
+
+# play.py has the commands the helper runs
 with open(os.path.join(KIT, "code", "play.py"), encoding="utf-8") as f:
-    assert 'a == ["projector"]' in f.read(), "play.py lost its 'projector' command (helpers\\panel.py runs it)"
+    assert 'if words in ([], ["open"], ["close"]):' in f.read(), "play.py lost a 'projector' command (panel.py)"
+with open(os.path.join(KIT, "code", "helpers", "panel.py"), encoding="utf-8") as f:
+    t = f.read()
+    assert t.index("keeper.asked(text)") < t.index("keeper.tick(time.time())"), "a press goes before the keeper's look"
 print("projector keeper: all checks passed")

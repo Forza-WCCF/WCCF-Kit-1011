@@ -170,6 +170,7 @@ _k.OpenProcess.argtypes = [w.DWORD, w.BOOL, w.DWORD]
 _k.QueryFullProcessImageNameW.argtypes = [w.HANDLE, w.DWORD, w.LPWSTR, ctypes.POINTER(w.DWORD)]
 _k.TerminateProcess.argtypes = [w.HANDLE, w.UINT]
 _k.CloseHandle.argtypes = [w.HANDLE]
+_k.GetProcessTimes.argtypes = [w.HANDLE] + [ctypes.POINTER(w.FILETIME)] * 4
 
 
 def processes():
@@ -211,6 +212,18 @@ def kill(pid):
     ok = bool(_k.TerminateProcess(h, 1))
     _k.CloseHandle(h)
     return ok
+
+
+def started(pid):
+    """when pid's process started (Windows' FILETIME, an int), None if it cannot be read: with the pid it names one
+    process - a number Windows gave to another program since has another start (play.py running.json "born")"""
+    h = _k.OpenProcess(0x1000, False, pid)             # PROCESS_QUERY_LIMITED_INFORMATION
+    if not h:
+        return None
+    t = [w.FILETIME() for _ in range(4)]
+    ok = _k.GetProcessTimes(h, *[ctypes.byref(x) for x in t])
+    _k.CloseHandle(h)
+    return t[0].dwHighDateTime << 32 | t[0].dwLowDateTime if ok else None
 
 
 # ---- what is listening, which pipes exist, a process's windows ------------------------------------------------

@@ -39,6 +39,8 @@ player cabinet (seat 1) with the overlay and your keyboard.  PLAY.exe runs it; r
                               settings window - to look at; they are hidden again at the next start
     python play.py projector  what the panel helper runs when the online projector has lost the server for good
                               (Error 3000): that projector ends and a fresh one starts; the cabinet is not touched
+    python play.py projector open|close   SETTINGS' OPEN / CLOSE PROJECTOR, through panel.py: a fresh projector (also
+                              after the player closed it), or the projector closed as by its window's X
     python play.py restart    what the panels' RESTART NOW runs, through panel.py, in a window of its own: when a
                               plain start would play the same way (same THIS PC / ONLINE server, no English switch) -
                               a club card switch, say - only the cabinet restarts and the projector keeps running;
@@ -413,14 +415,42 @@ def ensure_hook(game, seat):
     return False
 
 
+RUN_KEYS = ("run", "projector", "show_projector", "born")    # what a cabinet's or projector's restart carries over
+
+
 def write_running(roles, mode, ip, seat_no=1, online=None, dream=False, run=None):
     """online: the account's club in play (online\\club.py) - a stop, a cabinet restart and the card rule read it here;
-    dream: a DREAM TEAM run (a cabinet restart keeps it DREAM TEAM).  run: more of the run to keep ("show_projector":
-    SETTINGS' choice at the start - RESTART NOW)"""
-    with open(RUNNING, "w", encoding="utf-8") as f:
+    dream: a DREAM TEAM run (a cabinet restart keeps it DREAM TEAM).  run (2026-10-17): what the running.json before
+    hands on - "run" (this run's id: a projector job for another run does nothing), "run_start" (the time its card
+    sessions count from - a projector's restart keeps it, so an open session stays open; the file's write time is set
+    to it, which is what the panel reads), "projector" (one runs on this PC: OPEN PROJECTOR), "show_projector"
+    (SETTINGS' choice at the start: RESTART NOW), "born" (each process's start: a number Windows gave to another
+    program since is not taken for it).  None: a new run.  Written whole, then swapped in"""
+    run = dict(run or {})
+    run.setdefault("run", "%x" % time.time_ns())
+    run.setdefault("run_start", time.time())
+    born = run.get("born") or {}
+    run["born"] = {str(pid): born.get(str(pid)) or K.started(pid) for pid in roles}
+    with open(RUNNING + ".tmp", "w", encoding="utf-8") as f:
         json.dump(dict({"started": time.strftime("%Y-%m-%d %H:%M:%S"), "mode": mode, "server": ip, "seat": seat_no,
-                        "processes": roles}, **(run or {}), **({"online": online} if online else {}),
+                        "processes": roles}, **run, **({"online": online} if online else {}),
                        **({"dream": True} if dream else {})), f, indent=1)
+    os.replace(RUNNING + ".tmp", RUNNING)
+    os.utime(RUNNING, (run["run_start"], run["run_start"]))
+
+
+def carried(info, *more):
+    """of a running.json, what a restart writes again (RUN_KEYS, and more)"""
+    return {k: info[k] for k in RUN_KEYS + more if k in info}
+
+
+def live_roles(info):
+    """{pid: role} of running.json's processes that still run as the kit's Python they were started as: one whose
+    number Windows gave to another program since - even another of the kit's Pythons - is left out (2026-10-17:
+    "born", the start of each; a running.json without it is matched by the program alone, as before)"""
+    born, alive = info.get("born") or {}, {p[0] for p in kit_pythons()}
+    return {int(k): r for k, r in (info.get("processes") or {}).items()
+            if int(k) in alive and born.get(str(k)) in (None, K.started(int(k)))}
 
 
 def online_of(info):
@@ -913,7 +943,7 @@ def play(debug, mode="local", ip=None, seat_no=None, dream=False):
 
     h = start(os.path.join("helpers", "panel.py"), [LIFE], "run_helper.txt", env)      # the panels' RESTART NOW (from outside the game)
     roles[h.pid] = "panel helper"
-    write_running(roles, mode, ip, seat_no, online, dream, {"show_projector": show})
+    write_running(roles, mode, ip, seat_no, online, dream, {"projector": bool(projector), "show_projector": show})
     say("")
     if mode == "remote":
         say("Playing %son the server at %s%s." % ("DREAM TEAM " if dream else "", ip,
@@ -932,7 +962,11 @@ def play(debug, mode="local", ip=None, seat_no=None, dream=False):
 
 
 def run_started():
-    """when this run started: data\\running.json's write time (written once, when everything was up); None if none"""
+    """when this run's card sessions count from: data\\running.json's run_start (its cabinet's start; a projector's
+    restart keeps it), or for an older one its write time; None if none"""
+    t = running_info().get("run_start")
+    if isinstance(t, (int, float)):
+        return t
     try:
         return os.path.getmtime(RUNNING)
     except OSError:
@@ -1170,7 +1204,8 @@ def ended():
     game, _seat = setup_state()
     if not game:
         return 2
-    launchers, alive = window_launchers(running_roles()), {p[0] for p in kit_pythons()}
+    info = running_info()
+    launchers, alive = window_launchers(running_roles()), set(live_roles(info))
     if projector_only(launchers, alive):
         say("The projector's window has gone: the game plays on without it (closing the cabinet's window ends the run).")
         return 3
@@ -1184,7 +1219,7 @@ def ended():
     say("%s - stopping the rest%s." % ("A game window was closed" if any(pid in alive for pid in launchers) else
                                        "No game window is left", " (the server on this PC keeps running)"
                                        if server_here else ""))
-    info, why = running_info(), went_wrong(gone_logs(launchers, alive))   # not a game the stop is about to end
+    why = went_wrong(gone_logs(launchers, alive))   # not a game the stop is about to end
     r = stop(False, keep_server=server_here)
     if info.get("mode") == "remote":                 # online: the server's people get this PC's side of it
         report_bad_run(info.get("server"), why, game)
@@ -1223,19 +1258,19 @@ def restart_cabinet():
     game, seat = setup_state()
     if not game:
         return 2
+    rc, _c, _sess = stop_guard(False, False, game, seat)
+    if rc:
+        return rc
     info = running_info()
     roles = {int(k): v for k, v in (info.get("processes") or {}).items()}
     mode, ip, online, dream = info.get("mode"), info.get("server"), online_of(info), bool(info.get("dream"))
-    keep = {k: info[k] for k in ("show_projector",) if k in info}
+    keep = carried(info)                     # a new run_start: a session the old cabinet had open was cut
     try:
         seat_no = int(info.get("seat", 1))
     except (TypeError, ValueError):
         seat_no = 1
-    rc, _c, _sess = stop_guard(False, False, game, seat)
-    if rc:
-        return rc
     say("Restarting seat %d's cabinet only - the projector keeps running." % seat_no)
-    alive = {p[0] for p in kit_pythons()}
+    alive = live_roles(info)
     doomed = [pid for pid, role in roles.items() if is_cabinet_role(role) and pid in alive]
     seat_dir = os.path.normcase(seat)
     clients = {p[0] for p in K.game_processes(game)
@@ -1270,41 +1305,75 @@ def restart_cabinet():
     return 0
 
 
-def restart_projector():
+def restart_projector(word=None, run_id=None):
     """the online projector, ended and started again (2026-10-17): what the panel helper runs when the projector's link
     to the server is gone for good (helpers\\panel.py ProjectorKeeper - Error 3000, the game never reconnects by itself).
     A fresh projector joins the server's relay again and shows the next phase.  The cabinet, the scene service, the
     seat lease and the panel helper are never touched; the log of the projector before goes to
-    run_projector_lost.txt.  Exit 3: no online run with a projector on this PC - nothing done"""
+    run_projector_lost.txt.  Exit 3: no online run with a projector on this PC, another run than run_id (the one the
+    helper saw), or - not asked in SETTINGS - a projector the player has closed since: nothing done.  Exit 1: the old
+    projector would not end - no second one is started.
+    word (SETTINGS' OPEN / CLOSE PROJECTOR, the panel helper): "open" - the same, also for a projector the player
+    closed; "close" - the projector ends as if the player closed its window (its log says so: no crash, no report,
+    the run goes on); running.json's "projector" stays, so OPEN PROJECTOR can bring it back"""
     game, _seat = setup_state()
     if not game:
         return 2
     info = running_info()
     roles = {int(k): v for k, v in (info.get("processes") or {}).items()}
     old = [pid for pid, r in roles.items() if r == "projector launcher"]
-    if info.get("mode") != "remote" or not old:
-        say("No online projector in this run (data\\running.json) - nothing restarted.")
+    if info.get("mode") != "remote" or not (old or info.get("projector")):
+        say("No online projector in this run (data\\running.json) - nothing done.")
         return 3
-    say("%s The projector has lost the server - starting it again; the cabinet is not touched." % time.strftime("%H:%M:%S"))
+    if run_id and info.get("run") != run_id:
+        say("The run the projector's restart was for has ended - nothing done.")
+        return 3
+    live = [pid for pid in old if pid in live_roles(info)]   # its pid may be another program's by now, even a Python's
+    if word == "close" and not live:
+        say("CLOSE PROJECTOR: no projector runs - nothing done.")
+        return 0
+    if word is None and (not live or closed(read_log("run_projector.txt"))):
+        say("The projector was closed since its restart was planned - not started again.")
+        return 3
+    say("%s %s; the cabinet is not touched." % (time.strftime("%H:%M:%S"), {
+        "open": "OPEN PROJECTOR (SETTINGS) - starting the projector", "close": "CLOSE PROJECTOR (SETTINGS) - closing the "
+        "projector"}.get(word, "The projector has lost the server - starting it again")))
     mine = os.path.normcase(os.path.join(game, "client_Release.exe"))
     clients = {p[0] for p in K.game_processes(game) if os.path.normcase(p[3]) == mine}
-    alive = {p[0] for p in kit_pythons()}    # a launcher that has ended: its pid may be another program's by now
-    for pid in old:                          # its launcher, a debugger: the projector (and its match engines) end with it
-        if pid in alive:
-            K.kill(pid)
-        roles.pop(pid)
+    for pid in live:                         # its launcher, a debugger: the projector (and its match engines) end with it
+        K.kill(pid)
     time.sleep(1.5)
-    for p in K.game_processes(game):         # what is left of it: the projector and its children
-        if p[0] in clients or p[1] in clients:
-            K.kill(p[0])
+
+    def left():                              # the projector and its children, its launcher
+        return [p for p in K.game_processes(game) if p[0] in clients or p[1] in clients] + \
+            [p for p in kit_pythons() if p[0] in live]
+    for p in left():
+        K.kill(p[0])
     time.sleep(1.0)
+    still = left()
+    if still:                                # never a second projector beside the first; its role stays
+        say("Still running: %s - the projector was not %s (PLAY.exe stop ends the run)." % (", ".join(
+            "%s %d" % (p[2], p[0]) for p in still), "closed" if word == "close" else "started again"))
+        return 1
+    for pid in old:
+        roles.pop(pid)
+    keep = dict(carried(info), run_start=run_started(), projector=True)   # the card session's start stays
+    args = (info["mode"], info.get("server"), info.get("seat", 1), online_of(info), bool(info.get("dream")))
+    if word == "close":                      # its log says closed (closed())
+        try:
+            with open(os.path.join(K.LOGS, "run_projector.txt"), "a", encoding="utf-8") as f:
+                f.write("  %s %s - by CLOSE PROJECTOR (SETTINGS)\n" % (time.strftime("%H:%M:%S"), WINDOW_CLOSED))
+        except OSError:
+            pass
+        write_running(roles, *args, keep)
+        say("The projector is closed; OPEN PROJECTOR brings it back.")
+        return 0
     try:
         os.replace(os.path.join(K.LOGS, "run_projector.txt"), os.path.join(K.LOGS, "run_projector_lost.txt"))
     except OSError:
         pass
     pid = launch_projector(kit_env(game, online_of(info), bool(info.get("dream"))), roles)
-    seat_no = info.get("seat", 1)
-    write_running(roles, info["mode"], info.get("server"), seat_no, online_of(info), bool(info.get("dream")))
+    write_running(roles, *args, keep)
     say("The projector is starting again (launcher %d)." % pid)
     return 0
 
@@ -1393,8 +1462,10 @@ def main(argv):
             return status()
         if a == ["show"]:
             return show()
-        if a == ["projector"]:                # the panel helper: the online projector lost the server for good
-            return restart_projector()
+        if a[:1] == ["projector"]:            # the panel helper: lost for good, or SETTINGS' OPEN / CLOSE PROJECTOR;
+            words = [x for x in a[1:] if not x.startswith("run=")]       # run=ID: the run it saw
+            if words in ([], ["open"], ["close"]):
+                return restart_projector((words or [None])[0], next((x[4:] for x in a if x.startswith("run=")), None))
         if a[:1] == ["restart"]:              # RESTART NOW: stop by the card rule (asked during a session), then start
             if a == ["restart"] and cabinet_restart_fits():   # the projector would come back the same: it is kept
                 return restart_cabinet()
