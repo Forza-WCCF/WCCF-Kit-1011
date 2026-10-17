@@ -160,9 +160,10 @@ def rename_hook_import(path, what):
     return True
 
 
-# the lines play.py sets at each start (the server's address, the seat, whether to wait for a projector): a file that
-# differs from ours only there is ours, as play.py left it - not a hand edit (2026-10-06: online play changes them)
-RUNTIME_LINES = re.compile(rb"(?m)^(CONTROL_IP|MATCH_IP|SATELLITE_NO|WAIT_PROJECTOR)=[^\r\n]*(\r?\n|$)")
+# the lines play.py sets at each start (the server's address, the seat, whether to wait for a projector, the
+# projector's port - the server's projector relay, 2026-10-17): a file that differs from ours only there is ours, as
+# play.py left it - not a hand edit (2026-10-06: online play changes them)
+RUNTIME_LINES = re.compile(rb"(?m)^(CONTROL_IP|CONTROL_PORT|MATCH_IP|SATELLITE_NO|WAIT_PROJECTOR)=[^\r\n]*(\r?\n|$)")
 
 
 def write_text(path, text, what):

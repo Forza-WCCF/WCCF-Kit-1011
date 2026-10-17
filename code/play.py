@@ -12,9 +12,10 @@ player cabinet (seat 1) with the overlay and your keyboard.  PLAY.exe runs it; r
                               it runs up to 32 days
     python play.py remote ADDRESS
                               only the cabinet on this PC, playing on the server at ADDRESS (four numbers with dots -
-                              the game takes no names): the server's seat desk gives this PC the next free seat - the
-                              cabinet only, no projector (a server without the desk: seat 1 and the projector, as
-                              before). The address is remembered, so a later "play.py remote" alone uses
+                              the game takes no names): the server's seat desk gives this PC the next free seat, and
+                              when the server runs a projector relay this PC shows the projector through it (SETTINGS'
+                              SHOW PROJECTOR, on unless switched off; a server without the desk: seat 1 and the
+                              projector, as before). The address is remembered, so a later "play.py remote" alone uses
                               it again. "play.py local" puts this PC back.
     python play.py remote ADDRESS seat N
                               seat N (1-8), if it is free there
@@ -43,11 +44,13 @@ player cabinet (seat 1) with the overlay and your keyboard.  PLAY.exe runs it; r
 
 Order, each step waiting for the one before: scene service -> server (and its 4 match engines) -> projector ->
 the cabinet's stand-ins (keychip and network, card reader, I/O board) -> seat 1 -> the overlay -> the key driver ->
-the panel helper (panel.py: RESTART NOW).
+the panel helper (panel.py: RESTART NOW).  Online the projector starts after the key driver, once the cabinet has its
+match slot (see match_slot).
 Only the game's own windows open (since 2026-10-06): the server's two windows and every script's start hidden,
 unless "debug".
 The SETTINGS panel in seat 1's window writes data\panel.txt (2026-10-06): "play_on=this_pc" or "play_on=online" with
-"server=ADDRESS" (and "online_mode=dream" for its DREAM TEAM chip) - what a plain start does - and "english=on" /
+"server=ADDRESS" (and "online_mode=dream" for its DREAM TEAM chip) - what a plain start does - "projector=off" (its SHOW
+PROJECTOR chip off: online, no projector on this PC; kept) and "english=on" /
 "english=it" / "english=off", a request done at the next start
 (by english.py, while nothing runs) and then taken out of the file.
 "remote" next to a server started on this PC with "server" uses that server's scene service and keeps its logs
@@ -408,13 +411,14 @@ def ensure_hook(game, seat):
     return False
 
 
-def write_running(roles, mode, ip, seat_no=1, online=None, dream=False):
+def write_running(roles, mode, ip, seat_no=1, online=None, dream=False, run=None):
     """online: the account's club in play (online\\club.py) - a stop, a cabinet restart and the card rule read it here;
-    dream: a DREAM TEAM run (a cabinet restart keeps it DREAM TEAM)"""
+    dream: a DREAM TEAM run (a cabinet restart keeps it DREAM TEAM).  run: more of the run to keep ("show_projector":
+    SETTINGS' choice at the start - RESTART NOW)"""
     with open(RUNNING, "w", encoding="utf-8") as f:
         json.dump(dict({"started": time.strftime("%Y-%m-%d %H:%M:%S"), "mode": mode, "server": ip, "seat": seat_no,
-                        "processes": roles}, **({"online": online} if online else {}), **({"dream": True} if dream else {})),
-                  f, indent=1)
+                        "processes": roles}, **(run or {}), **({"online": online} if online else {}),
+                       **({"dream": True} if dream else {})), f, indent=1)
 
 
 def online_of(info):
@@ -582,10 +586,27 @@ def _seat_decision(got, seat_no, ip):
     }.get(err, "the server's seat desk at %s would not give a seat (%s)" % (ip, detail)))
 
 
+def projector_port(projector, relay, show):
+    """Pure: the server port this PC's projector connects to, 0 = no projector (2026-10-17).  projector: the desk
+    said this PC is THE projector (kit 5's desk, or no desk at all) - straight to control; relay: the desk's
+    projector relay port - used when SETTINGS' SHOW PROJECTOR is on (show)"""
+    if projector:
+        return CONTROL_PORT
+    return relay if relay and show else 0
+
+
+def match_slot(hook_log):
+    """Pure: the match-engine slot a game made (2026-10-17), from its hook log (data\\logs\\hook\\mxhook_<pid>.log):
+    N of its 'CreateFileMappingA "MemmapComm memmap wccf_match_connectN"' line; None while it has none.  Each game
+    makes the first free wccf_match_connectN; a match engine it starts takes the lowest slot no engine holds"""
+    m = re.search(r'CreateFileMappingA\s+"MemmapComm memmap wccf_match_connect(\d+)"', hook_log)
+    return int(m.group(1)) if m else None
+
+
 def take_seat(ip, seat_no, env, roles):
     """remote mode (2026-10-06): this PC's seat on the server at ip, from the server's seat desk (server\\seat_desk.py,
     TCP 20030) through online\\seat.py, which keeps holding it while the game runs; seat_no None = the next free seat.
-    Returns (seat, projector?).  See _seat_decision for what each answer means."""
+    Returns (seat, projector?, the projector relay's port or 0).  See _seat_decision for what each answer means."""
     out = os.path.join(K.DATA, "seat_lease.json")
     if os.path.exists(out):
         os.remove(out)
@@ -605,7 +626,7 @@ def take_seat(ip, seat_no, env, roles):
         del roles[p.pid]                             # the lease exited after writing "no broker" - nothing to clean up
         say("  (the server at %s has no seat desk - seat %d%s, as before)" %
             (ip, seat_no, " with the projector" if projector else ""))
-    return seat_no, projector
+    return seat_no, projector, int(got.get("relay") or 0)
 
 
 def start_cabinet(debug, env, mode, ip, seat_no, seat, roles):
@@ -675,6 +696,7 @@ def start_cabinet(debug, env, mode, ip, seat_no, seat, roles):
     else:
         k = start(os.path.join("hardware", "keyboard.py"), [], "run_keys.txt", env)
     roles[k.pid] = "key driver"
+    return found["pid"]
 
 
 def play(debug, mode="local", ip=None, seat_no=None, dream=False):
@@ -684,7 +706,7 @@ def play(debug, mode="local", ip=None, seat_no=None, dream=False):
     docs\\NETWORK-MAP-2010-11.md section 6; the projector is seat 0 and a server has one).  dream (remote only): DREAM
     TEAM - the slot card and the whole catalogue, no sign-in (see the top of this file)"""
     dream = bool(dream) and mode == "remote"
-    projector = True
+    projector = show = True
     game, seat = setup_state()
     if not game:
         return 2
@@ -753,20 +775,28 @@ def play(debug, mode="local", ip=None, seat_no=None, dream=False):
                          "and is that port open to this PC? (PLAY.exe local plays on this PC instead)" %
                          (ip, CONTROL_PORT))
         send_pending_report(env)               # a server answers: the last report it could not take goes now
-        seat_no, projector = take_seat(ip, seat_no, env, roles)
+        seat_no, projector, relay = take_seat(ip, seat_no, env, roles)
+        show = read_panel().get("projector", "").lower() != "off"
+        port = projector_port(projector, relay, show)
+        projector = bool(port)
         for conf in confs:
             set_control_ip(conf, ip)
+        # the projector's own settings (the game folder's): control, or the server's projector relay (2026-10-17);
+        # the cabinet's keep 20002
+        set_conf_value(confs[0], "CONTROL_PORT", port or CONTROL_PORT)
         set_satellite_no(confs[1], seat_no)          # the cabinet's seat (1, or 2-8 for another player's PC)
         # never "WAITING FOR THE PROJECTOR" on a server: its projector is on another PC, or gone (2026-10-06)
         set_conf_value(confs[1], "WAIT_PROJECTOR", 0)
         say("  2/%d server: %s answers on port %d - this PC is seat %d%s" % (
-            steps, ip, CONTROL_PORT, seat_no, " and shows the projector" if projector else ""))
+            steps, ip, CONTROL_PORT, seat_no, "" if not projector else " and shows the projector" if port == CONTROL_PORT
+            else " and shows the projector through the server's relay (port %d)" % port))
     else:
         seat_no = 1                                  # everything on this PC: seat 1 and the projector
         ctrl_conf = os.path.join(game, "local", "ctrl_user_option.conf")
         if mode == "local":
             for conf in confs:              # after a "remote" run: the cabinets play on this PC again
                 set_control_ip(conf, "127.0.0.1")
+            set_conf_value(confs[0], "CONTROL_PORT", CONTROL_PORT)  # after an online run through the projector relay
             set_satellite_no(confs[1], 1)            # after a "remote ... seat N" run: seat 1 again
             # no waiting for the projector here either (2026-10-17): it starts first and joins at once, and one
             # closed by the player never holds the next round up (with 1 control starts none without a projector)
@@ -844,22 +874,38 @@ def play(debug, mode="local", ip=None, seat_no=None, dream=False):
             (CONTROL_PORT, PROJECTOR_PORT, RELAY_PORT))
         return 0
 
-    if projector:
+    def start_projector(step):
         p = start(os.path.join("hardware", "debugger.py"), [LIFE, "client", "follow", "arg=0"], "run_projector.txt",
                   dict(env, WCCF_PANEL=PANEL_DLL))     # the overlay too, in its money-only mode (below)
         roles[p.pid] = "projector launcher"
-        say("  3/6 projector (seat 0) - its window opens in a few seconds")
-    else:
-        say("  3/6 projector: none on this PC - online, each PC runs only its own cabinet")
+        say("  %s projector (seat 0) - its window opens in a few seconds" % step)
 
-    start_cabinet(debug, env, mode, ip, seat_no, seat, roles)
+    # online the projector starts after the cabinet (2026-10-17, match_slot): started first it made slot 0, ran no
+    # engine to hold it, and the cabinet's version check took it - stuck at CHECKING M VERSION.  Local keeps the old
+    # order: control's 4 engines hold slots 0-3 for good and the projector's own version check runs before the cabinet
+    later = projector and mode == "remote"
+    if not projector:
+        say("  3/6 projector: none on this PC - online, each PC runs only its own cabinet")
+    elif later:
+        say("  3/6 projector: starts once seat %d has its match slot" % seat_no)
+    else:
+        start_projector("3/6")
+
+    pid = start_cabinet(debug, env, mode, ip, seat_no, seat, roles)
+    if later:
+        hook = os.path.join("hook", "mxhook_%d.log" % pid)
+        try:
+            wait_for("seat %d's match slot" % seat_no, lambda: match_slot(read_log(hook)) is not None, 60)
+        except Failed:
+            say("     seat %d's match slot not in data\\logs\\%s after 60 s - the projector starts anyway" % (seat_no, hook))
+        start_projector("   ")
     # the projector gets the overlay too (2026-10-06), in its money-only mode: its amounts with commas
     # (wccfpanel.c is_projector - no panels, nothing else); its hook (wccfk.dll) loads it (WCCF_PANEL above), and it plays on
     # as before if it does not load (data\logs\wccfpanel_projector.log)
 
     h = start(os.path.join("helpers", "panel.py"), [LIFE], "run_helper.txt", env)      # the panels' RESTART NOW (from outside the game)
     roles[h.pid] = "panel helper"
-    write_running(roles, mode, ip, seat_no, online, dream)
+    write_running(roles, mode, ip, seat_no, online, dream, {"show_projector": show})
     say("")
     if mode == "remote":
         say("Playing %son the server at %s%s." % ("DREAM TEAM " if dream else "", ip,
@@ -1149,8 +1195,10 @@ def cabinet_restart_fits():
         return False
     online = panel.get("play_on", "").lower() == "online"
     if info["mode"] == "remote":               # DREAM TEAM <-> ONLINE: the seat lease and the club change - a full start
+        show = panel.get("projector", "").lower() != "off"      # SHOW PROJECTOR changed: a full start (2026-10-17)
         return online and panel.get("server", "") == info.get("server") and \
-            (panel.get("online_mode", "").lower() == "dream") == bool(info.get("dream"))
+            (panel.get("online_mode", "").lower() == "dream") == bool(info.get("dream")) and \
+            show == info.get("show_projector", show)
     return not online
 
 
@@ -1165,6 +1213,7 @@ def restart_cabinet():
     info = running_info()
     roles = {int(k): v for k, v in (info.get("processes") or {}).items()}
     mode, ip, online, dream = info.get("mode"), info.get("server"), online_of(info), bool(info.get("dream"))
+    keep = {k: info[k] for k in ("show_projector",) if k in info}
     try:
         seat_no = int(info.get("seat", 1))
     except (TypeError, ValueError):
@@ -1193,7 +1242,7 @@ def restart_cabinet():
         roles.pop(pid, None)
     left = seat_side() + [p for p in kit_pythons() if p[0] in doomed]
     if left:
-        write_running(roles, mode, ip, seat_no, online, dream)
+        write_running(roles, mode, ip, seat_no, online, dream, keep)
         say("Still running: %s - the cabinet was not started again (PLAY.exe stop, then PLAY.exe)." % ", ".join(
             "%s %d" % (p[2], p[0]) for p in left))
         return 1
@@ -1202,7 +1251,7 @@ def restart_cabinet():
     apply_board(seat, online)                # and the new club's cards onto the table, before FPR_Emu and the overlay
     time.sleep(1.0)                          # Windows frees the cabinet's ports and pipes
     start_cabinet(False, kit_env(game, online, dream), mode, ip, seat_no, seat, roles)
-    write_running(roles, mode, ip, seat_no, online, dream)
+    write_running(roles, mode, ip, seat_no, online, dream, keep)
     say("")
     say("Seat %d's cabinet is back; the projector was not touched." % seat_no)
     return 0

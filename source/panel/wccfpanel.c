@@ -448,6 +448,7 @@ static UINT  g_gw = 0, g_gh = 0;         // the game's own frame size (its back-
 // CLUB CARD moved under them (compact_strip).  SETTINGS > VIEW > LAYOUT switches it at once; data\panel.txt keeps it.
 static int   g_compact = 0;
 static int   g_auto_off = 0;      // auto_logs=0 in data\panel.txt (play.py's automatic report off): kept through a save
+static int   g_proj_off = 0;      // projector=off: online, no projector on this PC (2026-10-17; ON unless said)
 
 static RECT strip_rect(float x0, float y0, float x1, float y1)    // sheet px in the right strip -> canvas (pinned right)
 {
@@ -3282,7 +3283,7 @@ static void set_load_locked(void)
 {
     FILE *f = fopen(g_panel_path, "rb"); char line[256];
     g_on_online = 0; g_server[0] = 0; g_eng_req = -1; g_card_req[0] = 0; g_fix_req = 0; g_compact = 0; g_auto_off = 0;
-    g_signout_req = 0; g_dream = 0;
+    g_signout_req = 0; g_dream = 0; g_proj_off = 0;
     if (!f) return;
     while (fgets(line, sizeof line, f)) {
         char *p = strchr(line, '#'), *eq, *name, *val;
@@ -3300,6 +3301,7 @@ static void set_load_locked(void)
         else if (!_stricmp(name, "account")) g_signout_req = !_stricmp(val, "signout");
         else if (!_stricmp(name, "layout")) g_compact = !_stricmp(val, "compact");
         else if (!_stricmp(name, "auto_logs")) g_auto_off = !strcmp(val, "0");
+        else if (!_stricmp(name, "projector")) g_proj_off = !_stricmp(val, "off");
     }
     fclose(f);
 }
@@ -3319,6 +3321,7 @@ static int set_save_locked(void)
     if (g_signout_req) n += _snprintf(text + n, sizeof text - n, "account=signout\n");
     if (g_compact) n += _snprintf(text + n, sizeof text - n, "layout=compact\n");     // the VIEW: kept, not a request
     if (g_auto_off) n += _snprintf(text + n, sizeof text - n, "auto_logs=0\n");       // the player's choice: kept
+    if (g_proj_off) n += _snprintf(text + n, sizeof text - n, "projector=off\n");     // SHOW PROJECTOR off: kept
     f = fopen(g_panel_tmp, "wb");
     if (!f) { logline("settings: could not write %s", g_panel_tmp); return 0; }
     k = (int)fwrite(text, 1, (size_t)n, f) == n;
@@ -3374,6 +3377,24 @@ static void set_selftest(void)
     buf[got] = 0;
     logline("settings test: %s  THIS PC drops DREAM TEAM", ok && strstr(buf, "\nplay_on=this_pc\n") &&
             !strstr(buf, "online_mode") ? "PASS" : "FAIL");
+    // SHOW PROJECTOR (2026-10-17): off is kept through a save; on (the default) writes nothing
+    if ((f = fopen(g_panel_path, "wb")) != NULL) { fputs("play_on=online\nserver=1.2.3.4\nprojector=off\n", f); fclose(f); }
+    EnterCriticalSection(&g_board_cs);
+    set_load_locked();
+    ok = g_proj_off && set_save_locked();
+    LeaveCriticalSection(&g_board_cs);
+    got = 0;
+    if ((f = fopen(g_panel_path, "rb")) != NULL) { got = fread(buf, 1, sizeof buf - 1, f); fclose(f); }
+    buf[got] = 0;
+    logline("settings test: %s  a save keeps SHOW PROJECTOR off", ok && strstr(buf, "\nprojector=off\n") ? "PASS" : "FAIL");
+    EnterCriticalSection(&g_board_cs);
+    g_proj_off = 0;
+    ok = set_save_locked();
+    LeaveCriticalSection(&g_board_cs);
+    got = 0;
+    if ((f = fopen(g_panel_path, "rb")) != NULL) { got = fread(buf, 1, sizeof buf - 1, f); fclose(f); }
+    buf[got] = 0;
+    logline("settings test: %s  SHOW PROJECTOR on writes no line", ok && !strstr(buf, "projector=") ? "PASS" : "FAIL");
 }
 
 static void set_init(void)               // the init thread: where data\ is, and what the file says
@@ -3876,9 +3897,10 @@ static void fmt_when(char *out, size_t cap, ULONGLONG t)   // a file time as the
 
 // the panel's parts, in canvas pixels over the middle column: title + help + X; "NOW" with seven rows (the last,
 // ACCOUNT, with SIGN OUT at its right end); "NEXT START" with two rows of choices (THIS PC / ONLINE / DREAM TEAM + the
-// address box, ENGLISH / ITALIANO / JAPANESE) and RESTART NOW; "VIEW" with the LAYOUT (CABINET / COMPACT, 2026-10-06), at once
+// address box, ENGLISH / ITALIANO / JAPANESE) and RESTART NOW; "VIEW" with the LAYOUT (CABINET / COMPACT, 2026-10-06), at once,
+// and SHOW PROJECTOR beside it (2026-10-17: online, the projector through the server's relay - at the next online start)
 #define SET_ROWS 7
-struct SGeo { float x0, x1, lx, vx, rowh, ynow, ynext, yview; RECT close, pc, online, dream, addr, eng, ita, jap, restart, cab, cmp, logs, signout; };
+struct SGeo { float x0, x1, lx, vx, rowh, ynow, ynext, yview; RECT close, pc, online, dream, addr, eng, ita, jap, restart, cab, cmp, proj, logs, signout; };
 
 static void set_geo(struct SGeo *g)
 {
@@ -3905,6 +3927,7 @@ static void set_geo(struct SGeo *g)
     y = g->yview + 36.0f * s;
     g->cab = RC(g->vx, y, g->vx + 130.0f * s, y + 36.0f * s);
     g->cmp = RC(g->vx + 140.0f * s, y, g->vx + 270.0f * s, y + 36.0f * s);
+    g->proj = RC(g->vx + 300.0f * s, y, g->vx + 520.0f * s, y + 36.0f * s);  // no room for a row of its own
     y += 36.0f * s + 30.0f * s;                            // under LAYOUT's note: LOGS - SEND LOGS (2026-10-09)
     g->logs = RC(g->vx, y, g->vx + 270.0f * s, y + 38.0f * s);
 }
@@ -3967,6 +3990,7 @@ static void set_draw(IDirect3DDevice9 *dev)
     }
     set_chip(dev, g.cab, "CABINET", !g_compact, s);
     set_chip(dev, g.cmp, "COMPACT", g_compact, s);
+    set_chip(dev, g.proj, "SHOW PROJECTOR", !g_proj_off, s);
     {
         int armed = g_lg_armed && (LONG)(g_lg_armed - now) > 0, busy = g_lg_sent || !strcmp(g_lg_res, "sending");
         set_chip(dev, g.logs, busy ? "SENDING ..." : armed ? "CLICK AGAIN TO SEND" : "SEND LOGS", armed || busy, s);
@@ -4203,6 +4227,12 @@ static void set_click(HWND h, int x, int y)                     // a press insid
                 else note_locked(green, "CABINET: the cabinet's buttons are back around the game");
                 logline("settings: layout %s", want ? "compact" : "cabinet");
             }
+        } else if (in_rect(&g.proj, x, y)) {                    // SHOW PROJECTOR: online, at the next start
+            g_proj_off = !g_proj_off;
+            if (!set_save_locked()) { g_proj_off = !g_proj_off; note_locked(red, "could not save data\\panel.txt - try again"); }
+            else note_locked(green, g_proj_off ? "next online start: no projector on this PC"
+                                               : "next online start: the projector too, when the server has a relay");
+            logline("settings: show projector %s", g_proj_off ? "off" : "on");
         } else if (in_rect(&g.signout, x, y) && g_account[0]) {   // SIGN OUT: click twice; once more undoes it
             DWORD now = GetTickCount(), yellow = D3DCOLOR_ARGB(255, 255, 214, 40);
             if (g_signout_req) {
