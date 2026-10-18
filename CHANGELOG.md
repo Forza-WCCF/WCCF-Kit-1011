@@ -6,6 +6,17 @@ game is not included. Newest first; each date is the day that kit was built.
 
 ## Unreleased
 
+### Added
+- SETTINGS > VIEW > GRAPHICS, a page of video settings for the game itself (as an emulator has). PRESET sets the
+  rows at once: LOW (a slow PC or laptop), ORIGINAL (the game as the arcade), HIGH and ULTRA (a strong graphics card,
+  a 4K screen); CUSTOM lights up for any other mix. AT ONCE: TEXTURES GAME / 4x / 8x / 16x (sharper pitch lines at a
+  slant) and an FPS counter. NEXT START (RESTART NOW applies them; the projector on this PC at PLAY.exe's next start):
+  ANTI-ALIAS GAME / OFF / 2x / 4x / 8x (8x only where the graphics card can, else the next level down), RESOLUTION of
+  the seat's 3D GAME / 0.75x / 1.5x / 2x / 3x, SHADOWS GAME / LOW, MOTION BLUR GAME / OFF. OFF, 0.75x, LOW and OFF help a
+  slow PC. The hook changes each only on the original code and says so in its log.
+- The seat's window is DPI aware: on a scaled screen (150%, a 4K one at 200%) Windows no longer stretches it, so the
+  panel's text stays sharp.
+
 ### Fixed
 - English: the yellow lines at the bottom of the screen were still Japanese. INSERT CLUB CARD
   (クラブチームカードを挿入してください) is new lettering made to match Sega's own lines below it; INSERT COIN(S) and
