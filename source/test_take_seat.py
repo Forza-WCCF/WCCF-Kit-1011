@@ -59,6 +59,21 @@ except play.SignInRefused as e:
     check("needs a wccf.online account" in str(e), "a sign-in refusal keeps the desk's words for the player")
 check(issubclass(play.SignInRefused, play.Failed), "SignInRefused is still a Failed (old handlers keep working)")
 
-n = 12
+# the projector on this PC (2026-10-17): straight to control when the desk says this PC is THE projector; through the
+# server's projector relay when SETTINGS' SHOW PROJECTOR is on; else none
+check(play.projector_port(True, 0, False) == play.CONTROL_PORT, "kit 5's desk / no desk: the projector, to control")
+check(play.projector_port(False, 20031, True) == 20031, "a relay offered, SHOW PROJECTOR on: the projector, to the relay")
+check(play.projector_port(False, 20031, False) == 0, "SHOW PROJECTOR off: no projector")
+check(play.projector_port(False, 0, True) == 0, "an older desk, no relay: no projector")
+
+# the cabinet's match slot (2026-10-17): online the projector waits for it, so the cabinet holds the lower slot
+seat_log = ('OpenFileMappingA    "SBWG_status"  -> FOUND  err=0  (h=0x000001CC)\n'
+            'CreateFileMappingA  "MemmapComm memmap wccf_match_connect1"  size=31457316 -> 0x00000BCC  err=0\n')
+check(play.match_slot(seat_log) == 1, "the slot a game made is read from its hook log")
+check(play.match_slot('OpenFileMappingA    "MemmapComm memmap wccf_match_connect0"  -> FOUND  err=0') is None,
+      "an engine's open is no slot of its own")
+check(play.match_slot("") is None, "no hook log yet: no slot")
+
+n = 19
 print("take_seat: %d of %d checks passed" % (n - len(fails), n))
 sys.exit(1 if fails else 0)

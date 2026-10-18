@@ -2,6 +2,8 @@
 #   every script in code\ compiles with the kit's own Python (nothing written)
 #   the key driver's self-test (hardware\keyboard.py --selftest: a scratch file, nothing live)
 #   play.py's choice when a game window ends: a closed window stops the rest, a crash does not (source\test_ended.py)
+#   the online projector that lost the server comes back, one the player closed does not (source\test_projector_keeper.py)
+#   its restart, OPEN and CLOSE keep the card session's start and never end another process (test_projector_restart.py)
 #   the club card editor's self-test (cards\edit.py --self-test: cards made in memory, no real card)
 #   a missing club-card helper file never stops a start (source\test_card_fix.py: a scratch panel.txt)
 #   the run before last zipped into data\logs\archive, the archive kept to its size (source\test_log_archive.py)
@@ -9,6 +11,7 @@
 #   the club card's links reach the view the FORMATION board draws (source\test_club_links.py: a scratch card)
 #   the seat desk never gives a seat that is in the game (source\test_seat_desk_game.py: a scratch control log, the
 #   desk on 127.0.0.1:20932)
+#   the projector relay: a fake control and fake projectors (source\test_projector_relay.py: 127.0.0.1:20960-1)
 #   the projector box held off the game until a player is in (source\test_hold_projector.py: the desk on 127.0.0.1:20933-6,
 #   the firewall rule written to a scratch file)
 #   SEND LOGS: packed without the club card, names taken out, kept by the log inbox - which refuses junk, too big, not
@@ -58,6 +61,12 @@ if ($LASTEXITCODE) { $failed += 'key driver self-test' }
 
 & $py -I (Join-Path $PSScriptRoot 'test_ended.py')
 if ($LASTEXITCODE) { $failed += 'play.py ended: a closed window vs a crash' }
+
+& $py -I (Join-Path $PSScriptRoot 'test_projector_keeper.py')
+if ($LASTEXITCODE) { $failed += 'the online projector: restarted once it lost the server, never after the player closed it' }
+
+& $py -I (Join-Path $PSScriptRoot 'test_projector_restart.py')
+if ($LASTEXITCODE) { $failed += 'the online projector: its restart, OPEN and CLOSE (play.py restart_projector)' }
 
 & $py -I (Join-Path $kit 'code\cards\edit.py') --self-test | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'club card editor self-test' }
@@ -119,6 +128,7 @@ function Start-Check([string]$what, [string]$script) {
 $side = @(
     Start-Check 'the seat desk: never a seat that is in the game' 'test_seat_desk_game.py'
     Start-Check 'the projector box: held until a player is in' 'test_hold_projector.py'
+    Start-Check 'the projector relay: one connection to control, every player''s projector fed, a slow one shed' 'test_projector_relay.py'
     Start-Check 'SEND LOGS: packed, sent, kept - and refused when it must be' 'test_send_logs.py'
     Start-Check 'the wccf.online sign-in: a code, approved, kept, never printed' 'test_account.py'
     Start-Check 'the seat desk and the sign-in: optional or needed, a good or refused token, no token logged' 'test_seat_desk_signin.py'

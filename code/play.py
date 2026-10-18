@@ -4,16 +4,18 @@ player cabinet (seat 1) with the overlay and your keyboard.  PLAY.exe runs it; r
 
     python play.py            start everything on this PC - or, when the SETTINGS panel chose ONLINE, the cabinets
                               on its server (as "remote ADDRESS"), and this PC if that server does not answer;
-                              closing a game window ends the run (there is no fixed time limit any more)
+                              closing the cabinet's window ends the run (there is no fixed time limit any more);
+                              closing the projector's window stops nothing else
     python play.py local      everything on this PC, whatever the SETTINGS panel chose
     python play.py server     only the server side (scene service, server, its 4 match engines): for the PC or
                               cloud machine that hosts the game for others - its TCP port 20002 must be open to them;
                               it runs up to 32 days
     python play.py remote ADDRESS
                               only the cabinet on this PC, playing on the server at ADDRESS (four numbers with dots -
-                              the game takes no names): the server's seat desk gives this PC the next free seat - the
-                              cabinet only, no projector (a server without the desk: seat 1 and the projector, as
-                              before). The address is remembered, so a later "play.py remote" alone uses
+                              the game takes no names): the server's seat desk gives this PC the next free seat, and
+                              when the server runs a projector relay this PC shows the projector through it (SETTINGS'
+                              SHOW PROJECTOR, on unless switched off; a server without the desk: seat 1 and the
+                              projector, as before). The address is remembered, so a later "play.py remote" alone uses
                               it again. "play.py local" puts this PC back.
     python play.py remote ADDRESS seat N
                               seat N (1-8), if it is free there
@@ -29,11 +31,16 @@ player cabinet (seat 1) with the overlay and your keyboard.  PLAY.exe runs it; r
     python play.py stop       stop everything - refused while your club card is in the reader (the game may be
                               saving it: press I in the game first); "stop force" stops anyway;
                               "stop check" only says what stop would do, and stops nothing
-    python play.py ended      what PLAY.exe's watcher runs once a game window is closed: stop the rest (a
-                              server started on this PC with "server" stays, for the other players)
+    python play.py ended      what PLAY.exe's watcher runs once a game window is closed: the cabinet's - stop the
+                              rest (a server started on this PC with "server" stays, for the other players); the
+                              projector's alone - nothing
     python play.py status     what is running
     python play.py show       show the server's hidden windows again: its console (the round-by-round log) and its
                               settings window - to look at; they are hidden again at the next start
+    python play.py projector  what the panel helper runs when the online projector has lost the server for good
+                              (Error 3000): that projector ends and a fresh one starts; the cabinet is not touched
+    python play.py projector open|close   SETTINGS' OPEN / CLOSE PROJECTOR, through panel.py: a fresh projector (also
+                              after the player closed it), or the projector closed as by its window's X
     python play.py restart    what the panels' RESTART NOW runs, through panel.py, in a window of its own: when a
                               plain start would play the same way (same THIS PC / ONLINE server, no English switch) -
                               a club card switch, say - only the cabinet restarts and the projector keeps running;
@@ -41,11 +48,13 @@ player cabinet (seat 1) with the overlay and your keyboard.  PLAY.exe runs it; r
 
 Order, each step waiting for the one before: scene service -> server (and its 4 match engines) -> projector ->
 the cabinet's stand-ins (keychip and network, card reader, I/O board) -> seat 1 -> the overlay -> the key driver ->
-the panel helper (panel.py: RESTART NOW).
+the panel helper (panel.py: RESTART NOW).  Online the projector starts after the key driver, once the cabinet has its
+match slot (see match_slot).
 Only the game's own windows open (since 2026-10-06): the server's two windows and every script's start hidden,
 unless "debug".
 The SETTINGS panel in seat 1's window writes data\panel.txt (2026-10-06): "play_on=this_pc" or "play_on=online" with
-"server=ADDRESS" (and "online_mode=dream" for its DREAM TEAM chip) - what a plain start does - and "english=on" /
+"server=ADDRESS" (and "online_mode=dream" for its DREAM TEAM chip) - what a plain start does - "projector=off" (its SHOW
+PROJECTOR chip off: online, no projector on this PC; kept) and "english=on" /
 "english=it" / "english=off", a request done at the next start
 (by english.py, while nothing runs) and then taken out of the file.
 "remote" next to a server started on this PC with "server" uses that server's scene service and keeps its logs
@@ -55,6 +64,7 @@ Logs: data\logs\ (the run before: data\logs\previous\; older runs zipped in data
 past ARCHIVE_LIMIT); the key driver's is run_keys.txt.
 Exit: 0 ok, 1 a step failed, 2 not set up, 3 refused.
 """
+import contextlib
 import filecmp
 import json
 import os
@@ -70,7 +80,9 @@ import kit_common as K
 
 CONTROL_PORT = 20002
 RELAY_PORT = 20040                                    # UDP, the server's match relay (server\relay.py)
-SERVER_ROLES = ("scene service", "server launcher", "seat desk", "match relay", "log inbox", "witness")
+PROJECTOR_PORT = 20031                                # TCP, the server's projector relay (server\projector_relay.py)
+SERVER_ROLES = ("scene service", "server launcher", "seat desk", "match relay", "log inbox", "witness",
+                "projector relay")
 WITNESS = os.path.join(K.DATA, "witness")      # a server with a wccf.online secret keeps each match's club data here
                                                # (the hook, source\hook\wccfk.c) for server\witness.py (2026-10-14)
 
@@ -404,13 +416,86 @@ def ensure_hook(game, seat):
     return False
 
 
-def write_running(roles, mode, ip, seat_no=1, online=None, dream=False):
+RUN_KEYS = ("run", "projector", "show_projector", "born")    # what a cabinet's or projector's restart carries over
+
+
+def write_running(roles, mode, ip, seat_no=1, online=None, dream=False, run=None):
     """online: the account's club in play (online\\club.py) - a stop, a cabinet restart and the card rule read it here;
-    dream: a DREAM TEAM run (a cabinet restart keeps it DREAM TEAM)"""
-    with open(RUNNING, "w", encoding="utf-8") as f:
+    dream: a DREAM TEAM run (a cabinet restart keeps it DREAM TEAM).  run (2026-10-17): what the running.json before
+    hands on - "run" (this run's id: a projector job for another run does nothing), "run_start" (the time its card
+    sessions count from - a projector's restart keeps it, so an open session stays open; the file's write time is set
+    to it, which is what the panel reads), "projector" (one runs on this PC: OPEN PROJECTOR), "show_projector"
+    (SETTINGS' choice at the start: RESTART NOW), "born" (each process's start: a number Windows gave to another
+    program since is not taken for it).  None: a new run.  Written whole, then swapped in"""
+    run = dict(run or {})
+    run.setdefault("run", "%x" % time.time_ns())
+    run.setdefault("run_start", time.time())
+    born = run.get("born") or {}
+    run["born"] = {str(pid): born.get(str(pid)) or K.started(pid) for pid in roles}
+    with open(RUNNING + ".tmp", "w", encoding="utf-8") as f:
         json.dump(dict({"started": time.strftime("%Y-%m-%d %H:%M:%S"), "mode": mode, "server": ip, "seat": seat_no,
-                        "processes": roles}, **({"online": online} if online else {}), **({"dream": True} if dream else {})),
-                  f, indent=1)
+                        "processes": roles}, **run, **({"online": online} if online else {}),
+                       **({"dream": True} if dream else {})), f, indent=1)
+    os.replace(RUNNING + ".tmp", RUNNING)
+    os.utime(RUNNING, (run["run_start"], run["run_start"]))
+
+
+def carried(info, *more):
+    """of a running.json, what a restart writes again (RUN_KEYS, and more)"""
+    return {k: info[k] for k in RUN_KEYS + more if k in info}
+
+
+def live_roles(info):
+    """{pid: role} of running.json's processes that still run as the kit's Python they were started as: one whose
+    number Windows gave to another program since - even another of the kit's Pythons - is left out (2026-10-17:
+    "born", the start of each; a running.json without it is matched by the program alone, as before)"""
+    born, alive = info.get("born") or {}, {p[0] for p in kit_pythons()}
+    return {int(k): r for k, r in (info.get("processes") or {}).items()
+            if int(k) in alive and born.get(str(k)) in (None, K.started(int(k)))}
+
+
+class Busy(Exception):
+    """the run lock stayed taken: another stop or restart of this run is busy"""
+
+
+LOCK = os.path.join(K.DATA, "run.lock")
+_locked = [0]
+
+
+@contextlib.contextmanager
+def run_lock(seconds=120):
+    """one change of the run at a time (2026-10-17): a stop, the end of a run, RESTART NOW's cabinet and the
+    projector's restart each read running.json, end or start programs and write it back under this lock, so none
+    writes back what another changed, or a stopped run back.  Taken once per play.py (a nested one goes through)"""
+    if _locked[0]:
+        _locked[0] += 1
+        try:
+            yield
+        finally:
+            _locked[0] -= 1
+        return
+    import msvcrt
+    os.makedirs(os.path.dirname(LOCK), exist_ok=True)
+    f = open(LOCK, "a+b")
+    end = time.time() + seconds
+    while True:
+        try:
+            f.seek(0)
+            msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
+            break
+        except OSError:
+            if time.time() > end:
+                f.close()
+                raise Busy("another stop or restart of this run is still busy (data\\run.lock) - nothing done")
+            time.sleep(0.2)
+    _locked[0] = 1
+    try:
+        yield
+    finally:
+        _locked[0] = 0
+        f.seek(0)
+        msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
+        f.close()
 
 
 def online_of(info):
@@ -578,10 +663,27 @@ def _seat_decision(got, seat_no, ip):
     }.get(err, "the server's seat desk at %s would not give a seat (%s)" % (ip, detail)))
 
 
+def projector_port(projector, relay, show):
+    """Pure: the server port this PC's projector connects to, 0 = no projector (2026-10-17).  projector: the desk
+    said this PC is THE projector (kit 5's desk, or no desk at all) - straight to control; relay: the desk's
+    projector relay port - used when SETTINGS' SHOW PROJECTOR is on (show)"""
+    if projector:
+        return CONTROL_PORT
+    return relay if relay and show else 0
+
+
+def match_slot(hook_log):
+    """Pure: the match-engine slot a game made (2026-10-17), from its hook log (data\\logs\\hook\\mxhook_<pid>.log):
+    N of its 'CreateFileMappingA "MemmapComm memmap wccf_match_connectN"' line; None while it has none.  Each game
+    makes the first free wccf_match_connectN; a match engine it starts takes the lowest slot no engine holds"""
+    m = re.search(r'CreateFileMappingA\s+"MemmapComm memmap wccf_match_connect(\d+)"', hook_log)
+    return int(m.group(1)) if m else None
+
+
 def take_seat(ip, seat_no, env, roles):
     """remote mode (2026-10-06): this PC's seat on the server at ip, from the server's seat desk (server\\seat_desk.py,
     TCP 20030) through online\\seat.py, which keeps holding it while the game runs; seat_no None = the next free seat.
-    Returns (seat, projector?).  See _seat_decision for what each answer means."""
+    Returns (seat, projector?, the projector relay's port or 0).  See _seat_decision for what each answer means."""
     out = os.path.join(K.DATA, "seat_lease.json")
     if os.path.exists(out):
         os.remove(out)
@@ -601,7 +703,7 @@ def take_seat(ip, seat_no, env, roles):
         del roles[p.pid]                             # the lease exited after writing "no broker" - nothing to clean up
         say("  (the server at %s has no seat desk - seat %d%s, as before)" %
             (ip, seat_no, " with the projector" if projector else ""))
-    return seat_no, projector
+    return seat_no, projector, int(got.get("relay") or 0)
 
 
 def start_cabinet(debug, env, mode, ip, seat_no, seat, roles):
@@ -671,6 +773,15 @@ def start_cabinet(debug, env, mode, ip, seat_no, seat, roles):
     else:
         k = start(os.path.join("hardware", "keyboard.py"), [], "run_keys.txt", env)
     roles[k.pid] = "key driver"
+    return found["pid"]
+
+
+def launch_projector(env, roles):
+    """the projector (seat 0) under its launcher, the overlay too in its money-only mode (below in play)"""
+    p = start(os.path.join("hardware", "debugger.py"), [LIFE, "client", "follow", "arg=0"], "run_projector.txt",
+              dict(env, WCCF_PANEL=PANEL_DLL))
+    roles[p.pid] = "projector launcher"
+    return p.pid
 
 
 def play(debug, mode="local", ip=None, seat_no=None, dream=False):
@@ -680,7 +791,7 @@ def play(debug, mode="local", ip=None, seat_no=None, dream=False):
     docs\\NETWORK-MAP-2010-11.md section 6; the projector is seat 0 and a server has one).  dream (remote only): DREAM
     TEAM - the slot card and the whole catalogue, no sign-in (see the top of this file)"""
     dream = bool(dream) and mode == "remote"
-    projector = True
+    projector = show = True
     game, seat = setup_state()
     if not game:
         return 2
@@ -749,23 +860,33 @@ def play(debug, mode="local", ip=None, seat_no=None, dream=False):
                          "and is that port open to this PC? (PLAY.exe local plays on this PC instead)" %
                          (ip, CONTROL_PORT))
         send_pending_report(env)               # a server answers: the last report it could not take goes now
-        seat_no, projector = take_seat(ip, seat_no, env, roles)
+        seat_no, projector, relay = take_seat(ip, seat_no, env, roles)
+        show = read_panel().get("projector", "").lower() != "off"
+        port = projector_port(projector, relay, show)
+        projector = bool(port)
         for conf in confs:
             set_control_ip(conf, ip)
+        # the projector's own settings (the game folder's): control, or the server's projector relay (2026-10-17);
+        # the cabinet's keep 20002
+        set_conf_value(confs[0], "CONTROL_PORT", port or CONTROL_PORT)
         set_satellite_no(confs[1], seat_no)          # the cabinet's seat (1, or 2-8 for another player's PC)
         # never "WAITING FOR THE PROJECTOR" on a server: its projector is on another PC, or gone (2026-10-06)
         set_conf_value(confs[1], "WAIT_PROJECTOR", 0)
         say("  2/%d server: %s answers on port %d - this PC is seat %d%s" % (
-            steps, ip, CONTROL_PORT, seat_no, " and shows the projector" if projector else ""))
+            steps, ip, CONTROL_PORT, seat_no, "" if not projector else " and shows the projector" if port == CONTROL_PORT
+            else " and shows the projector through the server's relay (port %d)" % port))
     else:
         seat_no = 1                                  # everything on this PC: seat 1 and the projector
         ctrl_conf = os.path.join(game, "local", "ctrl_user_option.conf")
         if mode == "local":
             for conf in confs:              # after a "remote" run: the cabinets play on this PC again
                 set_control_ip(conf, "127.0.0.1")
+            set_conf_value(confs[0], "CONTROL_PORT", CONTROL_PORT)  # after an online run through the projector relay
             set_satellite_no(confs[1], 1)            # after a "remote ... seat N" run: seat 1 again
-            set_conf_value(confs[1], "WAIT_PROJECTOR", 1)    # the game's own way, with its projector right here
-            set_conf_value(ctrl_conf, "WAIT_PROJECTOR", 1)
+            # no waiting for the projector here either (2026-10-17): it starts first and joins at once, and one
+            # closed by the player never holds the next round up (with 1 control starts none without a projector)
+            set_conf_value(confs[1], "WAIT_PROJECTOR", 0)
+            set_conf_value(ctrl_conf, "WAIT_PROJECTOR", 0)
         else:
             # a server for others: no projector waited for (2026-10-11, the owner: players on the server get only
             # their own game - the seat desk gives no PC the projector).  With 1 control never starts a round until a
@@ -802,6 +923,17 @@ def play(debug, mode="local", ip=None, seat_no=None, dream=False):
             say("     match relay: UDP %d - a match between two players goes through this machine" % RELAY_PORT)
         else:
             say("     the match relay did not start (data\\logs\\run_match_relay.txt) - two players then play the CPU")
+        # the projector relay (2026-10-17): control's one projector connection, passed on to every player's projector
+        pr = start(os.path.join("server", "projector_relay.py"), [life + 60, os.path.join(K.LOGS, "projector_relay.txt")],
+                   "run_projector_relay.txt", env)
+        time.sleep(1.0)
+        if pr.poll() is None:
+            roles[pr.pid] = "projector relay"
+            say("     projector relay: TCP %d - each player's PC can show the projector through this machine" %
+                PROJECTOR_PORT)
+        else:
+            say("     the projector relay did not start (data\\logs\\run_projector_relay.txt) - players then see no "
+                "projector")
         # the log inbox (2026-10-09): the logs players send with SEND LOGS (SETTINGS) are kept in data\player_logs
         li = start(os.path.join("server", "log_inbox.py"), [life + 60, os.path.join(K.LOGS, "log_inbox.txt")], "run_log_inbox.txt", env)
         time.sleep(1.0)
@@ -823,26 +955,40 @@ def play(debug, mode="local", ip=None, seat_no=None, dream=False):
         write_running(roles, mode, None)
         say("")
         say("Server running. On each player's PC: PLAY.exe remote, then this machine's address - the one their PC")
-        say("can reach. This machine must let in TCP ports %d, 20030 and 20050, and UDP %d. PLAY.exe stop ends it." % (
-            CONTROL_PORT, RELAY_PORT))
+        say("can reach. This machine must let in TCP ports %d, 20030, 20050 and %d, and UDP %d. PLAY.exe stop ends it." %
+            (CONTROL_PORT, PROJECTOR_PORT, RELAY_PORT))
         return 0
 
-    if projector:
-        p = start(os.path.join("hardware", "debugger.py"), [LIFE, "client", "follow", "arg=0"], "run_projector.txt",
-                  dict(env, WCCF_PANEL=PANEL_DLL))     # the overlay too, in its money-only mode (below)
-        roles[p.pid] = "projector launcher"
-        say("  3/6 projector (seat 0) - its window opens in a few seconds")
-    else:
-        say("  3/6 projector: none on this PC - online, each PC runs only its own cabinet")
+    def start_projector(step):
+        launch_projector(env, roles)
+        say("  %s projector (seat 0) - its window opens in a few seconds" % step)
 
-    start_cabinet(debug, env, mode, ip, seat_no, seat, roles)
+    # online the projector starts after the cabinet (2026-10-17, match_slot): started first it made slot 0, ran no
+    # engine to hold it, and the cabinet's version check took it - stuck at CHECKING M VERSION.  Local keeps the old
+    # order: control's 4 engines hold slots 0-3 for good and the projector's own version check runs before the cabinet
+    later = projector and mode == "remote"
+    if not projector:
+        say("  3/6 projector: none on this PC - online, each PC runs only its own cabinet")
+    elif later:
+        say("  3/6 projector: starts once seat %d has its match slot" % seat_no)
+    else:
+        start_projector("3/6")
+
+    pid = start_cabinet(debug, env, mode, ip, seat_no, seat, roles)
+    if later:
+        hook = os.path.join("hook", "mxhook_%d.log" % pid)
+        try:
+            wait_for("seat %d's match slot" % seat_no, lambda: match_slot(read_log(hook)) is not None, 60)
+        except Failed:
+            say("     seat %d's match slot not in data\\logs\\%s after 60 s - the projector starts anyway" % (seat_no, hook))
+        start_projector("   ")
     # the projector gets the overlay too (2026-10-06), in its money-only mode: its amounts with commas
     # (wccfpanel.c is_projector - no panels, nothing else); its hook (wccfk.dll) loads it (WCCF_PANEL above), and it plays on
     # as before if it does not load (data\logs\wccfpanel_projector.log)
 
     h = start(os.path.join("helpers", "panel.py"), [LIFE], "run_helper.txt", env)      # the panels' RESTART NOW (from outside the game)
     roles[h.pid] = "panel helper"
-    write_running(roles, mode, ip, seat_no, online, dream)
+    write_running(roles, mode, ip, seat_no, online, dream, {"projector": bool(projector), "show_projector": show})
     say("")
     if mode == "remote":
         say("Playing %son the server at %s%s." % ("DREAM TEAM " if dream else "", ip,
@@ -853,14 +999,19 @@ def play(debug, mode="local", ip=None, seat_no=None, dream=False):
     say("  I club card in / out   F1 test menu   F11 window size   - or click the buttons around the picture")
     say("First time: put the card in with I, and the game makes your club. It is saved in %s." %
         K.shown(online["card"] if online else CARD))
-    say("To finish: let the card come out after a match, then close the game's window - the rest stops with it. %s" % (
+    say("To finish: let the card come out after a match, then close the cabinet's window - the rest stops with it "
+        "(the projector's window can be closed any time; nothing else stops). %s" % (
         "(The key driver's window is minimized.)" if debug else
         "(The key driver runs in the background: its log is data\\logs\\run_keys.txt.)"))
     return 0
 
 
 def run_started():
-    """when this run started: data\\running.json's write time (written once, when everything was up); None if none"""
+    """when this run's card sessions count from: data\\running.json's run_start (its cabinet's start; a projector's
+    restart keeps it), or for an older one its write time; None if none"""
+    t = running_info().get("run_start")
+    if isinstance(t, (int, float)):
+        return t
     try:
         return os.path.getmtime(RUNNING)
     except OSError:
@@ -950,6 +1101,25 @@ def stop(force, check=False, keep_server=False):
     rc, c, sess = stop_guard(force, check, game, seat)
     if rc:
         return rc
+    with run_lock():
+        r = _stop(game, c, sess, check, keep_server)
+    if isinstance(r, int):
+        return r
+    ours, left, still = r
+    if still:
+        say("Still running: %s" % ", ".join("%s %d" % (p[2], p[0]) for p in still))
+        return 1
+    say("Stopped (%d kit processes, %d game processes)." % (len(ours), len(left)))
+    try:                         # the cards on the table kept with their club (formation.py): data\save holds the latest
+        from cards import formation
+        formation.keep(seat)
+    except Exception as ex:
+        say("  (the cards on the table were not copied to their club: %s)" % ex)
+    return 0
+
+
+def _stop(game, c, sess, check, keep_server):
+    """stop()'s part under the run lock: (kit processes, game processes, what still runs), or check's 0"""
     roles = running_roles() if keep_server else None
 
     def mine(procs):
@@ -973,19 +1143,17 @@ def stop(force, check=False, keep_server=False):
         write_running({pid: r for pid, r in roles.items() if r in SERVER_ROLES}, "server", None)
     elif os.path.exists(RUNNING):
         os.remove(RUNNING)
-    if still:
-        say("Still running: %s" % ", ".join("%s %d" % (p[2], p[0]) for p in still))
-        return 1
-    say("Stopped (%d kit processes, %d game processes)." % (len(ours), len(left)))
-    try:                         # the cards on the table kept with their club (formation.py): data\save holds the latest
-        from cards import formation
-        formation.keep(seat)
-    except Exception as ex:
-        say("  (the cards on the table were not copied to their club: %s)" % ex)
-    return 0
+    return ours, left, still
 
 
 WINDOW_CLOSED = "its window was closed"   # debugger.py's line when it ends a game because its window was closed
+CLEAN_EXIT = "process exited, exit code 0x00000000"  # debugger.py's line when a game quit by itself, cleanly: the
+                                                     # projector does at a close of its window, before the line above
+
+
+def closed(text):
+    """a launcher's log says its game was closed: the window closed, or the game quit cleanly (2026-10-17)"""
+    return WINDOW_CLOSED in text or CLEAN_EXIT in text
 
 
 def window_launchers(roles):
@@ -994,13 +1162,27 @@ def window_launchers(roles):
             if r == "projector launcher" or re.fullmatch(r"seat \d+ launcher", r)}
 
 
+def projector_only(launchers, alive):
+    """True when what ended is the run's projector and a cabinet still runs (2026-10-17): the projector's window is
+    never a reason to stop - nothing else stops, and it is no crash to report.  Closing the cabinet's own window still
+    ends this PC's run, the projector with it"""
+    gone = [pid for pid in launchers if pid not in alive]
+    return bool(gone) and all(launchers[pid] == "run_projector.txt" for pid in gone) and \
+        any(pid in alive for pid in launchers)
+
+
+def gone_logs(launchers, alive):
+    """the logs of the run's game-window launchers that have ended (alive: the kit's Pythons that still run)"""
+    return sorted({log for pid, log in launchers.items() if pid not in alive})
+
+
 def crashed_logs(launchers, alive, read_log):
     """the logs of the launchers that ended WITHOUT their window being closed (a crash), when another game window of
     the run still runs - then nothing may stop (the player, 2026-10-07: "no one cabinet can restart or stop the
     projector"); None when a window was closed, or when no game window is left to keep running.  An empty list: none
     has ended (a hand-run "ended") - nothing stops then either"""
-    gone = sorted({log for pid, log in launchers.items() if pid not in alive})
-    if any(WINDOW_CLOSED in read_log(log) for log in gone) or not any(pid in alive for pid in launchers):
+    gone = gone_logs(launchers, alive)
+    if any(closed(read_log(log)) for log in gone) or not any(pid in alive for pid in launchers):
         return None
     return gone
 
@@ -1021,7 +1203,7 @@ def went_wrong(launcher_logs, read=read_log):
     """Pure (reads through read): why this run went wrong, [] if it did not - a game window that went without being
     closed, a crash the launcher recorded (debugger.py: the report and the memory snapshot), the server link lost
     (wccfpanel.dll's server_link.txt)"""
-    why = ["%s: the game window went by itself, not closed" % n for n in launcher_logs if WINDOW_CLOSED not in read(n)]
+    why = ["%s: the game window went by itself, not closed" % n for n in launcher_logs if not closed(read(n))]
     why += ["%s: a crash recorded (%s)" % (n, s) for n in sorted(set(launcher_logs) | {"run_server.txt"})
             for s in CRASH_SIGNS if s in read(n)]
     why += ["server_link.txt: %s" % ln.strip() for ln in read("server_link.txt").splitlines() if " LOST " in ln]
@@ -1070,14 +1252,23 @@ def ended():
     """a game window closed (2026-10-08; there is no STOP now): PLAY.exe's watcher saw one of the run's cabinet and
     projector launchers end - debugger.py ends the game, and itself, when the game's window is closed - and asks
     for the rest to stop: the server, its match engines, the stand-ins, the key driver, the panel helper.  Before, they
-    ran on hidden for up to 12 hours.  The card rule still holds for a cabinet that still runs (the projector closed
-    during a match: refused, exit 3, and the watcher goes on watching).  A cabinet that played on a server started on
+    ran on hidden for up to 12 hours.  The projector's window alone stops nothing (2026-10-17, projector_only): exit 3,
+    and the watcher goes on watching the cabinet.  A cabinet that played on a server started on
     this PC with "server" leaves that server running for the other players.  A game that went by itself (a crash, no
     close in its log) stops nothing while another game window runs - the projector keeps running (exit 3 too)."""
     game, _seat = setup_state()
     if not game:
         return 2
-    launchers, alive = window_launchers(running_roles()), {p[0] for p in kit_pythons()}
+    with run_lock():
+        return _ended(game)
+
+
+def _ended(game):
+    info = running_info()
+    launchers, alive = window_launchers(running_roles()), set(live_roles(info))
+    if projector_only(launchers, alive):
+        say("The projector's window has gone: the game plays on without it (closing the cabinet's window ends the run).")
+        return 3
     crashed = crashed_logs(launchers, alive, read_log)
     if crashed is not None:
         say("A game window went by itself, not closed (a crash - see data\\logs\\%s): the rest keeps running, the "
@@ -1088,7 +1279,7 @@ def ended():
     say("%s - stopping the rest%s." % ("A game window was closed" if any(pid in alive for pid in launchers) else
                                        "No game window is left", " (the server on this PC keeps running)"
                                        if server_here else ""))
-    info, why = running_info(), went_wrong(sorted(set(launchers.values())))
+    why = went_wrong(gone_logs(launchers, alive))   # not a game the stop is about to end
     r = stop(False, keep_server=server_here)
     if info.get("mode") == "remote":                 # online: the server's people get this PC's side of it
         report_bad_run(info.get("server"), why, game)
@@ -1112,8 +1303,10 @@ def cabinet_restart_fits():
         return False
     online = panel.get("play_on", "").lower() == "online"
     if info["mode"] == "remote":               # DREAM TEAM <-> ONLINE: the seat lease and the club change - a full start
+        show = panel.get("projector", "").lower() != "off"      # SHOW PROJECTOR changed: a full start (2026-10-17)
         return online and panel.get("server", "") == info.get("server") and \
-            (panel.get("online_mode", "").lower() == "dream") == bool(info.get("dream"))
+            (panel.get("online_mode", "").lower() == "dream") == bool(info.get("dream")) and \
+            show == info.get("show_projector", show)
     return not online
 
 
@@ -1125,18 +1318,30 @@ def restart_cabinet():
     game, seat = setup_state()
     if not game:
         return 2
-    info = running_info()
+    run_id = running_info().get("run")       # the run before the card question or a wait behind another stop
+    rc, _c, _sess = stop_guard(False, False, game, seat)
+    if rc:
+        return rc
+    with run_lock():
+        return _restart_cabinet(game, seat, run_id)
+
+
+def _restart_cabinet(game, seat, run_id):
+    info = running_info()                    # read under the run lock: a projector's restart just before is in it
+    processes = info.get("processes")
+    if info.get("mode") not in ("local", "remote") or not isinstance(processes, dict) or \
+            not any(is_cabinet_role(r) for r in processes.values()) or info.get("run") != run_id:
+        say("The run the cabinet's restart was for has ended or changed - nothing done.")
+        return 3
     roles = {int(k): v for k, v in (info.get("processes") or {}).items()}
     mode, ip, online, dream = info.get("mode"), info.get("server"), online_of(info), bool(info.get("dream"))
+    keep = carried(info)                     # a new run_start: a session the old cabinet had open was cut
     try:
         seat_no = int(info.get("seat", 1))
     except (TypeError, ValueError):
         seat_no = 1
-    rc, _c, _sess = stop_guard(False, False, game, seat)
-    if rc:
-        return rc
     say("Restarting seat %d's cabinet only - the projector keeps running." % seat_no)
-    alive = {p[0] for p in kit_pythons()}
+    alive = live_roles(info)
     doomed = [pid for pid, role in roles.items() if is_cabinet_role(role) and pid in alive]
     seat_dir = os.path.normcase(seat)
     clients = {p[0] for p in K.game_processes(game)
@@ -1156,7 +1361,7 @@ def restart_cabinet():
         roles.pop(pid, None)
     left = seat_side() + [p for p in kit_pythons() if p[0] in doomed]
     if left:
-        write_running(roles, mode, ip, seat_no, online, dream)
+        write_running(roles, mode, ip, seat_no, online, dream, keep)
         say("Still running: %s - the cabinet was not started again (PLAY.exe stop, then PLAY.exe)." % ", ".join(
             "%s %d" % (p[2], p[0]) for p in left))
         return 1
@@ -1165,9 +1370,88 @@ def restart_cabinet():
     apply_board(seat, online)                # and the new club's cards onto the table, before FPR_Emu and the overlay
     time.sleep(1.0)                          # Windows frees the cabinet's ports and pipes
     start_cabinet(False, kit_env(game, online, dream), mode, ip, seat_no, seat, roles)
-    write_running(roles, mode, ip, seat_no, online, dream)
+    write_running(roles, mode, ip, seat_no, online, dream, keep)
     say("")
     say("Seat %d's cabinet is back; the projector was not touched." % seat_no)
+    return 0
+
+
+def restart_projector(word=None, run_id=None):
+    """the online projector, ended and started again (2026-10-17): what the panel helper runs when the projector's link
+    to the server is gone for good (helpers\\panel.py ProjectorKeeper - Error 3000, the game never reconnects by itself).
+    A fresh projector joins the server's relay again and shows the next phase.  The cabinet, the scene service, the
+    seat lease and the panel helper are never touched; the log of the projector before goes to
+    run_projector_lost.txt.  Exit 3: no online run with a projector on this PC, another run than run_id (the one the
+    helper saw), or - not asked in SETTINGS - a projector the player has closed since: nothing done.  Exit 1: the old
+    projector would not end - no second one is started.
+    word (SETTINGS' OPEN / CLOSE PROJECTOR, the panel helper): "open" - the same, also for a projector the player
+    closed; "close" - the projector ends as if the player closed its window (its log says so: no crash, no report,
+    the run goes on); running.json's "projector" stays, so OPEN PROJECTOR can bring it back.  All of it under the run
+    lock: a stop, the end of the run and RESTART NOW's cabinet wait for it, and it for them"""
+    game, _seat = setup_state()
+    if not game:
+        return 2
+    with run_lock():
+        return _restart_projector(game, word, run_id)
+
+
+def _restart_projector(game, word, run_id):
+    info = running_info()
+    roles = {int(k): v for k, v in (info.get("processes") or {}).items()}
+    old = [pid for pid, r in roles.items() if r == "projector launcher"]
+    if info.get("mode") != "remote" or not (old or info.get("projector")):
+        say("No online projector in this run (data\\running.json) - nothing done.")
+        return 3
+    if run_id and info.get("run") != run_id:
+        say("The run the projector's restart was for has ended - nothing done.")
+        return 3
+    live = [pid for pid in old if pid in live_roles(info)]   # its pid may be another program's by now, even a Python's
+    if word == "close" and not live:
+        say("CLOSE PROJECTOR: no projector runs - nothing done.")
+        return 0
+    if word is None and (not live or closed(read_log("run_projector.txt"))):
+        say("The projector was closed since its restart was planned - not started again.")
+        return 3
+    say("%s %s; the cabinet is not touched." % (time.strftime("%H:%M:%S"), {
+        "open": "OPEN PROJECTOR (SETTINGS) - starting the projector", "close": "CLOSE PROJECTOR (SETTINGS) - closing the "
+        "projector"}.get(word, "The projector has lost the server - starting it again")))
+    mine = os.path.normcase(os.path.join(game, "client_Release.exe"))
+    clients = {p[0] for p in K.game_processes(game) if os.path.normcase(p[3]) == mine}
+    for pid in live:                         # its launcher, a debugger: the projector (and its match engines) end with it
+        K.kill(pid)
+    time.sleep(1.5)
+
+    def left():                              # the projector and its children, its launcher
+        return [p for p in K.game_processes(game) if p[0] in clients or p[1] in clients] + \
+            [p for p in kit_pythons() if p[0] in live]
+    for p in left():
+        K.kill(p[0])
+    time.sleep(1.0)
+    still = left()
+    if still:                                # never a second projector beside the first; its role stays
+        say("Still running: %s - the projector was not %s (PLAY.exe stop ends the run)." % (", ".join(
+            "%s %d" % (p[2], p[0]) for p in still), "closed" if word == "close" else "started again"))
+        return 1
+    for pid in old:
+        roles.pop(pid)
+    keep = dict(carried(info), run_start=run_started(), projector=True)   # the card session's start stays
+    args = (info["mode"], info.get("server"), info.get("seat", 1), online_of(info), bool(info.get("dream")))
+    if word == "close":                      # its log says closed (closed())
+        try:
+            with open(os.path.join(K.LOGS, "run_projector.txt"), "a", encoding="utf-8") as f:
+                f.write("  %s %s - by CLOSE PROJECTOR (SETTINGS)\n" % (time.strftime("%H:%M:%S"), WINDOW_CLOSED))
+        except OSError:
+            pass
+        write_running(roles, *args, keep)
+        say("The projector is closed; OPEN PROJECTOR brings it back.")
+        return 0
+    try:
+        os.replace(os.path.join(K.LOGS, "run_projector.txt"), os.path.join(K.LOGS, "run_projector_lost.txt"))
+    except OSError:
+        pass
+    pid = launch_projector(kit_env(game, online_of(info), bool(info.get("dream"))), roles)
+    write_running(roles, *args, keep)
+    say("The projector is starting again (launcher %d)." % pid)
     return 0
 
 
@@ -1255,6 +1539,10 @@ def main(argv):
             return status()
         if a == ["show"]:
             return show()
+        if a[:1] == ["projector"]:            # the panel helper: lost for good, or SETTINGS' OPEN / CLOSE PROJECTOR;
+            words = [x for x in a[1:] if not x.startswith("run=")]       # run=ID: the run it saw
+            if words in ([], ["open"], ["close"]):
+                return restart_projector((words or [None])[0], next((x[4:] for x in a if x.startswith("run=")), None))
         if a[:1] == ["restart"]:              # RESTART NOW: stop by the card rule (asked during a session), then start
             if a == ["restart"] and cabinet_restart_fits():   # the projector would come back the same: it is kept
                 return restart_cabinet()
@@ -1317,6 +1605,9 @@ def main(argv):
             return play_online(debug, ip, seat_no, dream)   # seat_no None: the server's seat desk picks
         print(__doc__)
         return 2
+    except Busy as ex:                        # the run is another stop's or restart's: nothing of it is touched
+        say("NOT done: %s" % ex)
+        return 1
     except Failed as ex:
         say("FAILED: %s" % ex)
         say("Stopping what was started ...")

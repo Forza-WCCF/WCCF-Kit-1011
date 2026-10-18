@@ -59,9 +59,10 @@ try:
     check("dream" not in json.load(open(play.RUNNING)), "an ONLINE run is not")
 
     # RESTART NOW: the cabinet alone while DREAM TEAM stays DREAM TEAM (or ONLINE ONLINE); a full start when they swap
-    def fits(run_dream, panel):
+    def fits(run_dream, panel, **more):
         write(play.RUNNING, json.dumps(dict({"mode": "remote", "server": "1.2.3.4", "seat": 2,
-                                             "processes": {"4242": "seat 2 launcher"}}, **({"dream": True} if run_dream else {}))))
+                                             "processes": {"4242": "seat 2 launcher"}}, **({"dream": True} if run_dream else {}),
+                                            **more)))
         write(play.PANEL, panel)
         return play.cabinet_restart_fits()
     on, dream = "play_on=online\nserver=1.2.3.4\n", "play_on=online\nonline_mode=dream\nserver=1.2.3.4\n"
@@ -69,6 +70,11 @@ try:
     check(fits(False, on) is True, "ONLINE run, ONLINE chosen: the cabinet alone")
     check(fits(True, on) is False, "DREAM TEAM run, ONLINE chosen: everything again (the sign-in comes back)")
     check(fits(False, dream) is False, "ONLINE run, DREAM TEAM chosen: everything again (the sign-in goes)")
+    # SHOW PROJECTOR changed since the start (2026-10-17): everything again, so the projector comes or goes
+    check(fits(False, on + "projector=off\n", show_projector=True) is False, "SHOW PROJECTOR on -> off: everything again")
+    check(fits(False, on, show_projector=False) is False, "SHOW PROJECTOR off -> on: everything again")
+    check(fits(False, on, show_projector=True) is True and fits(False, on + "projector=off\n", show_projector=False),
+          "SHOW PROJECTOR as at the start: the cabinet alone")
 
     # the starts: what play_online would be asked (nothing starts here)
     asked = []

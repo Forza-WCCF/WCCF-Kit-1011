@@ -7,7 +7,9 @@
 //! the run's cabinet and projector launchers (data\running.json; hardware\debugger.py ends each game, and itself, when the
 //! game's window is closed) and once one has ended, runs `play.py ended`, which stops the rest of the run - by full
 //! path, nothing else on the PC is touched.  Its output: data\logs\run_ended.txt.  When that stop is refused (the
-//! projector's window closed while seat 1 is in a card session: a match is on), it watches the rest again.
+//! projector's window closed while seat 1 is in a card session: a match is on), it watches the rest again.  It
+//! reads running.json again every LOOK_MS and after each refusal: a projector the panel helper started again
+//! (`play.py projector`, which goes past PLAY and its take-over) is watched like the first one (2026-10-17).
 //!
 //! One watcher per kit folder.  Every PLAY first takes the watch over (`take_over`): it signals the quit event and
 //! waits for the watch lock, so a watcher never stops a run that a restart is busy with.
@@ -23,14 +25,15 @@ use std::time::Duration;
 use std::{env, io, ptr};
 
 use windows_sys::Win32::Foundation::{
-    FALSE, HANDLE, HANDLE_FLAG_INHERIT, SetHandleInformation, TRUE, WAIT_ABANDONED, WAIT_OBJECT_0,
+    FALSE, FILETIME, HANDLE, HANDLE_FLAG_INHERIT, SetHandleInformation, TRUE, WAIT_ABANDONED, WAIT_OBJECT_0,
+    WAIT_TIMEOUT,
 };
 use windows_sys::Win32::System::Console::{GetStdHandle, STD_ERROR_HANDLE, STD_INPUT_HANDLE, STD_OUTPUT_HANDLE};
 use windows_sys::Win32::System::ProcessStatus::K32EnumProcesses;
 use windows_sys::Win32::System::Threading::{
-    CREATE_NEW_PROCESS_GROUP, CREATE_NO_WINDOW, CreateEventW, CreateMutexW, DETACHED_PROCESS, INFINITE, OpenProcess,
-    PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_SYNCHRONIZE, QueryFullProcessImageNameW,
-    ReleaseMutex, ResetEvent, SetEvent, WaitForMultipleObjects, WaitForSingleObject,
+    CREATE_NEW_PROCESS_GROUP, CREATE_NO_WINDOW, CreateEventW, CreateMutexW, DETACHED_PROCESS, GetProcessTimes,
+    INFINITE, OpenProcess, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_SYNCHRONIZE,
+    QueryFullProcessImageNameW, ReleaseMutex, ResetEvent, SetEvent, WaitForMultipleObjects, WaitForSingleObject,
 };
 
 use crate::Kit;
@@ -39,6 +42,8 @@ use crate::Kit;
 const TAKE_OVER: Duration = Duration::from_secs(60);
 /// After a game window closed: a restart under way has this long to take the watch over first.
 const GRACE: Duration = Duration::from_secs(5);
+/// How often the launchers are read again from running.json (a projector started again has a new one).
+const LOOK_MS: u32 = 5_000;
 
 struct Watch {
     lock: OwnedHandle,
@@ -126,17 +131,57 @@ pub fn watch(kit: &Kit) {
         let handles: Vec<HANDLE> = [raw(&w.quit)].into_iter().chain(launchers.iter().map(raw)).collect();
         let count = u32::try_from(handles.len()).unwrap_or(u32::MAX);
         // SAFETY: valid handles, at most 1 + the run's launchers (a few, far under MAXIMUM_WAIT_OBJECTS).
-        let r = unsafe { WaitForMultipleObjects(count, handles.as_ptr(), FALSE, INFINITE) };
-        match r.wrapping_sub(WAIT_OBJECT_0) as usize {
-            0 => return, // taken over
-            i if i < handles.len() => drop(launchers.swap_remove(i - 1)),
-            _ => return, // the wait failed: leave everything as it is
-        }
-        if w.quit_within(GRACE) || !stop_refused(kit) {
-            return;
+        let r = unsafe { WaitForMultipleObjects(count, handles.as_ptr(), FALSE, LOOK_MS) };
+        let mut gone = if r == WAIT_TIMEOUT {
+            reread(kit, &mut launchers)
+        } else {
+            match r.wrapping_sub(WAIT_OBJECT_0) as usize {
+                0 => return, // taken over
+                i if i < handles.len() => {
+                    drop(launchers.swap_remove(i - 1));
+                    true
+                }
+                _ => return, // the wait failed: leave everything as it is
+            }
+        };
+        while gone {
+            if w.quit_within(GRACE) || !stop_refused(kit) {
+                return;
+            }
+            gone = reread(kit, &mut launchers);
         }
     }
     // the lock goes when this process ends (abandoned is as good as released for the next one)
+}
+
+/// The launchers from running.json again; true if one waited on has ended meanwhile (`play.py ended` is due).
+fn reread(kit: &Kit, launchers: &mut Vec<OwnedHandle>) -> bool {
+    let fresh = run_launchers(kit); // first: one that ends after this is in it, and signals
+    // SAFETY: valid process handles.
+    let ended: Vec<bool> = launchers
+        .iter()
+        .map(|h| unsafe { WaitForSingleObject(raw(h), 0) } == WAIT_OBJECT_0)
+        .collect();
+    let (next, gone) = refresh(std::mem::take(launchers), &ended, fresh);
+    *launchers = next;
+    gone
+}
+
+/// Pure: the launchers to wait on after a fresh read.  One of `old` that has ended (`ended`) is never swapped away
+/// unseen (2026-10-17: the cabinet closing between the wait's timeout and the read left the watcher on the projector
+/// alone): the old ones that run stay, and true says `play.py ended` is due.  Else the fresh ones (a projector started
+/// again has a new launcher); a fresh read empty (play.py is writing it) keeps the old ones.
+fn refresh<T>(old: Vec<T>, ended: &[bool], fresh: Vec<T>) -> (Vec<T>, bool) {
+    if ended.iter().any(|&e| e) {
+        let left = old
+            .into_iter()
+            .zip(ended)
+            .filter(|&(_, &e)| !e)
+            .map(|(h, _)| h)
+            .collect();
+        return (left, true);
+    }
+    (if fresh.is_empty() { old } else { fresh }, false)
 }
 
 /// `play.py ended`, hidden, its output added to data\logs\run_ended.txt; true if it refused (exit 3: a card session
@@ -171,22 +216,29 @@ fn run_launchers(kit: &Kit) -> Vec<OwnedHandle> {
     };
     launcher_pids(&text)
         .into_iter()
-        .filter_map(|pid| open_if_runs(pid, &python))
+        .filter_map(|(pid, born)| open_if_runs(pid, &python, born))
         .collect()
 }
 
-/// The process ids of running.json's launchers: "seat N launcher" and "projector launcher" (not the server's).
-fn launcher_pids(running_json: &str) -> Vec<u32> {
+/// The process ids of running.json's launchers: "seat N launcher" and "projector launcher" (not the server's), each
+/// with its start ("born", play.py: None in an older running.json).
+fn launcher_pids(running_json: &str) -> Vec<(u32, Option<u64>)> {
     let Ok(info) = serde_json::from_str::<serde_json::Value>(running_json) else {
         return Vec::new();
     };
     let Some(processes) = info.get("processes").and_then(serde_json::Value::as_object) else {
         return Vec::new();
     };
+    let born = info.get("born");
     processes
         .iter()
         .filter(|(_, role)| role.as_str().is_some_and(is_window_launcher))
-        .filter_map(|(pid, _)| pid.parse().ok())
+        .filter_map(|(pid, _)| {
+            Some((
+                pid.parse().ok()?,
+                born.and_then(|b| b.get(pid)).and_then(serde_json::Value::as_u64),
+            ))
+        })
         .collect()
 }
 
@@ -198,10 +250,27 @@ fn is_window_launcher(role: &str) -> bool {
             .is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()))
 }
 
-/// A handle to wait on pid, if it runs `python`.
-fn open_if_runs(pid: u32, python: &Path) -> Option<OwnedHandle> {
+/// A handle to wait on pid, if it runs `python`, has not ended (running.json keeps a launcher that has) and - when
+/// running.json says - started when the launcher did: a number Windows gave to another of the kit's Pythons since is
+/// not the launcher (2026-10-17).
+fn open_if_runs(pid: u32, python: &Path, born: Option<u64>) -> Option<OwnedHandle> {
     let (process, image) = open_with_image(pid)?;
-    (image == python).then_some(process)
+    // SAFETY: a valid process handle.
+    let runs = unsafe { WaitForSingleObject(raw(&process), 0) } == WAIT_TIMEOUT;
+    let same = born.is_none_or(|b| started(&process) == Some(b));
+    (runs && same && image == python).then_some(process)
+}
+
+/// When the process started (FILETIME as one number, = kit_common.started), if Windows says.
+fn started(process: &OwnedHandle) -> Option<u64> {
+    let zero = FILETIME {
+        dwLowDateTime: 0,
+        dwHighDateTime: 0,
+    };
+    let (mut c, mut e, mut k, mut u) = (zero, zero, zero, zero);
+    // SAFETY: a valid process handle and four FILETIMEs to write.
+    let ok = unsafe { GetProcessTimes(raw(process), &mut c, &mut e, &mut k, &mut u) } != 0;
+    ok.then(|| u64::from(c.dwHighDateTime) << 32 | u64::from(c.dwLowDateTime))
 }
 
 /// The process and the program it runs (canonical path), if this user may look at it.
@@ -285,7 +354,9 @@ mod tests {
             "16": "seat  launcher", "x": "seat 2 launcher", "17": 5}}"#;
         let mut pids = launcher_pids(json);
         pids.sort_unstable();
-        assert_eq!(pids, [12, 13, 14]);
+        assert_eq!(pids, [(12, None), (13, None), (14, None)]);
+        let born = r#"{"processes": {"12": "projector launcher"}, "born": {"12": 133000000000000000}}"#;
+        assert_eq!(launcher_pids(born), [(12, Some(133_000_000_000_000_000))]);
     }
 
     #[test]
@@ -293,6 +364,59 @@ mod tests {
         assert!(launcher_pids("").is_empty());
         assert!(launcher_pids("[]").is_empty());
         assert!(launcher_pids(r#"{"processes": []}"#).is_empty());
+    }
+
+    #[test]
+    fn only_a_running_launcher_is_watched() {
+        let me = fs::canonicalize(env::current_exe().unwrap()).unwrap();
+        let me_id = std::process::id();
+        assert!(open_if_runs(me_id, &me, None).is_some(), "this test runs");
+        assert!(
+            open_if_runs(me_id, Path::new(r"C:\nothing.exe"), None).is_none(),
+            "another program"
+        );
+        let born = started(&open_with_image(me_id).unwrap().0).unwrap();
+        assert!(
+            open_if_runs(me_id, &me, Some(born)).is_some(),
+            "the launcher running.json names"
+        );
+        assert!(
+            open_if_runs(me_id, &me, Some(born - 1)).is_none(),
+            "its number, another start: not the launcher"
+        );
+        let mut child = Command::new(&me).arg("--list").stdout(Stdio::null()).spawn().unwrap();
+        let held = open_with_image(child.id()).unwrap(); // its process stays openable after its end
+        child.wait().unwrap();
+        assert!(
+            open_if_runs(child.id(), &me, None).is_none(),
+            "an ended launcher is not waited on again"
+        );
+        drop(held);
+    }
+
+    #[test]
+    fn a_refresh_never_swallows_an_end() {
+        // the cabinet (1) ended after the wait's timeout, before the read: fresh has the projector (2) alone
+        assert_eq!(
+            refresh(vec![1, 2], &[true, false], vec![2]),
+            (vec![2], true),
+            "ended is due, the projector stays"
+        );
+        assert_eq!(
+            refresh(vec![1, 2], &[false, false], vec![1, 3]),
+            (vec![1, 3], false),
+            "a new projector: fresh"
+        );
+        assert_eq!(
+            refresh(vec![1, 2], &[false, false], vec![]),
+            (vec![1, 2], false),
+            "a read empty keeps the old"
+        );
+        assert_eq!(
+            refresh(vec![1], &[true], vec![]),
+            (vec![], true),
+            "the last one ended: ended is due"
+        );
     }
 
     #[test]

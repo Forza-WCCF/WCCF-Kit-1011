@@ -448,6 +448,7 @@ static UINT  g_gw = 0, g_gh = 0;         // the game's own frame size (its back-
 // CLUB CARD moved under them (compact_strip).  SETTINGS > VIEW > LAYOUT switches it at once; data\panel.txt keeps it.
 static int   g_compact = 0;
 static int   g_auto_off = 0;      // auto_logs=0 in data\panel.txt (play.py's automatic report off): kept through a save
+static int   g_proj_off = 0;      // projector=off: online, no projector on this PC (2026-10-17; ON unless said)
 
 static RECT strip_rect(float x0, float y0, float x1, float y1)    // sheet px in the right strip -> canvas (pinned right)
 {
@@ -3213,7 +3214,7 @@ static void keys_hover(int x, int y)
 #define CMP_CLUB_X 1261.0f
 #define CONTROL_PORT 20002               // the server's port (play.py CONTROL_PORT)
 enum { CS_NONE, CS_UNREADABLE, CS_NEW, CS_OPEN, CS_CUT, CS_CLOSED };
-struct SetStatus { int link; char peer[16]; int card, bad, nback, english; ULONGLONG saved, backup; DWORD at; };
+struct SetStatus { int link; char peer[16]; int card, bad, nback, english, proj, projup; ULONGLONG saved, backup; DWORD at; };
 static struct SetStatus g_st;            // refreshed by the board thread about once a second while the panel is open
 static char g_data_dir[MAX_PATH], g_panel_path[MAX_PATH], g_panel_tmp[MAX_PATH];
 // the club card in play (set_init): the slot (data\save\seat1_club.bin) - or, online and signed in, the account's own
@@ -3251,6 +3252,20 @@ static volatile LONG g_set_dirty = 1;    // the status must be read again now
 // started) opens "PLAY.exe restart".  Not during a card session.  Not taken in 3 s = no helper: removed, and said.
 static DWORD g_rs_armed = 0;             // armed until this tick
 static DWORD g_rs_sent = 0;              // when the request was written (0 = none waiting)
+// OPEN / CLOSE PROJECTOR (2026-10-17, the owner): online with a projector on this PC (running.json: mode remote and a
+// "projector launcher" - SHOW PROJECTOR on and a server with the relay; else the button is not shown).  It offers what
+// data\projector.state (panel.py) says: CLOSE when one runs, OPEN when none does (never started, closed, or given up
+// after the helper's tries).  Two clicks write data\projector.request ("OPEN ..." / "CLOSE ..."); panel.py runs
+// "play.py projector open|close": a fresh projector, or this one closed as by its window's X (the run goes on, the
+// helper never brings it back).  The cabinet is never touched; SHOW PROJECTOR (the next start) is not changed.  Not
+// taken in 3 s = no helper: removed, and said.
+static DWORD g_pr_armed = 0;             // armed until this tick
+static DWORD g_pr_sent = 0;              // when the request was written (0 = none waiting)
+static int run_has_projector(const char *running)   // running.json: an online run with a projector on this PC (one
+{                                                    // closed by CLOSE PROJECTOR has no launcher: "projector": true)
+    return strstr(running, "\"mode\": \"remote\"") &&
+           (strstr(running, "\"projector launcher\"") || strstr(running, "\"projector\": true"));
+}
 // SEND LOGS (2026-10-09, the player: "add a button in the settings to send logs to the server, so people can send us
 // their logs from their own game"): a first click arms it for 8 s, a second writes data\sendlogs.request (the server's
 // address); panel.py packs the logs (send_logs.py, never the club card) and sends them to that server's log
@@ -3282,7 +3297,7 @@ static void set_load_locked(void)
 {
     FILE *f = fopen(g_panel_path, "rb"); char line[256];
     g_on_online = 0; g_server[0] = 0; g_eng_req = -1; g_card_req[0] = 0; g_fix_req = 0; g_compact = 0; g_auto_off = 0;
-    g_signout_req = 0; g_dream = 0;
+    g_signout_req = 0; g_dream = 0; g_proj_off = 0;
     if (!f) return;
     while (fgets(line, sizeof line, f)) {
         char *p = strchr(line, '#'), *eq, *name, *val;
@@ -3300,6 +3315,7 @@ static void set_load_locked(void)
         else if (!_stricmp(name, "account")) g_signout_req = !_stricmp(val, "signout");
         else if (!_stricmp(name, "layout")) g_compact = !_stricmp(val, "compact");
         else if (!_stricmp(name, "auto_logs")) g_auto_off = !strcmp(val, "0");
+        else if (!_stricmp(name, "projector")) g_proj_off = !_stricmp(val, "off");
     }
     fclose(f);
 }
@@ -3319,6 +3335,7 @@ static int set_save_locked(void)
     if (g_signout_req) n += _snprintf(text + n, sizeof text - n, "account=signout\n");
     if (g_compact) n += _snprintf(text + n, sizeof text - n, "layout=compact\n");     // the VIEW: kept, not a request
     if (g_auto_off) n += _snprintf(text + n, sizeof text - n, "auto_logs=0\n");       // the player's choice: kept
+    if (g_proj_off) n += _snprintf(text + n, sizeof text - n, "projector=off\n");     // SHOW PROJECTOR off: kept
     f = fopen(g_panel_tmp, "wb");
     if (!f) { logline("settings: could not write %s", g_panel_tmp); return 0; }
     k = (int)fwrite(text, 1, (size_t)n, f) == n;
@@ -3374,6 +3391,33 @@ static void set_selftest(void)
     buf[got] = 0;
     logline("settings test: %s  THIS PC drops DREAM TEAM", ok && strstr(buf, "\nplay_on=this_pc\n") &&
             !strstr(buf, "online_mode") ? "PASS" : "FAIL");
+    // SHOW PROJECTOR (2026-10-17): off is kept through a save; on (the default) writes nothing
+    if ((f = fopen(g_panel_path, "wb")) != NULL) { fputs("play_on=online\nserver=1.2.3.4\nprojector=off\n", f); fclose(f); }
+    EnterCriticalSection(&g_board_cs);
+    set_load_locked();
+    ok = g_proj_off && set_save_locked();
+    LeaveCriticalSection(&g_board_cs);
+    got = 0;
+    if ((f = fopen(g_panel_path, "rb")) != NULL) { got = fread(buf, 1, sizeof buf - 1, f); fclose(f); }
+    buf[got] = 0;
+    logline("settings test: %s  a save keeps SHOW PROJECTOR off", ok && strstr(buf, "\nprojector=off\n") ? "PASS" : "FAIL");
+    EnterCriticalSection(&g_board_cs);
+    g_proj_off = 0;
+    ok = set_save_locked();
+    LeaveCriticalSection(&g_board_cs);
+    got = 0;
+    if ((f = fopen(g_panel_path, "rb")) != NULL) { got = fread(buf, 1, sizeof buf - 1, f); fclose(f); }
+    buf[got] = 0;
+    logline("settings test: %s  SHOW PROJECTOR on writes no line", ok && !strstr(buf, "projector=") ? "PASS" : "FAIL");
+    logline("settings test: %s  OPEN / CLOSE PROJECTOR only for an online run with a projector",
+            run_has_projector("{\n \"mode\": \"remote\",\n \"processes\": {\n  \"12\": \"projector launcher\"}}") &&
+            !run_has_projector("{\n \"mode\": \"local\",\n \"processes\": {\n  \"12\": \"projector launcher\"}}") &&
+            !run_has_projector("{\n \"mode\": \"remote\",\n \"processes\": {\n  \"13\": \"seat 1 launcher\"}}") &&
+            !run_has_projector("") ? "PASS" : "FAIL");
+    logline("settings test: %s  OPEN PROJECTOR after CLOSE PROJECTOR (no launcher, \"projector\": true)",
+            run_has_projector("{\n \"mode\": \"remote\",\n \"processes\": {},\n \"projector\": true,\n \"show_projector\": true}") &&
+            !run_has_projector("{\n \"mode\": \"remote\",\n \"processes\": {},\n \"projector\": false,\n \"show_projector\": true}")
+            ? "PASS" : "FAIL");
 }
 
 static void set_init(void)               // the init thread: where data\ is, and what the file says
@@ -3710,6 +3754,17 @@ static void set_refresh(void)
     st.link = server_link(st.peer);
     _snprintf(p, MAX_PATH, "%s\\running.json", g_data_dir); p[MAX_PATH - 1] = 0;      // this run's start (play.py)
     if (GetFileAttributesExA(p, GetFileExInfoStandard, &fa)) since = ft_q(fa.ftLastWriteTime);
+    {
+        char run[4096]; FILE *rf; size_t got = 0;
+        if ((rf = fopen(p, "rb")) != NULL) { got = fread(run, 1, sizeof run - 1, rf); fclose(rf); }
+        run[got] = 0;
+        st.proj = run_has_projector(run);
+        _snprintf(p, MAX_PATH, "%s\\projector.state", g_data_dir); p[MAX_PATH - 1] = 0;   // panel.py: open / closed
+        got = 0;
+        if (st.proj && (rf = fopen(p, "rb")) != NULL) { got = fread(run, 1, 8, rf); fclose(rf); }
+        run[got] = 0;
+        st.projup = !strncmp(run, "open", 4);
+    }
     st.card = card_session_c(g_club_card, since, &st.bad, &st.saved);
     fh = FindFirstFileA(g_club_baks, &fd);
     if (fh != INVALID_HANDLE_VALUE) {
@@ -3740,22 +3795,24 @@ static void set_refresh(void)
     if (strcmp(now, last)) { lstrcpynA(last, now, sizeof last); logline("%s", now); }   // only when it changes
 }
 
-static void restart_path(char *p)        // data\restart.request
+static void restart_path(char *p, const char *name)   // data\restart.request, data\projector.request
 {
-    _snprintf(p, MAX_PATH, "%s\\restart.request", g_data_dir); p[MAX_PATH - 1] = 0;
+    _snprintf(p, MAX_PATH, "%s\\%s.request", g_data_dir, name); p[MAX_PATH - 1] = 0;
 }
 
-static int restart_request(void)         // the request, whole (a temporary file, then one swap)
+static int restart_request_of(const char *name, const char *what)   // the request, whole (a temporary file, one swap)
 {
     char p[MAX_PATH], tmp[MAX_PATH + 8]; FILE *f; int k;
-    restart_path(p);
+    restart_path(p, name);
     _snprintf(tmp, sizeof tmp, "%s.panel", p); tmp[sizeof tmp - 1] = 0;
     f = fopen(tmp, "wb");
     if (!f) return 0;
-    k = fprintf(f, "RESTART NOW - asked by the SETTINGS panel in seat 1 (pid %lu)\n", (unsigned long)GetCurrentProcessId()) > 0;
+    k = fprintf(f, "%s - asked by the SETTINGS panel in seat 1 (pid %lu)\n", what, (unsigned long)GetCurrentProcessId()) > 0;
     fclose(f);
     return k && MoveFileExA(tmp, p, MOVEFILE_REPLACE_EXISTING);
 }
+
+static int restart_request(void) { return restart_request_of("restart", "RESTART NOW"); }
 
 static void sendlogs_path(char *p, const char *what)   // data\sendlogs.request / data\sendlogs.result
 {
@@ -3843,9 +3900,21 @@ static void set_tick(void)               // the board thread, every pass: the st
         g_lg_sent = 0;
         LeaveCriticalSection(&g_board_cs);
     }
+    if (g_pr_sent && GetTickCount() - g_pr_sent > 3000) {      // OPEN / CLOSE PROJECTOR's, the same way
+        char p[MAX_PATH];
+        restart_path(p, "projector");
+        EnterCriticalSection(&g_board_cs);
+        if (GetFileAttributesA(p) != INVALID_FILE_ATTRIBUTES) {
+            DeleteFileA(p);
+            note_locked(D3DCOLOR_ARGB(255, 255, 110, 90), "the restart helper did not answer - close the game, then PLAY.exe");
+            logline("settings: projector restart request not picked up - removed");
+        }
+        g_pr_sent = 0;
+        LeaveCriticalSection(&g_board_cs);
+    }
     if (g_rs_sent && GetTickCount() - g_rs_sent > 3000) {      // the helper takes it within 0.5 s when it runs
         char p[MAX_PATH];
-        restart_path(p);
+        restart_path(p, "restart");
         EnterCriticalSection(&g_board_cs);
         if (GetFileAttributesA(p) != INVALID_FILE_ATTRIBUTES) {
             DeleteFileA(p);                                     // never left lying for a later run to find
@@ -3876,9 +3945,10 @@ static void fmt_when(char *out, size_t cap, ULONGLONG t)   // a file time as the
 
 // the panel's parts, in canvas pixels over the middle column: title + help + X; "NOW" with seven rows (the last,
 // ACCOUNT, with SIGN OUT at its right end); "NEXT START" with two rows of choices (THIS PC / ONLINE / DREAM TEAM + the
-// address box, ENGLISH / ITALIANO / JAPANESE) and RESTART NOW; "VIEW" with the LAYOUT (CABINET / COMPACT, 2026-10-06), at once
+// address box, ENGLISH / ITALIANO / JAPANESE) and RESTART NOW; "VIEW" with the LAYOUT (CABINET / COMPACT, 2026-10-06), at once,
+// and SHOW PROJECTOR beside it (2026-10-17: online, the projector through the server's relay - at the next online start)
 #define SET_ROWS 7
-struct SGeo { float x0, x1, lx, vx, rowh, ynow, ynext, yview; RECT close, pc, online, dream, addr, eng, ita, jap, restart, cab, cmp, logs, signout; };
+struct SGeo { float x0, x1, lx, vx, rowh, ynow, ynext, yview; RECT close, pc, online, dream, addr, eng, ita, jap, restart, projrs, cab, cmp, proj, logs, signout; };
 
 static void set_geo(struct SGeo *g)
 {
@@ -3901,10 +3971,12 @@ static void set_geo(struct SGeo *g)
     g->jap = RC(g->vx + 280.0f * s, y, g->vx + 410.0f * s, y + 36.0f * s);
     y += 66.0f * s;                                        // under the text's note
     g->restart = RC(g->vx, y, g->vx + 270.0f * s, y + 38.0f * s);
+    g->projrs = RC(g->vx + 280.0f * s, y, g->vx + 550.0f * s, y + 38.0f * s);   // OPEN / CLOSE PROJECTOR (2026-10-17)
     g->yview = y + 38.0f * s + 72.0f * s;                  // under RESTART NOW's note and the "Saved at once" line
     y = g->yview + 36.0f * s;
     g->cab = RC(g->vx, y, g->vx + 130.0f * s, y + 36.0f * s);
     g->cmp = RC(g->vx + 140.0f * s, y, g->vx + 270.0f * s, y + 36.0f * s);
+    g->proj = RC(g->vx + 300.0f * s, y, g->vx + 520.0f * s, y + 36.0f * s);  // no room for a row of its own
     y += 36.0f * s + 30.0f * s;                            // under LAYOUT's note: LOGS - SEND LOGS (2026-10-09)
     g->logs = RC(g->vx, y, g->vx + 270.0f * s, y + 38.0f * s);
 }
@@ -3965,8 +4037,14 @@ static void set_draw(IDirect3DDevice9 *dev)
         set_chip(dev, g.restart, g_rs_sent ? "RESTARTING ..." : armed ? "CLICK AGAIN TO RESTART" : "RESTART NOW",
                  armed || g_rs_sent, s);
     }
+    if (st.proj) {
+        int armed = g_pr_armed && (LONG)(g_pr_armed - now) > 0;
+        set_chip(dev, g.projrs, g_pr_sent ? "ASKED ..." : armed ? (st.projup ? "CLICK AGAIN TO CLOSE" : "CLICK AGAIN TO OPEN")
+                 : st.projup ? "CLOSE PROJECTOR" : "OPEN PROJECTOR", armed || g_pr_sent, s);
+    }
     set_chip(dev, g.cab, "CABINET", !g_compact, s);
     set_chip(dev, g.cmp, "COMPACT", g_compact, s);
+    set_chip(dev, g.proj, "SHOW PROJECTOR", !g_proj_off, s);
     {
         int armed = g_lg_armed && (LONG)(g_lg_armed - now) > 0, busy = g_lg_sent || !strcmp(g_lg_res, "sending");
         set_chip(dev, g.logs, busy ? "SENDING ..." : armed ? "CLICK AGAIN TO SEND" : "SEND LOGS", armed || busy, s);
@@ -4203,6 +4281,12 @@ static void set_click(HWND h, int x, int y)                     // a press insid
                 else note_locked(green, "CABINET: the cabinet's buttons are back around the game");
                 logline("settings: layout %s", want ? "compact" : "cabinet");
             }
+        } else if (in_rect(&g.proj, x, y)) {                    // SHOW PROJECTOR: online, at the next start
+            g_proj_off = !g_proj_off;
+            if (!set_save_locked()) { g_proj_off = !g_proj_off; note_locked(red, "could not save data\\panel.txt - try again"); }
+            else note_locked(green, g_proj_off ? "next online start: no projector on this PC"
+                                               : "next online start: the projector too, when the server has a relay");
+            logline("settings: show projector %s", g_proj_off ? "off" : "on");
         } else if (in_rect(&g.signout, x, y) && g_account[0]) {   // SIGN OUT: click twice; once more undoes it
             DWORD now = GetTickCount(), yellow = D3DCOLOR_ARGB(255, 255, 214, 40);
             if (g_signout_req) {
@@ -4234,6 +4318,26 @@ static void set_click(HWND h, int x, int y)                     // a press insid
                     g_lg_sent = now; g_lg_res[0] = 0;
                     note_locked(green, "sending this game's logs to %s", g_server);
                     logline("settings: send logs asked (to %s)", g_server);
+                } else note_locked(red, "could not ask for it - try again");
+            }
+        } else if (in_rect(&g.projrs, x, y) && g_st.proj) {   // OPEN / CLOSE PROJECTOR: click twice; the cabinet plays on
+            DWORD now = GetTickCount(), yellow = D3DCOLOR_ARGB(255, 255, 214, 40);
+            const char *what = g_st.projup ? "CLOSE" : "OPEN";
+            if (g_pr_sent) {
+                note_locked(yellow, "already asked - wait a moment");
+            } else if (!g_pr_armed || (LONG)(g_pr_armed - now) <= 0) {
+                g_pr_armed = now + 8000;
+                note_locked(yellow, "click %s PROJECTOR again - the cabinet plays on", what);
+                logline("settings: %s projector armed", what);
+            } else {
+                char req[48];
+                g_pr_armed = 0;
+                _snprintf(req, sizeof req, "%s PROJECTOR", what); req[sizeof req - 1] = 0;
+                if (restart_request_of("projector", req)) {
+                    g_pr_sent = now;
+                    note_locked(green, g_st.projup ? "the projector closes - the cabinet plays on"
+                                                   : "the projector opens (about a minute) - the cabinet plays on");
+                    logline("settings: %s projector requested", what);
                 } else note_locked(red, "could not ask for it - try again");
             }
         } else if (in_rect(&g.restart, x, y)) {

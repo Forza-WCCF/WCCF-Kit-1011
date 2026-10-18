@@ -27,6 +27,15 @@ that match earned is found and shown (watching only the old card, the real game'
 website has the save, the cards on the table and where each stands go up too (online\club.py send_formation), for
 the account's profile on wccf.online (2026-10-16).
 
+THE ONLINE PROJECTOR COMES BACK (2026-10-17): online, the projector's link to the server (through its projector relay)
+is looked at every 2 s.  Once it is gone - the game puts up Error 3000 and never reconnects by itself - this helper runs
+"play.py projector" (hidden, output to data\logs\run_projector_restart.txt): that projector ends and a fresh one
+starts, joins the relay again and shows the next phase.  The cabinet is never touched.  A projector whose window the
+player closed is gone, and stays gone: only a projector that still has its window is ever restarted.  See keep_projector.
+SETTINGS' OPEN / CLOSE PROJECTOR (2026-10-17): the panel writes data\projector.request ("open" or "close"); this
+helper runs "play.py projector open|close" - a fresh projector (the tries back), or the projector closed as the player
+would, never brought back.  data\projector.state ("open" / "closed") tells the panel which the button offers.
+
 THE STARTING VOLUMES (2026-10-06): sound.py - the projector muted, seat 1 very low - set once for each, as
 soon as it has opened its sound (looked for every 0.5 s for 10 minutes after the start); never again, so a change in
 the Volume Mixer stays.  The game folder comes from play.py (WCCF_GAME); without it nothing is set.  Like the view, it
@@ -153,7 +162,8 @@ class SendLogs:
 
 class SoundDefaults:
     """the projector muted and seat 1 at sound.GAME_VOLUME, each set once, when it has first opened its
-    sound; mod: helpers.sound, or a stand-in (the tests)"""
+    sound; a projector started again (again(), ProjectorKeeper) is set too - each process once.  mod: helpers.sound,
+    or a stand-in (the tests)"""
     LOOK, FOR = 0.5, 600.0
 
     def __init__(self, game, now, mod=None):
@@ -163,10 +173,16 @@ class SoundDefaults:
             self.targets = {os.path.normcase(os.path.join(game, "client_Release.exe")): "projector",
                             os.path.normcase(os.path.join(os.path.dirname(game), "seat1", "client_Release.exe")):
                                 "seat 1"}
-        self.mod, self.done, self.next, self.until, self.said = mod, set(), 0.0, now + self.FOR, False
+        self.want, self.done = set(self.targets.values()), set()       # the roles still to set; the pids set
+        self.mod, self.next, self.until, self.said = mod, 0.0, now + self.FOR, False
+
+    def again(self, now):
+        """the projector started again: its new process is muted too"""
+        self.want.add("projector")
+        self.until = max(self.until, now + self.FOR)
 
     def tick(self, now):
-        if not self.targets or len(self.done) == len(self.targets) or now < self.next or now > self.until:
+        if not self.want or now < self.next or now > self.until:
             return
         self.next = now + self.LOOK
         try:
@@ -176,7 +192,7 @@ class SoundDefaults:
             s = self.mod
             for pid, path, _level, _muted in s.sessions():
                 role = self.targets.get(os.path.normcase(path or ""))
-                if not role or role in self.done:
+                if role not in self.want or pid in self.done:      # the projector before keeps its old pid
                     continue
                 if role == "projector":
                     n = s.apply(pid, volume=s.GAME_VOLUME, mute=s.PROJECTOR_MUTED)
@@ -184,7 +200,8 @@ class SoundDefaults:
                 else:
                     n, what = s.apply(pid, volume=s.GAME_VOLUME, mute=False), "at %d%%" % round(s.GAME_VOLUME * 100)
                 if n:
-                    self.done.add(role)
+                    self.want.discard(role)
+                    self.done.add(pid)
                     say("sound: %s starts %s (pid %d) - the Volume Mixer changes it from here" % (
                         "the projector" if role == "projector" else role, what, pid))
         except Exception as ex:                 # the volumes never stop the helper: the game plays as Windows has it
@@ -254,6 +271,146 @@ class ClubSync:
             say("new card from wccf.online: %s - in the CATALOGUE now" % ", ".join(map(str, new)))
 
 
+PROJECTOR_PORTS = (20002, 20031)        # the server: control itself, or its projector relay (play.py PROJECTOR_PORT)
+WAIT_LINK = 90                          # s: a projector just started has this long to link up
+BACKOFF = (10, 30, 60)                  # s without the link before each restart: 3 tries ...
+HOLD = 600                              # ... and a link that then holds this long earns them back
+
+
+def keep_projector(st, now, pid, window, linked):
+    """Pure: True = restart the projector now.  st: this rule's memory (a dict, {} at first); pid: the projector's
+    process, None when there is none (never started, or ended: its window closed - and a close stays closed);
+    window: its window is up; linked: it has its link to the server.  A link gone (or a fresh projector without one
+    after WAIT_LINK) waits BACKOFF[tries] before the restart; after the last try nothing more until the run ends"""
+    if pid != st.get("pid"):                             # a new projector (the first, or one restarted): its start
+        st.update(pid=pid, due=now + WAIT_LINK, up=None)
+    if pid is None or not window or st.get("closed"):   # (closed: CLOSE PROJECTOR - the player's close too)                        # gone, or its window closing: never brought back
+        return False
+    tries = st.get("tries", 0)
+    if linked:
+        st["up"] = st["up"] or now
+        st["due"] = None
+        if tries and now - st["up"] >= HOLD:
+            st["tries"] = 0
+        return False
+    st["up"] = None
+    if st["due"] is None:                               # the link just went
+        st["due"] = now + BACKOFF[min(tries, len(BACKOFF) - 1)]
+    if tries >= len(BACKOFF) or now < st["due"]:
+        return False
+    st.update(tries=tries + 1, due=None)
+    return True
+
+
+def projector_request(st, text):
+    """Pure: SETTINGS' OPEN / CLOSE PROJECTOR - text: data\\projector.request's ("open ..." / "close ...").  The word for
+    "play.py projector WORD", or None: no such word - the press is dropped.  open gives keep_projector its tries back;
+    close is the player's close, at once: never brought back until an open (2026-10-17: also while a restart runs)"""
+    word = (text.split() or [""])[0].lower()
+    if word not in ("open", "close"):
+        return None
+    st.update(closed=word == "close", tries=0 if word == "open" else st.get("tries", 0), due=None)
+    return word
+
+
+def projector_up(st, pid, linked):
+    """Pure: what the panel's button offers - True: CLOSE PROJECTOR (one runs), False: OPEN PROJECTOR (none, closed,
+    or given up: out of tries and not linked)"""
+    return bool(pid) and not st.get("closed") and (linked or st.get("tries", 0) < len(BACKOFF))
+
+
+class ProjectorKeeper:
+    """the online projector, restarted once it has lost the server for good (keep_projector); game None or not an
+    online run with a projector: nothing to do"""
+    LOOK = 2.0
+
+    def __init__(self, game, data, run=None):
+        self.exe = os.path.normcase(os.path.join(os.path.abspath(game), "client_Release.exe")) if game else None
+        self.running, self.logs = os.path.join(data, "running.json"), os.path.join(data, "logs")
+        self.run = run or self.restart                   # tests: a stand-in
+        self.st, self.next, self.job, self.shown, self.want, self.run_id = {}, 0.0, None, None, None, None
+        self.state = os.path.join(data, "projector.state")
+
+    def online_projector(self):
+        """an online run with a projector on this PC (running.json); its id kept for play.py projector run=ID"""
+        try:
+            import json
+            with open(self.running, encoding="utf-8") as f:
+                info = json.load(f)
+            self.run_id = info.get("run")
+            return info.get("mode") == "remote" and (bool(info.get("projector")) or
+                                                     "projector launcher" in info.get("processes", {}).values())
+        except (OSError, ValueError, AttributeError):
+            return False
+
+    def busy(self):
+        return bool(self.job and self.job.poll() is None)
+
+    def asked(self, text):
+        """data\\projector.request: SETTINGS' OPEN / CLOSE PROJECTOR.  While a restart runs, the last press waits for it
+        (tick) - a CLOSE then closes the projector that restart brings"""
+        word = projector_request(self.st, text)
+        if word is None:
+            say("projector request %r dropped (not open/close)" % text.strip())
+            return
+        self.next = 0.0
+        if word == "close":
+            self.show(False)                             # the panel offers OPEN at once: no restart comes now
+        if self.busy():
+            self.want = word
+            say("%s PROJECTOR asked in SETTINGS - after the restart under way" % word.upper())
+            return
+        self.online_projector()
+        self.run(self.st.get("tries", 0), word)
+
+    def show(self, up):
+        """data\\projector.state for the panel's OPEN / CLOSE PROJECTOR"""
+        if up != self.shown:
+            with open(self.state, "w", encoding="utf-8") as f:
+                f.write("open\n" if up else "closed\n")
+            self.shown = up
+
+    def restart(self, tries, word=None):
+        if word:
+            say("%s PROJECTOR asked in SETTINGS" % word.upper())
+        else:
+            say("the projector has lost the server - starting it again (try %d of %d)" % (tries, len(BACKOFF)))
+        try:
+            with open(os.path.join(self.logs, "run_projector_restart.txt"), "a", encoding="utf-8") as out:
+                self.job = subprocess.Popen([sys.executable, "-u", os.path.join(os.path.dirname(HERE), "play.py"),
+                                             "projector"] + ([word] if word else []) +
+                                            (["run=%s" % self.run_id] if self.run_id else []),
+                                            stdout=out, stderr=subprocess.STDOUT, creationflags=CREATE_NO_WINDOW,
+                                            close_fds=True)
+        except OSError as ex:
+            say("could not run play.py projector: %s" % ex)
+
+    def tick(self, now):
+        if not self.exe or self.busy():
+            return
+        if self.want:                                   # a press that waited for a restart: it goes first
+            word, self.want = self.want, None
+            self.online_projector()
+            self.run(self.st.get("tries", 0), word)
+            return
+        if now < self.next:
+            return
+        self.next = now + self.LOOK
+        try:
+            if not self.online_projector():
+                return
+            pid = next((p[0] for p in K.processes() if os.path.normcase(p[3]) == self.exe), None)
+            links = K.links_of(pid) if pid else set()
+            if links is None:                           # Windows' table unreadable: no decision on that
+                return
+            linked = any(p in links for p in PROJECTOR_PORTS)
+            if keep_projector(self.st, now, pid, bool(pid and K.windows_of(pid)), linked):
+                self.run(self.st["tries"])
+            self.show(projector_up(self.st, pid, linked))
+        except Exception as ex:                         # never stops the helper
+            say("projector watch: %r" % ex)
+
+
 def club_syncs(card, data, seat=None):
     """the online club card's sends (card None: offline, nothing): the card - after each, the table in the seat folder
     (seat None: no game folder known, no table sent) - and the new card a manager transfer puts beside it (NAME.new.bin -
@@ -269,21 +426,39 @@ def main(argv):
     data = argv[1] if len(argv) > 1 else K.DATA
     play = argv[2] if len(argv) > 2 else os.path.join(K.KIT, "PLAY.exe")
     flags = CREATE_NO_WINDOW if argv[3:] == ["hidden"] else CREATE_NEW_CONSOLE
-    req = os.path.join(data, "restart.request")
-    if os.path.exists(req):
-        try:
-            os.remove(req)
-            say("an old restart request (from a run that ended) removed - not carried out")
-        except OSError as ex:
-            say("an old restart request could not be removed: %s" % ex)
+    req, preq = os.path.join(data, "restart.request"), os.path.join(data, "projector.request")
+    for old in (req, preq, os.path.join(data, "projector.state")):
+        if os.path.exists(old):
+            try:
+                os.remove(old)
+                say("an old %s (from a run that ended) removed - not carried out" % os.path.basename(old))
+            except OSError as ex:
+                say("an old %s could not be removed: %s" % (os.path.basename(old), ex))
     say("watching %s" % req)
     view = ClubView(data, os.environ.get("WCCF_CLUB_CARD"))      # online: the account's club (play.py)
     sound = SoundDefaults(os.environ.get("WCCF_GAME"), time.time())
     logs = SendLogs(data)
     game = os.environ.get("WCCF_GAME")                                  # play.py: the game folder; seat 1 beside it
     syncs = club_syncs(os.environ.get("WCCF_CLUB_CARD"), data, K.seat_dir(game) if game else None)
+    keeper = ProjectorKeeper(game, data)
+
+    def run(tries, word=None):
+        keeper.restart(tries, word)
+        if word != "close":
+            sound.again(time.time())                                    # the new projector starts muted too
+    keeper.run = run
     end = time.time() + life
     while time.time() < end:
+        if os.path.exists(preq):                # SETTINGS' OPEN / CLOSE PROJECTOR: before the keeper's own
+            try:
+                with open(preq, encoding="utf-8", errors="replace") as f:
+                    text = f.read()
+                os.remove(preq)                 # taken first: one press, one action
+            except OSError:
+                text = ""
+            if text:
+                keeper.asked(text)
+        keeper.tick(time.time())
         view.tick(time.time())
         sound.tick(time.time())
         logs.tick()

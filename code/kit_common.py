@@ -170,6 +170,7 @@ _k.OpenProcess.argtypes = [w.DWORD, w.BOOL, w.DWORD]
 _k.QueryFullProcessImageNameW.argtypes = [w.HANDLE, w.DWORD, w.LPWSTR, ctypes.POINTER(w.DWORD)]
 _k.TerminateProcess.argtypes = [w.HANDLE, w.UINT]
 _k.CloseHandle.argtypes = [w.HANDLE]
+_k.GetProcessTimes.argtypes = [w.HANDLE] + [ctypes.POINTER(w.FILETIME)] * 4
 
 
 def processes():
@@ -213,6 +214,18 @@ def kill(pid):
     return ok
 
 
+def started(pid):
+    """when pid's process started (Windows' FILETIME, an int), None if it cannot be read: with the pid it names one
+    process - a number Windows gave to another program since has another start (play.py running.json "born")"""
+    h = _k.OpenProcess(0x1000, False, pid)             # PROCESS_QUERY_LIMITED_INFORMATION
+    if not h:
+        return None
+    t = [w.FILETIME() for _ in range(4)]
+    ok = _k.GetProcessTimes(h, *[ctypes.byref(x) for x in t])
+    _k.CloseHandle(h)
+    return t[0].dwHighDateTime << 32 | t[0].dwLowDateTime if ok else None
+
+
 # ---- what is listening, which pipes exist, a process's windows ------------------------------------------------
 class _TcpRow(ctypes.Structure):
     _fields_ = [("state", w.DWORD), ("laddr", w.DWORD), ("lport", w.DWORD), ("raddr", w.DWORD), ("rport", w.DWORD)]
@@ -231,6 +244,26 @@ def listening_ports():
             rows = (_TcpRow * n).from_buffer(buf, 4)
             return {((r.lport & 0xFF) << 8) | ((r.lport >> 8) & 0xFF) for r in rows if r.state == 2}   # 2 = LISTEN
     return set()
+
+
+class _TcpRowPid(ctypes.Structure):
+    _fields_ = _TcpRow._fields_ + [("pid", w.DWORD)]
+
+
+def links_of(pid):
+    """the remote TCP ports a process has an ESTABLISHED link to (IPv4) - as wccfpanel.c's server_link reads the
+    cabinet's (2026-10-17: the projector's link to the server, helpers\\panel.py ProjectorKeeper); None: cannot tell"""
+    ip = ctypes.WinDLL("iphlpapi")
+    for _ in range(5):
+        size = w.DWORD(0)
+        ip.GetExtendedTcpTable(None, ctypes.byref(size), False, 2, 5, 0)    # AF_INET, TCP_TABLE_OWNER_PID_ALL
+        buf = ctypes.create_string_buffer(size.value + 4096)
+        size = w.DWORD(len(buf))
+        if ip.GetExtendedTcpTable(buf, ctypes.byref(size), False, 2, 5, 0) == 0:
+            n = ctypes.c_uint32.from_buffer(buf).value
+            rows = (_TcpRowPid * n).from_buffer(buf, 4)
+            return {((r.rport & 0xFF) << 8) | ((r.rport >> 8) & 0xFF) for r in rows if r.pid == pid and r.state == 5}
+    return None
 
 
 def pipes():

@@ -2,16 +2,18 @@
 r"""seat_desk.py - hands out cabinet seats on the PC (or cloud machine) that runs the server (2026-10-06): every PC
 that plays on this server asks it for a seat before starting its cabinet and gets the lowest free one, 1-8, so nobody
 types a seat number (two PCs on one seat break the game).  It never gives out the projector (seat 0, 2026-10-11 - the
-owner: players on the server get only their own game): a PC that joins runs its cabinet and nothing else, and the
-server does not wait for a projector (play.py server, WAIT_PROJECTOR=0).  A projector box joins as seat 0 by itself.
+owner: players on the server get only their own game), and the server does not wait for a projector (play.py server,
+WAIT_PROJECTOR=0).  A projector box joins as seat 0 by itself.  Since 2026-10-17 a PC that asks with the RELAY word
+is told the projector relay's port (server\projector_relay.py), and may show the projector through it.
 A seat stays taken while that PC's online\seat.py keeps its connection, pinging every 20 s; a PC that stops,
 crashes or goes away frees its seat: its connection closes, or it stays silent for 75 s.
 
     python code\server\seat_desk.py LIFE_SECONDS [LOG_FILE]        (play.py server starts it)
 
 TCP port 20030 (WCCF_BROKER_PORT for the tests).  Lines, ASCII, one per message:
-    PC -> "WANT"                broker -> "SEAT n PROJECTOR 0"     the lowest free seat (PROJECTOR is always 0 now;
+    PC -> "WANT"                broker -> "SEAT n PROJECTOR 0"     the lowest free seat (PROJECTOR 0: no projector;
                                                                    kit 5's PCs ran a projector on 1)
+    PC -> "WANT RELAY"          broker -> "SEAT n PROJECTOR 20031" the same, and the projector relay's port
     PC -> "WANT SEAT n"         broker -> the same for seat n, or "TAKEN n"
                                 broker -> "FULL" (8 cabinets) / "ERR ..." (anything else) - then it closes
     PC -> "PING"                broker -> "PONG"                   while it runs
@@ -46,6 +48,12 @@ THE CLUB CARD WORD (2026-10-15): kit 7 also says which club card it plays: "WANT
 card's id (its serial, which the game writes into the club's data as SYSTEM_CARD_ID).  A signed-in seat's lease keeps
 it (leases.json "card"), so the witness can tell two signed-in players behind ONE address (one house) apart by the card
 id in each message.  An older desk answers a CARD word with "ERR say ..."; online\seat.py then asks without it.
+
+THE RELAY WORD (2026-10-17): a PC that can show the projector through the projector relay says so: "WANT [SEAT n]
+[RELAY] [CARD c] [TOKEN t]", and gets "SEAT n PROJECTOR <the relay's port>" (WCCF_PROJECTOR_PORT, 20031).  Without
+the word the answer stays PROJECTOR 0, so an older kit never starts a projector that connects straight to control
+(control takes one projector and refuses the next, INVALID_ID).  An older desk answers RELAY with "ERR say ...";
+online\seat.py then asks without it.
 """
 import hashlib
 import json
@@ -64,6 +72,7 @@ PORT = int(os.environ.get("WCCF_BROKER_PORT", "20030"))
 SILENT = float(os.environ.get("WCCF_BROKER_SILENT", "75"))       # seconds without a line: the PC is gone
 WEBSITE = os.environ.get("WCCF_WEBSITE", "https://wccf.online").rstrip("/")
 CHECKED = float(os.environ.get("WCCF_SIGNIN_KEEP", "600"))       # seconds a website answer about a token is kept
+RELAY_PORT = int(os.environ.get("WCCF_PROJECTOR_PORT", "20031"))   # server\projector_relay.py
 SEATS = range(1, 9)
 SATE = re.compile(r"client\[\d+\]\s*:\s*sateID=(\d+)")
 ACCEPT = re.compile(r"\+\+ACCEPT\+\+\s+'([0-9.]+):\d+'")
@@ -297,6 +306,9 @@ def serve(conn, peer):
             if account:
                 account = dict(account, card=int(words[-1]))
             words = words[:-2]
+        relay = words[-1:] == ["RELAY"]                             # it can show the projector through the relay
+        if relay:
+            words = words[:-1]
         with lock:
             game = in_game.now()
             others = {s: a for s, a in game.items() if a != ip}     # seats another address has in the game
@@ -325,7 +337,7 @@ def serve(conn, peer):
             lid = next_id
             leases[seat] = (peer, lid, account)
             publish()
-            conn.sendall(b"SEAT %d PROJECTOR 0\n" % seat)
+            conn.sendall(b"SEAT %d PROJECTOR %d\n" % (seat, RELAY_PORT if relay else 0))
             log("%s: seat %d - taken now: %s" % (peer, seat, taken()))
             log("%s: seat %d is %s" % (peer, seat, "signed in as %s (uid %s)%s" % (
                 account["username"], account["uid"], ", club card %s" % account["card"] if account.get("card") else "")

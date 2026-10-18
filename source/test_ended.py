@@ -27,9 +27,28 @@ assert play.crashed_logs(win, set(), logs()) is None, "no game window left: the 
 assert play.crashed_logs(win, {12, 13}, logs()) == [], "nothing ended (a hand-run ended): nothing stops"
 assert play.crashed_logs({}, set(), logs()) is None, "no running.json: the rest stops, as before"
 
+# the projector's window never stops the run (2026-10-17), closed or gone; the cabinet's still does
+assert play.projector_only(win, {13}), "projector gone, seat 1 runs: nothing stops"
+assert not play.projector_only(win, {12}), "seat 1 gone: the rest stops, the projector too"
+assert not play.projector_only(win, set()), "both gone: the rest stops"
+assert not play.projector_only(win, {12, 13}), "nothing ended: not a projector close"
+assert not play.projector_only({13: "run_seat1.txt"}, set()), "online, no projector: the cabinet's close stops the rest"
+
+# the projector closed, its game quitting by itself (exit code 0, before debugger.py saw the window go): a close
+EXIT0 = "  t+ 61.0s %s\n" % play.CLEAN_EXIT
+assert play.projector_only(win, {13}) and play.went_wrong(["run_projector.txt"], logs(run_projector=EXIT0)) == []
+assert play.crashed_logs(win, {13}, logs(run_projector=EXIT0)) is None, "a clean quit is a close"
+with open(os.path.join(KIT, "code", "play.py"), encoding="utf-8") as f:   # CLOSE PROJECTOR's line in its log
+    assert '"  %s %s - by CLOSE PROJECTOR (SETTINGS)\\n" % (time.strftime("%H:%M:%S"), WINDOW_CLOSED)' in f.read()
+
+# the stop after the cabinet's close judges only what has ended: the projector alive at the stop is no crash
+assert play.gone_logs(win, {12}) == ["run_seat1.txt"] and play.gone_logs(win, set()) == sorted(win.values())
+assert play.went_wrong(play.gone_logs(win, {12}), logs(run_seat1=CLOSED)) == [], "the projector the stop ends"
+
 with open(os.path.join(KIT, "code", "hardware", "debugger.py"), encoding="utf-8") as f:
     dbg = f.read()
-assert play.WINDOW_CLOSED in dbg, "debugger.py no longer prints the line play.py looks for"
+assert play.WINDOW_CLOSED in dbg and 'process exited, %s' in dbg and '"exit code 0x%08X"' in dbg, \
+    "debugger.py no longer prints the lines play.py looks for"
 
 # a run that went wrong (the automatic report, 2026-10-11): a crash, or the server link lost
 seat = ["run_seat1.txt"]
@@ -47,4 +66,4 @@ for sign in play.CRASH_SIGNS:                                    # the words mus
     assert sign in dbg, "debugger.py no longer prints %r" % sign
 with open(os.path.join(KIT, "source", "panel", "wccfpanel.c"), encoding="utf-8") as f:
     assert " LOST (it was up " in f.read(), "wccfpanel.c no longer writes the LOST line play.py looks for"
-print("ended: 16 checks passed")
+print("ended: 27 checks passed")

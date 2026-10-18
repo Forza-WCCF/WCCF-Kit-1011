@@ -6,7 +6,30 @@ game is not included. Newest first; each date is the day that kit was built.
 
 ## Kit 8.3 - 2026-10-16
 
+### Added
+- Online, every player's PC shows the projector again. The server runs a projector relay (TCP 20031, started by
+  `PLAY.exe server`; a server must let that port in too): it holds the server's one projector connection and passes
+  the big screen to each player's projector, and a player who joins mid-match gets that match's start first. The
+  projector starts muted, as on THIS PC. SETTINGS > VIEW > SHOW PROJECTOR (on unless switched off) chooses it for
+  this PC; a server from before the relay gives no projector, as before. A slow PC's projector skips frames to
+  catch up and never slows anyone else.
+- Online, a projector that loses the server comes back by itself. Before, it sat on "Error 3000 - WCCF CONTROL NOT
+  FOUND" for good. Now its link waits out a drop of up to about 2 minutes, as the cabinet's does; past that, the kit
+  closes that projector and opens a fresh one (after 10, then 30, then 60 seconds; three tries), which shows the
+  next phase. Your cabinet is never touched, and a projector whose window you closed stays closed.
+- Online, SETTINGS > OPEN / CLOSE PROJECTOR (beside RESTART NOW; click it twice): close the projector now, or open
+  a fresh one, also after you closed it or the automatic tries gave up. Your cabinet plays on. RESTART NOW after a
+  change to SHOW PROJECTOR starts everything again, so the projector comes or goes at once.
+
+### Changed
+- Closing the projector's window no longer stops the game, on THIS PC or online: seat 1 plays on, nothing else
+  stops and no report is sent. THIS PC's server no longer waits for the projector before a round, so a closed
+  projector never holds the next round up. Closing seat 1's window still ends the run on this PC, the projector
+  with it - online that is only your PC.
+
 ### Fixed
+- A cabinet restart waiting behind a stop could start a cabinet after the run had ended, without its server or
+  play mode. It now checks the run again after its wait and leaves a stopped or replaced run alone.
 - Online: a short internet drop in the middle of a match ended in "Error 3000 - WCCF CONTROL NOT FOUND", and the
   game never came back. Three things gave up on a quiet link: Windows (after ~24 s), the game (30 s without word from
   the server) and the server (~36 s without word from the PC). Now the link waits out a drop of up to about 75
