@@ -4,7 +4,7 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
-## Kit 8.3 - 2026-10-16
+## Kit 8.3 - 2026-10-19
 
 ### Added
 - Online, every player's PC shows the projector again. The server runs a projector relay (TCP 20031, started by
@@ -21,11 +21,21 @@ game is not included. Newest first; each date is the day that kit was built.
   a fresh one, also after you closed it or the automatic tries gave up. Your cabinet plays on. RESTART NOW after a
   change to SHOW PROJECTOR starts everything again, so the projector comes or goes at once.
 
+- SETTINGS > VIEW > GRAPHICS, a page of video settings for the game itself (as an emulator has). PRESET sets the
+  rows at once: LOW (a slow PC or laptop), ORIGINAL (the game as the arcade), HIGH and ULTRA (a strong graphics card,
+  a 4K screen); CUSTOM lights up for any other mix. AT ONCE: TEXTURES GAME / 4x / 8x / 16x (sharper pitch lines at a
+  slant) and an FPS counter. NEXT START (RESTART NOW applies them; the projector on this PC at PLAY.exe's next start):
+  ANTI-ALIAS GAME / OFF / 2x / 4x / 8x (8x only where the graphics card can, else the next level down), SHADOWS
+  GAME / LOW, MOTION BLUR GAME / OFF; anti-alias OFF, shadows LOW and motion blur OFF help a slow PC. The hook changes
+  each only on the original code and says so in its log.
+
 ### Changed
 - Closing the projector's window no longer stops the game, on THIS PC or online: seat 1 plays on, nothing else
   stops and no report is sent. THIS PC's server no longer waits for the projector before a round, so a closed
   projector never holds the next round up. Closing seat 1's window still ends the run on this PC, the projector
   with it - online that is only your PC.
+- The seat's window is DPI aware: on a scaled screen (150%, a 4K one at 200%) Windows no longer stretches it, so the
+  panel's text stays sharp.
 
 ### Fixed
 - A cabinet restart waiting behind a stop could start a cabinet after the run had ended, without its server or

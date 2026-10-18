@@ -288,9 +288,29 @@ def kit_env(game, online=None, dream=False):
         env.update(WCCF_CLUB_CARD=online["card"], WCCF_CATALOGUE=online["catalogue"])
     if dream:
         env["WCCF_DREAM_TEAM"] = "1"
+    env.update(graphics_env(read_panel()))    # SETTINGS > GRAPHICS' NEXT START rows, for the seat and the projector
     from online import account                # SETTINGS' ACCOUNT row: the name only - the panel never sees the token
     env["WCCF_ACCOUNT_NAME"] = str((online or account.load() or {}).get("username") or "")
     return env
+
+
+# SETTINGS > GRAPHICS, NEXT START (2026-10-18): data\panel.txt name -> (the hook's variable, the values it takes).  The
+# game's wccfk.dll patches the game before it draws (wccfk.c "graphics"); a missing or unknown value sets nothing = the
+# game's own.  Every program of the run gets them: the seat and the projector both take them, any other exe is left
+# alone by the hook's byte checks
+GRAPHICS = {"msaa": ("WCCF_MSAA", ("off", "2", "4", "8")),
+            "shadows": ("WCCF_SHADOWS", ("low",)),
+            "motion_blur": ("WCCF_MOTION_BLUR", ("off",))}
+
+
+def graphics_env(panel):
+    """the GRAPHICS rows of read_panel()'s dict -> the hook's environment, valid values only"""
+    out = {}
+    for name, (var, ok) in GRAPHICS.items():
+        v = panel.get(name, "").lower()
+        if v in ok:
+            out[var] = v
+    return out
 
 
 def not_server_side(running, roles, py=None):
@@ -730,6 +750,10 @@ def start_cabinet(debug, env, mode, ip, seat_no, seat, roles):
         senv.update(WCCF_RELAY="%s:%d" % (ip, RELAY_PORT), WCCF_SEAT=str(seat_no))
     if debug:
         senv["MXHOOK_VERBOSE"] = "1"
+    # DPI aware (2026-10-18, as the 2017-18 kit): Windows no longer stretches the seat's window on a scaled screen (150%,
+    # a 4K one at 200%), so the panel composes at the screen's real pixels and its text stays sharp.  Seat only: the
+    # projector has no panel to scale, and DPI aware its 1600x600 window would come out small on such a screen
+    senv["__COMPAT_LAYER"] = (env.get("__COMPAT_LAYER", "") + " HighDpiAware").strip()
     senv["WCCF_PANEL"] = PANEL_DLL
     # the English pictures the hook gives the game as it loads Sega's (english.py's "memory" pictures, made by SETUP's
     # ENGLISH / ITALIANO): named only while there are some - in Japanese the hook changes no picture

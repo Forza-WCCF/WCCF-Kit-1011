@@ -15,6 +15,11 @@ WHAT IT IS
   The kit holds none of Sega's files. Everything that comes from the game is made by setup from YOUR copy.
 
 NEW IN KIT 8.3
+  - Online projector: a server with the new relay can show the big screen on every player's PC. SHOW PROJECTOR
+    chooses it for your next online start; OPEN / CLOSE PROJECTOR opens or closes it now without stopping your game.
+    Closing its window leaves your cabinet playing, on THIS PC too. Hosting needs TCP 20031 open for the relay.
+  - SETTINGS > VIEW > GRAPHICS: LOW / ORIGINAL / HIGH / ULTRA presets, sharper textures, an FPS counter, anti-alias,
+    shadows and motion blur. LOW helps a slow PC. The cabinet's panel stays sharp on a scaled Windows screen.
   - Online: a short internet drop in the middle of a match no longer ends in "Error 3000 - WCCF CONTROL NOT FOUND".
     The link waits out a drop of up to about 75 seconds instead of being cut (a longer one is still cut).
   - English: the yellow lines under the screen (INSERT CLUB CARD, INSERT COIN(S), PRESS START BUTTON), and a cup your
@@ -242,6 +247,11 @@ SETTINGS (left side, under CARD)
   Beside it SHOW PROJECTOR (on unless you switch it off): online, this PC shows the projector too, from the next
   online start, when the server has a projector relay (ONLINE, below). THIS PC always shows it. Changing it, then
   RESTART NOW, starts everything again so the projector comes or goes.
+  GRAPHICS > beside the VIEW heading opens the video settings. LOW reduces anti-alias, shadows and motion blur;
+  ORIGINAL uses the game's own; HIGH and ULTRA sharpen textures and smooth edges; CUSTOM means your own mix.
+  TEXTURES and the FPS counter change at once. ANTI-ALIAS, SHADOWS and MOTION BLUR apply at the next start;
+  RESTART NOW applies them to the cabinet now, after the locker-room save. A projector already running keeps its
+  settings until the next full start (or, online, CLOSE PROJECTOR then OPEN PROJECTOR).
   OPEN / CLOSE PROJECTOR (beside RESTART NOW, online with a projector on this PC; click it twice): CLOSE ends the
   projector now, as its window's X would; OPEN starts a fresh one through the server's relay (about a minute),
   also after you closed it. Your cabinet plays on either way, and SHOW PROJECTOR is not changed.
