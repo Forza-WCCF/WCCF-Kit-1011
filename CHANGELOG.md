@@ -28,6 +28,8 @@ game is not included. Newest first; each date is the day that kit was built.
   with it - online that is only your PC.
 
 ### Fixed
+- A cabinet restart waiting behind a stop could start a cabinet after the run had ended, without its server or
+  play mode. It now checks the run again after its wait and leaves a stopped or replaced run alone.
 - Online: a short internet drop in the middle of a match ended in "Error 3000 - WCCF CONTROL NOT FOUND", and the
   game never came back. Three things gave up on a quiet link: Windows (after ~24 s), the game (30 s without word from
   the server) and the server (~36 s without word from the PC). Now the link waits out a drop of up to about 75

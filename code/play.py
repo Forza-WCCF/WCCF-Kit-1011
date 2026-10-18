@@ -1318,15 +1318,21 @@ def restart_cabinet():
     game, seat = setup_state()
     if not game:
         return 2
+    run_id = running_info().get("run")       # the run before the card question or a wait behind another stop
     rc, _c, _sess = stop_guard(False, False, game, seat)
     if rc:
         return rc
     with run_lock():
-        return _restart_cabinet(game, seat)
+        return _restart_cabinet(game, seat, run_id)
 
 
-def _restart_cabinet(game, seat):
+def _restart_cabinet(game, seat, run_id):
     info = running_info()                    # read under the run lock: a projector's restart just before is in it
+    processes = info.get("processes")
+    if info.get("mode") not in ("local", "remote") or not isinstance(processes, dict) or \
+            not any(is_cabinet_role(r) for r in processes.values()) or info.get("run") != run_id:
+        say("The run the cabinet's restart was for has ended or changed - nothing done.")
+        return 3
     roles = {int(k): v for k, v in (info.get("processes") or {}).items()}
     mode, ip, online, dream = info.get("mode"), info.get("server"), online_of(info), bool(info.get("dream"))
     keep = carried(info)                     # a new run_start: a session the old cabinet had open was cut

@@ -3,7 +3,8 @@
 running.json and stand-in processes (check.ps1 runs it; nothing starts, nothing is ended): the card session's start
 stays, a pid Windows gave to another of the kit's Pythons is never ended, an old projector that will not end gets no
 second one beside it, an automatic restart leaves a projector the player closed alone, and a restart waits for a stop
-under the run lock - then finds the run gone and starts nothing.
+under the run lock - then finds the run gone and starts nothing. The cabinet's restart likewise leaves a stopped
+or replaced run alone, including when it waited behind a stop; a normal cabinet restart still keeps the projector.
     python source\\test_projector_restart.py"""
 import json
 import os
@@ -129,7 +130,7 @@ try:
         "import os, sys, time; sys.path.insert(0, %r); import play; play.LOCK = %r\n"
         "with play.run_lock():\n"
         "    open(%r, 'w').close(); time.sleep(2); os.remove(%r)\n") % (
-        os.path.join(KIT, "code"), play.LOCK, held, play.RUNNING)])
+        os.path.join(KIT, "code"), play.LOCK, held, play.RUNNING)], creationflags=subprocess.CREATE_NO_WINDOW)
     end = time.time() + 30
     while not os.path.exists(held) and time.time() < end:
         time.sleep(0.05)
@@ -138,6 +139,67 @@ try:
     stopper.wait()
     check(time.time() - t0 > 1 and rc == 3 and not launched and not kills and not os.path.exists(play.RUNNING),
           "a stop under the run lock: the restart waits, then finds the run gone and starts nothing (%r)" % rc)
+
+    # The cabinet uses the same lock: a stop can finish after its card guard, before it reads the run again.
+    # Every process operation is still a stand-in, also when the regression starts an unwanted cabinet.
+    cabinet_starts = []
+
+    def cabinet(debug, env, mode, ip, seat_no, seat, roles):
+        cabinet_starts.append((mode, ip, seat_no))
+        py[901] = 9010
+        roles[901] = "seat %d launcher" % seat_no
+
+    play.start_cabinet = cabinet
+    play.stop_guard = lambda *a: (0, False, "closed")
+    play.apply_card_request = play.apply_card_fix = lambda: None
+    play.apply_board = lambda *a: None
+
+    for replacement in (None, "r2"):
+        run()
+        cabinet_starts.clear()
+        held = os.path.join(T, "cabinet-held")
+        if os.path.exists(held):
+            os.remove(held)
+        stopper = subprocess.Popen([sys.executable, "-c", (
+            "import json, os, sys, time; sys.path.insert(0, %r); import play; play.LOCK = %r\n"
+            "with play.run_lock():\n"
+            "    open(%r, 'w').close(); time.sleep(2)\n"
+            "    path, replacement = %r, %r\n"
+            "    if replacement is None:\n"
+            "        os.remove(path)\n"
+            "    else:\n"
+            "        with open(path, encoding='utf-8') as f: info = json.load(f)\n"
+            "        info['run'] = replacement\n"
+            "        with open(path, 'w', encoding='utf-8') as f: json.dump(info, f)\n") % (
+            os.path.join(KIT, "code"), play.LOCK, held, play.RUNNING, replacement)],
+            creationflags=subprocess.CREATE_NO_WINDOW)
+        end = time.time() + 30
+        while not os.path.exists(held) and time.time() < end:
+            time.sleep(0.05)
+        check(os.path.exists(held), "cabinet race: the simulated stop holds the real lock")
+        t0 = time.time()
+        rc = play.restart_cabinet()
+        stopper.wait(timeout=10)
+        check(stopper.returncode == 0 and time.time() - t0 > 1 and rc == 3 and not cabinet_starts and not kills,
+              "cabinet restart waits, then leaves a %s run alone" % ("stopped" if replacement is None else "replaced"))
+        check((not os.path.exists(play.RUNNING)) if replacement is None else info().get("run") == replacement,
+              "cabinet restart never rewrites the stopped or replaced run")
+
+    run()
+    cabinet_starts.clear()
+    check(play.restart_cabinet() == 0 and cabinet_starts == [("remote", "1.2.3.4", 1)] and kills == [10],
+          "a normal restart starts the cabinet once and keeps the projector")
+    check(info()["run"] == "r1" and info()["processes"] == {"12": "projector launcher", "901": "seat 1 launcher"},
+          "a normal cabinet restart preserves the run and projector roles")
+
+    run()
+    cabinet_starts.clear()
+    legacy = info()
+    legacy.pop("run")
+    with open(play.RUNNING, "w", encoding="utf-8") as f:
+        json.dump(legacy, f)
+    check(play.restart_cabinet() == 0 and cabinet_starts == [("remote", "1.2.3.4", 1)],
+          "a legacy run without an id can still restart its cabinet")
 finally:
     shutil.rmtree(T, ignore_errors=True)
 
