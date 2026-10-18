@@ -3286,7 +3286,14 @@ static void preset_set(int i)            // the rows of preset i (not saved here
     g_msaa_req = PRESET[i].msaa; g_shadow_req = PRESET[i].shadow; g_blur_req = PRESET[i].blur;
 }
 
-static int pick(const int *v, int n, int a) { int i; for (i = 0; i < n; i++) if (v[i] == a) return a; return 0; }
+// the one of v[0..n) written exactly as s, else 0: "8" only, never "8x", "08", "8junk" or "8.5" - the tokens play.py's
+// GRAPHICS takes (2026-10-18, review: atoi read "8x" as 8, the panel showed 8x and its next save wrote msaa=8)
+static int pick(const int *v, int n, const char *s)
+{
+    char t[12]; int i;
+    for (i = 0; i < n; i++) { _snprintf(t, sizeof t, "%d", v[i]); t[sizeof t - 1] = 0; if (!strcmp(t, s)) return v[i]; }
+    return 0;
+}
 // RESTART NOW (the player, 2026-10-06: "a button that goes to the next start"): a first click arms it for 8 s, a second
 // writes data\restart.request; panel.py (outside the game - seat 1's debugger would kill a restart the game
 // started) opens "PLAY.exe restart".  Not during a card session.  Not taken in 3 s = no helper: removed, and said.
@@ -3342,9 +3349,9 @@ static void set_load_locked(void)
         else if (!_stricmp(name, "account")) g_signout_req = !_stricmp(val, "signout");
         else if (!_stricmp(name, "layout")) g_compact = !_stricmp(val, "compact");
         else if (!_stricmp(name, "auto_logs")) g_auto_off = !strcmp(val, "0");
-        else if (!_stricmp(name, "textures")) g_aniso = pick(ANISO, 4, atoi(val));          // GRAPHICS
+        else if (!_stricmp(name, "textures")) g_aniso = pick(ANISO + 1, 3, val);          // GRAPHICS
         else if (!_stricmp(name, "fps")) g_fps_on = !_stricmp(val, "on");
-        else if (!_stricmp(name, "msaa")) g_msaa_req = !_stricmp(val, "off") ? 1 : pick(MSAA + 2, 3, atoi(val));
+        else if (!_stricmp(name, "msaa")) g_msaa_req = !_stricmp(val, "off") ? 1 : pick(MSAA + 2, 3, val);
         else if (!_stricmp(name, "shadows")) g_shadow_req = !_stricmp(val, "low");
         else if (!_stricmp(name, "motion_blur")) g_blur_req = !_stricmp(val, "off");
     }
@@ -3429,6 +3436,23 @@ static void set_selftest(void)
     buf[got] = 0;
     logline("settings test: %s  THIS PC drops DREAM TEAM", ok && strstr(buf, "\nplay_on=this_pc\n") &&
             !strstr(buf, "online_mode") ? "PASS" : "FAIL");
+    // GRAPHICS (2026-10-18, review): only play.py's own tokens - a malformed value is nothing, as play.py takes it
+    {
+        static const char *bad[] = { "8x", "04", "4junk", "2.5", "16x", "" };
+        for (i = 0, ok = 1; i < (int)(sizeof bad / sizeof bad[0]); i++) {
+            if ((f = fopen(g_panel_path, "wb")) != NULL) { fprintf(f, "msaa=%s\ntextures=%s\n", bad[i], bad[i]); fclose(f); }
+            EnterCriticalSection(&g_board_cs);
+            set_load_locked();
+            ok = ok && g_msaa_req == 0 && g_aniso == 0;
+            LeaveCriticalSection(&g_board_cs);
+        }
+        if ((f = fopen(g_panel_path, "wb")) != NULL) { fputs("msaa=OFF\ntextures=16\n", f); fclose(f); }
+        EnterCriticalSection(&g_board_cs);
+        set_load_locked();
+        ok = ok && g_msaa_req == 1 && g_aniso == 16;
+        LeaveCriticalSection(&g_board_cs);
+        logline("settings test: %s  msaa= / textures= 8x 04 4junk 2.5 16x and empty read as nothing; OFF and 16 read", ok ? "PASS" : "FAIL");
+    }
     // GRAPHICS (2026-10-18): each row read and saved as play.py reads it; the PRESET lit read from the rows; an
     // earlier test kit's resolution= is read as nothing and gone at the next save
     if ((f = fopen(g_panel_path, "wb")) != NULL) {
@@ -3510,7 +3534,7 @@ static void set_init(void)               // the init thread: where data\ is, and
     logline("settings: %s (%s)", g_panel_path, GetFileAttributesA(g_panel_path) != INVALID_FILE_ATTRIBUTES
                                                ? "read" : "no file yet - this PC, no request");
     if (GetEnvironmentVariableA("WCCF_MSAA", e, sizeof e) > 0)       // GRAPHICS: what this run's hook was given
-        g_msaa_run = !_stricmp(e, "off") ? 1 : pick(MSAA + 2, 3, atoi(e));
+        g_msaa_run = !_stricmp(e, "off") ? 1 : pick(MSAA + 2, 3, e);
     g_shadow_run = GetEnvironmentVariableA("WCCF_SHADOWS", e, sizeof e) > 0 && !_stricmp(e, "low");
     g_blur_run = GetEnvironmentVariableA("WCCF_MOTION_BLUR", e, sizeof e) > 0 && !_stricmp(e, "off");
     logline("view: layout %s; graphics: textures %ld, fps %s, this run msaa %d shadows %s motion blur %s",
