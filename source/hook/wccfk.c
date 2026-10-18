@@ -1402,6 +1402,12 @@ static void install_pictures(HMODULE exe)
  *    showed its top-left only (live, 2026-10-18).
  *  - shadows=low: sub_87A4F0 clamps a shadow map to 2048 ("cmp [ebp+8], 800h;
  *    jbe; mov [ebp+8], 800h" 0x87A4F7); 512 caps them (the scene asks 1024).
+ *    The scene's settings sync (sub_4C03F0) rebuilds the maps whenever its ask
+ *    ([edi+0Ch]) is not the pass's size (+8Ch via 0x87A4D0 at 0x4C0404, then
+ *    "cmp [edi+0Ch], eax" 0x4C0409): with the cap alone the two never agree
+ *    and each sync re-ran 0x87A4F0 / 0x87A490 -> 0x87ED00 -> 0x87A520, the
+ *    maps freed and made again.  That call comes to shadow_size_cmp, which caps
+ *    the ask as the setter does before it compares (review, 2026-10-18).
  *  - motion_blur=off: the main pass sets its motion blur with "push 1" at
  *    0x4BD9E8 before sub_87D870 (the other branch already pushes 0). */
 
@@ -1421,6 +1427,25 @@ static int patch_code(DWORD at, const BYTE *want, const BYTE *put, int len)
     VirtualProtect((void *)(UINT_PTR)at, len, prot, &prot);
     FlushInstructionCache(GetCurrentProcess(), (void *)(UINT_PTR)at, len);
     return 1;
+}
+
+#define SHADOW_LOW 0x200                 /* shadows=low: the cap, in the setter and in the sync's compare */
+
+/* in place of "call 0x87A4D0; cmp [edi+0Ch], eax" at 0x4C0404 (ecx = the pass, edi = the scene's settings): the
+ * same flags for the setnz after it, with the ask capped at SHADOW_LOW; eax = the pass's size as before, edx is
+ * dead there (next written at 0x4C0447) */
+static __declspec(naked) void shadow_size_cmp(void)
+{
+    __asm {
+        mov eax, [ecx+8Ch]
+        mov edx, [edi+0Ch]
+        cmp edx, SHADOW_LOW
+        jbe capped
+        mov edx, SHADOW_LOW
+    capped:
+        cmp edx, eax
+        ret
+    }
 }
 
 /* the MSAA ask: n for both the seat and the projector (0 = none; 8 rides on 4 plus the type below) */
@@ -1488,6 +1513,7 @@ static void install_graphics(HMODULE exe)
 {
     static const BYTE shadow[16] = { 0x81, 0x7D, 0x08, 0x00, 0x08, 0x00, 0x00, 0x76, 0x07,
                                      0xC7, 0x45, 0x08, 0x00, 0x08, 0x00, 0x00 };   /* 0x87A4F7: cap 2048 */
+    static const BYTE sync[8] = { 0xE8, 0xC7, 0xA0, 0x3B, 0x00, 0x39, 0x47, 0x0C };   /* 0x4C0404: call 0x87A4D0; cmp */
     static const BYTE blur[12] = { 0x38, 0x5C, 0x24, 0x54, 0x74, 0x03, 0x53, 0xEB, 0x02, 0x6A, 0x01, 0xE8 };  /* 0x4BD9DF */
     BYTE put[16];
     char v[8];
@@ -1510,10 +1536,18 @@ static void install_graphics(HMODULE exe)
             logline("graphics: WCCF_MSAA=%s is not off, 2, 4 or 8 - the game's own", v);
     }
     if (env_is("WCCF_SHADOWS", "low")) {
+        BYTE call[8] = { 0xE8, 0, 0, 0, 0, 0x90, 0x90, 0x90 };          /* call shadow_size_cmp; nop x3 */
+        DWORD rel = (DWORD)(UINT_PTR)shadow_size_cmp - (0x4C0404 + 5);
+        memcpy(call + 1, &rel, 4);
         memcpy(put, shadow, sizeof shadow);
-        put[4] = put[13] = 0x02;                                          /* 0x800 -> 0x200 */
-        logline("graphics: shadows low %s", patch_code(0x87A4F7, shadow, put, sizeof shadow)
-                ? "(shadow maps capped at 512)" : "refused - not the original code at 0x87A4F7");
+        put[4] = (BYTE)(SHADOW_LOW >> 8); put[13] = put[4];               /* 0x800 -> 0x200 */
+        if (!patch_code(0x87A4F7, shadow, put, sizeof shadow))
+            logline("graphics: shadows low refused - not the original code at 0x87A4F7");
+        else if (!patch_code(0x4C0404, sync, call, sizeof sync)) {     /* a cap the sync never agrees with: none */
+            patch_code(0x87A4F7, put, shadow, sizeof shadow);
+            logline("graphics: shadows low refused - not the original code at 0x4C0404 (the cap taken back out)");
+        } else
+            logline("graphics: shadows low (shadow maps capped at %d, the scene's sync compares the capped size)", SHADOW_LOW);
     }
     if (env_is("WCCF_MOTION_BLUR", "off")) {
         memcpy(put, blur, sizeof blur);
