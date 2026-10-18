@@ -31,6 +31,9 @@
  *    kit's inject.exe wrote it into the game from outside);
  *  - gives the server (control_Release) the players' messages only whole
  *    (2026-10-11): a message in pieces crashed it - see "whole messages".
+ *  - SETTINGS > GRAPHICS' NEXT START rows (2026-10-18): anti-aliasing, the
+ *    seat's 3D size, shadow maps and motion blur, patched in the game before
+ *    it draws - see "graphics".
  *
  * Load method : the game's renamed import (wccfk.dll in its folder; no process injection).
  * Hook method : IAT patch of the game module's imports (in-process), by name
@@ -39,7 +42,10 @@
 
 #include <windows.h>
 #include <winioctl.h>
+#define COBJMACROS
+#include <d3d9.h>        /* graphics: the anti-alias check only, called through the game's own d3d9 - never linked */
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include "winmm_fwd.h"   /* forwards the game's 3 timer functions to Windows' own winmm */
@@ -1301,16 +1307,21 @@ static void install_wholemsg(HMODULE exe)
 
 /* The I/O board's error mark off in the game itself (jvs.h): only in client_Release.exe, at its usual base, and only on
  * Sega's exact bytes - in any other program the two places hold other code and nothing is touched. */
-static void install_jvs_unlatch(HMODULE exe)
+static int is_client(void)               /* this program is client_Release.exe (a seat or the projector) */
 {
     char me[MAX_PATH], *base;
-    DWORD prot;
-    int r;
     me[0] = 0;
     GetModuleFileNameA(NULL, me, MAX_PATH);
     base = strrchr(me, '\\');
     base = base ? base + 1 : me;
-    if (lstrcmpiA(base, "client_Release.exe") != 0)
+    return lstrcmpiA(base, "client_Release.exe") == 0;
+}
+
+static void install_jvs_unlatch(HMODULE exe)
+{
+    DWORD prot;
+    int r;
+    if (!is_client())
         return;
     if (exe != (HMODULE)(UINT_PTR)0x00400000) {
         logline("JVS: the board's error mark left as it is - the game is not at its usual address");
@@ -1369,6 +1380,186 @@ static void install_pictures(HMODULE exe)
             real_TexFromMem ? "given as the game loads Sega's" : "NOT used (this program loads no pictures that way)");
 }
 
+/* ---- graphics (2026-10-18) -----------------------------------------------
+ * SETTINGS > GRAPHICS, NEXT START: play.py turns data\panel.txt's msaa= /
+ * resolution= / shadows= / motion_blur= into WCCF_MSAA / WCCF_RES /
+ * WCCF_SHADOWS / WCCF_MOTION_BLUR (valid values only; unset = the game's own,
+ * nothing touched).  Only in client_Release.exe at its usual base, and each
+ * patch only on the original bytes of the instructions it changes (setup.py's
+ * seat patches included where they matter), so a seat, the projector and any
+ * other exe each take what fits them.  One log line per patch, done or refused.
+ * Static reading of the 2010-11 client: research\graphics-1011-20261018\RE.md.
+ *  - anti-alias: the default rendering pass (0x4BD650) asks 4x on a seat and 2x
+ *    on the projector ("mov eax, 4" 0x4BD906, "mov eax, 2" 0x4BD913, chosen by
+ *    SATELLITE_NO); 0 is the plain path every other pass runs.  0x7604A0 turns
+ *    the ask into the D3D type ("mov eax, 4" 0x7604B3), used only by the main
+ *    pass's MSAA target, colour and depth alike: 8 there = 8x.  The game never
+ *    checks a D3D result, so 2x / 4x / 8x are asked of the card first
+ *    (CheckDeviceMultiSampleType at the game's Direct3DCreate9, the formats it
+ *    uses) and stepped down to what it can do.  off / 2 / 4 / 8 apply to the
+ *    seat and the projector alike.
+ *  - resolution: the seat's branch of WinMain fixes the 3D pass at 960x600
+ *    ("mov edi, 258h" 0x401742, "mov [esi+34h], 3C0h" 0x40177F); the final
+ *    pass stretches it over the window (setup.py's "picture layout" at
+ *    0x40178F, required: without it 600 is the final pass's height too).  720,
+ *    1440, 1920 or 2880 wide, 16:10 kept.  The projector's 1600x600 shares its
+ *    window's constants and is never changed.
+ *  - shadows=low: sub_87A4F0 clamps a shadow map to 2048 ("cmp [ebp+8], 800h;
+ *    jbe; mov [ebp+8], 800h" 0x87A4F7); 512 caps them (the scene asks 1024).
+ *  - motion_blur=off: the main pass sets its motion blur with "push 1" at
+ *    0x4BD9E8 before sub_87D870 (the other branch already pushes 0). */
+
+typedef IDirect3D9 *(WINAPI *pfn_Direct3DCreate9)(UINT);
+static pfn_Direct3DCreate9 real_Direct3DCreate9;
+static int g_msaa_want = 0;              /* WCCF_MSAA 2, 4 or 8 (off needs no card check) */
+
+/* the len bytes at `at` read `want` (the original instructions): `put` goes in their place */
+static int patch_code(DWORD at, const BYTE *want, const BYTE *put, int len)
+{
+    DWORD prot;
+    if (IsBadReadPtr((void *)(UINT_PTR)at, len) || memcmp((void *)(UINT_PTR)at, want, len) != 0)
+        return 0;
+    if (!VirtualProtect((void *)(UINT_PTR)at, len, PAGE_EXECUTE_READWRITE, &prot))
+        return 0;
+    memcpy((void *)(UINT_PTR)at, put, len);
+    VirtualProtect((void *)(UINT_PTR)at, len, prot, &prot);
+    FlushInstructionCache(GetCurrentProcess(), (void *)(UINT_PTR)at, len);
+    return 1;
+}
+
+/* the MSAA ask: n for both the seat and the projector (0 = none; 8 rides on 4 plus the type below) */
+static const BYTE GFX_ASK[18] = { 0xB8, 0x04, 0x00, 0x00, 0x00, 0x39, 0x1D, 0xBC, 0xD4, 0xB0, 0x00, 0x75, 0x05,
+                                  0xB8, 0x02, 0x00, 0x00, 0x00 };      /* 0x4BD906: mov eax,4; cmp; jnz; mov eax,2 */
+static int msaa_ask(int n)
+{
+    BYTE put[sizeof GFX_ASK];
+    memcpy(put, GFX_ASK, sizeof put);
+    put[1] = put[14] = (BYTE)n;
+    return patch_code(0x4BD906, GFX_ASK, put, sizeof put);
+}
+
+static int msaa_can(IDirect3D9 *d3d, int n)
+{
+    static const D3DFORMAT fmt[3] = { D3DFMT_A8R8G8B8, D3DFMT_X8R8G8B8, D3DFMT_D24S8 };
+    int i;
+    for (i = 0; i < 3; i++)
+        if (FAILED(IDirect3D9_CheckDeviceMultiSampleType(d3d, D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, fmt[i], TRUE,
+                                                         (D3DMULTISAMPLE_TYPE)n, NULL)))
+            return 0;
+    return 1;
+}
+
+static void msaa_apply(IDirect3D9 *d3d)
+{
+    static const BYTE type4[6] = { 0xB8, 0x04, 0x00, 0x00, 0x00, 0xC3 }, type8[6] = { 0xB8, 0x08, 0x00, 0x00, 0x00, 0xC3 };
+    static LONG once = 0;
+    int n = g_msaa_want;
+    if (InterlockedExchange(&once, 1))
+        return;
+    while (n >= 2 && !msaa_can(d3d, n))
+        n /= 2;
+    if (n < 2)
+        n = 0;
+    if (!msaa_ask(n == 8 ? 4 : n)) {
+        logline("graphics: anti-alias %dx refused - not the original code at 0x4BD906, the game's own", g_msaa_want);
+        return;
+    }
+    if (n == 8 && !patch_code(0x7604B3, type4, type8, sizeof type4)) {      /* only once the ask is ours */
+        logline("graphics: anti-alias 8x refused - not the original code at 0x7604B3, 4x instead");
+        n = 4;
+    }
+    logline("graphics: anti-alias %s (asked %dx%s; the game's own: 4x on a seat, 2x on the projector)",
+            n == 8 ? "8x" : n == 4 ? "4x" : n == 2 ? "2x" : "off", g_msaa_want,
+            n == g_msaa_want ? "" : " - the graphics card cannot, the next level down");
+}
+
+static IDirect3D9 *WINAPI hook_Direct3DCreate9(UINT sdk)
+{
+    IDirect3D9 *d3d = real_Direct3DCreate9(sdk);
+    if (d3d)
+        msaa_apply(d3d);
+    return d3d;
+}
+
+static int env_is(const char *name, const char *v)     /* the variable is set, and to v */
+{
+    char e[16];
+    DWORD n = GetEnvironmentVariableA(name, e, sizeof(e));
+    return n > 0 && n < sizeof(e) && lstrcmpiA(e, v) == 0;
+}
+
+static void res_apply(void)
+{
+    static const BYTE h_at[10] = { 0xBF, 0x58, 0x02, 0x00, 0x00, 0xB9, 0x00, 0x04, 0x00, 0x00 };   /* 0x401742 */
+    static const BYTE w_at[7] = { 0xC7, 0x46, 0x34, 0xC0, 0x03, 0x00, 0x00 };                     /* 0x40177F */
+    static const BYTE kit_at[6] = { 0x89, 0x4E, 0x44, 0x8B, 0x7E, 0x30 };                         /* 0x40178F (setup.py) */
+    BYTE h_put[10], w_put[7];
+    char v[8];
+    DWORD n = GetEnvironmentVariableA("WCCF_RES", v, sizeof(v)), w, h;
+    if (n == 0 || n >= sizeof(v))
+        return;
+    w = (DWORD)atoi(v);
+    if (w != 720 && w != 1440 && w != 1920 && w != 2880) {
+        logline("graphics: WCCF_RES=%s is not 720, 1440, 1920 or 2880 - the game's own 960x600", v);
+        return;
+    }
+    h = w * 600 / 960;
+    memcpy(h_put, h_at, sizeof h_put); memcpy(h_put + 1, &h, 4);
+    memcpy(w_put, w_at, sizeof w_put); memcpy(w_put + 3, &w, 4);
+    if (IsBadReadPtr((void *)(UINT_PTR)0x40177F, 0x16) || memcmp((void *)(UINT_PTR)0x40177F, w_at, sizeof w_at) != 0 ||
+        memcmp((void *)(UINT_PTR)0x40178F, kit_at, sizeof kit_at) != 0 || !patch_code(0x401742, h_at, h_put, sizeof h_at)) {
+        logline("graphics: resolution %lux%lu refused - not a seat's code with setup.py's patches at 0x401742 (the "
+                "projector keeps its own)", w, h);
+        return;
+    }
+    if (!patch_code(0x40177F, w_at, w_put, sizeof w_at)) {               /* checked just above: cannot fail */
+        patch_code(0x401742, h_put, h_at, sizeof h_at);
+        logline("graphics: resolution refused - 0x40177F could not be written, the game's own 960x600");
+        return;
+    }
+    logline("graphics: resolution - the seat's 3D drawn at %lux%lu (the game's own: 960x600)", w, h);
+}
+
+static void install_graphics(HMODULE exe)
+{
+    static const BYTE shadow[16] = { 0x81, 0x7D, 0x08, 0x00, 0x08, 0x00, 0x00, 0x76, 0x07,
+                                     0xC7, 0x45, 0x08, 0x00, 0x08, 0x00, 0x00 };   /* 0x87A4F7: cap 2048 */
+    static const BYTE blur[12] = { 0x38, 0x5C, 0x24, 0x54, 0x74, 0x03, 0x53, 0xEB, 0x02, 0x6A, 0x01, 0xE8 };  /* 0x4BD9DF */
+    BYTE put[16];
+    char v[8];
+    DWORD n = GetEnvironmentVariableA("WCCF_MSAA", v, sizeof(v));
+    if (!is_client())
+        return;
+    if (exe != (HMODULE)(UINT_PTR)0x00400000) {
+        logline("graphics: the game is not at its usual address - every GRAPHICS change left out");
+        return;
+    }
+    if (n > 0 && n < sizeof(v)) {
+        if (!lstrcmpiA(v, "off"))
+            logline("graphics: anti-alias off %s", msaa_ask(0) ? "(the seat and the projector)"
+                                                               : "refused - not the original code at 0x4BD906");
+        else if ((g_msaa_want = atoi(v)) == 2 || g_msaa_want == 4 || g_msaa_want == 8) {
+            if (!(real_Direct3DCreate9 = (pfn_Direct3DCreate9)patch_iat(exe, "d3d9.dll", "Direct3DCreate9",
+                                                                        hook_Direct3DCreate9)))
+                logline("graphics: anti-alias %dx refused - this program does not import Direct3DCreate9", g_msaa_want);
+        } else
+            logline("graphics: WCCF_MSAA=%s is not off, 2, 4 or 8 - the game's own", v);
+    }
+    res_apply();
+    if (env_is("WCCF_SHADOWS", "low")) {
+        memcpy(put, shadow, sizeof shadow);
+        put[4] = put[13] = 0x02;                                          /* 0x800 -> 0x200 */
+        logline("graphics: shadows low %s", patch_code(0x87A4F7, shadow, put, sizeof shadow)
+                ? "(shadow maps capped at 512)" : "refused - not the original code at 0x87A4F7");
+    }
+    if (env_is("WCCF_MOTION_BLUR", "off")) {
+        memcpy(put, blur, sizeof blur);
+        put[10] = 0x00;                                                   /* push 1 -> push 0 */
+        logline("graphics: motion blur off %s", patch_code(0x4BD9DF, blur, put, sizeof blur)
+                ? "(the match scene's main pass)" : "refused - not the original code at 0x4BD9DF");
+    }
+}
+
 static void install_hooks(void)
 {
     HMODULE exe = GetModuleHandleW(NULL);
@@ -1391,6 +1582,7 @@ static void install_hooks(void)
     install_vcom_hooks(exe);
     install_jvs_unlatch(exe);
     install_pictures(exe);
+    install_graphics(exe);
     if (g_ringedge && !real_CloseHandle) {
         int n = 0;
         real_CloseHandle = (pfn_CloseHandle)hook_k32(exe, "CloseHandle", hook_CloseHandle, &n);

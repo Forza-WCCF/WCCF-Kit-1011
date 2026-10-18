@@ -18,7 +18,8 @@
 #   the Italian tables: each key once, the game's font, the kit's English codes (source\test_italian_tables.py)
 #   a crash leaves a lean and a full memory snapshot (source\test_crash_dump.py: build\crashme.exe under the real
 #   debugger.py, from a scratch folder)
-#   the panel's money, relay and dealt-card self-tests (wccfpanel.dll loaded by source\build\fakegame.exe, in a
+#   SETTINGS > GRAPHICS' NEXT START rows reach the game's hook, valid values only (source\test_graphics_env.py)
+#   the panel's money, relay, dealt-card, settings and TEXTURES self-tests (wccfpanel.dll loaded by source\build\fakegame.exe, in a
 #   scratch folder; the relay test plays two seats through code\server\relay.py on 127.0.0.1:20941 - the C side and
 #   the Python side of the match relay checked against each other)
 #   the server link watch: a link lost while the game runs is written LOST, the player's own close is not
@@ -52,6 +53,9 @@ if ($LASTEXITCODE) { $failed += 'the key driver, the I/O board and play.py name 
 # Kit 5.5 reused the name PANEL for wccfpanel.dll: a plain start read the dll as data\panel.txt and never went online
 & $py -I -c "import sys; sys.path.insert(0, sys.argv[1]); import play; assert play.PANEL.endswith('panel.txt'), play.PANEL; print('play.py: PANEL is panel.txt')" (Join-Path $kit 'code')
 if ($LASTEXITCODE) { $failed += 'play.py PANEL' }
+
+& $py -I (Join-Path $PSScriptRoot 'test_graphics_env.py') | Select-Object -Last 1
+if ($LASTEXITCODE) { $failed += 'GRAPHICS: panel.txt''s msaa= resolution= shadows= motion_blur= reach the hook, valid values only' }
 
 & $py -I (Join-Path $kit 'code\hardware\keyboard.py') --selftest | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'key driver self-test' }
@@ -154,7 +158,8 @@ $env:WCCF_KEYS = Join-Path $t 'data\keys.txt'
 $env:WCCFPANEL_MONEYTEST = '1'
 $env:WCCFPANEL_RELAYTEST = '1'
 $env:WCCFPANEL_DEALTEST = '1'             # the dealt card's odds
-$env:WCCFPANEL_SETTEST = '1'              # a panel.txt save keeps auto_logs=0
+$env:WCCFPANEL_SETTEST = '1'              # a panel.txt save keeps auto_logs=0, the GRAPHICS rows and PRESETs
+$env:WCCFPANEL_TEXTEST = '1'              # GRAPHICS > TEXTURES on a real device (none on CI: skipped, not a failure)
 $env:WCCF_RELAY_PORT = '20941'
 $env:WCCF_SKIN = Join-Path $kit 'art\skin.tex'      # the panel's art (play.py passes it; no longer beside the panel)
 $relay = Start-Process -FilePath $py -ArgumentList '-I', "`"$(Join-Path $kit 'code\server\relay.py')`"", '60' -PassThru -WindowStyle Hidden
@@ -175,7 +180,7 @@ try {
 } finally {
     if (-not $relay.HasExited) { Stop-Process -Id $relay.Id -Force }
     'WCCF_RELAY_PORT', 'WCCF_SKIN', 'WCCFPANEL_ROLE', 'WCCFPANEL_DRYKEYS', 'WCCFPANEL_FULLSCREEN', 'WCCF_DATA', 'WCCF_KEYS', 'WCCFPANEL_MONEYTEST',
-    'WCCFPANEL_RELAYTEST', 'WCCFPANEL_DEALTEST', 'WCCFPANEL_SETTEST' | ForEach-Object { Remove-Item "env:$_" -ErrorAction SilentlyContinue }
+    'WCCFPANEL_RELAYTEST', 'WCCFPANEL_DEALTEST', 'WCCFPANEL_SETTEST', 'WCCFPANEL_TEXTEST' | ForEach-Object { Remove-Item "env:$_" -ErrorAction SilentlyContinue }
     Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
 }
 

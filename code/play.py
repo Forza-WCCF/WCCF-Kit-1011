@@ -276,9 +276,30 @@ def kit_env(game, online=None, dream=False):
         env.update(WCCF_CLUB_CARD=online["card"], WCCF_CATALOGUE=online["catalogue"])
     if dream:
         env["WCCF_DREAM_TEAM"] = "1"
+    env.update(graphics_env(read_panel()))    # SETTINGS > GRAPHICS' NEXT START rows, for the seat and the projector
     from online import account                # SETTINGS' ACCOUNT row: the name only - the panel never sees the token
     env["WCCF_ACCOUNT_NAME"] = str((online or account.load() or {}).get("username") or "")
     return env
+
+
+# SETTINGS > GRAPHICS, NEXT START (2026-10-18): data\panel.txt name -> (the hook's variable, the values it takes).  The
+# game's wccfk.dll patches the game before it draws (wccfk.c "graphics"); a missing or unknown value sets nothing = the
+# game's own.  Every program of the run gets them: the seat and the projector both take them, any other exe is left
+# alone by the hook's byte checks
+GRAPHICS = {"msaa": ("WCCF_MSAA", ("off", "2", "4", "8")),
+            "resolution": ("WCCF_RES", ("720", "1440", "1920", "2880")),
+            "shadows": ("WCCF_SHADOWS", ("low",)),
+            "motion_blur": ("WCCF_MOTION_BLUR", ("off",))}
+
+
+def graphics_env(panel):
+    """the GRAPHICS rows of read_panel()'s dict -> the hook's environment, valid values only"""
+    out = {}
+    for name, (var, ok) in GRAPHICS.items():
+        v = panel.get(name, "").lower()
+        if v in ok:
+            out[var] = v
+    return out
 
 
 def not_server_side(running, roles, py=None):
