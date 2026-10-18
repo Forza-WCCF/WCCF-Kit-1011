@@ -4391,8 +4391,8 @@ static void set_draw(IDirect3DDevice9 *dev)
             14.0f * s + (float)g_cellh * (0.85f - 0.5f) * s, 0.5f * s, grey, v);
     put_str(dev, g.x0 + 24.0f * s, 58.0f * s, 0.42f * s, grey,
             "NOW: what the game's hidden windows used to tell, read live.  NEXT START: what PLAY.exe does next time.");
-    put_str(dev, g.x0 + 24.0f * s, 76.0f * s, 0.42f * s, grey, "Esc closes this.  NEXT START waits for the next start; "
-            "LAYOUT changes at once; SHOW PROJECTOR applies at the next online start");
+    put_str(dev, g.x0 + 24.0f * s, 76.0f * s, 0.42f * s, grey,
+            "Esc closes this. LAYOUT changes now. SHOW PROJECTOR applies at the next online start.");
     put_str(dev, g.lx, g.ynow, 0.46f * s, orange, "NOW");
     put_str(dev, g.lx, g.ynext, 0.46f * s, orange, "NEXT START");
     put_in_rect(dev, g.close, 0.8f * s, white, "X");
