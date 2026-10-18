@@ -628,6 +628,10 @@ def start_cabinet(debug, env, mode, ip, seat_no, seat, roles):
         senv.update(WCCF_RELAY="%s:%d" % (ip, RELAY_PORT), WCCF_SEAT=str(seat_no))
     if debug:
         senv["MXHOOK_VERBOSE"] = "1"
+    # DPI aware (2026-10-18, as the 2017-18 kit): Windows no longer stretches the seat's window on a scaled screen (150%,
+    # a 4K one at 200%), so the panel composes at the screen's real pixels and its text stays sharp.  Seat only: the
+    # projector has no panel to scale, and DPI aware its 1600x600 window would come out small on such a screen
+    senv["__COMPAT_LAYER"] = (env.get("__COMPAT_LAYER", "") + " HighDpiAware").strip()
     senv["WCCF_PANEL"] = PANEL_DLL
     # the English pictures the hook gives the game as it loads Sega's (english.py's "memory" pictures, made by SETUP's
     # ENGLISH / ITALIANO): named only while there are some - in Japanese the hook changes no picture
