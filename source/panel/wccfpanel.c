@@ -3359,6 +3359,9 @@ static void set_load_locked(void)
 }
 
 // the choices -> data\panel.txt, whole: a temporary file, then one swap (as keys.txt).  g_board_cs held.
+// fclose counts: the buffered bytes reach the disk there, so a full disk fails it, not fwrite - and a short temporary
+// file must never replace the player's settings (2026-10-18, review).  g_set_close_fails: the self-test's stand-in
+static int g_set_close_fails = 0;
 static int set_save_locked(void)
 {
     char text[800]; int n, k; FILE *f;
@@ -3382,8 +3385,8 @@ static int set_save_locked(void)
     f = fopen(g_panel_tmp, "wb");
     if (!f) { logline("settings: could not write %s", g_panel_tmp); return 0; }
     k = (int)fwrite(text, 1, (size_t)n, f) == n;
-    fclose(f);
-    if (!k) { logline("settings: could not write %s", g_panel_tmp); return 0; }
+    if (fclose(f) != 0 || g_set_close_fails) k = 0;
+    if (!k) { logline("settings: could not write %s - panel.txt left as it was", g_panel_tmp); DeleteFileA(g_panel_tmp); return 0; }
     for (k = 0; k < 40; k++) {
         if (MoveFileExA(g_panel_tmp, g_panel_path, MOVEFILE_REPLACE_EXISTING)) {
             logline("settings: saved play_on=%s server=%s english=%s%s%s%s layout=%s graphics: textures=%ld fps=%s "
@@ -3436,6 +3439,20 @@ static void set_selftest(void)
     buf[got] = 0;
     logline("settings test: %s  THIS PC drops DREAM TEAM", ok && strstr(buf, "\nplay_on=this_pc\n") &&
             !strstr(buf, "online_mode") ? "PASS" : "FAIL");
+    // a failed close (a full disk) leaves panel.txt as it was (2026-10-18, review)
+    if ((f = fopen(g_panel_path, "wb")) != NULL) { fputs("play_on=online\nserver=1.2.3.4\n", f); fclose(f); }
+    EnterCriticalSection(&g_board_cs);
+    set_load_locked();
+    g_on_online = 0; g_set_close_fails = 1;
+    ok = !set_save_locked();
+    g_set_close_fails = 0;
+    LeaveCriticalSection(&g_board_cs);
+    got = 0;
+    if ((f = fopen(g_panel_path, "rb")) != NULL) { got = fread(buf, 1, sizeof buf - 1, f); fclose(f); }
+    buf[got] = 0;
+    logline("settings test: %s  a failed close reports failure, swaps nothing in, leaves no temporary file",
+            ok && !strcmp(buf, "play_on=online\nserver=1.2.3.4\n") && GetFileAttributesA(g_panel_tmp) == INVALID_FILE_ATTRIBUTES
+            ? "PASS" : "FAIL");
     // GRAPHICS (2026-10-18, review): only play.py's own tokens - a malformed value is nothing, as play.py takes it
     {
         static const char *bad[] = { "8x", "04", "4junk", "2.5", "16x", "" };
