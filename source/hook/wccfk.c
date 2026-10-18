@@ -1382,11 +1382,10 @@ static void install_pictures(HMODULE exe)
 
 /* ---- graphics (2026-10-18) -----------------------------------------------
  * SETTINGS > GRAPHICS, NEXT START: play.py turns data\panel.txt's msaa= /
- * resolution= / shadows= / motion_blur= into WCCF_MSAA / WCCF_RES /
- * WCCF_SHADOWS / WCCF_MOTION_BLUR (valid values only; unset = the game's own,
- * nothing touched).  Only in client_Release.exe at its usual base, and each
- * patch only on the original bytes of the instructions it changes (setup.py's
- * seat patches included where they matter), so a seat, the projector and any
+ * shadows= / motion_blur= into WCCF_MSAA / WCCF_SHADOWS / WCCF_MOTION_BLUR
+ * (valid values only; unset = the game's own, nothing touched).  Only in
+ * client_Release.exe at its usual base, and each patch only on the original
+ * bytes of the instructions it changes, so a seat, the projector and any
  * other exe each take what fits them.  One log line per patch, done or refused.
  * Static reading of the 2010-11 client: research\graphics-1011-20261018\RE.md.
  *  - anti-alias: the default rendering pass (0x4BD650) asks 4x on a seat and 2x
@@ -1398,12 +1397,9 @@ static void install_pictures(HMODULE exe)
  *    (CheckDeviceMultiSampleType at the game's Direct3DCreate9, the formats it
  *    uses) and stepped down to what it can do.  off / 2 / 4 / 8 apply to the
  *    seat and the projector alike.
- *  - resolution: the seat's branch of WinMain fixes the 3D pass at 960x600
- *    ("mov edi, 258h" 0x401742, "mov [esi+34h], 3C0h" 0x40177F); the final
- *    pass stretches it over the window (setup.py's "picture layout" at
- *    0x40178F, required: without it 600 is the final pass's height too).  720,
- *    1440, 1920 or 2880 wide, 16:10 kept.  The projector's 1600x600 shares its
- *    window's constants and is never changed.
+ *  - no resolution: a seat's 3D pass other than 960x600 (0x401742 /
+ *    0x40177F) crops the 2D, laid out in the pass's pixels - a 720x450 pass
+ *    showed its top-left only (live, 2026-10-18).
  *  - shadows=low: sub_87A4F0 clamps a shadow map to 2048 ("cmp [ebp+8], 800h;
  *    jbe; mov [ebp+8], 800h" 0x87A4F7); 512 caps them (the scene asks 1024).
  *  - motion_blur=off: the main pass sets its motion blur with "push 1" at
@@ -1488,38 +1484,6 @@ static int env_is(const char *name, const char *v)     /* the variable is set, a
     return n > 0 && n < sizeof(e) && lstrcmpiA(e, v) == 0;
 }
 
-static void res_apply(void)
-{
-    static const BYTE h_at[10] = { 0xBF, 0x58, 0x02, 0x00, 0x00, 0xB9, 0x00, 0x04, 0x00, 0x00 };   /* 0x401742 */
-    static const BYTE w_at[7] = { 0xC7, 0x46, 0x34, 0xC0, 0x03, 0x00, 0x00 };                     /* 0x40177F */
-    static const BYTE kit_at[6] = { 0x89, 0x4E, 0x44, 0x8B, 0x7E, 0x30 };                         /* 0x40178F (setup.py) */
-    BYTE h_put[10], w_put[7];
-    char v[8];
-    DWORD n = GetEnvironmentVariableA("WCCF_RES", v, sizeof(v)), w, h;
-    if (n == 0 || n >= sizeof(v))
-        return;
-    w = (DWORD)atoi(v);
-    if (w != 720 && w != 1440 && w != 1920 && w != 2880) {
-        logline("graphics: WCCF_RES=%s is not 720, 1440, 1920 or 2880 - the game's own 960x600", v);
-        return;
-    }
-    h = w * 600 / 960;
-    memcpy(h_put, h_at, sizeof h_put); memcpy(h_put + 1, &h, 4);
-    memcpy(w_put, w_at, sizeof w_put); memcpy(w_put + 3, &w, 4);
-    if (IsBadReadPtr((void *)(UINT_PTR)0x40177F, 0x16) || memcmp((void *)(UINT_PTR)0x40177F, w_at, sizeof w_at) != 0 ||
-        memcmp((void *)(UINT_PTR)0x40178F, kit_at, sizeof kit_at) != 0 || !patch_code(0x401742, h_at, h_put, sizeof h_at)) {
-        logline("graphics: resolution %lux%lu refused - not a seat's code with setup.py's patches at 0x401742 (the "
-                "projector keeps its own)", w, h);
-        return;
-    }
-    if (!patch_code(0x40177F, w_at, w_put, sizeof w_at)) {               /* checked just above: cannot fail */
-        patch_code(0x401742, h_put, h_at, sizeof h_at);
-        logline("graphics: resolution refused - 0x40177F could not be written, the game's own 960x600");
-        return;
-    }
-    logline("graphics: resolution - the seat's 3D drawn at %lux%lu (the game's own: 960x600)", w, h);
-}
-
 static void install_graphics(HMODULE exe)
 {
     static const BYTE shadow[16] = { 0x81, 0x7D, 0x08, 0x00, 0x08, 0x00, 0x00, 0x76, 0x07,
@@ -1545,7 +1509,6 @@ static void install_graphics(HMODULE exe)
         } else
             logline("graphics: WCCF_MSAA=%s is not off, 2, 4 or 8 - the game's own", v);
     }
-    res_apply();
     if (env_is("WCCF_SHADOWS", "low")) {
         memcpy(put, shadow, sizeof shadow);
         put[4] = put[13] = 0x02;                                          /* 0x800 -> 0x200 */

@@ -287,7 +287,6 @@ def kit_env(game, online=None, dream=False):
 # game's own.  Every program of the run gets them: the seat and the projector both take them, any other exe is left
 # alone by the hook's byte checks
 GRAPHICS = {"msaa": ("WCCF_MSAA", ("off", "2", "4", "8")),
-            "resolution": ("WCCF_RES", ("720", "1440", "1920", "2880")),
             "shadows": ("WCCF_SHADOWS", ("low",)),
             "motion_blur": ("WCCF_MOTION_BLUR", ("off",))}
 

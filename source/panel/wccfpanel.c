@@ -3252,30 +3252,30 @@ static DWORD g_so_armed = 0;
 static volatile LONG g_set_dirty = 1;    // the status must be read again now
 // GRAPHICS (2026-10-18; first made 2026-10-11 on the pre-Kit-6 layout): SETTINGS > VIEW > GRAPHICS, a page of its own.
 // AT ONCE: TEXTURES (the panel's SetSamplerState, below the Present hook's helpers) and FPS.  NEXT START: ANTI-ALIAS,
-// RESOLUTION, SHADOWS, MOTION BLUR - play.py passes them from data\panel.txt to the game's hook (wccfk.c "graphics")
+// SHADOWS, MOTION BLUR - play.py passes them from data\panel.txt to the game's hook (wccfk.c "graphics").  No
+// RESOLUTION: the game lays its 2D out in pixels of the 960x600 pass - a 720x450 pass showed its top-left, live 2026-10-18
 static int  g_gfx = 0;                   // the SETTINGS panel shows its GRAPHICS page
 static volatile LONG g_aniso = 0;        // textures=: 0 the game's own filters, else 4 / 8 / 16x anisotropic
 static volatile LONG g_fps_on = 0;       // fps=on: the frame counter over the game's picture
 static const int ANISO[4] = { 0, 4, 8, 16 };
 static const int MSAA[5] = { 0, 1, 2, 4, 8 };            // msaa=: 0 the game's own (4x seat, 2x projector), 1 off
-static const int RES[5] = { 0, 720, 1440, 1920, 2880 };   // resolution=: the seat's 3D width, 0 the game's 960
-static int  g_msaa_req = 0, g_res_req = 0, g_shadow_req = 0, g_blur_req = 0;   // NEXT START as asked (shadows=low,
-static int  g_msaa_run = 0, g_res_run = 0, g_shadow_run = 0, g_blur_run = 0;   // motion_blur=off) - and THIS run's
+static int  g_msaa_req = 0, g_shadow_req = 0, g_blur_req = 0;   // NEXT START as asked (shadows=low, motion_blur=off)
+static int  g_msaa_run = 0, g_shadow_run = 0, g_blur_run = 0;   // - and THIS run's
 // PRESET (the owner, 2026-10-18): one click sets the rows (FPS is not part of it); the chip lit is read from the rows,
 // so panel.txt keeps no preset - ORIGINAL is no graphics line at all, CUSTOM any mix that is no preset
-struct GPreset { const char *name; int aniso, msaa, res, shadow, blur; };
+struct GPreset { const char *name; int aniso, msaa, shadow, blur; };
 static const struct GPreset PRESET[4] = {
-    { "LOW", 0, 1, 720, 1, 1 },          // a slow PC or a laptop
-    { "ORIGINAL", 0, 0, 0, 0, 0 },       // the game's own, as the arcade
-    { "HIGH", 8, 4, 1440, 0, 0 },
-    { "ULTRA", 16, 8, 2880, 0, 0 },      // a strong graphics card, a 4K screen
+    { "LOW", 0, 1, 1, 1 },               // a slow PC or a laptop
+    { "ORIGINAL", 0, 0, 0, 0 },          // the game's own, as the arcade
+    { "HIGH", 8, 4, 0, 0 },
+    { "ULTRA", 16, 8, 0, 0 },            // a strong graphics card, a 4K screen
 };
 
 static int preset_now(void)              // the preset the rows make, -1 = CUSTOM.  g_board_cs held (or the tests)
 {
     int i;
     for (i = 0; i < 4; i++)
-        if (PRESET[i].aniso == (int)g_aniso && PRESET[i].msaa == g_msaa_req && PRESET[i].res == g_res_req &&
+        if (PRESET[i].aniso == (int)g_aniso && PRESET[i].msaa == g_msaa_req &&
             PRESET[i].shadow == g_shadow_req && PRESET[i].blur == g_blur_req) return i;
     return -1;
 }
@@ -3283,7 +3283,7 @@ static int preset_now(void)              // the preset the rows make, -1 = CUSTO
 static void preset_set(int i)            // the rows of preset i (not saved here)
 {
     InterlockedExchange(&g_aniso, PRESET[i].aniso);
-    g_msaa_req = PRESET[i].msaa; g_res_req = PRESET[i].res; g_shadow_req = PRESET[i].shadow; g_blur_req = PRESET[i].blur;
+    g_msaa_req = PRESET[i].msaa; g_shadow_req = PRESET[i].shadow; g_blur_req = PRESET[i].blur;
 }
 
 static int pick(const int *v, int n, int a) { int i; for (i = 0; i < n; i++) if (v[i] == a) return a; return 0; }
@@ -3323,7 +3323,7 @@ static void set_load_locked(void)
 {
     FILE *f = fopen(g_panel_path, "rb"); char line[256];
     g_on_online = 0; g_server[0] = 0; g_eng_req = -1; g_card_req[0] = 0; g_fix_req = 0; g_compact = 0; g_auto_off = 0;
-    g_signout_req = 0; g_dream = 0; g_aniso = 0; g_fps_on = 0; g_msaa_req = 0; g_res_req = 0; g_shadow_req = 0;
+    g_signout_req = 0; g_dream = 0; g_aniso = 0; g_fps_on = 0; g_msaa_req = 0; g_shadow_req = 0;
     g_blur_req = 0;
     if (!f) return;
     while (fgets(line, sizeof line, f)) {
@@ -3345,7 +3345,6 @@ static void set_load_locked(void)
         else if (!_stricmp(name, "textures")) g_aniso = pick(ANISO, 4, atoi(val));          // GRAPHICS
         else if (!_stricmp(name, "fps")) g_fps_on = !_stricmp(val, "on");
         else if (!_stricmp(name, "msaa")) g_msaa_req = !_stricmp(val, "off") ? 1 : pick(MSAA + 2, 3, atoi(val));
-        else if (!_stricmp(name, "resolution")) g_res_req = pick(RES, 5, atoi(val));
         else if (!_stricmp(name, "shadows")) g_shadow_req = !_stricmp(val, "low");
         else if (!_stricmp(name, "motion_blur")) g_blur_req = !_stricmp(val, "off");
     }
@@ -3371,7 +3370,6 @@ static int set_save_locked(void)
     if (g_fps_on) n += _snprintf(text + n, sizeof text - n, "fps=on\n");
     if (g_msaa_req == 1) n += _snprintf(text + n, sizeof text - n, "msaa=off\n");
     else if (g_msaa_req) n += _snprintf(text + n, sizeof text - n, "msaa=%d\n", g_msaa_req);
-    if (g_res_req) n += _snprintf(text + n, sizeof text - n, "resolution=%d\n", g_res_req);
     if (g_shadow_req) n += _snprintf(text + n, sizeof text - n, "shadows=low\n");
     if (g_blur_req) n += _snprintf(text + n, sizeof text - n, "motion_blur=off\n");
     f = fopen(g_panel_tmp, "wb");
@@ -3382,10 +3380,10 @@ static int set_save_locked(void)
     for (k = 0; k < 40; k++) {
         if (MoveFileExA(g_panel_tmp, g_panel_path, MOVEFILE_REPLACE_EXISTING)) {
             logline("settings: saved play_on=%s server=%s english=%s%s%s%s layout=%s graphics: textures=%ld fps=%s "
-                    "msaa=%d resolution=%d shadows=%s motion_blur=%s", g_on_online ? "online" : "this_pc",
+                    "msaa=%d shadows=%s motion_blur=%s", g_on_online ? "online" : "this_pc",
                     g_server[0] ? g_server : "-", g_eng_req < 0 ? "-" : ENG_VAL[g_eng_req],
                     g_card_req[0] ? " card=" : "", g_card_req, g_fix_req ? " card_fix=bad_endings" : "",
-                    g_compact ? "compact" : "cabinet", (long)g_aniso, g_fps_on ? "on" : "off", g_msaa_req, g_res_req,
+                    g_compact ? "compact" : "cabinet", (long)g_aniso, g_fps_on ? "on" : "off", g_msaa_req,
                     g_shadow_req ? "low" : "game", g_blur_req ? "off" : "game");
             return 1;
         }
@@ -3431,13 +3429,14 @@ static void set_selftest(void)
     buf[got] = 0;
     logline("settings test: %s  THIS PC drops DREAM TEAM", ok && strstr(buf, "\nplay_on=this_pc\n") &&
             !strstr(buf, "online_mode") ? "PASS" : "FAIL");
-    // GRAPHICS (2026-10-18): each row read and saved as play.py reads it; the PRESET lit read from the rows
+    // GRAPHICS (2026-10-18): each row read and saved as play.py reads it; the PRESET lit read from the rows; an
+    // earlier test kit's resolution= is read as nothing and gone at the next save
     if ((f = fopen(g_panel_path, "wb")) != NULL) {
         fputs("play_on=this_pc\ntextures=8\nfps=on\nmsaa=4\nresolution=1440\n", f); fclose(f);
     }
     EnterCriticalSection(&g_board_cs);
     set_load_locked();
-    ok = g_aniso == 8 && g_fps_on && g_msaa_req == 4 && g_res_req == 1440 && !g_shadow_req && !g_blur_req;
+    ok = g_aniso == 8 && g_fps_on && g_msaa_req == 4 && !g_shadow_req && !g_blur_req;
     i = preset_now();
     LeaveCriticalSection(&g_board_cs);
     logline("settings test: %s  GRAPHICS rows read, and they make HIGH (FPS no part of it)", ok && i == 2 ? "PASS" : "FAIL");
@@ -3448,14 +3447,14 @@ static void set_selftest(void)
     got = 0;
     if ((f = fopen(g_panel_path, "rb")) != NULL) { got = fread(buf, 1, sizeof buf - 1, f); fclose(f); }
     buf[got] = 0;
-    logline("settings test: %s  LOW saves msaa=off resolution=720 shadows=low motion_blur=off, keeps fps=on",
-            ok && strstr(buf, "\nmsaa=off\n") && strstr(buf, "\nresolution=720\n") && strstr(buf, "\nshadows=low\n") &&
+    logline("settings test: %s  LOW saves msaa=off shadows=low motion_blur=off, keeps fps=on, drops resolution=",
+            ok && strstr(buf, "\nmsaa=off\n") && !strstr(buf, "resolution=") && strstr(buf, "\nshadows=low\n") &&
             strstr(buf, "\nmotion_blur=off\n") && strstr(buf, "\nfps=on\n") && !strstr(buf, "textures=") ? "PASS" : "FAIL");
     EnterCriticalSection(&g_board_cs);
     set_load_locked();
     ok = preset_now() == 0;
     preset_set(3);
-    ok = ok && g_aniso == 16 && g_msaa_req == 8 && g_res_req == 2880 && preset_now() == 3;
+    ok = ok && g_aniso == 16 && g_msaa_req == 8 && preset_now() == 3;
     g_shadow_req = 1;
     ok = ok && preset_now() == -1;
     preset_set(1);
@@ -3465,7 +3464,7 @@ static void set_selftest(void)
     if ((f = fopen(g_panel_path, "rb")) != NULL) { got = fread(buf, 1, sizeof buf - 1, f); fclose(f); }
     buf[got] = 0;
     logline("settings test: %s  LOW read back; ULTRA's rows; one row changed = CUSTOM; ORIGINAL saves no graphics line",
-            ok && !strstr(buf, "textures=") && !strstr(buf, "msaa=") && !strstr(buf, "resolution=") &&
+            ok && !strstr(buf, "textures=") && !strstr(buf, "msaa=") &&
             !strstr(buf, "shadows=") && !strstr(buf, "motion_blur=") ? "PASS" : "FAIL");
 }
 
@@ -3512,11 +3511,10 @@ static void set_init(void)               // the init thread: where data\ is, and
                                                ? "read" : "no file yet - this PC, no request");
     if (GetEnvironmentVariableA("WCCF_MSAA", e, sizeof e) > 0)       // GRAPHICS: what this run's hook was given
         g_msaa_run = !_stricmp(e, "off") ? 1 : pick(MSAA + 2, 3, atoi(e));
-    if (GetEnvironmentVariableA("WCCF_RES", e, sizeof e) > 0) g_res_run = pick(RES, 5, atoi(e));
     g_shadow_run = GetEnvironmentVariableA("WCCF_SHADOWS", e, sizeof e) > 0 && !_stricmp(e, "low");
     g_blur_run = GetEnvironmentVariableA("WCCF_MOTION_BLUR", e, sizeof e) > 0 && !_stricmp(e, "off");
-    logline("view: layout %s; graphics: textures %ld, fps %s, this run msaa %d resolution %d shadows %s motion blur %s",
-            g_compact ? "compact" : "cabinet", (long)g_aniso, g_fps_on ? "on" : "off", g_msaa_run, g_res_run,
+    logline("view: layout %s; graphics: textures %ld, fps %s, this run msaa %d shadows %s motion blur %s",
+            g_compact ? "compact" : "cabinet", (long)g_aniso, g_fps_on ? "on" : "off", g_msaa_run,
             g_shadow_run ? "low" : "game", g_blur_run ? "off" : "game");
     { char t[8]; if (GetEnvironmentVariableA("WCCFPANEL_SETTEST", t, sizeof t) > 0) set_selftest(); }
 }
@@ -4028,7 +4026,7 @@ static void set_chip(IDirect3DDevice9 *dev, RECT r, const char *label, int on, f
 // GRAPHICS shows this page in SETTINGS' place (BACK returns; X and Esc close both).  PRESET sets the rows below it;
 // AT ONCE changes the running game; NEXT START waits for the game's hook at the next start, with RESTART NOW (the
 // cabinet only: the projector on this PC takes them at PLAY.exe's next start).  Each row: its name, chips, a note.
-struct GGeo { float x0, x1, lx, vx, ypre, yonce, ynext; RECT close, back, pre[4], custom, tex[4], fps[2], aa[5], res[5],
+struct GGeo { float x0, x1, lx, vx, ypre, yonce, ynext; RECT close, back, pre[4], custom, tex[4], fps[2], aa[5],
               shadow[2], blur[2], restart; };
 static void set_open(HWND h, int open);   // (below: the panel's input)
 
@@ -4057,8 +4055,6 @@ static void gfx_geo(struct GGeo *g)
     y = g->ynext + 36.0f * s;
     for (i = 0; i < 5; i++) g->aa[i] = chip_at(g->vx, y, i, 60.0f, s);      // ANTI-ALIAS
     y += 66.0f * s;
-    for (i = 0; i < 5; i++) g->res[i] = chip_at(g->vx, y, i, 60.0f, s);     // RESOLUTION
-    y += 66.0f * s;
     for (i = 0; i < 2; i++) g->shadow[i] = chip_at(g->vx, y, i, 60.0f, s);  // SHADOWS
     y += 66.0f * s;
     for (i = 0; i < 2; i++) g->blur[i] = chip_at(g->vx, y, i, 60.0f, s);    // MOTION BLUR
@@ -4075,8 +4071,7 @@ static void gfx_row(IDirect3DDevice9 *dev, const struct GGeo *g, RECT r, const c
 
 static void gfx_draw(IDirect3DDevice9 *dev)
 {
-    static const char *TEXL[4] = { "GAME", "4x", "8x", "16x" }, *AAL[5] = { "GAME", "OFF", "2x", "4x", "8x" },
-                      *RESL[5] = { "GAME", "0.75x", "1.5x", "2x", "3x" };
+    static const char *TEXL[4] = { "GAME", "4x", "8x", "16x" }, *AAL[5] = { "GAME", "OFF", "2x", "4x", "8x" };
     struct GGeo g; float s = g_s; int i, armed, pre; DWORD now = GetTickCount();
     DWORD white = D3DCOLOR_ARGB(255, 240, 240, 245), grey = D3DCOLOR_ARGB(255, 150, 156, 170);
     DWORD orange = D3DCOLOR_ARGB(255, 255, 138, 42), red = D3DCOLOR_ARGB(255, 255, 110, 90);
@@ -4099,7 +4094,6 @@ static void gfx_draw(IDirect3DDevice9 *dev)
     for (i = 0; i < 4; i++) set_chip(dev, g.tex[i], TEXL[i], g_aniso == ANISO[i], s);
     for (i = 0; i < 2; i++) set_chip(dev, g.fps[i], i ? "ON" : "OFF", !g_fps_on == !i, s);
     for (i = 0; i < 5; i++) set_chip(dev, g.aa[i], AAL[i], g_msaa_req == MSAA[i], s);
-    for (i = 0; i < 5; i++) set_chip(dev, g.res[i], RESL[i], g_res_req == RES[i], s);
     for (i = 0; i < 2; i++) set_chip(dev, g.shadow[i], i ? "LOW" : "GAME", !g_shadow_req == !i, s);
     for (i = 0; i < 2; i++) set_chip(dev, g.blur[i], i ? "OFF" : "GAME", !g_blur_req == !i, s);
     set_chip(dev, g.restart, g_rs_sent ? "RESTARTING ..." : armed ? "CLICK AGAIN TO RESTART" : "RESTART NOW",
@@ -4124,8 +4118,6 @@ static void gfx_draw(IDirect3DDevice9 *dev)
         gfx_row(dev, &g, g.fps[0], "FPS", grey, "the game's frames a second, over its picture's corner (the game runs at 30)");
         gfx_row(dev, &g, g.aa[0], "ANTI-ALIAS", g_msaa_req != g_msaa_run ? yellow : grey, g_msaa_req != g_msaa_run ? later
                 : "GAME: 4x here, 2x on the projector.  OFF helps a slow PC; 8x asks more of the graphics card");
-        gfx_row(dev, &g, g.res[0], "RESOLUTION", g_res_req != g_res_run ? yellow : grey, g_res_req != g_res_run ? later
-                : "GAME: the 3D at 960x600.  0.75x helps a slow PC; 2x and 3x are sharper and ask a lot more of the card");
         gfx_row(dev, &g, g.shadow[0], "SHADOWS", g_shadow_req != g_shadow_run ? yellow : grey,
                 g_shadow_req != g_shadow_run ? later : "GAME: the game's own shadows.  LOW: softer shadows, helps a slow PC");
         gfx_row(dev, &g, g.blur[0], "MOTION BLUR", g_blur_req != g_blur_run ? yellow : grey,
@@ -4184,7 +4176,6 @@ static void gfx_click(HWND h, int x, int y)                     // a press on th
     else if ((i = hit(g.tex, 4, x, y)) >= 0) { InterlockedExchange(&g_aniso, ANISO[i]); what = "TEXTURES"; at_once = 1; }
     else if ((i = hit(g.fps, 2, x, y)) >= 0) { InterlockedExchange(&g_fps_on, i); what = "FPS"; at_once = 1; }
     else if ((i = hit(g.aa, 5, x, y)) >= 0) { g_msaa_req = MSAA[i]; what = "ANTI-ALIAS"; }
-    else if ((i = hit(g.res, 5, x, y)) >= 0) { g_res_req = RES[i]; what = "RESOLUTION"; }
     else if ((i = hit(g.shadow, 2, x, y)) >= 0) { g_shadow_req = i; what = "SHADOWS"; }
     else if ((i = hit(g.blur, 2, x, y)) >= 0) { g_blur_req = i; what = "MOTION BLUR"; }
     if (what) {
@@ -4193,8 +4184,8 @@ static void gfx_click(HWND h, int x, int y)                     // a press on th
         else if (at_once) note_locked(green, "%s changed", what);
         else if (hit(g.pre, 4, x, y) >= 0) note_locked(green, "PRESET %s: TEXTURES at once, the rest at the next start", what);
         else note_locked(green, "%s: from the next start (RESTART NOW applies it)", what);
-        logline("graphics: %s - textures %ld fps %ld msaa %d resolution %d shadows %d motion blur %d (preset %d)", what,
-                (long)g_aniso, (long)g_fps_on, g_msaa_req, g_res_req, g_shadow_req, g_blur_req, preset_now());
+        logline("graphics: %s - textures %ld fps %ld msaa %d shadows %d motion blur %d (preset %d)", what,
+                (long)g_aniso, (long)g_fps_on, g_msaa_req, g_shadow_req, g_blur_req, preset_now());
     }
     LeaveCriticalSection(&g_board_cs);
 }

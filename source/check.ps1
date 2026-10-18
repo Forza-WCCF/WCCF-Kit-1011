@@ -55,7 +55,7 @@ if ($LASTEXITCODE) { $failed += 'the key driver, the I/O board and play.py name 
 if ($LASTEXITCODE) { $failed += 'play.py PANEL' }
 
 & $py -I (Join-Path $PSScriptRoot 'test_graphics_env.py') | Select-Object -Last 1
-if ($LASTEXITCODE) { $failed += 'GRAPHICS: panel.txt''s msaa= resolution= shadows= motion_blur= reach the hook, valid values only' }
+if ($LASTEXITCODE) { $failed += 'GRAPHICS: panel.txt''s msaa= shadows= motion_blur= reach the hook, valid values only' }
 
 & $py -I (Join-Path $kit 'code\hardware\keyboard.py') --selftest | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'key driver self-test' }
