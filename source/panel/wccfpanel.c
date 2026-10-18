@@ -5327,6 +5327,7 @@ static int   g_aniso_failed = 0;                 // the card has none, or the sl
 static LONG  g_aniso_sent = 0;                   // the choice the samplers have now
 static DWORD g_minf[16], g_maxa[16];             // the game's own MINFILTER / MAXANISOTROPY per pixel sampler,
 static DWORD g_seen_minf = 0, g_seen_maxa = 0;   // once seen (a pure device cannot be asked: GetSamplerState fails)
+static IDirect3DDevice9 *g_aniso_dev = NULL;     // the device all of the above is about
 
 static int aniso_now(void) { int a = (int)g_aniso; return a > g_aniso_max ? g_aniso_max : a; }
 
@@ -5354,6 +5355,17 @@ static HRESULT WINAPI hook_sampler(IDirect3DDevice9 *dev, DWORD smp, D3DSAMPLERS
 static void aniso_tick(IDirect3DDevice9 *dev)    // the render thread, every frame (hook_present)
 {
     LONG want = g_aniso; DWORD i;
+    // another device (2026-10-18, review): its samplers are at their defaults, so nothing kept above is true of it.
+    // The game makes one (one CreateDevice, 0x761350, from 0x84CE50 only); this keeps a second one right, too
+    if (dev != g_aniso_dev) {
+        if (g_aniso_dev) {
+            ZeroMemory(g_sent_maxa, sizeof g_sent_maxa);
+            g_seen_minf = g_seen_maxa = 0; g_aniso_sent = 0;
+            if (g_orig_sampler && (*(void ***)dev)[69] != (void *)hook_sampler) { g_orig_sampler = NULL; g_aniso_failed = 0; }
+            logline("textures: another device - the samplers' states start again");
+        }
+        g_aniso_dev = dev;
+    }
     if (!g_orig_sampler) {
         D3DCAPS9 caps; void **vt = *(void ***)dev; DWORD old;
         if (g_aniso_failed) return;
@@ -5405,6 +5417,11 @@ static void tex_selftest(IDirect3DDevice9 *dev)
     IDirect3DDevice9_GetSamplerState(dev, 3, D3DSAMP_MINFILTER, &v);    tex_check("16x: the panel's own", v, D3DTEXF_LINEAR);
     tex_check("16x: the panel's own not kept", (g_seen_minf >> 3) & 1, 0);
     g_in_present = 0;
+    g_orig_sampler(dev, 0, D3DSAMP_MAXANISOTROPY, 1);                  // a new device: its default, not the 16x sent
+    g_aniso_dev = (IDirect3DDevice9 *)(UINT_PTR)1; aniso_tick(dev);
+    IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+    IDirect3DDevice9_SetSamplerState(dev, 2, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+    IDirect3DDevice9_GetSamplerState(dev, 0, D3DSAMP_MAXANISOTROPY, &v); tex_check("16x: max on a new device", v, (DWORD)aniso_now());
     g_aniso = 0; aniso_tick(dev);
     IDirect3DDevice9_GetSamplerState(dev, 0, D3DSAMP_MINFILTER, &v);    tex_check("GAME: LINEAR", v, D3DTEXF_LINEAR);
     IDirect3DDevice9_GetSamplerState(dev, 0, D3DSAMP_MAXANISOTROPY, &v); tex_check("GAME: max", v, 1);
