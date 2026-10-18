@@ -21,6 +21,8 @@ Community-developed launcher, hardware compatibility tools and an in-game panel 
 
 ## New in Kit 8.3
 
+- **Online projector** - a server with the new relay can show the big screen on each player's PC. SHOW PROJECTOR chooses it; OPEN / CLOSE PROJECTOR acts now while your cabinet keeps playing.
+- **Graphics settings** - LOW / ORIGINAL / HIGH / ULTRA presets, textures, FPS, anti-alias, shadows and motion blur. LOW helps a slow PC; the panel stays sharp on scaled Windows screens.
 - **No more Error 3000 from a short internet drop** - online, the link waits out a drop of up to about 75 seconds instead of being cut.
 - **More English** - the yellow lines under the screen, and a cup your club is in says Entered / Requested / Competing.
 
