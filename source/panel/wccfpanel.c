@@ -5859,14 +5859,15 @@ static DWORD g_proj_click = 0;                  // the last left click (the game
 
 static void proj_frame(HWND h)                  // a resizable frame; the client stays at the game's own size
 {
-    RECT cr, wr; LONG st = GetWindowLongA(h, GWL_STYLE), ex = GetWindowLongA(h, GWL_EXSTYLE);
+    RECT cr, wr, fr; LONG st = GetWindowLongA(h, GWL_STYLE), ex = GetWindowLongA(h, GWL_EXSTYLE);
     LONG want = (st & ~(LONG)WS_POPUP) | (LONG)(WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
     if (want == st || !GetClientRect(h, &cr) || !GetWindowRect(h, &wr)) return;
     SetWindowLongA(h, GWL_STYLE, want);
-    AdjustWindowRectEx(&cr, (DWORD)want, FALSE, (DWORD)ex);
-    SetWindowPos(h, NULL, wr.left, wr.top, cr.right - cr.left, cr.bottom - cr.top,
+    fr = cr;
+    AdjustWindowRectEx(&fr, (DWORD)want, FALSE, (DWORD)ex);
+    SetWindowPos(h, NULL, wr.left, wr.top, fr.right - fr.left, fr.bottom - fr.top,
                  SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
-    logline("projector: resizable window, client %ldx%ld", cr.right - cr.left, cr.bottom - cr.top);
+    logline("projector: resizable window, client %ldx%ld", cr.right, cr.bottom);
 }
 
 static void proj_fullscreen(HWND h)             // fullscreen on the window's monitor <-> the window as it was
