@@ -5851,7 +5851,7 @@ static LRESULT CALLBACK wndproc(HWND h, UINT m, WPARAM wp, LPARAM lp)
 // ---------------------------------------------------------------- the projector's window (2026-10-20, the owner)
 // For a second monitor, the game on the other: the window opens as before, at the game's own size, and can now be
 // resized (the picture keeps its shape, black bars around it) and put fullscreen - borderless, over the whole monitor
-// it is on.  F11 or a double-click toggles fullscreen; drag the window onto the other monitor first.
+// it is on.  F11 or a double-click toggles fullscreen, Esc leaves it; drag the window onto the other monitor first.
 #define WM_WCCF_PROJ (WM_APP + 0x58)            // ours: give the window its resizable frame, on the window's own thread
 static WINDOWPLACEMENT g_proj_place;            // where the window was before fullscreen
 static LONG  g_proj_style = 0;                  // its style then; 0 = not fullscreen
@@ -5899,6 +5899,7 @@ static LRESULT CALLBACK proj_wndproc(HWND h, UINT m, WPARAM wp, LPARAM lp)
         if (m == WM_KEYDOWN && !(lp & 0x40000000)) proj_fullscreen(h);
         return 0;
     }
+    if (m == WM_KEYDOWN && wp == VK_ESCAPE && g_proj_style) { proj_fullscreen(h); return 0; }   // Esc leaves fullscreen
     if (m == WM_LBUTTONDOWN || m == WM_LBUTTONDBLCLK) {
         DWORD now = GetTickCount();
         if (m == WM_LBUTTONDBLCLK || now - g_proj_click <= GetDoubleClickTime()) { g_proj_click = 0; proj_fullscreen(h); }

@@ -9,7 +9,7 @@ game is not included. Newest first; each date is the day that kit was built.
 ### Added
 - The projector on a second monitor. Its window still opens at the game's own size; now its edges resize it (the
   picture keeps its shape, black bars fill the rest), and F11 or a double-click puts it fullscreen, without a frame,
-  on the monitor it is on. F11 or a double-click again brings the window back. The game on the other monitor plays
+  on the monitor it is on. Esc, F11 or a double-click again brings the window back. The game on the other monitor plays
   on as before.
 
 ## Kit 8.3 - 2026-10-19
