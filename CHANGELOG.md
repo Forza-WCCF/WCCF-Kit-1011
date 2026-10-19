@@ -4,6 +4,14 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
+## Next kit - not released yet
+
+### Added
+- The projector on a second monitor. Its window still opens at the game's own size; now its edges resize it (the
+  picture keeps its shape, black bars fill the rest), and F11 or a double-click puts it fullscreen, without a frame,
+  on the monitor it is on. F11 or a double-click again brings the window back. The game on the other monitor plays
+  on as before.
+
 ## Kit 8.3 - 2026-10-19
 
 ### Added

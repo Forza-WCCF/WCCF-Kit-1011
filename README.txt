@@ -384,6 +384,10 @@ GOOD TO KNOW
   - Windows 11 slows the timers of a program whose window is minimized or covered, and the server's window starts
     minimized: its loop then ran too slowly for the projector's live matches, which stuttered. The kit tells
     Windows not to slow any of the game's programs (data\logs\run_server.txt: "Windows' throttling off").
+  - The projector on a second monitor: its window opens at the game's own size, as before. Drag its edges to resize
+    it (the picture keeps its shape, with black bars where the window's shape differs), or drag it onto the other
+    monitor and press F11 or double-click it: fullscreen on that monitor, without a frame. F11 or a double-click
+    again brings the window back. Your keys still reach seat 1 while the projector is in front.
   - The game draws 30 pictures a second, as the arcade did, and syncs them to the screen only when the main monitor
     runs at exactly 60 Hz. On other refresh rates movement can look slightly uneven; a screen at 60 or 120 Hz shows
     it evenly.

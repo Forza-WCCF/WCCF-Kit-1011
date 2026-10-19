@@ -79,7 +79,7 @@ static int     pad_tick(void);               // the KEYS panel's controllers (in
 static void    frame_stats_tick(void);       // seat 1's frame timing, when asked (the frame wait, below the money)
 
 // ---------------------------------------------------------------- logging
-static int g_projector = 0;              // in the projector (money only): the log goes to the kit's logs, WCCF_LOGS
+static int g_projector = 0;              // in the projector (money, frame wait, window): the log goes to the kit's logs, WCCF_LOGS
 
 static void logline(const char *fmt, ...)
 {
@@ -5385,6 +5385,18 @@ static void compose(IDirect3DDevice9 *dev, int have_game)
     }
 }
 
+// The projector's picture (2026-10-20): the game's frame alone, as big as fits with its shape kept, black around it
+static void proj_compose(IDirect3DDevice9 *dev, UINT W, UINT H)
+{
+    g_cw = (float)W; g_ch = (float)H; g_mx0 = 0.0f; g_mx1 = g_cw;
+    set_2d_states(dev);
+    IDirect3DDevice9_Clear(dev, 0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
+    if (SUCCEEDED(IDirect3DDevice9_BeginScene(dev))) {
+        draw_game_scaled(dev);
+        IDirect3DDevice9_EndScene(dev);
+    }
+}
+
 // The main path: compose at the window's own size on our swap chain and show it.  Returns 0 if any step is not
 // possible (nothing shown), and the caller falls back to the old path for this frame.
 static int present_composed(IDirect3DDevice9 *dev, HWND wnd, HRESULT *phr)
@@ -5420,8 +5432,8 @@ static int present_composed(IDirect3DDevice9 *dev, HWND wnd, HRESULT *phr)
             if (FAILED(IDirect3DDevice9_GetDepthStencilSurface(dev, &oldds))) oldds = NULL;
             IDirect3DDevice9_SetRenderTarget(dev, 0, scbb);
             IDirect3DDevice9_SetDepthStencilSurface(dev, NULL);    // the game's depth buffer is smaller than ours
-            layout((UINT)cr.right, (UINT)cr.bottom);
-            compose(dev, 1);
+            if (g_projector) proj_compose(dev, (UINT)cr.right, (UINT)cr.bottom);
+            else { layout((UINT)cr.right, (UINT)cr.bottom); compose(dev, 1); }
             IDirect3DDevice9_SetRenderTarget(dev, 0, oldrt);           // state blocks do not hold these two
             IDirect3DDevice9_SetDepthStencilSurface(dev, oldds);
             ok = 1;
@@ -5604,6 +5616,18 @@ static HRESULT WINAPI hook_present(IDirect3DDevice9 *dev, const RECT *src, const
     g_in_present = 1;
     g_frames++;
     if (g_frames == 1) logline("Present hook is live (first frame)");
+    if (g_projector) {                           // the game's own Present at its own size; resized: shape kept, black bars
+        IDirect3DSurface9 *bb = NULL; D3DSURFACE_DESC d; RECT cr; int own = 1;
+        if (g_hwnd && GetClientRect(g_hwnd, &cr) &&
+            SUCCEEDED(IDirect3DDevice9_GetBackBuffer(dev, 0, 0, D3DBACKBUFFER_TYPE_MONO, &bb)) && bb) {
+            IDirect3DSurface9_GetDesc(bb, &d);
+            IDirect3DSurface9_Release(bb);
+            own = (UINT)cr.right == d.Width && (UINT)cr.bottom == d.Height;
+        }
+        if (own || !present_composed(dev, wnd, &hr)) hr = g_orig_present(dev, src, dst, wnd, dirty);
+        g_in_present = 0;
+        return hr;
+    }
     frame_stats_tick();
     fps_tick();                                  // GRAPHICS > FPS
     if (g_frames == 3) { char e[8]; if (GetEnvironmentVariableA("WCCFPANEL_TEXTEST", e, sizeof e) > 0) tex_selftest(dev); }
@@ -5824,6 +5848,64 @@ static LRESULT CALLBACK wndproc(HWND h, UINT m, WPARAM wp, LPARAM lp)
     return CallWindowProcA(g_oldproc, h, m, wp, lp);
 }
 
+// ---------------------------------------------------------------- the projector's window (2026-10-20, the owner)
+// For a second monitor, the game on the other: the window opens as before, at the game's own size, and can now be
+// resized (the picture keeps its shape, black bars around it) and put fullscreen - borderless, over the whole monitor
+// it is on.  F11 or a double-click toggles fullscreen; drag the window onto the other monitor first.
+#define WM_WCCF_PROJ (WM_APP + 0x58)            // ours: give the window its resizable frame, on the window's own thread
+static WINDOWPLACEMENT g_proj_place;            // where the window was before fullscreen
+static LONG  g_proj_style = 0;                  // its style then; 0 = not fullscreen
+static DWORD g_proj_click = 0;                  // the last left click (the game's window may not get double-clicks)
+
+static void proj_frame(HWND h)                  // a resizable frame; the client stays at the game's own size
+{
+    RECT cr, wr; LONG st = GetWindowLongA(h, GWL_STYLE), ex = GetWindowLongA(h, GWL_EXSTYLE);
+    LONG want = (st & ~(LONG)WS_POPUP) | (LONG)(WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
+    if (want == st || !GetClientRect(h, &cr) || !GetWindowRect(h, &wr)) return;
+    SetWindowLongA(h, GWL_STYLE, want);
+    AdjustWindowRectEx(&cr, (DWORD)want, FALSE, (DWORD)ex);
+    SetWindowPos(h, NULL, wr.left, wr.top, cr.right - cr.left, cr.bottom - cr.top,
+                 SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    logline("projector: resizable window, client %ldx%ld", cr.right - cr.left, cr.bottom - cr.top);
+}
+
+static void proj_fullscreen(HWND h)             // fullscreen on the window's monitor <-> the window as it was
+{
+    RECT cr;
+    if (!g_proj_style) {
+        MONITORINFO mi; mi.cbSize = sizeof mi;
+        g_proj_place.length = sizeof g_proj_place;
+        if (!GetWindowPlacement(h, &g_proj_place) ||
+            !GetMonitorInfoA(MonitorFromWindow(h, MONITOR_DEFAULTTONEAREST), &mi)) return;
+        g_proj_style = GetWindowLongA(h, GWL_STYLE);
+        SetWindowLongA(h, GWL_STYLE, g_proj_style & ~(LONG)WS_OVERLAPPEDWINDOW);
+        SetWindowPos(h, HWND_TOP, mi.rcMonitor.left, mi.rcMonitor.top, mi.rcMonitor.right - mi.rcMonitor.left,
+                     mi.rcMonitor.bottom - mi.rcMonitor.top, SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+    } else {
+        SetWindowLongA(h, GWL_STYLE, g_proj_style);
+        g_proj_style = 0;
+        SetWindowPlacement(h, &g_proj_place);
+        SetWindowPos(h, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+    }
+    GetClientRect(h, &cr);
+    logline("projector: %s, client %ldx%ld", g_proj_style ? "fullscreen" : "window", cr.right, cr.bottom);
+}
+
+static LRESULT CALLBACK proj_wndproc(HWND h, UINT m, WPARAM wp, LPARAM lp)
+{
+    if (m == WM_WCCF_PROJ) { proj_frame(h); return 0; }
+    if ((m == WM_KEYDOWN || m == WM_KEYUP) && wp == VK_F11) {        // the game never sees it
+        if (m == WM_KEYDOWN && !(lp & 0x40000000)) proj_fullscreen(h);
+        return 0;
+    }
+    if (m == WM_LBUTTONDOWN || m == WM_LBUTTONDBLCLK) {
+        DWORD now = GetTickCount();
+        if (m == WM_LBUTTONDBLCLK || now - g_proj_click <= GetDoubleClickTime()) { g_proj_click = 0; proj_fullscreen(h); }
+        else g_proj_click = now;
+    }
+    return CallWindowProcA(g_oldproc, h, m, wp, lp);
+}
+
 static BOOL CALLBACK find_win(HWND h, LPARAM lp)
 {
     DWORD pid = 0; GetWindowThreadProcessId(h, &pid);
@@ -5836,7 +5918,7 @@ static BOOL CALLBACK find_win(HWND h, LPARAM lp)
     return TRUE;
 }
 
-static void hook_mouse(void)
+static void hook_mouse(WNDPROC proc)          // seat 1: wndproc; the projector: proj_wndproc
 {
     long best[2] = { 0, 0 };
     for (int tries = 0; tries < 120 && !best[0]; tries++) {      // injected early? wait up to 60 s for the window
@@ -5845,7 +5927,7 @@ static void hook_mouse(void)
     }
     if (!best[0]) { logline("no game window found for mouse"); return; }
     g_hwnd = (HWND)best[0];
-    g_oldproc = (WNDPROC)SetWindowLongPtrA(g_hwnd, GWLP_WNDPROC, (LONG_PTR)wndproc);
+    g_oldproc = (WNDPROC)SetWindowLongPtrA(g_hwnd, GWLP_WNDPROC, (LONG_PTR)proc);
     logline("mouse hooked on window %p", (void *)g_hwnd);
 }
 
@@ -7083,10 +7165,14 @@ static DWORD WINAPI init_thread(LPVOID arg)
     if (GetEnvironmentVariableA("WCCFPANEL_RELAYTEST", e, sizeof e) > 0) relay_selftest();   // the tests only
     if (is_projector()) {                        // the projector: amounts with commas, and nothing else of ours
         g_projector = 1;
-        logline("wccfpanel init (pid %lu) - the PROJECTOR: money with commas and the frame wait only, no panels",
+        logline("wccfpanel init (pid %lu) - the PROJECTOR: money with commas, the frame wait and its window only, no panels",
                 (unsigned long)GetCurrentProcessId());
         money_install(1);
         limiter_start();                         // the frame wait sleeps instead of spinning a core
+        if (install_hook()) {                    // a resizable window, fullscreen on F11 (for a second monitor)
+            hook_mouse(proj_wndproc);
+            if (g_hwnd) PostMessageA(g_hwnd, WM_WCCF_PROJ, 0, 0);
+        }
         return 0;
     }
     if (GetEnvironmentVariableA("WCCFPANEL_FULLSCREEN", e, sizeof e) > 0 && e[0] == '0') g_want_fs = 0;
@@ -7103,7 +7189,7 @@ static DWORD WINAPI init_thread(LPVOID arg)
     free_play_install();                         // Sega's own FREE PLAY: no coin needed anywhere
     dream_team_install();                        // DREAM TEAM: the club reports the top matching number
     CreateThread(NULL, 0, board_thread, NULL, 0, NULL);
-    if (install_hook()) hook_mouse();
+    if (install_hook()) hook_mouse(wndproc);
     return 0;
 }
 
