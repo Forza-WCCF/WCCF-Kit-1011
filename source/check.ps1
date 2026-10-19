@@ -197,7 +197,8 @@ try {
     Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
 }
 
-# the projector's window (2026-10-20): resized, its picture is composed at the new size (shape kept, black bars)
+# the projector's window (2026-10-20): resized, its picture is composed at the new size (shape kept, black bars).
+# 640x400 fits any screen: Windows shrinks a window bigger than the screen (CI's: 1440x900 became 1028x749)
 $t = Join-Path ([IO.Path]::GetTempPath()) "wccfpanel-proj-$PID"
 Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force $t | Out-Null
@@ -205,10 +206,10 @@ Copy-Item (Join-Path $PSScriptRoot 'build\fakegame.exe') $t
 $env:WCCFPANEL_ROLE = 'projector'; $env:WCCFPANEL_DRYKEYS = '1'; $env:WCCF_LOGS = $t
 try {
     Start-Process -FilePath (Join-Path $t 'fakegame.exe') -WorkingDirectory $t -Wait -NoNewWindow -RedirectStandardOutput (Join-Path $t 'out.txt') `
-        -ArgumentList "`"$(Join-Path $kit 'programs\wccfpanel.dll')`" wait:2000 size:1200,700 wait:2000"
+        -ArgumentList "`"$(Join-Path $kit 'programs\wccfpanel.dll')`" wait:2000 size:640,400 wait:2000"
     $log = Get-Content (Join-Path $t 'wccfpanel_projector.log') -ErrorAction SilentlyContinue
     if (Select-String -Path (Join-Path $t 'out.txt') -Pattern 'no Direct3D 9 device' -Quiet) { Write-Host 'projector window: skipped - no Direct3D 9 device here' }
-    elseif ($log | Select-String 'first composed frame shown \(canvas 1200x700,') { Write-Host 'projector window: resized, composed at 1200x700' }
+    elseif ($log | Select-String 'own swap chain 640x400 ') { Write-Host 'projector window: resized, composed at 640x400' }
     else {
         $log | Select-Object -Last 20 | ForEach-Object { Write-Host "  log: $_" }
         $failed += 'the projector window, resized, shows the picture at its new size'
