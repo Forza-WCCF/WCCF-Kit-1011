@@ -896,6 +896,10 @@ def play(debug, mode="local", ip=None, seat_no=None, dream=False):
         set_satellite_no(confs[1], seat_no)          # the cabinet's seat (1, or 2-8 for another player's PC)
         # never "WAITING FOR THE PROJECTOR" on a server: its projector is on another PC, or gone (2026-10-06)
         set_conf_value(confs[1], "WAIT_PROJECTOR", 0)
+        # a match against another player turns into a CPU match once one frame waits TIMEOUT_P2P x 500 1-ms sleeps for
+        # the other player's move (client 0x447534, 0x447BD8); the game's own 6, about 3-6 s, is an arcade LAN's - a
+        # short gap on a home line lost the match (report FFPSJ, 2026-10-19).  20: about 10-20 s, the match waits
+        set_conf_value(confs[1], "TIMEOUT_P2P", 20)
         say("  2/%d server: %s answers on port %d - this PC is seat %d%s" % (
             steps, ip, CONTROL_PORT, seat_no, "" if not projector else " and shows the projector" if port == CONTROL_PORT
             else " and shows the projector through the server's relay (port %d)" % port))

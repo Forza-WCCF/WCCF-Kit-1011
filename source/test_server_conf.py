@@ -2,7 +2,8 @@
 """test_server_conf.py - the server's settings file (setup.py CONF_CONTROL, written to the game's
 local\\ctrl_user_option.conf): kit 7's random-pairing line is there with a value (an empty one would likely crash control
 at start), and an older kit's file - also with the WAIT_PROJECTOR line play.py adds on a server - is replaced without a
-.before-kit copy, while a hand edit is still kept (check.ps1 runs it; scratch files, no game).
+.before-kit copy, while a hand edit is still kept; seat 1's file after an online start (play.py's TIMEOUT_P2P line)
+is left as it is (check.ps1 runs it; scratch files, no game).
     python source\\test_server_conf.py"""
 import contextlib
 import io
@@ -73,6 +74,16 @@ try:
     hand = old + b"MATCHING_PARA_FM1=600\r\n"
     check(write(hand) == (NEW, hand), "a hand edit: replaced, and kept as .before-kit")
     check(write(NEW + SERVER) == (NEW + SERVER, None), "this kit's own file on a server: left as it is")
+    p = os.path.join(t, "client_user_option.conf")
+    online = S.CONF_SEAT1.encode("ascii").replace(b"CONTROL_IP=127.0.0.1", b"CONTROL_IP=192.168.1.20") + \
+        b"TIMEOUT_P2P=20\r\n"                        # what play.py remote leaves (the game's patience with the other player)
+    with open(p, "wb") as f:
+        f.write(online)
+    with contextlib.redirect_stdout(io.StringIO()):
+        S.write_text(p, S.CONF_SEAT1, "seat 1 settings")
+    with open(p, "rb") as f:
+        check(f.read() == online and not os.path.exists(p + ".before-kit"),
+              "seat 1's file after an online start: left as it is, no copy")
 finally:
     shutil.rmtree(t, ignore_errors=True)
 

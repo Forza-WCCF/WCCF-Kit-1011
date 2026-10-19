@@ -4,6 +4,15 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
+## Unreleased
+
+### Fixed
+- Online: a match against another player turned into a CPU match ("Network disconnected. Switching to CPU match.")
+  after a gap of 3 to 6 seconds on either player's line or PC - the game's own limit, made for an arcade's network.
+  The kit now gives it about 10 to 20 seconds: the match waits through a short gap and goes on; a longer one still
+  turns into a CPU match. It counts only when both players have this kit: the side that gives up first takes the
+  other with it.
+
 ## Kit 8.3 - 2026-10-19
 
 ### Added
