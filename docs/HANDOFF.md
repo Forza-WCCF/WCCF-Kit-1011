@@ -9,6 +9,7 @@ Not in the players' ZIP (`.gitattributes`).
 | `research\CONTRACT-END-2010-11.md` | what happens when a manager's contract ends (the manager transfer) |
 | `research\FREE-PLAY-2010-11.md` | how free play works in the game |
 | `research\NO-INPUT-2010-11.md` | why the buttons stopped mid-session (Sega's JVS error mark after a stalled I/O board stand-in), the fix kit 7 built, and its before/after check in the real game (9.0) |
+| `research\PVP-CONNECTION-2010-11.md` | the opponent match's socket lifecycle, relay routing, independent game failure reasons, regression coverage and remaining protocol limits |
 
 ## Careful
 - The research notes cite old paths and line numbers as they were when written (`.work\...`, `mxhook.c`): history,

@@ -6297,21 +6297,98 @@ static void money_selftest(void)
 // sendto / recvfrom imports come here: a packet for another player (a public address, port 20001-20008) goes to the
 // server's relay (server\relay.py) labelled with both seats; what the relay passes on arrives on the same socket and is
 // handed to the game as if straight from that player - from the very address the game itself sends to it (else the
-// address the relay saw, port 20000 + its seat).  Every 5 s each socket that played tells the relay "I am seat n",
+// address the relay saw, port 20000 + its seat).  Every 5 s the current match socket tells the relay "I am seat n",
 // which also keeps the router open for the replies.  Everything else - 127.x (the CPU match's own local channel),
 // the server's TCP, other ports - passes untouched.  Off: no WCCF_RELAY, or the import slots are not the ones read.
 #define RELAY_MAGIC   "WRL1"
 #define SLOT_SENDTO   0x0097E8FCu                // WS2_32 #20 sendto   (pe.py / imports.py seat1)
 #define SLOT_RECVFROM 0x0097E8F8u                // WS2_32 #17 recvfrom
+#define SLOT_CLOSESOCKET 0x0097E8A8u             // WS2_32 #3 closesocket (verified against Rev D's imports)
 typedef int (WSAAPI *SendtoFn)(SOCKET, const char *, int, int, const struct sockaddr *, int);
 typedef int (WSAAPI *RecvfromFn)(SOCKET, char *, int, int, struct sockaddr *, int *);
+typedef int (WSAAPI *ClosesocketFn)(SOCKET);
 static SendtoFn           g_real_sendto = NULL;
 static RecvfromFn         g_real_recvfrom = NULL;
+static ClosesocketFn      g_real_closesocket = NULL;
 static struct sockaddr_in g_relay;               // the server's relay
 static int                g_relay_on = 0, g_my_seat = 0, g_relay_test = 0;
-static struct sockaddr_in g_peer[9];             // per seat: the address the game itself sends to (its source, back)
-static SOCKET             g_rsock[8];            // the sockets that played: "I am seat n" every 5 s
-static volatile LONG      g_rsock_n = 0, g_rl_out = 0, g_rl_in = 0, g_rl_said_out = 0, g_rl_said_in = 0;
+
+// A SOCKET number can immediately be reused for TCP or a new match after closesocket.  The old, append-only
+// list sent hellos on all eight historical numbers forever.  Keep lifetime and peer state together, retire it in
+// the game's closesocket import, and serialize a hello with close/send so it never uses a recycled number.
+#define RELAY_SOCKETS 8
+#define RELAY_EVENTS 64
+#define RELAY_EVENT_LEN 384
+typedef struct RelaySocket {
+    int used, own_seat, peer_seat, gap_in, gap_out, send_error, recv_error;
+    SOCKET s;
+    DWORD id, opened, last_out, last_in, next_hello, next_report, last_send_error, last_recv_error;
+    unsigned short local_port;
+    LONG out, in, report_out, report_in, send_errors, recv_errors;
+    struct sockaddr_in peer[9];
+} RelaySocket;
+static RelaySocket g_rsock[RELAY_SOCKETS];
+static CRITICAL_SECTION g_relay_cs;
+static int g_relay_ready = 0, g_rl_event_n = 0;
+static DWORD g_rl_serial = 0, g_rl_active[9], g_rl_close_epoch = 0;
+static LONG g_rl_event_lost = 0;
+static char g_rl_events[RELAY_EVENTS][RELAY_EVENT_LEN];
+static int g_relay_game_watch = 0;               // enabled only after the Rev D import guards pass
+
+static void relay_state_init(void)
+{
+    if (!g_relay_ready) { InitializeCriticalSection(&g_relay_cs); g_relay_ready = 1; }
+}
+
+// Only lifecycle, first packets, errors and >2 s one-way gaps are queued.  The watcher writes them, outside the
+// lock; no send/receive hook opens a log file.  Capture UTC at the event so reports from two PCs can be aligned.
+static void relay_event(RelaySocket *rs, const char *fmt, ...)
+{
+    SYSTEMTIME st; char detail[240]; va_list ap;
+    if (g_rl_event_n == RELAY_EVENTS) { g_rl_event_lost++; return; }
+    va_start(ap, fmt); _vsnprintf(detail, sizeof detail, fmt, ap); va_end(ap); detail[sizeof detail - 1] = 0;
+    GetSystemTime(&st);
+    _snprintf(g_rl_events[g_rl_event_n], RELAY_EVENT_LEN,
+              "%04u-%02u-%02uT%02u:%02u:%02u.%03uZ relay: pid=%lu tid=%lu socket=%Iu match=%lu local=%u %s",
+              st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds,
+              GetCurrentProcessId(), GetCurrentThreadId(), rs ? (UINT_PTR)rs->s : 0,
+              rs ? rs->id : 0, rs ? rs->local_port : 0, detail);
+    g_rl_events[g_rl_event_n++][RELAY_EVENT_LEN - 1] = 0;
+}
+
+static void relay_flush(void)
+{
+    char lines[RELAY_EVENTS][RELAY_EVENT_LEN]; int i, n; LONG lost;
+    EnterCriticalSection(&g_relay_cs);
+    n = g_rl_event_n; memcpy(lines, g_rl_events, (size_t)n * RELAY_EVENT_LEN);
+    lost = g_rl_event_lost; g_rl_event_n = 0; g_rl_event_lost = 0;
+    LeaveCriticalSection(&g_relay_cs);
+    for (i = 0; i < n; i++) logline("%s", lines[i]);
+    if (lost) logline("relay: diagnostic queue full, %ld lifecycle/error events omitted", lost);
+}
+
+static RelaySocket *relay_find(SOCKET s)
+{
+    int i;
+    for (i = 0; i < RELAY_SOCKETS; i++) if (g_rsock[i].used && g_rsock[i].s == s) return &g_rsock[i];
+    return NULL;
+}
+
+static RelaySocket *relay_keep(SOCKET s, DWORD now)
+{
+    RelaySocket *rs = relay_find(s); int i;
+    if (rs) return rs;
+    for (i = 0; i < RELAY_SOCKETS; i++) if (!g_rsock[i].used) {
+        struct sockaddr_in local; int ll = sizeof local;
+        rs = &g_rsock[i]; memset(rs, 0, sizeof *rs);
+        rs->used = 1; rs->s = s; rs->own_seat = g_my_seat; rs->id = ++g_rl_serial;
+        rs->opened = now; rs->next_hello = now + 5000; rs->next_report = now + 30000;
+        if (!getsockname(s, (struct sockaddr *)&local, &ll)) rs->local_port = ntohs(local.sin_port);
+        relay_event(rs, "opened seat=%d", rs->own_seat);
+        return rs;
+    }
+    return NULL;                                 // simultaneous sockets, not a lifetime limit; D still registers it
+}
 
 static int relay_peer(const struct sockaddr *to, int tolen, int *seat)   // a packet for another player's cabinet?
 {
@@ -6326,55 +6403,138 @@ static int relay_peer(const struct sockaddr *to, int tolen, int *seat)   // a pa
     return 1;
 }
 
-static void relay_hello(SOCKET s)                 // "I am seat n" from this socket
+static void relay_hello(RelaySocket *rs)          // called under the lifetime lock, only for the current socket
 {
     char p[6];
-    memcpy(p, RELAY_MAGIC, 4); p[4] = 'R'; p[5] = (char)g_my_seat;
-    g_real_sendto(s, p, 6, 0, (const struct sockaddr *)&g_relay, sizeof g_relay);
-}
-
-static void relay_keep(SOCKET s)                  // the game's thread: a socket that sends to another player
-{
-    LONG i, n = g_rsock_n;
-    for (i = 0; i < n; i++) if (g_rsock[i] == s) return;
-    if (n < 8) { g_rsock[n] = s; InterlockedIncrement(&g_rsock_n); }
-    relay_hello(s);
+    memcpy(p, RELAY_MAGIC, 4); p[4] = 'R'; p[5] = (char)rs->own_seat;
+    if (g_real_sendto(rs->s, p, 6, 0, (const struct sockaddr *)&g_relay, sizeof g_relay) == SOCKET_ERROR) {
+        int err = WSAGetLastError(); DWORD now = GetTickCount();
+        rs->send_errors++;
+        if (err != rs->send_error || now - rs->last_send_error >= 5000) {
+            relay_event(rs, "hello error=%d count=%ld", err, rs->send_errors); rs->last_send_error = now;
+        }
+        rs->send_error = err;
+    }
 }
 
 static int WSAAPI relay_sendto(SOCKET s, const char *buf, int len, int flags, const struct sockaddr *to, int tolen)
 {
-    char pkt[4200]; int seat, r;
-    if (!g_relay_on || len < 0 || len > 4096 || !relay_peer(to, tolen, &seat))
+    char pkt[4200]; int seat, r, err = 0; DWORD now; RelaySocket *rs;
+    if (!g_relay_on || len < 0 || len > 4096 || (!buf && len) || !relay_peer(to, tolen, &seat))
         return g_real_sendto(s, buf, len, flags, to, tolen);
-    g_peer[seat] = *(const struct sockaddr_in *)to;
-    relay_keep(s);
     memcpy(pkt, RELAY_MAGIC, 4); pkt[4] = 'D'; pkt[5] = (char)seat; pkt[6] = (char)g_my_seat;
     memcpy(pkt + 7, buf, len);
+    EnterCriticalSection(&g_relay_cs);
+    now = GetTickCount(); rs = relay_keep(s, now);
+    if (rs) {
+        const struct sockaddr_in *a = (const struct sockaddr_in *)to;
+        if (rs->peer[seat].sin_family != AF_INET || rs->peer[seat].sin_addr.s_addr != a->sin_addr.s_addr) {
+            relay_event(rs, "peer seat=%d address=%s:%u", seat, inet_ntoa(a->sin_addr), ntohs(a->sin_port));
+        }
+        rs->peer[seat] = *a; rs->peer_seat = seat;
+    }
+    // D is itself a registration on every supported relay.  Sending R first adds no information and can race a
+    // different socket's D.  The newest successful data socket alone owns the periodic hello for this seat.
     r = g_real_sendto(s, pkt, len + 7, flags, (const struct sockaddr *)&g_relay, sizeof g_relay);
-    if (r == SOCKET_ERROR) return r;
-    InterlockedIncrement(&g_rl_out);
-    if (!InterlockedExchange(&g_rl_said_out, 1))
-        logline("relay: the first packet for seat %d's cabinet goes through the server's relay", seat);
+    if (r == SOCKET_ERROR) err = WSAGetLastError();
+    if (rs) {
+        if (r == SOCKET_ERROR) {
+            rs->send_errors++;
+            if (err != rs->send_error || now - rs->last_send_error >= 5000) {
+                relay_event(rs, "send error=%d count=%ld", err, rs->send_errors); rs->last_send_error = now;
+            }
+            rs->send_error = err;
+        } else {
+            if (!rs->out) relay_event(rs, "first out peer=%d", seat);
+            if (rs->gap_out) relay_event(rs, "out resumed gap_ms=%lu", now - rs->last_out);
+            if (rs->send_error) relay_event(rs, "send recovered after error=%d", rs->send_error);
+            rs->out++; rs->last_out = now; rs->gap_out = 0; rs->send_error = 0;
+            g_rl_active[rs->own_seat] = rs->id;
+        }
+    }
+    LeaveCriticalSection(&g_relay_cs);
+    if (r == SOCKET_ERROR) { WSASetLastError(err); return r; }
     return len;
+}
+
+static int WSAAPI relay_closesocket(SOCKET s)
+{
+    int r, err = 0; RelaySocket *rs;
+    if (!g_relay_on) return g_real_closesocket(s);
+    EnterCriticalSection(&g_relay_cs);
+    rs = relay_find(s);
+    r = g_real_closesocket(s); if (r == SOCKET_ERROR) err = WSAGetLastError();
+    if (r != SOCKET_ERROR) g_rl_close_epoch++;
+    if (rs && r != SOCKET_ERROR) {
+        DWORD now = GetTickCount();
+        relay_event(rs, "closed peer=%d out=%ld in=%ld send_errors=%ld recv_errors=%ld last_out_ms=%lu last_in_ms=%lu",
+                    rs->peer_seat, rs->out, rs->in, rs->send_errors, rs->recv_errors,
+                    now - (rs->last_out ? rs->last_out : rs->opened), now - (rs->last_in ? rs->last_in : rs->opened));
+        if (g_rl_active[rs->own_seat] == rs->id) g_rl_active[rs->own_seat] = 0;
+        memset(rs, 0, sizeof *rs);                 // removes peer addresses before Windows can reuse the number
+    }
+    LeaveCriticalSection(&g_relay_cs);
+    if (r == SOCKET_ERROR) WSASetLastError(err);
+    return r;
 }
 
 static int WSAAPI relay_recvfrom(SOCKET s, char *buf, int len, int flags, struct sockaddr *from, int *fromlen)
 {
-    char tmp[4200]; struct sockaddr_in src; int sl, r, n, seat;
-    if (!g_relay_on || (flags & MSG_PEEK)) return g_real_recvfrom(s, buf, len, flags, from, fromlen);
+    char tmp[4200]; struct sockaddr_in src, expected[9]; int sl, r, n, seat, too_big, err, again = 0;
+    DWORD id = 0, epoch; RelaySocket *rs;
+    if (!g_relay_on) return g_real_recvfrom(s, buf, len, flags, from, fromlen);
+    if (len < 0 || !buf || (from && (!fromlen || *fromlen < (int)sizeof src))) {
+        WSASetLastError(WSAEFAULT); return SOCKET_ERROR;
+    }
+    // recvfrom itself may wait while another game thread closes the socket.  Preserve THIS call's peer mapping;
+    // an old return must never be attributed to a new socket that happens to receive the same Windows number.
+    EnterCriticalSection(&g_relay_cs); rs = relay_find(s); epoch = g_rl_close_epoch;
+    if (rs) { id = rs->id; memcpy(expected, rs->peer, sizeof expected); }
+    else memset(expected, 0, sizeof expected);
+    LeaveCriticalSection(&g_relay_cs);
     for (;;) {
+        if (again) {
+            int retired;
+            EnterCriticalSection(&g_relay_cs); rs = relay_find(s);
+            retired = id ? (!rs || rs->id != id) : g_rl_close_epoch != epoch;
+            LeaveCriticalSection(&g_relay_cs);
+            if (retired) { WSASetLastError(WSAENOTSOCK); return SOCKET_ERROR; }
+        }
+        again = 1;
         sl = sizeof src;
         r = g_real_recvfrom(s, tmp, sizeof tmp, flags, (struct sockaddr *)&src, &sl);
-        if (r == SOCKET_ERROR) return r;
+        if (r == SOCKET_ERROR) {
+            err = WSAGetLastError();
+            if (err != WSAEWOULDBLOCK) {
+                DWORD now = GetTickCount();
+                EnterCriticalSection(&g_relay_cs); rs = relay_find(s);
+                if (rs && rs->id == id) {
+                    rs->recv_errors++;
+                    if (err != rs->recv_error || now - rs->last_recv_error >= 5000) {
+                        relay_event(rs, "recv error=%d count=%ld", err, rs->recv_errors); rs->last_recv_error = now;
+                    }
+                    rs->recv_error = err;
+                }
+                LeaveCriticalSection(&g_relay_cs);
+            }
+            WSASetLastError(err); return r;
+        }
         if (src.sin_family == AF_INET && src.sin_addr.s_addr == g_relay.sin_addr.s_addr && src.sin_port == g_relay.sin_port) {
-            if (r < 10 || memcmp(tmp, RELAY_MAGIC, 4) || tmp[4] != 'F' || (seat = (unsigned char)tmp[5]) < 1 || seat > 8)
+            if (r < 10 || memcmp(tmp, RELAY_MAGIC, 4) || tmp[4] != 'F' || (seat = (unsigned char)tmp[5]) < 1 || seat > 8) {
+                // A peek never consumes a datagram.  A second, consuming read here could block or read from a
+                // recycled handle.  Let the game's next ordinary receive discard this relay-control packet.
+                if (flags & MSG_PEEK) { WSASetLastError(WSAEWOULDBLOCK); return SOCKET_ERROR; }
                 continue;                        // the relay's, not the game's: read the next one
+            }
             n = r - 10;
+            too_big = n > len;
             if (n > len) n = len;
             memcpy(buf, tmp + 10, n);
+            EnterCriticalSection(&g_relay_cs); rs = relay_find(s);
+            if (rs && rs->id != id) rs = NULL;
             if (from && fromlen && *fromlen >= (int)sizeof(struct sockaddr_in)) {
                 struct sockaddr_in f;
-                if (g_peer[seat].sin_family == AF_INET) f = g_peer[seat];
+                if (expected[seat].sin_family == AF_INET) f = expected[seat];
                 else {
                     memset(&f, 0, sizeof f);
                     f.sin_family = AF_INET;
@@ -6384,9 +6544,16 @@ static int WSAAPI relay_recvfrom(SOCKET s, char *buf, int len, int flags, struct
                 memcpy(from, &f, sizeof f);
                 *fromlen = sizeof f;
             }
-            InterlockedIncrement(&g_rl_in);
-            if (!InterlockedExchange(&g_rl_said_in, 1))
-                logline("relay: the first packet from seat %d's cabinet came through the server's relay", seat);
+            if (rs && !(flags & MSG_PEEK)) {
+                DWORD now = GetTickCount();
+                if (!rs->in) relay_event(rs, "first in peer=%d", seat);
+                if (rs->gap_in) relay_event(rs, "in resumed peer=%d gap_ms=%lu", seat,
+                                            now - (rs->last_in ? rs->last_in : rs->opened));
+                if (rs->recv_error) relay_event(rs, "recv recovered after error=%d", rs->recv_error);
+                rs->in++; rs->last_in = now; rs->gap_in = 0; rs->recv_error = 0;
+            }
+            LeaveCriticalSection(&g_relay_cs);
+            if (too_big) { WSASetLastError(WSAEMSGSIZE); return SOCKET_ERROR; }
             return n;
         }
         if (r > len) {                           // what the game's own recvfrom would have said: too big, cut
@@ -6403,20 +6570,97 @@ static int WSAAPI relay_recvfrom(SOCKET s, char *buf, int len, int flags, struct
     }
 }
 
-static DWORD WINAPI relay_watch(LPVOID arg)       // every 5 s "I am seat n" from each socket that played; counts
+static void relay_tick(DWORD now)                // also used by the deterministic lifecycle regression
 {
-    DWORD next = GetTickCount() + 60000; LONG o0 = 0, i0 = 0;
-    (void)arg;
-    for (;;) {
-        LONG i, n = g_rsock_n;
-        Sleep(5000);
-        for (i = 0; i < n; i++) relay_hello(g_rsock[i]);
-        if ((LONG)(GetTickCount() - next) >= 0) {
-            LONG o = g_rl_out, in = g_rl_in;
-            if (o != o0 || in != i0) logline("relay: last minute %ld packets out, %ld in, through the server", o - o0, in - i0);
-            o0 = o; i0 = in; next = GetTickCount() + 60000;
+    int i;
+    EnterCriticalSection(&g_relay_cs);
+    for (i = 0; i < RELAY_SOCKETS; i++) {
+        RelaySocket *rs = &g_rsock[i]; DWORD heard;
+        if (!rs->used || g_rl_active[rs->own_seat] != rs->id) continue;
+        if ((LONG)(now - rs->next_hello) >= 0) { relay_hello(rs); rs->next_hello = now + 5000; }
+        heard = rs->last_in ? rs->last_in : rs->opened;
+        if (rs->out && now - rs->last_out < 1500 && now - heard >= 2000 && !rs->gap_in) {
+            relay_event(rs, "in gap peer=%d gap_ms=%lu while sending (independent server ping is not match delivery)",
+                        rs->peer_seat, now - heard); rs->gap_in = 1;
+        }
+        if (rs->in && now - rs->last_in < 1500 && now - rs->last_out >= 2000 && !rs->gap_out) {
+            relay_event(rs, "out gap peer=%d gap_ms=%lu while receiving", rs->peer_seat, now - rs->last_out);
+            rs->gap_out = 1;
+        }
+        if ((LONG)(now - rs->next_report) >= 0) {
+            if (rs->out != rs->report_out || rs->in != rs->report_in)
+                relay_event(rs, "last30s peer=%d out=%ld in=%ld send_errors=%ld recv_errors=%ld last_out_ms=%lu last_in_ms=%lu",
+                            rs->peer_seat, rs->out - rs->report_out, rs->in - rs->report_in, rs->send_errors, rs->recv_errors,
+                            now - rs->last_out, now - heard);
+            rs->report_out = rs->out; rs->report_in = rs->in; rs->next_report = now + 30000;
         }
     }
+    LeaveCriticalSection(&g_relay_cs);
+}
+
+// The warning has several causes.  Observe Sega's existing reason mask rather than inferring one from a green
+// ping.  These are read-only Rev D pointers/fields, confirmed in 00448130/00450860/00446f90.  A peer can be freed
+// on the game's thread: use SEH, its exact vtable, both singleton roots and a second root check before publishing.
+static void relay_game_state(void)
+{
+    static UINT_PTR last_peer = 0;
+    static DWORD last_reason = 0;
+    static DWORD last_progress = 0;
+    static int last_disconnected = -1, last_version = -1, last_connect = -9, last_sync = -9, last_queue = -9, last_title = -1;
+    UINT_PTR mgr = 0, peer = 0, link = 0; DWORD reason = 0;
+    int valid = 0, disconnected = 0, version = 0, connecting = 0, sync = 0, queue = 0, title = 0;
+    int failures = 0, wait = 0, limit = 0, consume = 0, complete = 0;
+    RelaySocket *rs = NULL; int i; DWORD now = GetTickCount();
+    if (!g_relay_game_watch) return;
+    __try {
+        mgr = *(volatile UINT_PTR *)0x011373A8u;
+        if (mgr) peer = *(volatile UINT_PTR *)(mgr + 8);
+        if (peer && peer == *(volatile UINT_PTR *)0x01137390u && *(volatile UINT_PTR *)peer == 0x00A10EA0u &&
+            *(volatile unsigned char *)(peer + 0x34) == 0) {       // online opponent, not the local CPU engine
+            link = *(volatile UINT_PTR *)(peer + 0x10);
+            if (link && *(volatile UINT_PTR *)link == 0x00A114CCu) {
+                reason = *(volatile DWORD *)(peer + 0x4C); disconnected = *(volatile unsigned char *)(peer + 0x49);
+                version = *(volatile int *)(peer + 0x14); title = *(volatile int *)(peer + 0x54); failures = *(volatile int *)(peer + 0x60);
+                connecting = *(volatile int *)(link + 0xB0); sync = *(volatile int *)(link + 0xB4); queue = *(volatile int *)(link + 0xB8);
+                wait = *(volatile int *)(link + 0xD4); limit = *(volatile int *)(link + 0xD8);
+                consume = *(volatile int *)(link + 0x18); complete = *(volatile int *)(link + 0x1C);
+                valid = mgr == *(volatile UINT_PTR *)0x011373A8u && peer == *(volatile UINT_PTR *)(mgr + 8) &&
+                        peer == *(volatile UINT_PTR *)0x01137390u && *(volatile UINT_PTR *)peer == 0x00A10EA0u &&
+                        link == *(volatile UINT_PTR *)(peer + 0x10) && *(volatile UINT_PTR *)link == 0x00A114CCu;
+            }
+        }
+    } __except(EXCEPTION_EXECUTE_HANDLER) { valid = 0; }
+    EnterCriticalSection(&g_relay_cs);
+    for (i = 0; i < RELAY_SOCKETS; i++) if (g_rsock[i].used && g_rsock[i].own_seat == g_my_seat &&
+        g_rl_active[g_my_seat] == g_rsock[i].id) { rs = &g_rsock[i]; break; }
+    if (valid) {
+        if (peer != last_peer || reason != last_reason || disconnected != last_disconnected || version != last_version ||
+            connecting != last_connect || sync != last_sync || queue != last_queue || title != last_title || now - last_progress >= 5000) {
+            relay_event(rs, "game peer=%p reason=0x%08lx disconnected=%d version=%d title=%d connect=%d sync=%d queue=%d failures=%d wait=%d/%d frames=%d/%d",
+                        (void *)peer, reason, disconnected, version, title, connecting, sync, queue, failures, wait, limit, consume, complete);
+            last_progress = now;
+        }
+        last_peer = peer; last_reason = reason; last_disconnected = disconnected; last_version = version;
+        last_connect = connecting; last_sync = sync; last_queue = queue; last_title = title;
+    } else if (last_peer) {
+        relay_event(rs, "game peer ended/unavailable previous=%p reason=0x%08lx", (void *)last_peer, last_reason);
+        last_peer = 0; last_reason = 0; last_progress = 0;
+    }
+    LeaveCriticalSection(&g_relay_cs);
+}
+
+static DWORD WINAPI relay_watch(LPVOID arg)
+{
+    (void)arg;
+    for (;;) { Sleep(500); relay_tick(GetTickCount()); relay_game_state(); }
+}
+
+static DWORD WINAPI relay_log_watch(LPVOID arg)
+{
+    (void)arg;
+    // A slow disk/antivirus may stall this writer, but never the match or the hello/state watcher.  The bounded
+    // queue counts omitted events if it fills; even then the UDP route continues to receive its keepalives.
+    for (;;) { Sleep(500); relay_flush(); }
 }
 
 static void relay_install(void)                   // seat 1's cabinet on a server: play.py set WCCF_RELAY and WCCF_SEAT
@@ -6441,9 +6685,12 @@ static void relay_install(void)                   // seat 1's cabinet on a serve
     }
     g_real_sendto = (SendtoFn)GetProcAddress(ws, "sendto");
     g_real_recvfrom = (RecvfromFn)GetProcAddress(ws, "recvfrom");
-    if (!g_real_sendto || !g_real_recvfrom || *(void **)(UINT_PTR)SLOT_SENDTO != (void *)g_real_sendto ||
-        *(void **)(UINT_PTR)SLOT_RECVFROM != (void *)g_real_recvfrom) {
-        logline("relay: off - the game's sendto / recvfrom imports are not the ones read");
+    g_real_closesocket = (ClosesocketFn)GetProcAddress(ws, "closesocket");
+    if (!g_real_sendto || !g_real_recvfrom || !g_real_closesocket ||
+        *(void **)(UINT_PTR)SLOT_SENDTO != (void *)g_real_sendto ||
+        *(void **)(UINT_PTR)SLOT_RECVFROM != (void *)g_real_recvfrom ||
+        *(void **)(UINT_PTR)SLOT_CLOSESOCKET != (void *)g_real_closesocket) {
+        logline("relay: off - the game's sendto / recvfrom / closesocket imports are not the ones read");
         return;
     }
     memset(&g_relay, 0, sizeof g_relay);
@@ -6451,15 +6698,25 @@ static void relay_install(void)                   // seat 1's cabinet on a serve
     g_relay.sin_addr.s_addr = ip;
     g_relay.sin_port = htons((u_short)port);
     g_my_seat = atoi(sn);
-    if (!VirtualProtect((void *)(UINT_PTR)SLOT_RECVFROM, 8, PAGE_READWRITE, &old)) {
+    relay_state_init();
+    if (!VirtualProtect((void *)(UINT_PTR)SLOT_CLOSESOCKET, SLOT_SENDTO + 4 - SLOT_CLOSESOCKET, PAGE_READWRITE, &old)) {
         logline("relay: off - the import slots could not be opened (error %lu)", GetLastError());
         return;
     }
     g_relay_on = 1;                              // before the slots change: the hooks must find it on
     *(void **)(UINT_PTR)SLOT_SENDTO = (void *)relay_sendto;
     *(void **)(UINT_PTR)SLOT_RECVFROM = (void *)relay_recvfrom;
-    VirtualProtect((void *)(UINT_PTR)SLOT_RECVFROM, 8, old, &old);
-    CreateThread(NULL, 0, relay_watch, NULL, 0, NULL);
+    *(void **)(UINT_PTR)SLOT_CLOSESOCKET = (void *)relay_closesocket;
+    VirtualProtect((void *)(UINT_PTR)SLOT_CLOSESOCKET, SLOT_SENDTO + 4 - SLOT_CLOSESOCKET, old, &old);
+    g_relay_game_watch = 1;
+    {
+        HANDLE watcher = CreateThread(NULL, 0, relay_watch, NULL, 0, NULL);
+        DWORD watcher_error = watcher ? 0 : GetLastError();
+        HANDLE writer = CreateThread(NULL, 0, relay_log_watch, NULL, 0, NULL);
+        DWORD writer_error = writer ? 0 : GetLastError();
+        if (watcher) CloseHandle(watcher); else logline("relay: keepalive watcher could not start (error %lu)", watcher_error);
+        if (writer) CloseHandle(writer); else logline("relay: diagnostic writer could not start (error %lu)", writer_error);
+    }
     logline("relay: on - seat %d; a match against another player goes through %s:%d", g_my_seat, v, port);
 }
 
@@ -6470,12 +6727,12 @@ static void rt_check(const char *name, int ok, const char *detail)
     logline("relay test: %s  %s%s%s", ok ? "PASS" : "FAIL", name, detail && *detail ? "  - " : "", detail ? detail : "");
 }
 
-static int rt_recv(SOCKET s, char *buf, int len, struct sockaddr_in *from)   // up to 2 s for a datagram
+static int rt_recv_flags(SOCKET s, char *buf, int len, int flags, struct sockaddr_in *from)   // up to 2 s
 {
     int i, r, fl;
     for (i = 0; i < 200; i++) {
         fl = sizeof *from;
-        r = relay_recvfrom(s, buf, len, 0, (struct sockaddr *)from, &fl);
+        r = relay_recvfrom(s, buf, len, flags, (struct sockaddr *)from, &fl);
         if (r != SOCKET_ERROR) return r;
         if (WSAGetLastError() != WSAEWOULDBLOCK) return -1;
         Sleep(10);
@@ -6483,18 +6740,90 @@ static int rt_recv(SOCKET s, char *buf, int len, struct sockaddr_in *from)   // 
     return -2;
 }
 
+static int rt_recv(SOCKET s, char *buf, int len, struct sockaddr_in *from)
+{
+    return rt_recv_flags(s, buf, len, 0, from);
+}
+
+static int g_rt_hellos = 0, g_rt_stale_hellos = 0, g_rt_send_error = 0;
+static SOCKET g_rt_retired = INVALID_SOCKET;
+static int WSAAPI rt_send_observer(SOCKET s, const char *p, int n, int flags, const struct sockaddr *to, int tolen)
+{
+    int type = 0, tl = sizeof type;
+    (void)flags; (void)to; (void)tolen;
+    if (g_rt_send_error && n >= 7 && !memcmp(p, RELAY_MAGIC "D", 5)) {
+        WSASetLastError(g_rt_send_error); return SOCKET_ERROR;
+    }
+    if (n == 6 && !memcmp(p, RELAY_MAGIC "R", 5)) {
+        g_rt_hellos++;
+        if (s == g_rt_retired || getsockopt(s, SOL_SOCKET, SO_TYPE, (char *)&type, &tl) || type != SOCK_DGRAM)
+            g_rt_stale_hellos++;
+    }
+    return n;                                   // observer only: no datagrams leave the test's memory
+}
+
+static int WSAAPI rt_recv_error(SOCKET s, char *p, int n, int flags, struct sockaddr *from, int *fromlen)
+{
+    (void)s; (void)p; (void)n; (void)flags; (void)from; (void)fromlen;
+    WSASetLastError(WSAECONNRESET); return SOCKET_ERROR;
+}
+
+static SOCKET g_rt_recycled = INVALID_SOCKET;
+static int WSAAPI rt_recv_recycle(SOCKET s, char *p, int n, int flags, struct sockaddr *from, int *fromlen)
+{
+    struct sockaddr_in to; unsigned long ip = inet_addr("192.0.2.8");
+    (void)n; (void)flags;
+    relay_closesocket(s);
+    g_rt_recycled = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    memset(&to, 0, sizeof to); to.sin_family = AF_INET; to.sin_addr.s_addr = inet_addr("198.51.100.9"); to.sin_port = htons(20002);
+    relay_sendto(g_rt_recycled, "new-lifetime", 12, 0, (struct sockaddr *)&to, sizeof to);
+    memcpy(p, RELAY_MAGIC "F", 5); p[5] = 2; memcpy(p + 6, &ip, 4); memcpy(p + 10, "old", 3);
+    memcpy(from, &g_relay, sizeof g_relay); *fromlen = sizeof g_relay;
+    return 13;                                  // completion belongs to the socket that existed before close
+}
+
+static int g_rt_peek_reads = 0;
+static int WSAAPI rt_recv_control(SOCKET s, char *p, int n, int flags, struct sockaddr *from, int *fromlen)
+{
+    (void)s; (void)n; (void)flags; g_rt_peek_reads++;
+    memcpy(p, RELAY_MAGIC "Q0", 6); memcpy(from, &g_relay, sizeof g_relay); *fromlen = sizeof g_relay;
+    return 6;
+}
+
+typedef struct RelayWriterTest { SOCKET s; struct sockaddr_in to; HANDLE start; } RelayWriterTest;
+static DWORD WINAPI rt_writer(LPVOID arg)
+{
+    RelayWriterTest *w = (RelayWriterTest *)arg; int i, failed = 0;
+    WaitForSingleObject(w->start, 2000);
+    for (i = 0; i < 128; i++) if (relay_sendto(w->s, "parallel", 8, 0, (struct sockaddr *)&w->to, sizeof w->to) != 8) failed++;
+    return (DWORD)failed;
+}
+
+static DWORD WINAPI rt_hello_race(LPVOID arg)
+{
+    HANDLE first = (HANDLE)arg; int i;
+    for (i = 0; i < 256; i++) {
+        relay_tick(GetTickCount() + (DWORD)(i + 1) * 6000);
+        if (!i) SetEvent(first);
+        SwitchToThread();
+    }
+    return 0;
+}
+
 static void relay_selftest(void)
 {
-    WSADATA wd; SOCKET a, b; struct sockaddr_in la, lb, to, from; int ln, r; u_long nb = 1; char buf[256], d[96];
+    WSADATA wd; SOCKET a, b, c; struct sockaddr_in la, lb, to, from; int ln, r; u_long nb = 1; char buf[256], d[96];
     HMODULE ws;
     WSAStartup(MAKEWORD(2, 2), &wd);
     ws = GetModuleHandleA("ws2_32.dll");
     g_real_sendto = (SendtoFn)GetProcAddress(ws, "sendto");
     g_real_recvfrom = (RecvfromFn)GetProcAddress(ws, "recvfrom");
+    g_real_closesocket = (ClosesocketFn)GetProcAddress(ws, "closesocket");
     memset(&g_relay, 0, sizeof g_relay);
     g_relay.sin_family = AF_INET; g_relay.sin_addr.s_addr = inet_addr("127.0.0.1"); g_relay.sin_port = htons(20941);
-    g_relay_on = 1; g_relay_test = 1; g_rsock_n = 0;
-    memset(g_peer, 0, sizeof g_peer);
+    relay_state_init();
+    g_relay_on = 1; g_relay_test = 1;
+    memset(g_rsock, 0, sizeof g_rsock); memset(g_rl_active, 0, sizeof g_rl_active);
     a = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     b = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     memset(&la, 0, sizeof la); la.sin_family = AF_INET; la.sin_addr.s_addr = inet_addr("127.0.0.1");
@@ -6523,6 +6852,46 @@ static void relay_selftest(void)
              ntohs(from.sin_port) == 20001, d);
     rt_check("the first packet (before seat 2 was known) was dropped, not delivered late",
              rt_recv(b, buf, sizeof buf, &from) == -2, "");
+    {
+        LONG before = relay_find(b)->in;
+        g_my_seat = 1; to.sin_port = htons(20002);
+        relay_sendto(a, "peek", 4, 0, (struct sockaddr *)&to, sizeof to);
+        r = rt_recv_flags(b, buf, sizeof buf, MSG_PEEK, &from);
+        rt_check("MSG_PEEK unwraps the game payload and its expected source", r == 4 && !memcmp(buf, "peek", 4) &&
+                 from.sin_addr.s_addr == inet_addr("127.0.0.2") && ntohs(from.sin_port) == 20001, "");
+        r = rt_recv_flags(b, buf, sizeof buf, MSG_PEEK, &from);
+        rt_check("MSG_PEEK leaves the packet queued and does not count it as consumed",
+                 r == 4 && relay_find(b)->in == before, "");
+        r = rt_recv(b, buf, sizeof buf, &from);
+        rt_check("a peeked game payload is consumed once", r == 4 && !memcmp(buf, "peek", 4) &&
+                 relay_find(b)->in == before + 1, "");
+        relay_sendto(a, "big", 3, 0, (struct sockaddr *)&to, sizeof to);
+        { char tiny[2]; r = rt_recv(b, tiny, 2, &from);
+          rt_check("a relayed datagram too large for the game buffer reports WSAEMSGSIZE",
+                   r == -1 && WSAGetLastError() == WSAEMSGSIZE && !memcmp(tiny, "bi", 2), ""); }
+    }
+    // A new match has no remembered address for seat 2 until that socket has sent to it.  The previous match's
+    // seat->IP mapping must not overwrite the source supplied by the relay, even if Windows reuses a handle.
+    c = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    { struct sockaddr_in lc = la; lc.sin_port = 0; bind(c, (struct sockaddr *)&lc, sizeof lc); }
+    ioctlsocket(c, FIONBIO, &nb);
+    g_my_seat = 1; to.sin_port = htons(20003);
+    relay_sendto(c, "new-match", 9, 0, (struct sockaddr *)&to, sizeof to);
+    Sleep(50);
+    g_my_seat = 2; to.sin_port = htons(20001);
+    relay_sendto(b, "new-peer", 8, 0, (struct sockaddr *)&to, sizeof to);
+    r = rt_recv(c, buf, sizeof buf, &from);
+    rt_check("a new socket never inherits another match's peer address", r == 8 && !memcmp(buf, "new-peer", 8) &&
+             from.sin_addr.s_addr == inet_addr("127.0.0.1") && ntohs(from.sin_port) == 20002, "");
+    {
+        SendtoFn actual = g_real_sendto;
+        g_real_sendto = rt_send_observer; g_rt_retired = a; g_rt_hellos = g_rt_stale_hellos = 0;
+        relay_tick(GetTickCount() + 6000);
+        rt_check("only the newest data socket for each seat sends a hello, even if an older socket stays open",
+                 g_rt_hellos == 2 && g_rt_stale_hellos == 0, "");
+        g_real_sendto = actual; g_rt_retired = INVALID_SOCKET;
+    }
+    relay_closesocket(c);
     r = relay_sendto(a, "direct", 6, 0, (struct sockaddr *)&lb, sizeof lb);  // 127.0.0.1, not a player port: direct
     r = rt_recv(b, buf, sizeof buf, &from);
     _snprintf(d, sizeof d, "%d bytes from port %u", r, ntohs(from.sin_port)); d[sizeof d - 1] = 0;
@@ -6536,8 +6905,82 @@ static void relay_selftest(void)
     g_relay_on = 0;
     r = relay_sendto(a, "off", 3, 0, (struct sockaddr *)&lb, sizeof lb);
     rt_check("switched off: everything goes direct", r == 3, "");
-    closesocket(a); closesocket(b);
-    g_relay_test = 0; g_my_seat = 0; g_rsock_n = 0;
+    g_relay_on = 1; relay_closesocket(a); relay_closesocket(b); relay_flush();
+    {
+        SOCKET blockers[12]; SendtoFn actual = g_real_sendto; int i, tracked = 0, used = 0; DWORD prior = g_rl_serial;
+        g_real_sendto = rt_send_observer; g_rt_hellos = g_rt_stale_hellos = 0;
+        g_my_seat = 1; to.sin_port = htons(20002);
+        for (i = 0; i < 12; i++) {
+            SOCKET match = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+            relay_sendto(match, "match", 5, 0, (struct sockaddr *)&to, sizeof to);
+            if (relay_find(match)) tracked++;
+            relay_closesocket(match);
+            blockers[i] = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);   // consumes the old numerical handle
+            relay_tick(GetTickCount() + 6000); relay_flush();
+        }
+        for (i = 0; i < RELAY_SOCKETS; i++) if (g_rsock[i].used) used++;
+        rt_check("twelve successive matches are tracked beyond the old eight-handle lifetime limit",
+                 tracked == 12 && g_rl_serial == prior + 12, "");
+        rt_check("closed match handles reused as TCP never receive a relay hello",
+                 used == 0 && g_rt_hellos == 0 && g_rt_stale_hellos == 0, "");
+        for (i = 0; i < 12; i++) relay_closesocket(blockers[i]);
+        g_real_sendto = actual;
+    }
+    {
+        SendtoFn actual = g_real_sendto; RecvfromFn recv_actual = g_real_recvfrom;
+        RelayWriterTest w; HANDLE writers[2], race, first; DWORD codes[2] = { 1, 1 }; int i, used = 0;
+        SOCKET match = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); RelaySocket *rs;
+        g_real_sendto = rt_send_observer; g_my_seat = 1;
+        w.s = match; w.to = to; w.start = CreateEventA(NULL, TRUE, FALSE, NULL);
+        writers[0] = CreateThread(NULL, 0, rt_writer, &w, 0, NULL);
+        writers[1] = CreateThread(NULL, 0, rt_writer, &w, 0, NULL);
+        SetEvent(w.start);
+        WaitForMultipleObjects(2, writers, TRUE, 5000);
+        for (i = 0; i < 2; i++) { GetExitCodeThread(writers[i], &codes[i]); CloseHandle(writers[i]); }
+        CloseHandle(w.start);
+        rs = relay_find(match);
+        for (i = 0; i < RELAY_SOCKETS; i++) if (g_rsock[i].used) used++;
+        rt_check("concurrent senders register a socket once and retain all 256 packet counters",
+                 !codes[0] && !codes[1] && used == 1 && rs && rs->out == 256, "");
+        g_rt_send_error = WSAENETUNREACH;
+        r = relay_sendto(match, "error", 5, 0, (struct sockaddr *)&to, sizeof to);
+        rt_check("a UDP send error reaches the game unchanged and is counted separately",
+                 r == SOCKET_ERROR && WSAGetLastError() == WSAENETUNREACH && rs && rs->send_errors == 1 && rs->out == 256, "");
+        g_rt_send_error = 0;
+        r = relay_sendto(match, "again", 5, 0, (struct sockaddr *)&to, sizeof to);
+        rt_check("sending recovers after a temporary UDP error without a duplicate registration",
+                 r == 5 && relay_find(match) == rs && rs && rs->out == 257 && !rs->send_error, "");
+        g_real_recvfrom = rt_recv_error;
+        { int fl = sizeof from; r = relay_recvfrom(match, buf, sizeof buf, 0, (struct sockaddr *)&from, &fl); }
+        rt_check("a UDP receive reset reaches the game unchanged and is recorded",
+                 r == SOCKET_ERROR && WSAGetLastError() == WSAECONNRESET && rs && rs->recv_errors == 1, "");
+        g_real_recvfrom = recv_actual;
+        g_rt_retired = INVALID_SOCKET; g_rt_hellos = g_rt_stale_hellos = 0;
+        first = CreateEventA(NULL, TRUE, FALSE, NULL); race = CreateThread(NULL, 0, rt_hello_race, first, 0, NULL);
+        WaitForSingleObject(first, 5000);
+        relay_closesocket(match);
+        WaitForSingleObject(race, 5000); CloseHandle(race); CloseHandle(first);
+        rt_check("a keepalive racing with close never sends on a closed handle",
+                 g_rt_hellos > 0 && !g_rt_stale_hellos && !relay_find(match), "");
+        match = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+        to.sin_addr.s_addr = inet_addr("203.0.113.7");
+        relay_sendto(match, "old-lifetime", 12, 0, (struct sockaddr *)&to, sizeof to);
+        g_real_recvfrom = rt_recv_recycle;
+        r = rt_recv(match, buf, sizeof buf, &from);
+        rs = relay_find(g_rt_recycled);
+        rt_check("a receive completed after close/reuse keeps its old peer address and never updates the new match",
+                 r == 3 && !memcmp(buf, "old", 3) && from.sin_addr.s_addr == inet_addr("203.0.113.7") &&
+                 g_rt_recycled == match && rs && rs->in == 0, "");
+        g_real_recvfrom = rt_recv_control; g_rt_peek_reads = 0;
+        { int fl = sizeof from; r = relay_recvfrom(g_rt_recycled, buf, sizeof buf, MSG_PEEK, (struct sockaddr *)&from, &fl); }
+        rt_check("peeking a relay-control packet never issues a second potentially blocking read",
+                 r == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK && g_rt_peek_reads == 1, "");
+        relay_closesocket(g_rt_recycled); g_rt_recycled = INVALID_SOCKET;
+        g_real_recvfrom = recv_actual;
+        g_real_sendto = actual; relay_flush();
+    }
+    g_relay_on = 0; g_relay_test = 0; g_my_seat = 0;
+    relay_flush();
     logline("relay test: done");
 }
 

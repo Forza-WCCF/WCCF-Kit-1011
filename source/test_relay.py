@@ -61,9 +61,12 @@ check(R.claim(seats, 2, HOME_A, 3.0, rejects) is True and seats[2][0] == HOME_B,
 check(R.claim(seats, 2, HOME_B, 3.1, rejects, data=True) is True and seats[2][0] == HOME_B, "the playing port goes on")
 check(R.claim(seats, 2, ATTACKER, 3.2, rejects, data=True) is False and seats[2][0] == HOME_B,
       "another public address is still refused (A6)")
-check(R.claim(seats, 2, HOME_A, 3.1 + R.HELLO_HOLD + 1, rejects) is True and seats[2][0] == HOME_A,
-      "no data for a while: a hello from another port of the same address moves the seat")
+check(R.claim(seats, 2, HOME_A, 9.1, rejects) is True and seats[2][0] == HOME_B,
+      "a data pause longer than five seconds does not let an old socket's hello steal the live route")
+check(seats[2][1] == 3.1, "an ignored hello does not refresh the selected socket's lifetime")
+check(R.claim(seats, 2, HOME_A, 3.1 + FORGET + 1, rejects) is True and seats[2][0] == HOME_A,
+      "after the selected socket expires, a hello can take the seat again")
 
-n = 17
+n = 19
 print("relay: %d of %d checks passed" % (n - len(fails), n))
 sys.exit(1 if fails else 0)

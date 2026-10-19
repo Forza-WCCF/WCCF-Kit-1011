@@ -730,6 +730,12 @@ def start_cabinet(debug, env, mode, ip, seat_no, seat, roles):
     """steps 4-6 of a start, then the key driver: seat N's own side - the keychip / network, card reader and I/O board
     stand-ins, the cabinet (the seat1 folder) with its overlay - each new process into roles.  A cabinet restart
     (2026-10-07) runs only this: the projector, the scene service, the seat lease and the panel helper keep running."""
+    # The opponent link has its own wait, separate from Error 3000's control link.
+    # Set it here so UPDATE without SETUP and a cabinet-only restart both use it.
+    match_wait = K.MATCH_WAIT_ONLINE if mode == "remote" else K.MATCH_WAIT_LOCAL
+    set_conf_value(os.path.join(seat, "local", "client_user_option.conf"), "TIMEOUT_P2P", match_wait)
+    if mode == "remote":
+        say("     match link: gives the opponent about %d seconds to reply after an interruption" % (match_wait // 2))
     p = start(os.path.join("hardware", "network.py"), [LIFE, "ringedge_log.txt"], "run_ringedge.txt", env)
     roles[p.pid] = "keychip / network stand-in"
     card = env.get("WCCF_CLUB_CARD") or CARD   # online and signed in: the account's own club (online\club.py)

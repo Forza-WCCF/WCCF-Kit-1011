@@ -8,7 +8,7 @@ folder through `python\python313._pth` - the only place that names it.
 | `play.py` | starts and stops the game: the server, the projector, seat 1 and every stand-in (PLAY.exe runs it) |
 | `setup.py` | sets the game folder up for the kit, repairs it, and undoes it (SETUP.exe runs it) |
 | `english.py` | puts the game's English in place, or Sega's Japanese back (SETUP.exe's ENGLISH / JAPANESE); also draws the "memory" pictures into `data\english_pictures\` (the bar's "please wait for the next match"), which seat 1's hook hands the game as it loads Sega's (`source\hook\pictures.h`) |
-| `kit_common.py` | what everything shares: the kit's folders (`K.KIT`, `K.DATA`, `K.CACHE` ...), the settings file, the game folder |
+| `kit_common.py` | what everything shares: the kit's folders (`K.KIT`, `K.DATA`, `K.CACHE` ...), the settings file, the game folder, and the local/online opponent-match waiting limits |
 
 | Folder | What is in it |
 |---|---|

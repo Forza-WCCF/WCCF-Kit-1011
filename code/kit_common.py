@@ -20,6 +20,12 @@ SAVE = os.path.join(DATA, "save")
 SETTINGS = os.path.join(DATA, "settings.json")
 GAME_EXES = ("client_release.exe", "control_release.exe", "match_release.exe", "logowin.exe", "fpr_emu.exe")
 
+# TIMEOUT_P2P counts 500 one-millisecond waits, not the control-server TCP timeout.
+# Let an online match survive a brief interruption; keep local play's original
+# limit. Applied at every cabinet start, including restart without running SETUP.
+MATCH_WAIT_LOCAL = 6
+MATCH_WAIT_ONLINE = 60
+
 
 def shown(path):
     """a path as a message shows it: from the kit's folder when it is inside it, else whole (on another drive

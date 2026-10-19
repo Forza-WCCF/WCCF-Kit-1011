@@ -72,7 +72,8 @@ CONF_HEAD = ("# WCCF 2010-11 - %s - written by the kit's setup.py.\r\n"
 CLIENT_KEYS = ("IS_RINGEDGE=%d\r\nALLNET_AUTH=0\r\nDHCP=0\r\nCONTROL_IP=127.0.0.1\r\nCONTROL_PORT=20002\r\n"
                "MATCH_IP=127.0.0.1\r\nMATCH_PORT=20003\r\nFPR_MODE=2\r\nFULL_SCREEN_MODE=0\r\n%sSATELLITE_NO=%d\r\n")
 CONF_PROJECTOR = CONF_HEAD % "the PROJECTOR (seat 0)" + CLIENT_KEYS % (0, "", 0)
-CONF_SEAT1 = CONF_HEAD % "the PLAYER CABINET (seat 1)" + CLIENT_KEYS % (1, "MANAGEMENT_0910=0\r\n", 1)
+CONF_SEAT1 = (CONF_HEAD % "the PLAYER CABINET (seat 1)" + CLIENT_KEYS % (1, "MANAGEMENT_0910=0\r\n", 1) +
+              "TIMEOUT_P2P=%d\r\n" % K.MATCH_WAIT_LOCAL)
 CONF_CONTROL_BEFORE_KIT7 = (
     "# WCCF 2010-11 - the SERVER (control) - written by the kit's setup.py: everything on this PC.\r\n"
     "# CLIENT_MAX must stay 9 (the game's own default): fewer made the server crash.\r\n"
@@ -163,7 +164,7 @@ def rename_hook_import(path, what):
 # the lines play.py sets at each start (the server's address, the seat, whether to wait for a projector, the
 # projector's port - the server's projector relay, 2026-10-17): a file that differs from ours only there is ours, as
 # play.py left it - not a hand edit (2026-10-06: online play changes them)
-RUNTIME_LINES = re.compile(rb"(?m)^(CONTROL_IP|CONTROL_PORT|MATCH_IP|SATELLITE_NO|WAIT_PROJECTOR)=[^\r\n]*(\r?\n|$)")
+RUNTIME_LINES = re.compile(rb"(?m)^(CONTROL_IP|CONTROL_PORT|MATCH_IP|SATELLITE_NO|WAIT_PROJECTOR|TIMEOUT_P2P)=[^\r\n]*(\r?\n|$)")
 
 
 def write_text(path, text, what):

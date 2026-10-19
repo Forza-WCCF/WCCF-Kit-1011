@@ -93,6 +93,12 @@ if ($LASTEXITCODE) { $failed += 'the seat lease reconnects and re-claims its sea
 & $py -I (Join-Path $PSScriptRoot 'test_relay.py') | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'the match relay: a live seat cannot be taken over by another address' }
 
+& $py -I (Join-Path $PSScriptRoot 'test_relay_routing.py') | Select-Object -Last 1
+if ($LASTEXITCODE) { $failed += 'the match relay: socket migration, stale keepalives, expiry and real UDP forwarding' }
+
+& $py -I (Join-Path $PSScriptRoot 'test_match_patience.py') | Select-Object -Last 1
+if ($LASTEXITCODE) { $failed += 'the match wait: applied before every online cabinet start/restart, restored for local play' }
+
 & $py -I (Join-Path $PSScriptRoot 'test_server_conf.py') | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'the server settings: the random-pairing line, and an older kit''s file replaced' }
 
