@@ -4,7 +4,7 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
-## Unreleased
+## Kit 8.4 - 2026-10-20
 
 ### Fixed
 - Online matches could fall back to the computer when old match sockets kept sending keepalives. The client now
@@ -12,9 +12,14 @@ game is not included. Newest first; each date is the day that kit was built.
   socket. The server no longer lets a historical socket's hello move or prolong a live data route.
 - The separate opponent wait is extended for online play, including cabinet restarts without SETUP. It remains
   bounded (nominally 30 seconds); local play retains the original value. Startup, version and synchronization
-  guards remain in place.
+  guards remain in place. Both players need the updated kit: the first one to give up ends the connection for both.
+- The projector's fullscreen double-click checks both timing and pointer position. Separate quick clicks and
+  a click pair interrupted by a focus or fullscreen change no longer toggle it accidentally.
 
 ### Added
+- A resizable projector window for a second monitor. The picture keeps its shape with black bars; F11 or a
+  double-click fills its monitor without a frame. Esc, F11 or another double-click restores the window. Seat 1
+  keeps playing while the projector is in front.
 - Timestamped socket, routing, error and traffic-gap diagnostics, plus the game's existing fallback reason and
   progress state, so a lost match can be traced independently of the server ping meter.
 

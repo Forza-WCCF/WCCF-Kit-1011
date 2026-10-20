@@ -19,6 +19,12 @@ Community-developed launcher, hardware compatibility tools and an in-game panel 
 
 > **The game is not included, and the kit holds none of Sega's files.** It works with your own copy: what it needs from the game, SETUP makes from that copy, on your PC.
 
+## New in Kit 8.4
+
+- **Online match recovery** - old match sockets stop sending keepalives, historical sockets cannot take over a live server route, and the opponent wait gives an interruption a nominal 30 seconds. Both players need the update; a longer interruption still disconnects.
+- **Projector on a second monitor** - resize its window with the picture's shape kept, or use F11 / double-click for fullscreen on its monitor. Esc restores the window; separate quick clicks keep their normal behavior.
+- **Better match evidence** - timestamped socket, route, traffic-gap and game-reason diagnostics when an opponent connection fails.
+
 ## New in Kit 8.3
 
 - **Online projector** - a server with the new relay can show the big screen on each player's PC. SHOW PROJECTOR chooses it; OPEN / CLOSE PROJECTOR acts now while your cabinet keeps playing.
@@ -49,7 +55,7 @@ Every change, kit by kit: [CHANGELOG.md](/CHANGELOG.md).
 
 | | |
 |---|---|
-| **One launcher** | `PLAY.exe` starts everything: on your own PC the server, the projector and your cabinet; online, only your cabinet |
+| **One launcher** | `PLAY.exe` starts everything: on your own PC the server, the projector and your cabinet; online, your cabinet and the optional projector |
 | **Formation board** | your cards on the table: drag to move, drop on another card to swap, right-click to take one off; each card's name, its rating for the spot it stands in, where it plays well, and your club's links |
 | **Catalogue** | all 3,909 player cards: search, position, rarity, country and club filters, sorting, a slider per stat |
 | **Keys** | your own keys, or a game controller's buttons |
@@ -77,8 +83,8 @@ PLAY.exe remote 192.168.1.20     on each player's PC, with the host's address
 
 Or in the game: SETTINGS > NEXT START > **ONLINE**, type the server's address, then **RESTART NOW** (click it twice).
 
-- The host lets in **TCP 20002, 20030 and 20050** and **UDP 20040** (at home behind a router: forward them to the host).
-- Each PC runs only its own cabinet - online there is no projector window on the players' PCs.
+- The host lets in **TCP 20002, 20030, 20031 and 20050** and **UDP 20040** (at home behind a router: forward them to the host). TCP 20031 carries the optional online projector.
+- Each PC runs its cabinet and can also show the projector when the server has the projector relay. SETTINGS > SHOW PROJECTOR chooses it; OPEN / CLOSE PROJECTOR acts while your cabinet keeps playing.
 - The host can play too: `PLAY.exe remote` with its own local address.
 - **Your wccf.online account:** the first online start shows a short code and opens wccf.online - log in or register, approve the code, and the game starts. Online you play your account's own club; without a sign-in, PLAY plays on your PC instead.
 - **DREAM TEAM:** SETTINGS > NEXT START > **DREAM TEAM** (or `PLAY.exe remote ADDRESS dream`) plays on the same server with your PC's own club card and any card - no account, no cards earned; in friendlies DREAM TEAM clubs only meet each other.

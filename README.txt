@@ -14,6 +14,16 @@ WHAT IT IS
   or a game controller's buttons, SETTINGS, and CLUB CARD, your club card and your other clubs.
   The kit holds none of Sega's files. Everything that comes from the game is made by setup from YOUR copy.
 
+NEW IN KIT 8.4
+  - Online matches: closed sockets stop sending old match keepalives, and an old socket can no longer take over
+    a live route on the server. The opponent wait allows a nominal 30 seconds through a short interruption;
+    both players need this update. A longer interruption still ends the connection.
+  - The projector window resizes with its picture's shape kept. F11 or a double-click fills the monitor it is on;
+    Esc, F11 or another double-click restores it. Your cabinet keeps playing while the projector is in front.
+  - Separate rapid clicks no longer count as a fullscreen double-click. More socket and traffic-gap evidence
+    is kept in the logs if a match loses its opponent.
+  - Updating from kit 8.3: SETUP's UPDATE, then yes to set up the game. Your clubs, keys and settings stay.
+
 NEW IN KIT 8.3
   - Online projector: a server with the new relay can show the big screen on every player's PC. SHOW PROJECTOR
     chooses it for your next online start; OPEN / CLOSE PROJECTOR opens or closes it now without stopping your game.
@@ -384,6 +394,10 @@ GOOD TO KNOW
   - Windows 11 slows the timers of a program whose window is minimized or covered, and the server's window starts
     minimized: its loop then ran too slowly for the projector's live matches, which stuttered. The kit tells
     Windows not to slow any of the game's programs (data\logs\run_server.txt: "Windows' throttling off").
+  - The projector on a second monitor: its window opens at the game's own size, as before. Drag its edges to resize
+    it (the picture keeps its shape, with black bars where the window's shape differs), or drag it onto the other
+    monitor and press F11 or double-click it: fullscreen on that monitor, without a frame. Esc, F11 or a
+    double-click again brings the window back. Your keys still reach seat 1 while the projector is in front.
   - The game draws 30 pictures a second, as the arcade did, and syncs them to the screen only when the main monitor
     runs at exactly 60 Hz. On other refresh rates movement can look slightly uneven; a screen at 60 or 120 Hz shows
     it evenly.
