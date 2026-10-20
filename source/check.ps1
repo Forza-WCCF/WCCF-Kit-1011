@@ -311,6 +311,8 @@ foreach ($c in $side) {
     $c.Process.WaitForExit()
     $text = @(Get-Content $c.Out -ErrorAction SilentlyContinue)
     if ($c.Process.ExitCode) {
+        $text | Where-Object { $_ -match '^\s*FAIL\s|Traceback|Error:|Exception:' } |
+            ForEach-Object { Write-Host "  $_" }  # retain the actual failure, even if later checks fill the last 20 lines
         $text + @(Get-Content "$($c.Out).err" -ErrorAction SilentlyContinue) | Select-Object -Last 20 | ForEach-Object { Write-Host "  $_" }
         $failed += $c.What
     } else {
