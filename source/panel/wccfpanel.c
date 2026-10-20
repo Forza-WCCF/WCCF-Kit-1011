@@ -5856,6 +5856,8 @@ static LRESULT CALLBACK wndproc(HWND h, UINT m, WPARAM wp, LPARAM lp)
 static WINDOWPLACEMENT g_proj_place;            // where the window was before fullscreen
 static LONG  g_proj_style = 0;                  // its style then; 0 = not fullscreen
 static DWORD g_proj_click = 0;                  // the last left click (the game's window may not get double-clicks)
+static POINT g_proj_click_pos;
+static int   g_proj_click_pending = 0;
 
 static void proj_frame(HWND h)                  // a resizable frame; the client stays at the game's own size
 {
@@ -5873,6 +5875,7 @@ static void proj_frame(HWND h)                  // a resizable frame; the client
 static void proj_fullscreen(HWND h)             // fullscreen on the window's monitor <-> the window as it was
 {
     RECT cr;
+    g_proj_click_pending = 0;                  // no click pair across a fullscreen/window change
     if (!g_proj_style) {
         MONITORINFO mi; mi.cbSize = sizeof mi;
         g_proj_place.length = sizeof g_proj_place;
@@ -5900,10 +5903,19 @@ static LRESULT CALLBACK proj_wndproc(HWND h, UINT m, WPARAM wp, LPARAM lp)
         return 0;
     }
     if (m == WM_KEYDOWN && wp == VK_ESCAPE && g_proj_style) { proj_fullscreen(h); return 0; }   // Esc leaves fullscreen
-    if (m == WM_LBUTTONDOWN || m == WM_LBUTTONDBLCLK) {
-        DWORD now = GetTickCount();
-        if (m == WM_LBUTTONDBLCLK || now - g_proj_click <= GetDoubleClickTime()) { g_proj_click = 0; proj_fullscreen(h); }
-        else g_proj_click = now;
+    if (m == WM_KILLFOCUS) g_proj_click_pending = 0;
+    if (m == WM_LBUTTONDBLCLK) proj_fullscreen(h);
+    else if (m == WM_LBUTTONDOWN) {
+        DWORD now = GetTickCount(); POINT p; RECT r;
+        int cx = GetSystemMetrics(SM_CXDOUBLECLK), cy = GetSystemMetrics(SM_CYDOUBLECLK);
+        p.x = (short)LOWORD(lp); p.y = (short)HIWORD(lp); ClientToScreen(h, &p);
+        r.left = g_proj_click_pos.x - cx / 2; r.top = g_proj_click_pos.y - cy / 2;
+        r.right = r.left + cx; r.bottom = r.top + cy;
+        if (g_proj_click_pending && now - g_proj_click <= GetDoubleClickTime() && PtInRect(&r, p)) {
+            proj_fullscreen(h);
+        } else {
+            g_proj_click = now; g_proj_click_pos = p; g_proj_click_pending = 1;
+        }
     }
     return CallWindowProcA(g_oldproc, h, m, wp, lp);
 }

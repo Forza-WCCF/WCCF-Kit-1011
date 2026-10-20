@@ -219,6 +219,9 @@ try {
     Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
 }
 
+& $py -I (Join-Path $PSScriptRoot 'test_projector_window.py')
+if ($LASTEXITCODE) { $failed += 'the projector window: resize, fullscreen restore and double-click recognition' }
+
 # the online club (2026-10-14): play.py's WCCF_CLUB_CARD reaches the panel - the card its close warning and SETTINGS
 # watch, the transfer card beside it, its backups - and switches YOUR CARDS off; without it, the slot card
 $t = Join-Path ([IO.Path]::GetTempPath()) "wccfpanel-club-$PID"
