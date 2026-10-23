@@ -16,6 +16,7 @@ sign-in, and the server decides (it lets players in without one until its owner 
 """
 import json
 import os
+import re
 import sys
 import threading
 import time
@@ -25,13 +26,42 @@ import urllib.request
 import webbrowser
 
 KIT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DEFAULT_WEBSITE = "https://wccf.online"
 ACCOUNT = os.environ.get("WCCF_ACCOUNT_FILE") or os.path.join(KIT, "data", "account.json")
-WEBSITE = os.environ.get("WCCF_WEBSITE", "https://wccf.online").rstrip("/")
+WEBSITE = os.environ.get("WCCF_WEBSITE", DEFAULT_WEBSITE).rstrip("/")
+ACCOUNTS = os.path.join(os.path.dirname(ACCOUNT), "accounts")   # other servers' card banks: one sign-in file each
 TIMEOUT = 15                     # seconds for one request to the website
 
 
 def say(msg):
-    print(msg, flush=True)
+    """a line for the player - naming where this PC signs in: wccf.online, or the server's own card bank"""
+    print(msg.replace("wccf.online", site_name()), flush=True)
+
+
+def bank_key(website=None):
+    """'' for wccf.online (the places kits have always used), else the bank's address as a file and folder name - a
+    server's own card bank (2026-10-23, server\\card_bank.py): its own sign-in file and online club, so this PC's
+    wccf.online sign-in never goes to another server's bank"""
+    w = (website or WEBSITE).rstrip("/")
+    if w == DEFAULT_WEBSITE:
+        return ""
+    return re.sub(r"[^A-Za-z0-9.]+", "_", urllib.parse.urlsplit(w).netloc or w)[:60]
+
+
+def site_name(website=None):
+    """where this PC signs in, in the player's words"""
+    w = (website or WEBSITE).rstrip("/")
+    return "wccf.online" if not bank_key(w) else "the server's card bank (%s)" % (urllib.parse.urlsplit(w).netloc or w)
+
+
+def use(website):
+    """sign in to, and keep the online club with, the bank at website from now on - play.py, once the server's seat
+    desk said where its players sign in: this process and every program it starts (WCCF_WEBSITE, WCCF_ACCOUNT_FILE)"""
+    global WEBSITE, ACCOUNT
+    WEBSITE = website.rstrip("/")
+    key = bank_key(WEBSITE)
+    ACCOUNT = os.path.join(ACCOUNTS, key + ".json") if key else os.path.join(os.path.dirname(ACCOUNTS), "account.json")
+    os.environ.update(WCCF_WEBSITE=WEBSITE, WCCF_ACCOUNT_FILE=ACCOUNT)
 
 
 def kit_version():
@@ -103,8 +133,9 @@ def show_code(code):
         try:
             import ctypes
             ctypes.windll.user32.MessageBoxW(
-                None, "Your game's sign-in code:\n\n        %s\n\nApprove it on wccf.online - the page has opened in your "
-                      "browser (log in or register there).\nThe game carries on by itself once you approve." % code,
+                None, ("Your game's sign-in code:\n\n        %s\n\nApprove it on wccf.online - the page has opened in your "
+                       "browser (log in or register there).\nThe game carries on by itself once you approve." % code
+                       ).replace("wccf.online", site_name()),
                 "WCCF Online - sign in", 0x40 | 0x10000 | 0x40000)        # information icon, to the front, on top
         except Exception:
             pass

@@ -138,9 +138,9 @@ def handle(path, ident, seats):
         return True, "%s - %s" % (head, ("card %d" % got["card_no"]) if got.get("card_no") else
                                   "kept, no card (%s)" % got.get("why", "?"))
     if status in (403, 404, 422):
-        return True, "%s - refused by wccf.online (%s)" % (head, got.get("error") or "HTTP %s" % status)
-    return False, "%s - wccf.online could not be reached (%s); tried again in %d s" % (
-        head, got.get("error") or "HTTP %s" % status, RETRY)
+        return True, "%s - refused by %s (%s)" % (head, account.site_name(), got.get("error") or "HTTP %s" % status)
+    return False, "%s - %s could not be reached (%s); tried again in %d s" % (
+        head, account.site_name(), got.get("error") or "HTTP %s" % status, RETRY)
 
 
 def tick(folder, ident, seats, retry, now):
@@ -173,14 +173,15 @@ def main(argv):
     life = float(argv[0]) if argv else 12 * 3600
     log_file = argv[1] if len(argv) > 1 else None
     folder = os.environ.get("WCCF_WITNESS_DIR") or os.path.join(DATA, "witness")
-    ident = server_id(DATA)
+    where = os.environ.get("WCCF_SERVER_DATA") or DATA      # data\bank: this server's own card bank (2026-10-23)
+    ident = server_id(where)
     if not ident:
-        log("witness: no server secret in data\\server_name.txt + server_secret.txt - finished matches earn no "
-            "cards here")
+        log("witness: no server secret in %s (server_name.txt + server_secret.txt) - finished matches earn no "
+            "cards here" % where)
         return 2
     os.makedirs(folder, exist_ok=True)
-    log("witness: %s is this server on wccf.online; the club data before and after each match from %s" % (
-        ident[0], folder))
+    log("witness: %s is this server at %s; the club data before and after each match from %s" % (
+        ident[0], account.WEBSITE, folder))
     seats, retry = Seats(os.environ.get("WCCF_LEASES_FILE") or os.path.join(DATA, "leases.json")), {}
     end = time.time() + life
     while time.time() < end:

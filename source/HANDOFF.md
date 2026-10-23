@@ -10,7 +10,9 @@ The source of every compiled program the kit ships, the scripts that build, chec
 | `crashme.c` | not shipped: a program that crashes at once, for `test_crash_dump.py` (built into `build\`) |
 | `package.ps1` | makes the kit ZIP the way players get it, in `dist\` |
 | `test_account.py` | the wccf.online sign-in against a fake website: a code, the approval, the token saved and never printed, reused, replaced when refused, the website down; seat.py's TOKEN suffix |
+| `test_card_bank.py` | a server's own card bank driven by the kit's own code (account.py signs in on its page, club.py gets the starter 11 and saves, witness.py reports a match): the card draw's rules, the chain check, a cut match, the rules file, the host's commands, the field positions against `docs\website\wccfgame.php`, hostile requests |
 | `test_card_fix.py` | a missing club-card helper file never stops a start |
+| `test_open_server.py` | hosting needs no wccf.online: the real seat desk beside the real card bank, a player's PC asks where to sign in (BANK), signs in there and takes a seat the desk checks with the bank; its wccf.online sign-in never sent there; an older desk = wccf.online; a restart keeps the bank; play.py's choice of bank on a server |
 | `test_crash_dump.py` | a crash leaves a lean and a full memory snapshot in `data\dumps` (crashme.exe under the real launcher) |
 | `test_projector_window.py` | scratch projector window: resize composition, F11/Esc restore, real double-clicks and distant clicks; hidden before fullscreen, skips without Direct3D 9 |
 | `test_ended.py` | play.py's choice when a game window's launcher ends (a closed cabinet window stops the rest, the projector's alone stops nothing), and when a run went wrong (the automatic report) |

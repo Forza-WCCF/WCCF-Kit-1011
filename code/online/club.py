@@ -33,11 +33,14 @@ SYNCED = "synced.json"            # beside the card: the version wccf.online has
 
 
 def say(msg):
-    print(msg, flush=True)
+    """a line for the player - naming where this PC signs in: wccf.online, or the server's own card bank"""
+    print(msg.replace("wccf.online", account.site_name()), flush=True)
 
 
 def folder_of(uid):
-    return os.path.join(ONLINE, "u%d" % uid)
+    """the account's online club folder: data\\save\\online\\u<uid> for wccf.online, and one folder more per other
+    server's card bank (2026-10-23) - account 1 there is not account 1 here"""
+    return os.path.join(ONLINE, account.bank_key(), "u%d" % uid)
 
 
 def write_atomic(path, text):
@@ -119,7 +122,8 @@ def prepare(token):
         say("  online club: the club card was not checked with wccf.online (%s) - it plays as it is" % ex)
         if not os.path.exists(card):           # else the card reader's own blank, with the id every kit card shares
             make_blank(card)
-    return {"uid": got["uid"], "username": got.get("username", ""), "card": card, "catalogue": OWNED_CATALOGUE}
+    return {"uid": got["uid"], "username": got.get("username", ""), "card": card, "catalogue": OWNED_CATALOGUE,
+            "website": account.WEBSITE}         # where it signed in: a cabinet restart keeps the same bank (kit_env)
 
 
 def ready(token, card):

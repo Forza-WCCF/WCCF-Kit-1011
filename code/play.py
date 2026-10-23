@@ -81,15 +81,60 @@ import kit_common as K
 CONTROL_PORT = 20002
 RELAY_PORT = 20040                                    # UDP, the server's match relay (server\relay.py)
 PROJECTOR_PORT = 20031                                # TCP, the server's projector relay (server\projector_relay.py)
+BANK_PORT = 20060                                     # TCP, the server's own card bank (server\card_bank.py)
 SERVER_ROLES = ("scene service", "server launcher", "seat desk", "match relay", "log inbox", "witness",
-                "projector relay")
+                "projector relay", "card bank")
 WITNESS = os.path.join(K.DATA, "witness")      # a server with a wccf.online secret keeps each match's club data here
                                                # (the hook, source\hook\wccfk.c) for server\witness.py (2026-10-14)
 
 
-def witness_ready():
-    """this server is one of wccf.online's (data\\server_name.txt + server_secret.txt): finished matches earn cards"""
+def known_to_website():
+    """this server is one of wccf.online's own (data\\server_name.txt + server_secret.txt - the owner's servers)"""
     return all(os.path.isfile(os.path.join(K.DATA, n)) for n in ("server_name.txt", "server_secret.txt"))
+
+
+def bank_of():
+    """where this server's players sign in and keep their cards (2026-10-23, the owner: "my website ... never a blocker
+    for anyone") -> a website's address, or None = this server's own card bank (server\\card_bank.py, data\\bank).
+    data\\card_bank.txt's first word decides - "own", or an http(s) address; without it: wccf.online on the owner's
+    servers (known_to_website), every other server its own bank"""
+    try:
+        with open(os.path.join(K.DATA, "card_bank.txt"), encoding="ascii", errors="replace") as f:
+            words = f.read().split()
+    except OSError:
+        words = []
+    if words and words[0].lower() == "own":
+        return None
+    if words and re.match(r"^https?://[A-Za-z0-9.:/-]+$", words[0]):
+        return words[0].rstrip("/")
+    return "https://wccf.online" if known_to_website() else None
+
+
+def witness_ready():
+    """finished matches earn cards here: this server runs its own card bank, or it is one wccf.online knows"""
+    return bank_of() is None or known_to_website()
+
+
+def server_bank_env(env):
+    """the server's programs' environment for its bank (bank_of): its own - the desk and the witness talk to it on this
+    machine, and the witness uses its identity in data\\bank; or a website's address"""
+    site = bank_of()
+    if site is None:
+        from server import card_bank
+        card_bank.identity()                        # made the first time: the witness needs it before the bank starts
+        return dict(env, WCCF_WEBSITE="http://127.0.0.1:%d" % BANK_PORT, WCCF_BANK_PORT=str(BANK_PORT),
+                    WCCF_SERVER_DATA=os.path.join(K.DATA, "bank"))
+    return dict(env, WCCF_WEBSITE=site)
+
+
+def use_bank(ip):
+    """a player's PC, before it signs in: the server at ip says where its players sign in (online\\seat.py bank) -
+    wccf.online, or the server's own card bank; a server from before says nothing: wccf.online, as before"""
+    from online import account, seat as lease
+    site = lease.bank(ip) or account.DEFAULT_WEBSITE
+    account.use(site)
+    if site != account.DEFAULT_WEBSITE:
+        say("  this server keeps its own accounts and cards: %s" % site)
 SERVER_LIFE = 32 * 24 * 3600      # "play.py server" (2026-10-07): a month and a day - a server for others stays up
                                   # all month; a keeper task on that machine restarts it whenever it stops
 LIFE = SERVER_LIFE                # the player side: a BACKSTOP only (A3, 2026-10-11). A player's run really ends when
@@ -281,8 +326,11 @@ def kit_env(game, online=None, dream=False):
                # where the panel (wccfpanel.dll, now in programs\) finds its own data, no longer beside the DLL:
                WCCF_SKIN=os.path.join(K.ART, "skin.tex"), WCCF_CATALOGUE=os.path.join(K.CACHE, "catalogue.tsv"),
                WCCF_CARDS=os.path.join(K.CACHE, "cards"))
-    for k in ("WCCF_WEBSITE", "WCCF_ACCOUNT_FILE"):       # a test's website and sign-in file reach the run's programs
-        if os.environ.get(k):
+    from online import account
+    if online and isinstance(online.get("website"), str):  # the bank the online club signed in at - a cabinet restart
+        account.use(online["website"])                      # (running.json) keeps the same one
+    for k in ("WCCF_WEBSITE", "WCCF_ACCOUNT_FILE"):       # the bank's address and this PC's sign-in file there (and a
+        if os.environ.get(k):                             # test's) reach the run's programs
             env[k] = os.environ[k]
     if online:
         env.update(WCCF_CLUB_CARD=online["card"], WCCF_CATALOGUE=online["catalogue"])
@@ -832,6 +880,8 @@ def play(debug, mode="local", ip=None, seat_no=None, dream=False):
         say("Already running (%s) - close the game's window first (a game that is stuck: PLAY.exe stop)." %
             ", ".join(sorted({p[2] for p in busy})))
         return 3
+    if mode == "remote" and not dream:       # where this server's players sign in: wccf.online, or the server's own
+        use_bank(ip)                         # card bank - before SIGN OUT and the sign-in below
     apply_account_request()                  # SETTINGS' SIGN OUT: before the sign-in below asks
     online = None
     if dream:                                # DREAM TEAM (2026-10-15): no sign-in, no account club - the slot card
@@ -842,11 +892,13 @@ def play(debug, mode="local", ip=None, seat_no=None, dream=False):
         online, why = online_club(account.ensure, club.prepare)       # seat request (online\seat.py)
         if not online:                       # never online with the slot card; never locked out either
             if running:                      # a server runs on this PC: the game cannot play beside it here
-                say("Online play needs a wccf.online sign-in and your online club (%s). A server runs on this PC, so "
-                    "the game cannot play here instead - PLAY.exe stop ends it." % why)
+                say("Online play needs a sign-in to %s and your online club (%s). A server runs on this PC, so "
+                    "the game cannot play here instead - PLAY.exe stop ends it (or choose DREAM TEAM: no sign-in)."
+                    % (account.site_name(), why))
                 return 3
-            say("Online play needs a wccf.online sign-in and your online club (%s) - playing on this PC instead, with "
-                "your own club cards. The next online start tries again." % why)
+            say("Online play needs a sign-in to %s and your online club (%s) - playing on this PC instead, with "
+                "your own club cards. The next online start tries again (DREAM TEAM needs no sign-in)."
+                % (account.site_name(), why))
             return play(debug)
     beside_server = bool(running)            # only "remote" gets here with something running: a server on this PC
     if beside_server:
@@ -863,6 +915,8 @@ def play(debug, mode="local", ip=None, seat_no=None, dream=False):
     if mode != "server":
         apply_board(seat, online)              # ... nor FPR_Emu or the overlay: the club's cards on the table
     env = kit_env(game, online, dream)
+    if mode == "server":
+        env = server_bank_env(env)           # its own card bank, or wccf.online on the owner's servers (bank_of)
     roles = {p[0]: known[p[0]] for p in running if p[0] in known}
     steps = 2 if mode == "server" else 6
     confs = (os.path.join(game, "local", "client_user_option.conf"),
@@ -937,6 +991,21 @@ def play(debug, mode="local", ip=None, seat_no=None, dream=False):
         say("  2/%d server: listening on port %d, %d match engines" % (steps, CONTROL_PORT,
                                                                        len(games("match_release.exe"))))
     if mode == "server":
+        own_bank = bank_of() is None
+        if own_bank:    # this server's own accounts and cards (2026-10-23): before the desk, which checks sign-ins with it
+            cb = start(os.path.join("server", "card_bank.py"), [life + 60, os.path.join(K.LOGS, "card_bank.txt")],
+                       "run_card_bank.txt", env)
+            time.sleep(1.5)
+            if cb.poll() is None:
+                roles[cb.pid] = "card bank"
+                say("     card bank: TCP %d - this server's own accounts and cards (data\\bank; the rules: "
+                    "data\\card_rules.json)" % BANK_PORT)
+            else:
+                say("     the card bank did not start (data\\logs\\run_card_bank.txt) - players can still play DREAM "
+                    "TEAM here")
+        else:
+            say("     cards: players sign in at %s (data\\card_bank.txt \"own\" gives this server its own bank)" %
+                bank_of())
         # the seat desk (2026-10-06): every player's PC that joins gets the next free seat (no projector: 2026-10-11)
         b = start(os.path.join("server", "seat_desk.py"), [life + 60, os.path.join(K.LOGS, "seat_broker.txt")], "run_seat_broker.txt", env)
         time.sleep(1.5)
@@ -972,21 +1041,21 @@ def play(debug, mode="local", ip=None, seat_no=None, dream=False):
             say("     log inbox: TCP 20050 - logs players send from SETTINGS go to data\\player_logs")
         else:
             say("     the log inbox did not start (data\\logs\\run_log_inbox.txt) - SEND LOGS will not reach here")
-        if witness_ready():     # a card per finished match (2026-10-14): only a server wccf.online knows
+        if witness_ready():     # a card per finished match (2026-10-14): this server's own bank, or wccf.online's servers
             wt = start(os.path.join("server", "witness.py"), [life + 60, os.path.join(K.LOGS, "witness.txt")],
                        "run_witness.txt", env)
             time.sleep(1.0)
             if wt.poll() is None:
                 roles[wt.pid] = "witness"
-                say("     witness: each finished match earns its signed-in player a card on wccf.online "
-                    "(data\\logs\\witness.txt)")
+                say("     witness: each finished match earns its signed-in player a card %s (data\\logs\\witness.txt)"
+                    % ("in this server's bank" if own_bank else "on %s" % bank_of()))
             else:
                 say("     the witness did not start (data\\logs\\run_witness.txt) - finished matches earn no cards")
         write_running(roles, mode, None)
         say("")
         say("Server running. On each player's PC: PLAY.exe remote, then this machine's address - the one their PC")
-        say("can reach. This machine must let in TCP ports %d, 20030, 20050 and %d, and UDP %d. PLAY.exe stop ends it." %
-            (CONTROL_PORT, PROJECTOR_PORT, RELAY_PORT))
+        say("can reach. This machine must let in TCP ports %d, 20030, 20050, %d%s and UDP %d. PLAY.exe stop ends it." %
+            (CONTROL_PORT, PROJECTOR_PORT, " and %d" % BANK_PORT if own_bank else "", RELAY_PORT))
         return 0
 
     def start_projector(step):

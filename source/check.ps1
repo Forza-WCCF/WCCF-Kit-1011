@@ -145,6 +145,8 @@ $side = @(
     Start-Check 'the seat desk and the sign-in: optional or needed, a good or refused token, no token logged' 'test_seat_desk_signin.py'
     Start-Check 'the online club: owned cards make the CATALOGUE and a new club''s table, the slot when anything is wrong' 'test_online_club.py'
     Start-Check 'the server''s witness: a finished match tells the website whose it was, with the server''s secret' 'test_witness.py'
+    Start-Check 'a server''s own card bank: sign-in, starter 11, a card per match, the club checks, the draw''s rules' 'test_card_bank.py'
+    Start-Check 'hosting needs no wccf.online: the desk names the bank, the PC signs in there, its other sign-ins stay home' 'test_open_server.py'
     Start-Check 'the I/O board: the game answered at once while the disk hangs, a held-up answer logged' 'test_io_board.py'
 )
 

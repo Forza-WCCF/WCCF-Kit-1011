@@ -32,6 +32,7 @@ card and saves nothing to wccf.online.
 """
 import json
 import os
+import re
 import socket
 import sys
 import time
@@ -48,8 +49,8 @@ def signed():
     not sent, and DREAM TEAM (WCCF_DREAM_TEAM=1) sends none"""
     if os.environ.get("WCCF_DREAM_TEAM") == "1":
         return b""
-    try:
-        with open(ACCOUNT, encoding="utf-8") as f:
+    try:            # this server's bank's sign-in file (account.use sets it) - never another bank's token
+        with open(os.environ.get("WCCF_ACCOUNT_FILE") or ACCOUNT, encoding="utf-8") as f:
             token = json.load(f).get("token", "")
     except (OSError, ValueError, AttributeError):
         return b""
@@ -104,6 +105,22 @@ def hold(conn, end):
                 return
     except OSError:
         return
+
+
+def bank(ip):
+    """where the server at ip has its players sign in (its seat desk's answer to BANK, 2026-10-23): its own card bank
+    (server\\card_bank.py) on its port at ip, or a website's address -> that address; None from a desk from before it,
+    or none at all (wccf.online, as before)"""
+    try:
+        with socket.create_connection((ip, PORT), timeout=6) as c:
+            words = send_want(c, b"BANK\n")
+    except OSError:
+        return None
+    if len(words) == 3 and words[:2] == ["BANK", "PORT"] and words[2].isdigit() and 0 < int(words[2]) < 65536:
+        return "http://%s:%d" % (ip, int(words[2]))
+    if len(words) == 2 and words[0] == "BANK" and re.match(r"^https?://[A-Za-z0-9.:/-]+$", words[1]):
+        return words[1].rstrip("/")
+    return None
 
 
 def main(argv):

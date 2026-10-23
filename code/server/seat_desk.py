@@ -49,6 +49,10 @@ card's id (its serial, which the game writes into the club's data as SYSTEM_CARD
 it (leases.json "card"), so the witness can tell two signed-in players behind ONE address (one house) apart by the card
 id in each message.  An older desk answers a CARD word with "ERR say ..."; online\seat.py then asks without it.
 
+WHERE TO SIGN IN (2026-10-23): "BANK" -> "BANK PORT 20060" (this server runs its own card bank, server\card_bank.py,
+on that port of the address the PC reached it at) or "BANK https://wccf.online" (the website it checks sign-ins with)
+- no seat is taken.  online\seat.py asks it before a PC signs in; a desk from before answers "ERR say ...": wccf.online.
+
 THE RELAY WORD (2026-10-17): a PC that can show the projector through the projector relay says so: "WANT [SEAT n]
 [RELAY] [CARD c] [TOKEN t]", and gets "SEAT n PROJECTOR <the relay's port>" (WCCF_PROJECTOR_PORT, 20031).  Without
 the word the answer stays PROJECTOR 0, so an older kit never starts a projector that connects straight to control
@@ -118,6 +122,13 @@ def website_check(token):
 
 def require_signin():
     return bool(require_file) and os.path.exists(require_file)
+
+
+def bank_answer():
+    """the answer to BANK: this server's own card bank's port (WCCF_BANK_PORT, play.py sets it when it runs one), or
+    the website it checks sign-ins with"""
+    port = os.environ.get("WCCF_BANK_PORT", "")
+    return (b"BANK PORT %d\n" % int(port)) if port.isdigit() else ("BANK %s\n" % WEBSITE).encode("ascii", "replace")
 
 
 def log(msg):
@@ -284,6 +295,9 @@ def serve(conn, peer):
         ip = peer.rsplit(":", 1)[0]
         if words == ["HOLD"]:                                       # the projector box: held? (no seat taken)
             conn.sendall(b"HOLD 1\n" if held else b"HOLD 0\n")
+            return
+        if words == ["BANK"]:                                       # where this server's players sign in (no seat)
+            conn.sendall(bank_answer())
             return
         account = None
         if len(words) >= 3 and words[-2] == "TOKEN":                # a signed-in PC (2026-10-14): who is it?
