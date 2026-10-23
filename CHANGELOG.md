@@ -4,6 +4,24 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
+## Kit 8.5 - not released yet
+
+### Added
+- Hosting needs no website. A server you host keeps its own accounts and cards: `PLAY.exe server` runs its card
+  bank (TCP 20060 - let it in too), with wccf.online's rules - 11 white cards to start, a card for each finished
+  match, the club card kept and checked after each match. Players sign in on the server's own page with a name and
+  a password. Before, ONLINE asked for a wccf.online sign-in on any server, and only the community server could
+  give cards. The host can change the rules (data\card_rules.json) and look after accounts (README, ONLINE).
+- The code behind the cards is in the kit: `code\server\card_bank.py`, and wccf.online's own in the GitHub
+  repository (`docs\website\wccfgame.php`).
+
+### Changed
+- Better cards come more often: 5% better than black (was 2.5%), plus 0.25% for every match since your last one,
+  and a card you already own does not come again while another of its kind is left. The same on wccf.online
+  already (since 2026-10-23).
+- Each server tells your PC where to sign in, and your PC keeps one sign-in and one online club per server: your
+  wccf.online sign-in never goes to another server. A server from before this kit: wccf.online, as before.
+
 ## Kit 8.4 - 2026-10-20
 
 ### Fixed

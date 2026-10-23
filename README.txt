@@ -303,8 +303,8 @@ QUIT
 ONLINE (play with others on one server)
   One PC hosts: "PLAY.exe server" starts only the server, in the background - no game window opens, and the
   window that started it closes by itself after 30 seconds while the server keeps running ("PLAY.exe stop" ends
-  it). That PC must let in TCP ports 20002, 20030, 20050 and 20031 and UDP 20040; at home behind a router, forward those
-  ports to it. Logs that players send with SEND LOGS are kept there in data\player_logs. Each player: "PLAY.exe remote" and the server's address (e.g. PLAY.exe remote 192.168.1.20), or ONLINE
+  it). That PC must let in TCP ports 20002, 20030, 20050, 20031 and 20060 and UDP 20040; at home behind a router,
+  forward those ports to it. Logs that players send with SEND LOGS are kept there in data\player_logs. Each player: "PLAY.exe remote" and the server's address (e.g. PLAY.exe remote 192.168.1.20), or ONLINE
   in SETTINGS. Online, each PC runs its own cabinet and its own projector window: the server's projector relay
   (TCP 20031) passes the server's one projector picture to every player's PC. SHOW PROJECTOR off in SETTINGS, or a
   server from before the relay: no projector window on this PC. The server never waits for a projector. A projector
@@ -312,14 +312,31 @@ ONLINE (play with others on one server)
   closed until OPEN PROJECTOR in SETTINGS (data\logs\run_projector_restart.txt says when). Closing
   your projector's window, or your whole game, never stops the other players. The PC that hosts can play too: "PLAY.exe remote"
   with its own local address (ipconfig shows it).
-  Your wccf.online account: the first time you play online, PLAY shows a short code (in its window and in a small
-  Windows box) and opens wccf.online in your browser. Log in there - or register - and approve the code: the game
-  starts by itself, and this PC stays signed in (data\account.json, never sent with your logs). Online you play your
-  account's own club (data\save\online\): a new account gets 11 white cards (1 GK, 4 DF, 4 MF, 2 FW), the CATALOGUE
-  lists only the cards your account owns, and every finished online match adds one - shown after the locker room
-  (NEW CARD). Your club card goes up to wccf.online after each match and comes back at each online start, so it is
-  the same on any PC; the cards on your table and where they stand go too, and your profile there shows that
-  formation. Not signed in: PLAY plays on this PC instead, with your own club cards, and says why.
+  Your account: every server keeps its own accounts and cards. The community server keeps them on wccf.online; a
+  server you or a friend host keeps them on that server (below). The first time you play on a server, PLAY shows a
+  short code (in its window and in a small Windows box) and opens that server's sign-in page in your browser -
+  wccf.online's, or the server's own. Log in there - or register - and approve the code: the game starts by itself,
+  and this PC stays signed in (data\account.json for wccf.online, data\accounts\ for each other server; never sent
+  with your logs, and never sent to another server). Online you play your account's own club (data\save\online\):
+  a new account gets 11 white cards (1 GK, 4 DF, 4 MF, 2 FW), the CATALOGUE lists only the cards your account owns,
+  and every finished online match adds one - shown after the locker room (NEW CARD). Your club card goes up to the
+  server's bank after each match and comes back at each online start, so it is the same on any PC; on wccf.online
+  the cards on your table and where they stand go too, and your profile there shows that formation. Not signed in:
+  PLAY plays on this PC instead, with your own club cards, and says why (DREAM TEAM, below, needs no account).
+  Hosting - the accounts and cards on your server: "PLAY.exe server" runs the server's own card bank (TCP 20060):
+  its accounts, the cards each owns and their club cards are kept in data\bank on that PC - no website is needed.
+  Its sign-in page is plain http (not encrypted), so players should use a password they use nowhere else. The rules
+  are wccf.online's: 11 white cards to start; a card for each finished match, 5% better than black plus 0.25% for
+  each match since the last one, of the rest 70% white and 30% black; never a card already owned while another of
+  its kind is left. Change them in data\card_rules.json, e.g. {"better": 800, "luck": 0, "no_twice": false,
+  "starter": {"GK": 2, "DF": 4, "MF": 4, "FW": 3}} (better and luck per 10,000, white per 1,000; card_gap: seconds
+  between two cards). The host's commands, with the kit's own Python (from the kit's folder):
+      python\python.exe code\server\card_bank.py accounts
+      python\python.exe code\server\card_bank.py ban NAME          (unban NAME lets it in again)
+      python\python.exe code\server\card_bank.py password NAME NEWPASSWORD
+  To have your players sign in at a website that runs wccf.online's code instead (docs\website in the kit's GitHub
+  repository), put its address in data\card_bank.txt; "own" there, or no file, is the server's own bank. The code
+  is all in the kit: code\server\card_bank.py (the bank), seat_desk.py, witness.py.
   DREAM TEAM (SETTINGS > PLAY ON > DREAM TEAM, or "PLAY.exe remote ADDRESS dream"): online on the same server with
   your PC's own club card and any card in the CATALOGUE, without your account - no cards are earned and nothing goes
   to wccf.online. In friendly rounds a DREAM TEAM club meets only other DREAM TEAM clubs, so any-card teams never meet

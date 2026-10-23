@@ -703,7 +703,8 @@ STYLE = ("body{margin:0;background:#0b1a2e;color:#e8eef6;font:16px/1.5 Segoe UI,
          ".code{letter-spacing:.15em;font-weight:700;text-transform:uppercase}.row{display:flex;gap:10px;"
          "margin-top:22px}button{flex:1;padding:11px;border:0;border-radius:6px;font-size:15px;font-weight:600;"
          "cursor:pointer}.go{background:#ffd84d;color:#13294a}.new{background:#2c4a75;color:#fff}"
-         ".note{margin-top:18px;font-size:13px;color:#9fb3cc}.ok{color:#7dde92}.bad{color:#ff8a80}")
+         ".note{margin-top:18px;font-size:13px;color:#9fb3cc}.ok{color:#7dde92}.bad{color:#ff8a80}"
+         "@media(max-width:480px){main{margin:16px 12px;padding:22px 20px}}")
 
 
 def page(body, status=200):
