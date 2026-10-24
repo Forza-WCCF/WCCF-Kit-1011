@@ -83,9 +83,9 @@ jobs:
           # any other build of a commit -> WCCF-2010-11-kit-6-test-<commit>.zip, "KIT 6-test-<commit>" in the game (Ali,
           # 2026-10-11: a test build says which release it leads to). NEXT = the release this branch is working towards:
           # change it when that release is out. SETUP's UPDATE reads kit-7-test-... as a test build of 7 (release.rs).
-          # After Kit 8.4, test builds lead to 8.5. A release still takes its version from its own tag; a new major
+          # After Kit 8.5, test builds lead to 8.6. A release still takes its version from its own tag; a new major
           # kit is only at Ali's word (small changes make a point release).
-          $next = '8.5'
+          $next = '8.6'
           if ($env:PRERELEASE -and $env:RELEASE) { throw 'Run workflow: a pre-release or a release, not both' }
           if ($env:PRERELEASE -and $env:PRERELEASE -cnotmatch '^kit-[0-9][0-9.]*-test[0-9]*$') {
             throw "a pre-release's tag looks like kit-5.4-test1, not '$env:PRERELEASE'"
