@@ -43,7 +43,7 @@
 #   -DryRun: say what it would do, write and start nothing.   -NoStop, and the names below: the tests only.
 param([switch]$Boot, [switch]$DryRun, [switch]$NoStop, [switch]$Always, [string]$Root = '', [string]$Kit = '',
       [string]$ServerTask = 'WCCF 2010-11 server', [string]$ProcessName = 'control_Release', [int]$Port = 20002,
-      [string]$ConnFile = '')
+      [string]$ConnFile = '', [int]$BootWindowMin = 10)     # the tests: 0, so a machine just started counts as any
 
 if (-not $Kit) { $Kit = Split-Path (Split-Path $PSScriptRoot) }      # code\server\ -> the kit's folder
 if (-not $Root) { $Root = Join-Path $Kit 'data\keeper' }
@@ -252,7 +252,7 @@ if ($sinceRestart -lt $restartGapSec) {          # it restarted the server a mom
 }
 $upMin = 999
 try { $upMin = ((Get-Date) - (Get-CimInstance Win32_OperatingSystem).LastBootUpTime).TotalMinutes } catch { }
-if ($Boot -or ($upMin -lt 10)) {
+if ($Boot -or ($upMin -lt $BootWindowMin)) {
     $reason = ' at start-up'
 } elseif (-not $procUp) {
     $reason = ' - ' + $ProcessName + ' is gone (it never comes back by itself)'

@@ -3,7 +3,8 @@
 # -NoStop - it never touches the real server, a real task or play.py. "Up" is this test's own TCP listener on
 # 127.0.0.1:20977 plus the powershell process the keeper runs in; "deaf" is that process with a port nobody listens on.
 # Sections 1-13 are the community server's rules (-Always); 14 a host's kit (only while it hosts). build.ps1 makes
-# build\zz_spin.exe (spin.c), the hung control's stand-in.
+# build\zz_spin.exe (spin.c), the hung control's stand-in. -BootWindowMin 0: a machine started under 10 minutes ago
+# (CI's, 2026-10-24) is not "at start-up" here - section 8 asks for that with -Boot.
 #   powershell -NoProfile -ExecutionPolicy Bypass -File source\test_keeper.ps1
 $ErrorActionPreference = 'Stop'
 $keeper = Join-Path $PSScriptRoot '..\code\server\keeper.ps1'
@@ -32,7 +33,7 @@ function Check([string]$name, [bool]$ok, [string]$detail = '') {
 }
 function Run-Keeper([string[]]$extra) {
     $out = & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $keeper -Root $root -NoStop `
-        -Kit (Join-Path $root 'kit') -ServerTask 'WCCF keeper test - no such task' -Always @extra 2>&1
+        -Kit (Join-Path $root 'kit') -ServerTask 'WCCF keeper test - no such task' -Always -BootWindowMin 0 @extra 2>&1
     return ($out | Out-String).Trim()
 }
 function Log-Text { if (Test-Path -LiteralPath $logf) { return (Get-Content -LiteralPath $logf -Raw) } return '' }
@@ -124,6 +125,12 @@ try {
     $o = Run-Keeper ($gone + '-Boot')
     Check 'right after that restart it waits, even at start-up' (((Restarts) -eq 5) -and
         ((Count-Log 'after the keeper restarted it - waiting') -eq 2)) $o
+    Make-Old $restarted 10
+    $o = (& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $keeper -Root $root -NoStop -Always `
+        -Kit (Join-Path $root 'kit') -ServerTask 'x' -BootWindowMin 9999999 -DryRun @deaf 2>&1 | Out-String).Trim()
+    Check 'the machine started within the boot window (its real uptime, no -Boot): at start-up' (
+        $o -match 'would restart now: .*at start-up') $o
+    (Get-Item -LiteralPath $restarted).LastWriteTime = Get-Date       # as section 8 left it
 
     '== 9 a missing folder =='
     $missing = Join-Path $root 'nope'
@@ -326,7 +333,7 @@ try {
     $running = Join-Path $root 'kit\data\running.json'
     function Run-Host([string[]]$extra) {
         $out = & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $keeper -Root $hostRoot -NoStop `
-            -Kit (Join-Path $root 'kit') -ServerTask 'WCCF keeper test - no such task' @extra 2>&1
+            -Kit (Join-Path $root 'kit') -ServerTask 'WCCF keeper test - no such task' -BootWindowMin 0 @extra 2>&1
         return ($out | Out-String).Trim()
     }
     function Host-Restarts { if (Test-Path -LiteralPath $hostLog) { return [regex]::Matches((Get-Content -LiteralPath $hostLog -Raw), '(?m) - restarting\r?$').Count } return 0 }
