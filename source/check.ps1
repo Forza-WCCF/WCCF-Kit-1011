@@ -166,8 +166,6 @@ if ($LASTEXITCODE) { $failed += 'the English pictures: only Sega''s exact pictur
 if ($LASTEXITCODE) { $failed += 'patience: Sega''s link limits raised only on their bytes, Windows takes the waiting time' }
 & $py -I (Join-Path $PSScriptRoot 'test_crash_dump.py')
 if ($LASTEXITCODE) { $failed += 'a crash leaves its memory snapshots (lean + full) in data\dumps' }
-& powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'test_keeper.ps1') | Select-Object -Last 1
-if ($LASTEXITCODE) { $failed += 'the keeper: a crashed, hung or deaf server restarted; a host''s only while it hosts' }
 
 $t = Join-Path ([IO.Path]::GetTempPath()) "wccfpanel-check-$PID"
 Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
@@ -324,6 +322,15 @@ foreach ($c in $side) {
     }
     Remove-Item $c.Out, "$($c.Out).err" -ErrorAction SilentlyContinue
 }
+
+# the keeper last, on a quiet machine: its hung check needs two threads that each get 3/4 of a CPU (2026-10-24: run
+# beside the checks above on CI's runner, they did not, and a healthy-looking "hung" control failed the check)
+$text = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'test_keeper.ps1') 2>&1)
+if ($LASTEXITCODE) {
+    $text | Where-Object { $_ -match '^\s*FAIL\s' } | ForEach-Object { Write-Host "  $_" }
+    $failed += 'the keeper: a crashed, hung or deaf server restarted; a host''s only while it hosts'
+}
+$text | Select-Object -Last 1
 
 if ($failed) { throw "FAILED: $($failed -join ', ')" }
 Write-Host 'all checks passed'
