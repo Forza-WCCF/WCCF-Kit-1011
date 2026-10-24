@@ -14,6 +14,17 @@ WHAT IT IS
   or a game controller's buttons, SETTINGS, and CLUB CARD, your club card and your other clubs.
   The kit holds none of Sega's files. Everything that comes from the game is made by setup from YOUR copy.
 
+NEW IN KIT 8.5
+  - Hosting needs no website: a server you host keeps its own accounts and cards (TCP 20060 - let it in too).
+    Players sign in on that server's own page and start with 11 white cards; each finished match earns a card, and
+    the club is kept on that server. The community server stays on wccf.online, as before. (ONLINE, below.)
+  - Better cards more often, on wccf.online and on every server: 5% better than black, plus 0.25% for each match
+    since your last one, and no card you already own while another of its kind is left.
+  - The keeper for hosts: "PLAY.exe keeper on" starts your server again when Sega's server program crashes, freezes
+    or stops letting players in.
+  - All the server's code is in the kit: the card bank, the keeper and wccf.online's own card code (source\website).
+  - Updating from kit 8.4: SETUP's UPDATE, then yes to set up the game. Your clubs, keys, settings and sign-in stay.
+
 NEW IN KIT 8.4
   - Online matches: closed sockets stop sending old match keepalives, and an old socket can no longer take over
     a live route on the server. The opponent wait allows a nominal 30 seconds through a short interruption;
