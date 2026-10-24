@@ -2,7 +2,7 @@
 r"""card_bank.py - this server's own card bank (2026-10-23): the accounts, the cards each one owns and its club card,
 kept on the server itself, so hosting needs no website (the owner: "make sure my server or the files they need for the
 server, or my website are never a blocker for anyone").  It answers the kit exactly as wccf.online's game link does
-(docs\website\wccfgame.php: the same requests, the same answers, the same rules), so the kit's own code talks to either
+(source\website\wccfgame.php: the same requests, the same answers, the same rules), so the kit's own code talks to either
 one: the seat desk tells each player's PC where this server's players sign in (server\seat_desk.py, BANK).
 
     python code\server\card_bank.py SECONDS LOGFILE     play.py server starts it, unless data\card_bank.txt names a

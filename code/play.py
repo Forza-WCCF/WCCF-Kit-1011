@@ -35,6 +35,10 @@ player cabinet (seat 1) with the overlay and your keyboard.  PLAY.exe runs it; r
                               rest (a server started on this PC with "server" stays, for the other players); the
                               projector's alone - nothing
     python play.py status     what is running
+    python play.py keeper on|off|status
+                              a host's keeper (2026-10-24, server\keeper.ps1 - the community server's): every minute
+                              while this Windows user is logged on, it starts this PC's server again when Sega's server
+                              program crashed, froze or lets no one in - only after "server", until "stop"
     python play.py show       show the server's hidden windows again: its console (the round-by-round log) and its
                               settings window - to look at; they are hidden again at the next start
     python play.py projector  what the panel helper runs when the online projector has lost the server for good
@@ -147,6 +151,9 @@ KEYS_INPUT = os.path.join(K.DATA, "_jvs_seat1_input.txt")        # = hardware\ke
 CARD = os.path.join(K.SAVE, "seat1_club.bin")
 RUNNING = os.path.join(K.DATA, "running.json")
 PANEL = os.path.join(K.DATA, "panel.txt")         # the SETTINGS panel's choices (wccfpanel.dll writes it)
+KEEPER_DIR = os.path.join(K.DATA, "keeper")       # the keeper's notes (server\keeper.ps1, "keeper on")
+KEEPER_WANTED = os.path.join(KEEPER_DIR, "server.wanted")
+KEEPER_TASK = "WCCF 2010-11 kit keeper"           # not Azure's "WCCF 2010-11 keeper" (SYSTEM): this user's own
 CREATE_NEW_CONSOLE = 0x10
 SW_HIDE, SW_SHOWMINNOACTIVE = 0, 7
 
@@ -1242,6 +1249,11 @@ def _stop(game, c, sess, check, keep_server):
         write_running({pid: r for pid, r in roles.items() if r in SERVER_ROLES}, "server", None)
     elif os.path.exists(RUNNING):
         os.remove(RUNNING)
+    if roles is None and not os.environ.get("WCCF_KEEPER"):    # a person stopped it: the keeper lets it be (keeper.ps1)
+        try:
+            os.remove(KEEPER_WANTED)
+        except OSError:
+            pass
     return ours, left, still
 
 
@@ -1623,6 +1635,70 @@ def play_online(debug, ip, seat_no=None, dream=False):
         return play(debug)
 
 
+KEEPER_XML = """<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo><Description>WCCF 2010-11: starts this PC's server again when Sega's server program crashed, froze or
+lets no one in - only while this PC hosts (PLAY.exe keeper off ends it)</Description></RegistrationInfo>
+  <Triggers><TimeTrigger><StartBoundary>%(start)s</StartBoundary><Enabled>true</Enabled>
+    <Repetition><Interval>PT1M</Interval><StopAtDurationEnd>false</StopAtDurationEnd></Repetition></TimeTrigger></Triggers>
+  <Principals><Principal id="Author"><LogonType>InteractiveToken</LogonType><RunLevel>LeastPrivilege</RunLevel>
+    </Principal></Principals>
+  <Settings><MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries><StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <StartWhenAvailable>true</StartWhenAvailable><ExecutionTimeLimit>PT10M</ExecutionTimeLimit><Enabled>true</Enabled>
+  </Settings>
+  <Actions Context="Author"><Exec><Command>%(exe)s</Command><Arguments>%(args)s</Arguments>
+    <WorkingDirectory>%(kit)s</WorkingDirectory></Exec></Actions>
+</Task>
+"""
+
+
+def keeper(word):
+    """PLAY.exe keeper on / off / status (2026-10-24, the owner: "the kit should have all the code"): the community
+    server's keeper (server\\keeper.ps1) for any host - a task of this Windows user, every minute while logged on, no
+    administrator needed. "run" is the task's own call: keeper.ps1 with no window (pythonw, then no console)"""
+    from xml.sax.saxutils import escape
+    script = os.path.join(K.KIT, "code", "server", "keeper.ps1")
+    if word == "run":
+        return subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
+                               "-File", script], creationflags=0x08000000,     # CREATE_NO_WINDOW
+                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode
+
+    def schtasks(*args):
+        r = subprocess.run(["schtasks"] + list(args), capture_output=True, text=True, errors="replace")
+        return r.returncode, (r.stdout + r.stderr).strip()
+    if word == "on":
+        os.makedirs(KEEPER_DIR, exist_ok=True)
+        xml = os.path.join(KEEPER_DIR, "task.xml")
+        with open(xml, "w", encoding="utf-16") as f:
+            f.write(KEEPER_XML % {"start": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                                  "exe": escape(os.path.join(K.KIT, "python", "pythonw.exe")),
+                                  "args": escape('"%s" keeper run' % os.path.join(K.KIT, "code", "play.py")),
+                                  "kit": escape(K.KIT)})
+        rc, out = schtasks("/create", "/tn", KEEPER_TASK, "/xml", xml, "/f")
+        if rc:
+            say("The keeper could not be switched on (Windows' task scheduler said: %s)." % out)
+            return 1
+        say("The keeper is on: every minute while you are logged on to Windows, it checks this PC's server and starts "
+            "it again if Sega's server program crashed, froze or lets no one in - only while this PC hosts (after "
+            "PLAY.exe server, until PLAY.exe stop). What it did: data\\keeper\\keeper_log.txt. PLAY.exe keeper off "
+            "ends it.")
+        return 0
+    if word == "off":
+        rc, out = schtasks("/delete", "/tn", KEEPER_TASK, "/f")
+        say("The keeper is off." if rc == 0 else "The keeper was not on (%s)." % out)
+        return 0
+    rc, _out = schtasks("/query", "/tn", KEEPER_TASK)
+    say("The keeper is %s." % ("on" if rc == 0 else "off (PLAY.exe keeper on)"))
+    try:
+        with open(os.path.join(KEEPER_DIR, "keeper_log.txt"), encoding="utf-8-sig", errors="replace") as f:
+            lines = f.read().splitlines()[-5:]
+        say("Its last notes:\n  " + "\n  ".join(lines))
+    except OSError:
+        pass
+    return 0
+
+
 def main(argv):
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -1636,6 +1712,8 @@ def main(argv):
             return ended()
         if a[:1] == ["status"]:
             return status()
+        if a[:1] == ["keeper"] and a[1:] in ([], ["on"], ["off"], ["status"], ["run"]):
+            return keeper((a[1:] or ["status"])[0])
         if a == ["show"]:
             return show()
         if a[:1] == ["projector"]:            # the panel helper: lost for good, or SETTINGS' OPEN / CLOSE PROJECTOR;

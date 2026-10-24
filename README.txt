@@ -312,6 +312,11 @@ ONLINE (play with others on one server)
   closed until OPEN PROJECTOR in SETTINGS (data\logs\run_projector_restart.txt says when). Closing
   your projector's window, or your whole game, never stops the other players. The PC that hosts can play too: "PLAY.exe remote"
   with its own local address (ipconfig shows it).
+  Hosting - the keeper: Sega's server program can crash, freeze, or stop letting players in. "PLAY.exe keeper on"
+  (once) starts it again by itself, as on the community server: every minute while you are logged on to Windows it
+  checks the server, and only while this PC hosts (after "PLAY.exe server", until "PLAY.exe stop"). What it did:
+  data\keeper\keeper_log.txt, with the logs of each crash in data\keeper\crash_evidence. "PLAY.exe keeper off" ends
+  it; "PLAY.exe keeper" says whether it is on. No administrator needed.
   Your account: every server keeps its own accounts and cards. The community server keeps them on wccf.online; a
   server you or a friend host keeps them on that server (below). The first time you play on a server, PLAY shows a
   short code (in its window and in a small Windows box) and opens that server's sign-in page in your browser -
@@ -334,9 +339,9 @@ ONLINE (play with others on one server)
       python\python.exe code\server\card_bank.py accounts
       python\python.exe code\server\card_bank.py ban NAME          (unban NAME lets it in again)
       python\python.exe code\server\card_bank.py password NAME NEWPASSWORD
-  To have your players sign in at a website that runs wccf.online's code instead (docs\website in the kit's GitHub
-  repository), put its address in data\card_bank.txt; "own" there, or no file, is the server's own bank. The code
-  is all in the kit: code\server\card_bank.py (the bank), seat_desk.py, witness.py.
+  To have your players sign in at a website that runs wccf.online's code instead (source\website\wccfgame.php),
+  put its address in data\card_bank.txt; "own" there, or no file, is the server's own bank. The code is all in the
+  kit: code\server\card_bank.py (the bank), seat_desk.py, witness.py, and wccf.online's own in source\website.
   DREAM TEAM (SETTINGS > PLAY ON > DREAM TEAM, or "PLAY.exe remote ADDRESS dream"): online on the same server with
   your PC's own club card and any card in the CATALOGUE, without your account - no cards are earned and nothing goes
   to wccf.online. In friendly rounds a DREAM TEAM club meets only other DREAM TEAM clubs, so any-card teams never meet

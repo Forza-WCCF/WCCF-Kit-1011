@@ -166,6 +166,8 @@ if ($LASTEXITCODE) { $failed += 'the English pictures: only Sega''s exact pictur
 if ($LASTEXITCODE) { $failed += 'patience: Sega''s link limits raised only on their bytes, Windows takes the waiting time' }
 & $py -I (Join-Path $PSScriptRoot 'test_crash_dump.py')
 if ($LASTEXITCODE) { $failed += 'a crash leaves its memory snapshots (lean + full) in data\dumps' }
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'test_keeper.ps1') | Select-Object -Last 1
+if ($LASTEXITCODE) { $failed += 'the keeper: a crashed, hung or deaf server restarted; a host''s only while it hosts' }
 
 $t = Join-Path ([IO.Path]::GetTempPath()) "wccfpanel-check-$PID"
 Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue

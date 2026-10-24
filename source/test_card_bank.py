@@ -3,7 +3,7 @@
 bank on 127.0.0.1 with a scratch data folder and a made-up card list; account.py signs in through its page, club.py
 gets the starter 11 and saves the club card, witness.py tells it about a finished match, and the card drawn follows the
 rules (bad-luck count, never a card twice).  Then the chain check, a cut match, the rules file, the host's commands,
-the field positions against the website's own tables (docs\\website\\wccfgame.php) and hostile requests.  No game, no
+the field positions against the website's own tables (source\\website\\wccfgame.php) and hostile requests.  No game, no
 real website, nothing outside the scratch folder (check.ps1 runs it).
     python source\\test_card_bank.py"""
 import base64
@@ -278,8 +278,8 @@ with open(rf, "w") as f:
     f.write("{not json")
 check(B.load_rules(rf)[0] == B.RULES, "a broken rules file: the usual rules")
 
-# ---- the field positions are the website's own (docs\website\wccfgame.php) ----
-with open(os.path.join(KIT, "docs", "website", "wccfgame.php"), encoding="utf-8") as f:
+# ---- the field positions are the website's own (source\website\wccfgame.php) ----
+with open(os.path.join(KIT, "source", "website", "wccfgame.php"), encoding="utf-8") as f:
     php = f.read()
 table = {m.group(1): tuple(map(int, m.group(2).split(","))) for m in re.finditer(r"'(\w+)' => \[([\d, ]+)\]", php)}
 bad = []

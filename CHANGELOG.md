@@ -12,8 +12,10 @@ game is not included. Newest first; each date is the day that kit was built.
   match, the club card kept and checked after each match. Players sign in on the server's own page with a name and
   a password. Before, ONLINE asked for a wccf.online sign-in on any server, and only the community server could
   give cards. The host can change the rules (data\card_rules.json) and look after accounts (README, ONLINE).
-- The code behind the cards is in the kit: `code\server\card_bank.py`, and wccf.online's own in the GitHub
-  repository (`docs\website\wccfgame.php`).
+- The code behind the cards is in the kit: `code\server\card_bank.py`, and wccf.online's own
+  (`source\website\wccfgame.php`).
+- The keeper for hosts: `PLAY.exe keeper on` starts your server again when Sega's server program crashes, freezes or
+  stops letting players in - the community server's keeper (`code\server\keeper.ps1`), only while your PC hosts.
 
 ### Changed
 - Better cards come more often: 5% better than black (was 2.5%), plus 0.25% for every match since your last one,

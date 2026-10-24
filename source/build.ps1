@@ -81,6 +81,7 @@ Build-C 'hook\test_jvs.c' "$obj\test_jvs.exe" ''
 Build-C 'hook\test_pictures.c' "$obj\test_pictures.exe" ''
 Build-C 'hook\test_patience.c' "$obj\test_patience.exe" ''
 Build-C 'crashme.c' "$obj\crashme.exe" ''
+Build-C 'spin.c' "$obj\zz_spin.exe" ''
 
 # the launchers: the toolchain is pinned by source\launcher\rust-toolchain.toml, every crate by Cargo.lock, the static
 # runtime by source\launcher\.cargo\config.toml - rustup and cargo read those two from the CURRENT folder: build there

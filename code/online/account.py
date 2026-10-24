@@ -136,7 +136,8 @@ def show_code(code):
                 None, ("Your game's sign-in code:\n\n        %s\n\nApprove it on wccf.online - the page has opened in your "
                        "browser (log in or register there).\nThe game carries on by itself once you approve." % code
                        ).replace("wccf.online", site_name()),
-                "WCCF Online - sign in", 0x40 | 0x10000 | 0x40000)        # information icon, to the front, on top
+                "WCCF Online - sign in" if not bank_key() else "WCCF - sign in to %s" % urllib.parse.urlsplit(
+                    WEBSITE).netloc, 0x40 | 0x10000 | 0x40000)        # information icon, to the front, on top
         except Exception:
             pass
     threading.Thread(target=box, daemon=True).start()
