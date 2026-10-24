@@ -15,7 +15,6 @@ The source of every compiled program the kit ships, the scripts that build, chec
 | `test_card_bank.py` | a server's own card bank driven by the kit's own code (account.py signs in on its page, club.py gets the starter 11 and saves, witness.py reports a match): the card draw's rules, the chain check, a cut match, the rules file, the host's commands, the field positions against `website\wccfgame.php`, hostile requests |
 | `test_card_fix.py` | a missing club-card helper file never stops a start |
 | `test_open_server.py` | hosting needs no wccf.online: the real seat desk beside the real card bank, a player's PC asks where to sign in (BANK), signs in there and takes a seat the desk checks with the bank; its wccf.online sign-in never sent there; an older desk = wccf.online; a restart keeps the bank; play.py's choice of bank on a server |
-| `website\wccfgame.php` | wccf.online's own card code (its MyBB plugin), as it runs there: sign-in codes, the starter 11, the card draw and its odds, owned cards, the club card checks - in the kit so hosts can read it (the owner, 2026-10-23: "the kit should have all the code"); `code\server\card_bank.py` is the same rules for any server, and `test_card_bank.py` checks both read the club data at the same places. Copied from the website at each change, never edited here |
 | `test_crash_dump.py` | a crash leaves a lean and a full memory snapshot in `data\dumps` (crashme.exe under the real launcher) |
 | `test_projector_window.py` | scratch projector window: resize composition, F11/Esc restore, real double-clicks and distant clicks; hidden before fullscreen, skips without Direct3D 9 |
 | `test_ended.py` | play.py's choice when a game window's launcher ends (a closed cabinet window stops the rest, the projector's alone stops nothing), and when a run went wrong (the automatic report) |
@@ -58,6 +57,7 @@ The source of every compiled program the kit ships, the scripts that build, chec
 | `panel\` | the panel around the game (`programs\wccfpanel.dll`) |
 | `card_table\` | the card-table helper (`programs\FPR_Emu.exe`) |
 | `launcher\` | PLAY.exe and SETUP.exe (Rust) |
+| `website\` | wccf.online's own card code, for reading (not run by the kit) |
 | `build\` | made by build.ps1 - the compiler's leftovers and the test game window; not in git |
 
 ## Careful

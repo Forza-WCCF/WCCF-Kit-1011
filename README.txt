@@ -441,15 +441,17 @@ FOLDERS
   art\       skin.tex (the panel's picture)
   code\      play, setup and english at the top; cards\ (club cards, the catalogue), hardware\ (stand-ins for the
              cabinet: card reader, I/O board, keyboard, scenes, network, the game's launcher), online\ (joining a
-             server), server\ (running one for others), helpers\ (the panel's helper, sound, the hook)
+             server), server\ (running one for others: seat desk, relays, card bank, keeper), helpers\ (the
+             panel's helper, sound, the hook)
   languages\ one folder per language. english\: screen_text.tsv (the translation), sega_rstring.tsv (Sega's
              European English), cpu_names.tsv (team names), exe_text.tsv (the ticker, the dates, money, the
              shop's name), pictures.tsv (writing in the game's pictures); italian\: the Italian, with Sega's
              Italian where the Japanese is the same - text and fingerprints only
   source\    the source of every program in programs\ (C) and of PLAY and SETUP.exe (Rust,
-             source\launcher) - source\README.txt: how they were built
+             source\launcher) - source\README.txt: how they were built; website\: wccf.online's own card code
   python\    Python 3.13 (python.org's embeddable build) with Pillow
   data\      made on your PC: settings (panel.txt), your club card (save\, with backup\ and your other clubs in
              cards\, and your online club in online\), your keys (keys.txt), your wccf.online sign-in
-             (account.json), logs, and cache\ (the catalogue and card pictures setup makes from your game - made
-             again if deleted); with English or Italian on, english_pictures\ (pictures the kit hands the game)
+             (account.json; other servers' in accounts\), logs, and cache\ (the catalogue and card pictures setup
+             makes from your game - made again if deleted); with English or Italian on, english_pictures\ (pictures
+             the kit hands the game); hosting: bank\ (your server's accounts and cards) and keeper\ (the keeper)

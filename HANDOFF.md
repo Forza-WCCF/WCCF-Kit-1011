@@ -20,11 +20,14 @@ files ship.** SETUP builds whatever it needs from the player's own copy of the g
 | `programs\` | the compiled programs: the in-game hook (`wccfk.dll`), the panel (`wccfpanel.dll`) and the card-table helper (`FPR_Emu.exe`) |
 | `art\` | the panel's picture (`skin.tex`) |
 | `data\cache\` | the catalogue + card pictures SETUP makes from the player's own game (made again if deleted) |
+| `data\bank\` | a hosting PC's own card bank (`code\server\card_bank.py`): its accounts, owned cards and club cards (sqlite; passwords and tokens hashed) and the server's name + secret for its witness. Never sent with SEND LOGS |
+| `data\accounts\` | this PC's sign-in to each other server's card bank, one file each (wccf.online's stays `data\account.json`); the online clubs are in `data\save\online\` beside it, one folder per bank |
+| `data\keeper\` | the host's keeper (`PLAY.exe keeper on`, `code\server\keeper.ps1`): its log, `server.wanted` while this PC hosts, the logs of each crash |
 | `data\dumps\` | memory snapshots of crashes (debugger.py; newest 5 lean + 5 full) - the lean ones go with SEND LOGS and the automatic report |
 | `languages\` | one folder per language - `languages\english\`: the English translation tables (text + fingerprints of Sega's files; no Sega file) |
 | `python\` | an embedded Python so players install nothing |
 | `code\` | the kit's Python. At the top, the four a person runs or everything shares: `play.py` (start/stop), `setup.py`, `english.py`, `kit_common.py`. Then `cards\` (club cards, the catalogue), `hardware\` (the cabinet's parts, faked on a PC), `online\` (joining a server), `server\` (running one for others), `helpers\` (the panel's helper, sound, the hook's name in the game) |
-| `source\` | the source of every compiled program (`hook\`, `panel\`, `card_table\`, `launcher\`), the build/check/package scripts, and the tests |
+| `source\` | the source of every compiled program (`hook\`, `panel\`, `card_table\`, `launcher\`), the build/check/package scripts, the tests, and wccf.online's own card code for reading (`website\`) |
 | `data\` | the player's own: settings, keys, the club card and other clubs, logs, runtime state, `cache\`, `english_backup\` (Sega's original files while English is on - never a cache) |
 | `docs\` | the redesign's plan and the research notes - not in the players' ZIP |
 

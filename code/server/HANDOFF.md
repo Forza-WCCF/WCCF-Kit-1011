@@ -13,8 +13,9 @@ play.py starts these when this PC is the server (`play.py server`).
 | `witness.py` | a card per finished match (phase 3): only on a server wccf.online knows (`data\server_name.txt` + `data\server_secret.txt`, never in git or SEND LOGS); the hook in control keeps each cabinet's club data at a session's start, at each match's start (TEAM DATA, a match played on too) and after a match in `data\witness\`, the seat desk's `data\leases.json` says whose it was (two signed-in players at one address: the club card's id in the message names the seat), and this tells the website with the server's secret - the website gives the card |
 
 ## Careful
-- The live Azure server runs kit 5's copies under their OLD names (`_seat_broker.py`, `_relay.py`, `_log_inbox.py`,
-  `_debug_launch.py`). Its next update must account for the new names - check its keeper and tasks first, and never
-  while players are on.
+- The community server (Azure) runs the released kit itself (`C:\wccf1011\kit`, updated whole at each release) with
+  its own wccf.online identity (`data\server_name.txt` + `server_secret.txt`, kept by every update), so it stays on
+  wccf.online and starts no card bank. Its keeper is its own copy (`C:\wccf1011\keeper.ps1`, the SYSTEM task), the
+  rules of `keeper.ps1` here before `-Kit`/`-Always`. Never update it while players are on.
 - Their log files keep their names (`seat_broker.txt`, `match_relay.txt`, `log_inbox.txt`): the server's own tools
   read those.
