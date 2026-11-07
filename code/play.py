@@ -794,6 +794,13 @@ def start_cabinet(debug, env, mode, ip, seat_no, seat, roles):
     p = start(os.path.join("hardware", "network.py"), [LIFE, "ringedge_log.txt"], "run_ringedge.txt", env)
     roles[p.pid] = "keychip / network stand-in"
     card = env.get("WCCF_CLUB_CARD") or CARD   # online and signed in: the account's own club (online\club.py)
+    try:                                       # the names in normal width before the game reads them (cards\edit.py:
+        from cards import edit                 # the ABC keyboard's full-width letters and space, 2026-11-07); online,
+        said = edit.normal_width_names(card)   # after the sync, so the session's start carries them to our servers
+        if said:
+            say("  club card: " + said)
+    except Exception as ex:                    # never a reason not to start: the card plays as it is
+        say("  club card: names left as they are (%s)" % ex)
     # NAME.new.bin beside it (wallet.NEW for the slot): room for a second card, for a manager transfer (2026-10-08)
     p = start(os.path.join("hardware", "card_reader.py"), [ICC_PIPE, LIFE, "icc_log.txt" if debug else "NUL", card,
                                                            os.path.splitext(card)[0] + ".new.bin"],

@@ -270,6 +270,51 @@ def clear_bad_endings(path):
         num, "" if not wan else ", online %d" % wan)
 
 
+# 2026-11-07: the game's ABC keyboard types full-width letters (Ａ) and the ideographic space (U+3000), twice a normal
+# space - a player saw a "double space" in his club name.  The names are kept in normal width, as the English text
+# around them is; the kana readings the commentator says (CLUB_NAME_CALL, COACH_NAME_READ) stay as typed.
+NAME_FIELDS = ("Club.CLUB_NAME", "Coach.COACH_NAME")
+NORMAL_WIDTH = {0x3000: 0x20, **{c: c - 0xFEE0 for c in range(0xFF01, 0xFF5F)}}
+
+
+def normal_width(header, blocks):
+    """(the finished card file with the club and manager names in normal width, {field: (old, new)}) - None for the
+    file when they were normal already"""
+    _which, copy = good_copy(header, blocks)
+    vals = D.decode(copy)
+    changed = {}
+    for spec in NAME_FIELDS:
+        key, row, bit = resolve(spec)
+        old = D.text(vals[key])
+        new = old.translate(NORMAL_WIDTH)
+        if new != old:
+            write_bits(copy, bit, row[3] * row[4], 0)
+            for k, v in enumerate(parse_value(row, new)):
+                write_bits(copy, bit + k * 8, 8, v)
+            changed[spec] = (old, new)
+    if not changed:
+        return None, changed
+    raw = stamp_copy(header, blocks, copy)
+    check(raw)
+    return raw, changed
+
+
+def normal_width_names(path):
+    """the card at path with its club and manager names in normal width (the old card into backup\\ first) -> what
+    changed, in words, or None when there was nothing to change (no card, a new card, or normal width already)"""
+    if not os.path.exists(path):
+        return None
+    header, blocks = read(path)
+    if header and header[5] | header[6] << 8 == 0xFFFF:          # a NEW card: Club Make writes the names first
+        return None
+    raw, changed = normal_width(header, blocks)
+    if raw is None:
+        return None
+    save(path, raw)
+    return "names in normal width (%s; the old card is in backup\\)" % ", ".join(
+        "%s -> %s" % pair for pair in changed.values())
+
+
 # ------------------------------------------------------------------ driver ---
 
 def main(argv):
@@ -402,6 +447,22 @@ def self_test():
        {k for k in after if after[k] != D.decode(good_copy(h4, b4)[1])[k]} ==
        {resolve(sp)[0] for sp in BAD_ENDING_FIELDS if old4[sp]})
     ok("a card without bad endings is left alone", cleared_bad_endings(_h, b2)[0] is None)
+
+    copy = bytearray(D.COPY_BYTES)                                 # the names as the ABC keyboard types them
+    for spec, text in (("Club.CLUB_NAME", "Ｆｕｔ　Ｂｕｌ　９５"), ("Coach.COACH_NAME", "Ｆｉｔ"),
+                       ("Club.CLUB_NAME_CALL", "ｴﾌﾕｰﾃｨｰ")):
+        key, row, bit = resolve(spec)
+        for k, v in enumerate(parse_value(row, text)):
+            write_bits(copy, bit + k * 8, 8, v)
+    h5, b5 = read_bytes(stamp_copy(header, blocks, copy))
+    raw5, _changed = normal_width(h5, b5)
+    after5 = D.decode(good_copy(*read_bytes(raw5))[1]) if raw5 else {}
+    name = lambda spec: D.text(after5[resolve(spec)[0]]) if raw5 else None
+    ok("full-width names become normal width", (name("Club.CLUB_NAME"), name("Coach.COACH_NAME")) == ("Fut Bul 95", "Fit"))
+    ok("the kana reading stays as typed", name("Club.CLUB_NAME_CALL") == "ｴﾌﾕｰﾃｨｰ")
+    ok("only the two names change", raw5 is not None and
+       {k for k in after5 if after5[k] != D.decode(good_copy(h5, b5)[1])[k]} == {resolve(sp)[0] for sp in NAME_FIELDS})
+    ok("names in normal width are left alone", raw5 is not None and normal_width(*read_bytes(raw5))[0] is None)
 
     bad = 0
     for what, cond in checks:
