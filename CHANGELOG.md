@@ -18,10 +18,11 @@ game is not included. Newest first; each date is the day that kit was built.
 - Club and manager names typed in the game were kept in wide letters, so each space showed double
   (`Fut  Bul  95`). Each time PLAY starts, it now puts them into normal width on the club card
   (`code\cards\edit.py`); a club card it cannot read is left as it is.
-- The six team stats round the radar on the starting line-up before a match stayed Japanese. That screen loads its
-  own copy of the picture (`projector\PBGM_Formation\SCM_Parameta_max.dds`), whose English was still made the
-  archive way, switched off since it stopped the game reading club cards; it now goes the "memory" way like the
-  other pictures, in Sega's white with that copy's own olive edge (readable on the line-up's light panel).
+- The six team stats round the radar on the starting line-up before a match stayed Japanese: that screen draws them
+  from its own sheet (`projector\PBGM_Formation\0809_PBGM_Formation.dds`), which had no English yet. They now read
+  OFFENCE, CONTROL, SPEED, TACKLING, POWER, DEFENCE as on the radar's other screens. The line-up's copy of the gold
+  labels (`SCM_Parameta_max.dds`), still set to the archive way - switched off since it stopped the game reading
+  club cards - now goes the "memory" way too, in Sega's white with that copy's own olive edge.
 
 ## Kit 8.5 - 2026-10-24
 
