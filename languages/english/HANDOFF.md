@@ -17,6 +17,7 @@
 | `pictures_MNG_TitleLogoManagement_2.png` | the club house title's first half (`management\MNG_TitleLogoManagement\Title_tex_2.dds`, チーム): TEAM. The game draws the second half 172 px to its right (measured on a player's screenshot), so Codex drew the whole title on that layout and it was split there |
 | `pictures_MNG_TitleLogoManagement_1.png` | its second half (`Title_tex_1.dds`, マネージメント): MANAGEMENT, in the same gold glow; Codex's faint background haze (alpha 1-2) cleared beyond 8 px from the letters |
 | `pictures_AGM_PrizeMoney_1.png` | the league placing on the prize screen after a match (`client_game\AGM_PrizeMoney\PAGM_APM_Result_1.dds`, 1位 ... 8位): 1ST ... 8TH, drawn by Codex like Sega's own WIN, DRAW and LOSE on the same sheet (which stay Sega's), each centred in its Japanese placing's box (measured down to alpha 1), colours matched to Sega's core and glow, Codex's haze (alpha 1) cleared |
+| `pictures_BGM_PL_Base_a.png` | the radar's six team stats on the seat's starting line-up (`client_game\BGM_PlayerListFormation\BGM_PL_Base_a.dds`, which holds them twice): the white ones in the kit's "outline" style and the gold ones (a value at its highest) in "glow" - as the kit draws these labels on the other screens - made by the kit's own draw_label, each box down to alpha 1 and clear of the hexagon frame, HOME AWAY and the panel's edge; one picture because a row has one style (Italian: the row's words in "outline") |
 
 ## Careful
 - Country and prefecture names stay in Japanese on purpose: the game finds its weather table by them, and English
