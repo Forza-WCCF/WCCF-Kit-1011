@@ -21,7 +21,7 @@ Community-developed launcher, hardware compatibility tools and an in-game panel 
 
 ## New in Kit 9
 
-- **More English** - the mode select screen, the team entry badge, the club house title (TEAM MANAGEMENT), ABILITY and SPECIAL in the Meeting Room, the placing after a league match (1ST to 8TH), WRITING beside IC while your club card is written, and GF in Title Data.
+- **More English** - the mode select screen, the team entry badge, the club house title (TEAM MANAGEMENT), ABILITY and SPECIAL in the Meeting Room, the radar's labels on the starting line-up, the placing after a league match (1ST to 8TH), WRITING beside IC while your club card is written, and GF in Title Data.
 - **No more double spaces in names** - each time PLAY starts, it puts the club and manager names typed in the game into normal width.
 
 ## New in Kit 8.5
