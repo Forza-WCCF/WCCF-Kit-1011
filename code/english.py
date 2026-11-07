@@ -402,7 +402,10 @@ STYLES = {"glow": ((242, 228, 150), (223, 198, 57, 200), 4), "outline": ((240, 2
           # mirrored below as Sega drew it (reflect_last)
           "wait": ((216, 225, 216), None, 0),
           # the yellow credit lines under the screen (texture\Credit\Credit_1.dds), Sega's measured yellow and edge
-          "credit": ((238, 255, 0), (68, 68, 68, 200), 2)}
+          "credit": ((238, 255, 0), (68, 68, 68, 200), 2),
+          # the card-writing sign beside IC (texture\SystemState\IC_Write_1.dds, 2026-11-07): Sega's measured orange
+          # and its dark edge
+          "ic": ((248, 168, 32), (48, 48, 48, 224), 2)}
 # Sega's reflection in SCM_Foot_Wait.dds (measured 2026-10-15): the line on rows 19-31 mirrored onto rows 42-54, i.e.
 # its top 11 rows below the line's last row, at 25% of the line's strength fading by 1.9% a row
 REFLECT_GAP, REFLECT_TOP, REFLECT_FADE = 11, 0.25, 0.019

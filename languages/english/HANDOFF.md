@@ -16,6 +16,7 @@
 | `pictures_ADV_NetModeSelect.png` | the same for the mode select screen (`client_adv\ADV_NetModeSelect\0910_ADV_NetModeSelect.dds`): MODE SELECT (the title, gold glow), ARCADE and NATIONWIDE (the two mode cards' titles), ENTER twice (cyan glow; plain with a dark edge) - drawn by Codex's image tool from Sega's writing alone, measured into Sega's boxes down to alpha 1, 0 pixels outside them |
 | `pictures_MNG_TitleLogoManagement_2.png` | the club house title's first half (`management\MNG_TitleLogoManagement\Title_tex_2.dds`, チーム): TEAM. The game draws the second half 172 px to its right (measured on a player's screenshot), so Codex drew the whole title on that layout and it was split there |
 | `pictures_MNG_TitleLogoManagement_1.png` | its second half (`Title_tex_1.dds`, マネージメント): MANAGEMENT, in the same gold glow; Codex's faint background haze (alpha 1-2) cleared beyond 8 px from the letters |
+| `pictures_AGM_PrizeMoney_1.png` | the league placing on the prize screen after a match (`client_game\AGM_PrizeMoney\PAGM_APM_Result_1.dds`, 1位 ... 8位): 1ST ... 8TH, drawn by Codex like Sega's own WIN, DRAW and LOSE on the same sheet (which stay Sega's), each centred in its Japanese placing's box (measured down to alpha 1), colours matched to Sega's core and glow, Codex's haze (alpha 1) cleared |
 
 ## Careful
 - Country and prefecture names stay in Japanese on purpose: the game finds its weather table by them, and English
