@@ -4,6 +4,21 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
+## Kit 9 - 2026-11-07
+
+### Changed
+- More of the game in English, drawn like Sega's own lettering (the glowing titles by Codex's image tool, measured
+  into the boxes of Sega's Japanese; 0 pixels changed outside them): the mode select screen (MODE SELECT, ARCADE,
+  NATIONWIDE, ENTER), the team entry badge (ENTRY / NO, ENTRY / OK), the club house title (TEAM MANAGEMENT),
+  ABILITY and SPECIAL before the stars in the Meeting Room, the placing on the prize screen after a league match
+  (1ST to 8TH), and WRITING beside IC while the club card is written.
+- Title Data says GF beside GA: Goals Scored did not fit its box.
+
+### Fixed
+- Club and manager names typed in the game were kept in wide letters, so each space showed double
+  (`Fut  Bul  95`). Each time PLAY starts, it now puts them into normal width on the club card
+  (`code\cards\edit.py`); a club card it cannot read is left as it is.
+
 ## Kit 8.5 - 2026-10-24
 
 ### Added

@@ -14,6 +14,15 @@ WHAT IT IS
   or a game controller's buttons, SETTINGS, and CLUB CARD, your club card and your other clubs.
   The kit holds none of Sega's files. Everything that comes from the game is made by setup from YOUR copy.
 
+NEW IN KIT 9
+  - More of the game in English: the mode select screen (MODE SELECT, ARCADE, NATIONWIDE, ENTER), the team entry
+    badge (ENTRY / NO, ENTRY / OK), the club house title (TEAM MANAGEMENT), ABILITY and SPECIAL in the Meeting
+    Room, the placing after a league match (1ST to 8TH), WRITING beside IC while your club card is written, and GF
+    beside GA in Title Data.
+  - No more double spaces in club and manager names: each time PLAY starts, it puts the names typed in the game
+    into normal width.
+  - Updating from kit 8.5: SETUP's UPDATE, then yes to set up the game. Your clubs, keys, settings and sign-in stay.
+
 NEW IN KIT 8.5
   - Hosting needs no website: a server you host keeps its own accounts and cards (TCP 20060 - let it in too).
     Players sign in on that server's own page and start with 11 white cards; each finished match earns a card, and

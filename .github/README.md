@@ -19,6 +19,11 @@ Community-developed launcher, hardware compatibility tools and an in-game panel 
 
 > **The game is not included, and the kit holds none of Sega's files.** It works with your own copy: what it needs from the game, SETUP makes from that copy, on your PC.
 
+## New in Kit 9
+
+- **More English** - the mode select screen, the team entry badge, the club house title (TEAM MANAGEMENT), ABILITY and SPECIAL in the Meeting Room, the placing after a league match (1ST to 8TH), WRITING beside IC while your club card is written, and GF in Title Data.
+- **No more double spaces in names** - each time PLAY starts, it puts the club and manager names typed in the game into normal width.
+
 ## New in Kit 8.5
 
 - **Host without a website** - a server you host keeps its own accounts and cards: players sign in on its own page, start with 11 white cards and earn one for each finished match. The community server stays on wccf.online.
