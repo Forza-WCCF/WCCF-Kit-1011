@@ -151,6 +151,12 @@ def sign_in(open_browser=True, sleep=time.sleep):
             (start.get("error") or "HTTP %s" % status))
         return None
     code, poll, url = start["code"], start["poll"], start.get("url") or WEBSITE
+    try:                                # only the bank's own page: the shell would open a local file, a UNC path or a
+        own = urllib.parse.urlsplit(url)[:2] == urllib.parse.urlsplit(WEBSITE)[:2]      # registered scheme it chose
+    except (AttributeError, TypeError, ValueError):     # a field that is not even a url (2026-11-10)
+        own = False
+    if not own:
+        url = WEBSITE
     say("  sign-in: your code is %s - approve it on wccf.online (log in or register there; the page opens now)" % code)
     say("           %s" % url)
     show_code(code)
