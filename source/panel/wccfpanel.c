@@ -450,9 +450,10 @@ static int   g_compact = 0;
 static int   g_auto_off = 0;      // auto_logs=0 in data\panel.txt (play.py's automatic report off): kept through a save
 static int   g_proj_off = 0;      // projector=off: online, no projector on this PC (2026-10-17; ON unless said)
 // CONTROLLER IN THE BACKGROUND (2026-11-10): pad_background=on - the key driver (code\hardware\keyboard.py) counts
-// the controllers even while no game window is in front, so a match on another screen keeps them; the keys still need
-// the game window.  At once: the driver reads panel.txt again every 0.5 s.  Off (the default, and no line at all) =
-// both count only while the game is in front, as before
+// the controllers even while another window is in front, so a match on another screen keeps them; never while a panel
+// page or the card search box is taking the keys, and the keys still need the game window.  At once: the driver reads
+// panel.txt again every 0.5 s.  Off (the default, and no line at all) = both count only while the game is in front, as
+// before
 static int   g_pad_bg = 0;
 
 static RECT strip_rect(float x0, float y0, float x1, float y1)    // sheet px in the right strip -> canvas (pinned right)
@@ -4139,7 +4140,7 @@ static void fmt_when(char *out, size_t cap, ULONGLONG t)   // a file time as the
 // ACCOUNT, with SIGN OUT at its right end); "NEXT START" with two rows of choices (THIS PC / ONLINE / DREAM TEAM + the
 // address box, ENGLISH / ITALIANO / JAPANESE) and RESTART NOW; "VIEW" with the LAYOUT (CABINET / COMPACT, 2026-10-06), at once,
 // SHOW PROJECTOR beside LAYOUT (next online start), GRAPHICS beside the VIEW heading, CONTROLLER IN THE BACKGROUND
-// under LOGS (at once, the key driver's)
+// right of SEND LOGS on the LOGS row (at once, the key driver's)
 #define SET_ROWS 7
 struct SGeo { float x0, x1, lx, vx, rowh, ynow, ynext, yview; RECT close, pc, online, dream, addr, eng, ita, jap, restart, projrs, cab, cmp, proj, padbg[2], gfx, logs, signout; };
 
@@ -4174,9 +4175,10 @@ static void set_geo(struct SGeo *g)
                 g->x1 - 36.0f * s, g->yview + 26.0f * s);  // GRAPHICS beside the VIEW heading
     y += 36.0f * s + 30.0f * s;                            // under LAYOUT's note: LOGS - SEND LOGS (2026-10-09)
     g->logs = RC(g->vx, y, g->vx + 270.0f * s, y + 38.0f * s);
-    y += 66.0f * s;                                        // CONTROLLER IN THE BACKGROUND (2026-11-10): under LOGS
-    g->padbg[0] = RC(g->vx, y, g->vx + 70.0f * s, y + 36.0f * s);
-    g->padbg[1] = RC(g->vx + 80.0f * s, y, g->vx + 150.0f * s, y + 36.0f * s);
+    // CONTROLLER IN THE BACKGROUND (2026-11-10): on the LOGS row, right of SEND LOGS - the page's note toast (the
+    // bottom 70..22) painted over a row of its own and a click still tested the rect it hid
+    g->padbg[1] = RC(g->x1 - 88.0f * s, y, g->x1 - 18.0f * s, y + 36.0f * s);
+    g->padbg[0] = RC(g->padbg[1].left - 80.0f * s, y, g->padbg[1].left - 10.0f * s, y + 36.0f * s);
 }
 
 static void set_chip(IDirect3DDevice9 *dev, RECT r, const char *label, int on, float s)
@@ -4528,10 +4530,9 @@ static void set_draw(IDirect3DDevice9 *dev)
             : "CABINET: the cabinet's buttons around the game.  COMPACT: the game larger, without them");
     y = (float)g.logs.top + ((float)(g.logs.bottom - g.logs.top) - (float)g_cellh * 0.44f * s) * 0.5f;
     put_str(dev, g.lx + 12.0f * s, y, 0.44f * s, grey, "LOGS");
-    if (!strncmp(g_lg_res, "ok ", 3)) {                                      // the code, big: the player tells us it
-        _snprintf(v, sizeof v, "CODE %s", g_lg_res + 3); v[sizeof v - 1] = 0;
-        put_str(dev, (float)g.logs.right + 18.0f * s, (float)g.logs.top + 4.0f * s, 0.7f * s, green, v);
-        _snprintf(v, sizeof v, "sent - post this code in Discord with what went wrong");
+    put_str(dev, (float)g.logs.right + 18.0f * s, y, 0.44f * s, grey, "CONTROLLER IN THE BACKGROUND");
+    if (!strncmp(g_lg_res, "ok ", 3)) {                                      // the code, green: the player tells us it
+        _snprintf(v, sizeof v, "CODE %s sent - post it in Discord with what went wrong", g_lg_res + 3);
         col = green;
     } else if (!strncmp(g_lg_res, "fail ", 5)) { _snprintf(v, sizeof v, "not sent: %s", g_lg_res + 5); col = red; }
     else if (g_lg_sent || !strcmp(g_lg_res, "sending")) { _snprintf(v, sizeof v, "packing and sending - a few seconds"); col = yellow; }
@@ -4539,12 +4540,10 @@ static void set_draw(IDirect3DDevice9 *dev)
     else { _snprintf(v, sizeof v, "this game's logs (never your club card) go to the server at %s", g_server); col = grey; }
     v[sizeof v - 1] = 0;
     put_str(dev, (float)g.logs.left, (float)g.logs.bottom + 8.0f * s, 0.40f * s, col, v);
-    y = (float)g.padbg[0].top + ((float)(g.padbg[0].bottom - g.padbg[0].top) - (float)g_cellh * 0.44f * s) * 0.5f;
-    put_str(dev, g.lx + 12.0f * s, y, 0.44f * s, grey, "CONTROLLER IN THE BACKGROUND");
-    put_fit(dev, (float)g.padbg[1].right + 18.0f * s, y + 1.0f * s, 0.40f * s, grey, g_pad_bg
-            ? "counts when another window is in front; the keys need the game window"
-            : "counts only while a game window is in front, as the keys",
-            g.x1 - (float)g.padbg[1].right - 42.0f * s);
+    put_fit(dev, (float)g.logs.left, (float)g.logs.bottom + 28.0f * s, 0.40f * s, grey, g_pad_bg
+            ? "CONTROLLER: counts when another window is in front; the keys need the game window"
+            : "CONTROLLER: counts only while a game window is in front, as the keys",
+            g.x1 - (float)g.logs.left - 24.0f * s);
     if (g_bmsg[0] && (LONG)(g_bmsg_until - now) > 0) {                                          // the last change
         RECT nr = RC(g.x0 + (g.x1 - g.x0) * 0.2f, g_ch - 70.0f * s, g.x1 - (g.x1 - g.x0) * 0.2f, g_ch - 22.0f * s);
         set_flat(dev);
