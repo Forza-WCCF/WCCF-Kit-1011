@@ -288,6 +288,10 @@ SETTINGS (left side, under CARD)
   LOGS: SEND LOGS (click twice) sends this game's logs to the server you play on (the address under PLAY ON) -
   never your club card, and your Windows user name and PC name are taken out of them. You get a short code: post
   it in Discord with what went wrong.
+  CONTROLLER IN THE BACKGROUND (right of SEND LOGS, on the LOGS row): OFF / ON. ON, the controllers keep pressing
+  the game's buttons while another window is in front (a match watched on another screen); the keys still need the
+  game window, and neither counts while the panel or the card search box is taking typed keys. OFF, the controllers
+  need the game window too, as before. Saved at once in data\panel.txt.
 
 CLUB CARD (left side, under SETTINGS)
   Your club card as the game reads it: club, manager, contract, league, prize money; the card's health (a session
