@@ -10,7 +10,8 @@ TCP port 20050 (WCCF_INBOX_PORT for the tests).  One upload per connection, from
     inbox -> "OK CODE\n"   (a short code the player tells us, e.g. K7Q2M)   or   "NO reason\n"
 Kept as FOLDER\DATE_TIME_CODE_ADDRESS_VERSION.zip (FOLDER: data\player_logs beside LOG_FILE's folder).  An open port
 must not fill the disk: 8 MB an upload, 6 uploads an hour from one address, 4 at a time, 1 GB in all (the oldest
-go).  It never opens what it keeps.
+go).  An upload must finish in 30 minutes (WCCF_INBOX_UPLOAD): a slot is never held by one that trickles.  It never
+opens what it keeps.
 """
 import os
 import random
@@ -25,6 +26,7 @@ MAX_BYTES = 8 * 1024 * 1024
 PER_HOUR = int(os.environ.get("WCCF_INBOX_PER_HOUR", "6"))
 KEEP_BYTES = int(os.environ.get("WCCF_INBOX_KEEP", str(1024 * 1024 * 1024)))
 TIMEOUT = 60.0
+UPLOAD = float(os.environ.get("WCCF_INBOX_UPLOAD", "1800"))   # a whole upload, not just one recv: 8 MB at 4 KB/s
 CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"          # no 0/O, 1/I/L: read out loud or typed from a screen
 
 lock = threading.Lock()
@@ -44,9 +46,14 @@ def log(msg):
             pass
 
 
-def read_exact(conn, n, first=b""):
+def read_exact(conn, n, first=b"", deadline=None):
     data = bytearray(first)
     while len(data) < n:
+        if deadline is not None:       # each byte resets the socket's own timeout, so the cap has to be the upload's
+            left = deadline - time.time()
+            if left <= 0:
+                raise OSError("the upload took longer than %d s (%d of %d bytes)" % (UPLOAD, len(data), n))
+            conn.settimeout(min(TIMEOUT, left))
         chunk = conn.recv(min(65536, n - len(data)))
         if not chunk:
             raise OSError("the PC hung up after %d of %d bytes" % (len(data), n))
@@ -99,7 +106,7 @@ def serve(conn, ip, folder):
             times = [t for t in recent.get(ip, []) if now - t < 3600]
             if len(times) >= PER_HOUR:
                 return no("too many from this address - try again in an hour")
-        data = read_exact(conn, size, rest[:size])
+        data = read_exact(conn, size, rest[:size], now + UPLOAD)
         if not data.startswith(b"PK\x03\x04"):
             return no("not a ZIP")
         code = "".join(random.SystemRandom().choice(CODE_CHARS) for _ in range(5))

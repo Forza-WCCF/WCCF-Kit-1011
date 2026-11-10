@@ -15,7 +15,7 @@
 #   the projector box held off the game until a player is in (source\test_hold_projector.py: the desk on 127.0.0.1:20933-6,
 #   the firewall rule written to a scratch file)
 #   SEND LOGS: packed without the club card, names taken out, kept by the log inbox - which refuses junk, too big, not
-#   a ZIP and too many (source\test_send_logs.py: a scratch kit, inboxes on 127.0.0.1:20952 and 20953)
+#   a ZIP and too many (source\test_send_logs.py: a scratch kit, inboxes on 127.0.0.1:20952-20954)
 #   English in the game's pictures: added at the archive's end, taken back out byte for byte
 #   (source\test_english_pictures.py: a scratch archive with one picture)
 #   the Italian tables: each key once, the game's font, the kit's English codes (source\test_italian_tables.py)

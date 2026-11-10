@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """test_send_logs.py - SEND LOGS: send_logs.py packs and sends, server\\log_inbox.py keeps - and refuses what it must (check.ps1
-runs it; nothing of the game runs).  A scratch kit; inboxes on 127.0.0.1:20952 and :20953.
+runs it; nothing of the game runs).  A scratch kit; inboxes on 127.0.0.1:20952, :20953 and :20954.
     python source\\test_send_logs.py"""
 import io
 import os
@@ -135,6 +135,26 @@ try:
     check("over its size the oldest goes (1 GB on a server; here one ZIP)", len(left) == 1 and second in left[0] and
           first not in left[0], str(left))
 
+    keep3, port3 = os.path.join(tmp, "keep3"), 20954     # an upload trickled one byte at a time, past its deadline
+    procs.append(inbox(port3, keep3, os.path.join(tmp, "inbox3.txt"), WCCF_INBOX_UPLOAD=2))
+    s = socket.create_connection(("127.0.0.1", port3), timeout=10)
+    closed, end = False, time.time() + 10
+    try:
+        s.sendall(b"WCCFLOGS1 4000 5.5\n")             # one byte every half second: no recv ever idles 60 s
+        while time.time() < end and not closed:
+            try:
+                s.sendall(b"x")
+                s.settimeout(0.2)
+                closed = s.recv(100) == b""             # the inbox hung up, no answer
+            except socket.timeout:
+                pass
+            except OSError:
+                closed = True
+            time.sleep(0.3)
+    finally:
+        s.close()
+    left = os.listdir(keep3) if os.path.isdir(keep3) else []
+    check("an upload trickled past its deadline: cut, nothing kept", closed and not left, "%s %s" % (closed, left))
 finally:
     for p in procs:
         p.kill()
