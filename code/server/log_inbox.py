@@ -99,7 +99,6 @@ def serve(conn, ip, folder):
             times = [t for t in recent.get(ip, []) if now - t < 3600]
             if len(times) >= PER_HOUR:
                 return no("too many from this address - try again in an hour")
-            recent[ip] = times + [now]
         data = read_exact(conn, size, rest[:size])
         if not data.startswith(b"PK\x03\x04"):
             return no("not a ZIP")
@@ -110,6 +109,8 @@ def serve(conn, ip, folder):
         with open(path + ".part", "wb") as f:
             f.write(data)
         os.replace(path + ".part", path)
+        with lock:                         # charged when kept: a request refused or cut short costs the address nothing
+            recent[ip] = [t for t in recent.get(ip, []) if now - t < 3600] + [time.time()]
         trim(folder)                                   # before the answer: what the PC hears is what the folder holds
         conn.sendall(("OK %s\n" % code).encode("ascii"))
         log("%s: logs kept, code %s, kit %s, %d KB -> %s" % (ip, code, version, len(data) // 1024, name))

@@ -103,7 +103,7 @@ try:
     shutil.rmtree(os.path.join(kit, "data", "dumps"))
 
     keep, port = os.path.join(tmp, "keep"), 20952
-    procs.append(inbox(port, keep, os.path.join(tmp, "inbox.txt"), WCCF_INBOX_PER_HOUR=4))   # junk and too big: not counted
+    procs.append(inbox(port, keep, os.path.join(tmp, "inbox.txt"), WCCF_INBOX_PER_HOUR=4))   # 4 an hour, not 6
     ok, code = S.send("127.0.0.1", blob, "5.5", port=port)
     files = os.listdir(keep) if os.path.isdir(keep) else []
     check("send: kept, and a 5-letter code back, in the file's name", ok and len(code) == 5 and len(files) == 1 and
@@ -115,11 +115,14 @@ try:
     time.sleep(0.5)
     check("a PC that hangs up half way: nothing kept, the inbox goes on",
           len(os.listdir(keep)) == 1 and S.send("127.0.0.1", a_zip(), "5.5", port=port)[0], str(os.listdir(keep)))
+    ok3, why3 = S.send("127.0.0.1", a_zip(), "5.5", port=port)
+    check("junk, too big, not a ZIP and a hang-up do not use up the address's hour: the 3rd kept is still allowed",
+          ok3, why3)
+    check("the 4th kept: the limit here (6 on a server)", S.send("127.0.0.1", a_zip(), "5.5", port=port)[0])
     ok, why = S.send("127.0.0.1", a_zip(), "5.5", port=port)
-    check("the 5th upload in an hour from one address (4 allowed here, 6 on a server): refused",
-          not ok and "too many" in why, why)
+    check("the 5th kept upload in an hour from one address: refused", not ok and "too many" in why, why)
     names = os.listdir(keep)
-    check("only ZIPs kept, no half files", all(n.endswith(".zip") for n in names) and len(names) == 2, str(names))
+    check("only ZIPs kept, no half files", all(n.endswith(".zip") for n in names) and len(names) == 4, str(names))
     ok, why = S.send("127.0.0.1", blob, "5.5", port=20959)
     check("no inbox at that address: not sent, said why", not ok and "did not answer" in why, why)
 
@@ -131,6 +134,7 @@ try:
     left = os.listdir(keep2)
     check("over its size the oldest goes (1 GB on a server; here one ZIP)", len(left) == 1 and second in left[0] and
           first not in left[0], str(left))
+
 finally:
     for p in procs:
         p.kill()
