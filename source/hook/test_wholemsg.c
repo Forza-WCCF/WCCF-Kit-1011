@@ -71,6 +71,16 @@ int main(void)
     memcpy(buf, a, n1); put32(buf + 4, 0x9F5406C1u);
     CHECK(wm_check(buf, 8) == -1, "the wild length seen in the crash: refused from its first 8 bytes");
 
+    {                                                   /* a record head that crosses the batch's end (2026-11-10) */
+        static unsigned char x[69];
+        memset(x, 0x20, sizeof x);                      /* 69 bytes, a batch of 68 asked for: one too many */
+        put32(x, 3); put32(x + 4, 68);
+        memcpy(x + 8, "TEAM DATA RSLT", 14); x[22] = 0; put32(x + 8 + 16, 21);   /* head at 8, body 21: next at 49 */
+        put32(x + 28, 36);                              /* the third head, wrapped to 12, reads its size here */
+        memcpy(x + 49, "TEAM DATA RSLT", 14); x[63] = 0; put32(x + 49 + 16, 0xFFFFFFC7u);  /* 49 + 20 past 68 */
+        CHECK(wm_check(x, sizeof x) == -1, "a record head that runs past the batch's own size: refused, never wrapped");
+    }
+
     memset(buf, 0xEE, 37);                              /* garbage, then a good batch: skipped, not a disconnect */
     memcpy(buf + 37, a, n1);
     CHECK(wm_whole(buf, 37 + n1, WM_MAX_BATCH, &skip) == n1 && skip == 37, "garbage in front: skipped to the batch");
