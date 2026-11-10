@@ -152,7 +152,8 @@ def sign_in(open_browser=True, sleep=time.sleep):
         return None
     code, poll, url = start["code"], start["poll"], start.get("url") or WEBSITE
     try:                                # only the bank's own page: the shell would open a local file, a UNC path or a
-        own = urllib.parse.urlsplit(url)[:2] == urllib.parse.urlsplit(WEBSITE)[:2]      # registered scheme it chose
+        got, us = urllib.parse.urlsplit(url), urllib.parse.urlsplit(WEBSITE)   # registered scheme it chose
+        own = (got.scheme.lower(), got.netloc.lower()) == (us.scheme.lower(), us.netloc.lower())   # a host has no case
     except (AttributeError, TypeError, ValueError):     # a field that is not even a url (2026-11-10)
         own = False
     if not own:

@@ -180,7 +180,15 @@ check(opened[-1:] == [A.WEBSITE], "a url field that is not a string: the site si
 site["url"] = "http://127.0.0.1:%d/misc.php?action=wccf_link&code=ABCD-EFGH" % PORT
 run(A.sign_in, True, no_wait)
 check(opened[-1:] == [site["url"]], "the bank's own page is opened as it says")
+keep = A.WEBSITE
+A.WEBSITE = "http://localhost:%d" % PORT               # a host with letters, so its case can differ
+try:
+    site["url"] = "HTTP://LOCALHOST:%d/misc.php?action=wccf_link&code=ABCD-EFGH" % PORT
+    run(A.sign_in, True, no_wait)
+    check(opened[-1:] == [site["url"]], "a bank page named in another case: still its own page, opened as it says")
+finally:
+    A.WEBSITE = keep
 
 srv.shutdown()
-print("account: %d failed" % len(fails) if fails else "account: all 22 checks passed")
+print("account: %d failed" % len(fails) if fails else "account: all 23 checks passed")
 sys.exit(1 if fails else 0)
