@@ -10,7 +10,8 @@ TCP port 20050 (WCCF_INBOX_PORT for the tests).  One upload per connection, from
     inbox -> "OK CODE\n"   (a short code the player tells us, e.g. K7Q2M)   or   "NO reason\n"
 Kept as FOLDER\DATE_TIME_CODE_ADDRESS_VERSION.zip (FOLDER: data\player_logs beside LOG_FILE's folder).  An open port
 must not fill the disk: 8 MB an upload, 6 uploads an hour from one address, 4 at a time, 1 GB in all (the oldest
-go).  It never opens what it keeps.
+go).  An upload must finish in 40 minutes (WCCF_INBOX_UPLOAD): a slot is never held by one that trickles.  It never
+opens what it keeps.
 """
 import os
 import random
@@ -25,6 +26,7 @@ MAX_BYTES = 8 * 1024 * 1024
 PER_HOUR = int(os.environ.get("WCCF_INBOX_PER_HOUR", "6"))
 KEEP_BYTES = int(os.environ.get("WCCF_INBOX_KEEP", str(1024 * 1024 * 1024)))
 TIMEOUT = 60.0
+UPLOAD = float(os.environ.get("WCCF_INBOX_UPLOAD", "2400"))   # a whole upload, header too: 8 MB at 4 KB/s is 2048 s
 CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"          # no 0/O, 1/I/L: read out loud or typed from a screen
 
 lock = threading.Lock()
@@ -44,9 +46,14 @@ def log(msg):
             pass
 
 
-def read_exact(conn, n, first=b""):
+def read_exact(conn, n, first=b"", deadline=None):
     data = bytearray(first)
     while len(data) < n:
+        if deadline is not None:       # each byte resets the socket's own timeout, so the cap has to be the upload's
+            left = deadline - time.time()
+            if left <= 0:
+                raise OSError("the upload took longer than %d s (%d of %d bytes)" % (UPLOAD, len(data), n))
+            conn.settimeout(min(TIMEOUT, left))
         chunk = conn.recv(min(65536, n - len(data)))
         if not chunk:
             raise OSError("the PC hung up after %d of %d bytes" % (len(data), n))
@@ -78,11 +85,16 @@ def serve(conn, ip, folder):
         conn.sendall(("NO %s\n" % why).encode("ascii"))
         log("%s: refused - %s" % (ip, why))
     try:
+        deadline = time.time() + UPLOAD        # the whole connection, its header too: a trickle cannot hold a slot
         conn.settimeout(TIMEOUT)
         buf = b""
         while b"\n" not in buf:
             if len(buf) > 120:
                 return no("a bad request")
+            left = deadline - time.time()
+            if left <= 0:
+                raise OSError("the header took longer than %d s" % UPLOAD)
+            conn.settimeout(min(TIMEOUT, left))
             chunk = conn.recv(256)
             if not chunk:
                 return
@@ -95,24 +107,33 @@ def serve(conn, ip, folder):
         if not 0 < size <= MAX_BYTES:
             return no("too big - %d bytes, at most %d" % (size, MAX_BYTES))
         now = time.time()
-        with lock:
-            times = [t for t in recent.get(ip, []) if now - t < 3600]
+        with lock:                          # the slot is taken here and given back below: parallel uploads from one
+            times = [t for t in recent.get(ip, []) if now - t < 3600]     # address cannot all pass this same check
             if len(times) >= PER_HOUR:
                 return no("too many from this address - try again in an hour")
             recent[ip] = times + [now]
-        data = read_exact(conn, size, rest[:size])
-        if not data.startswith(b"PK\x03\x04"):
-            return no("not a ZIP")
-        code = "".join(random.SystemRandom().choice(CODE_CHARS) for _ in range(5))
-        name = "%s_%s_%s_%s.zip" % (time.strftime("%Y-%m-%d_%H%M%S"), code, ip, version)
-        os.makedirs(folder, exist_ok=True)
-        path = os.path.join(folder, name)
-        with open(path + ".part", "wb") as f:
-            f.write(data)
-        os.replace(path + ".part", path)
-        trim(folder)                                   # before the answer: what the PC hears is what the folder holds
-        conn.sendall(("OK %s\n" % code).encode("ascii"))
-        log("%s: logs kept, code %s, kit %s, %d KB -> %s" % (ip, code, version, len(data) // 1024, name))
+        kept = False
+        try:
+            data = read_exact(conn, size, rest[:size], deadline)
+            if not data.startswith(b"PK\x03\x04"):
+                return no("not a ZIP")
+            code = "".join(random.SystemRandom().choice(CODE_CHARS) for _ in range(5))
+            name = "%s_%s_%s_%s.zip" % (time.strftime("%Y-%m-%d_%H%M%S"), code, ip, version)
+            os.makedirs(folder, exist_ok=True)
+            path = os.path.join(folder, name)
+            with open(path + ".part", "wb") as f:
+                f.write(data)
+            os.replace(path + ".part", path)
+            kept = True                                 # from here the folder holds it: the address's hour counts it
+            trim(folder)                               # before the answer: what the PC hears is what the folder holds
+            conn.sendall(("OK %s\n" % code).encode("ascii"))
+            log("%s: logs kept, code %s, kit %s, %d KB -> %s" % (ip, code, version, len(data) // 1024, name))
+        finally:
+            if not kept:                               # refused or cut short: the slot goes back, so it costs nothing
+                with lock:
+                    times = recent.get(ip, [])
+                    if now in times:
+                        times.remove(now)
     except (OSError, ValueError) as ex:
         log("%s: upload failed - %s" % (ip, ex))
     finally:

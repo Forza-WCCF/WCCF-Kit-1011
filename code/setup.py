@@ -512,7 +512,7 @@ def undo(game):
     for n, text in (("client_user_option.conf", CONF_PROJECTOR), ("ctrl_user_option.conf", CONF_CONTROL)):
         p = os.path.join(game, "local", n)
         if os.path.isfile(p):
-            if open(p, "rb").read() == text.encode("ascii"):
+            if RUNTIME_LINES.sub(b"", open(p, "rb").read()) == RUNTIME_LINES.sub(b"", text.encode("ascii")):
                 os.remove(p)
                 ok("extracted\\local\\%s removed" % n)
             else:

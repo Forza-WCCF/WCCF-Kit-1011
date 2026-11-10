@@ -39,8 +39,11 @@ static int wm_check(const unsigned char *p, unsigned n)
         return -1;
     for (i = 0; i < count; i++) {
         unsigned body;
+        if (off + WM_REC > total)
+            return -1;                  /* a record head that runs past the batch's own size: its body bound would
+                                           wrap, and the witness would be handed 4 GB past the buffer */
         if (off + WM_REC > n)
-            return 0;                   /* that record's head is not here yet (it fits in total: checked above) */
+            return 0;                   /* that record's head is not here yet */
         if (p[off] < 0x20)              /* an id is text: no empty id, no control characters before its end */
             return -1;
         for (j = 1; j < 16 && p[off + j]; j++)
@@ -49,6 +52,7 @@ static int wm_check(const unsigned char *p, unsigned n)
         body = wm_u32(p + off + 16);
         if (body > total - off - WM_REC)
             return -1;                  /* a body that runs past the batch */
+        /* off <= total here: the head check above and this one keep it so, and nothing can wrap */
         off += WM_REC + body;
     }
     if (off != total)

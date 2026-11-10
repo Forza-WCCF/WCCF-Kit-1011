@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """test_send_logs.py - SEND LOGS: send_logs.py packs and sends, server\\log_inbox.py keeps - and refuses what it must (check.ps1
-runs it; nothing of the game runs).  A scratch kit; inboxes on 127.0.0.1:20952 and :20953.
+runs it; nothing of the game runs).  A scratch kit; inboxes on 127.0.0.1:20952-20956.
     python source\\test_send_logs.py"""
 import io
 import os
@@ -103,7 +103,7 @@ try:
     shutil.rmtree(os.path.join(kit, "data", "dumps"))
 
     keep, port = os.path.join(tmp, "keep"), 20952
-    procs.append(inbox(port, keep, os.path.join(tmp, "inbox.txt"), WCCF_INBOX_PER_HOUR=4))   # junk and too big: not counted
+    procs.append(inbox(port, keep, os.path.join(tmp, "inbox.txt"), WCCF_INBOX_PER_HOUR=4))   # 4 an hour, not 6
     ok, code = S.send("127.0.0.1", blob, "5.5", port=port)
     files = os.listdir(keep) if os.path.isdir(keep) else []
     check("send: kept, and a 5-letter code back, in the file's name", ok and len(code) == 5 and len(files) == 1 and
@@ -115,11 +115,14 @@ try:
     time.sleep(0.5)
     check("a PC that hangs up half way: nothing kept, the inbox goes on",
           len(os.listdir(keep)) == 1 and S.send("127.0.0.1", a_zip(), "5.5", port=port)[0], str(os.listdir(keep)))
+    ok3, why3 = S.send("127.0.0.1", a_zip(), "5.5", port=port)
+    check("junk, too big, not a ZIP and a hang-up do not use up the address's hour: the 3rd kept is still allowed",
+          ok3, why3)
+    check("the 4th kept: the limit here (6 on a server)", S.send("127.0.0.1", a_zip(), "5.5", port=port)[0])
     ok, why = S.send("127.0.0.1", a_zip(), "5.5", port=port)
-    check("the 5th upload in an hour from one address (4 allowed here, 6 on a server): refused",
-          not ok and "too many" in why, why)
+    check("the 5th kept upload in an hour from one address: refused", not ok and "too many" in why, why)
     names = os.listdir(keep)
-    check("only ZIPs kept, no half files", all(n.endswith(".zip") for n in names) and len(names) == 2, str(names))
+    check("only ZIPs kept, no half files", all(n.endswith(".zip") for n in names) and len(names) == 4, str(names))
     ok, why = S.send("127.0.0.1", blob, "5.5", port=20959)
     check("no inbox at that address: not sent, said why", not ok and "did not answer" in why, why)
 
@@ -131,6 +134,68 @@ try:
     left = os.listdir(keep2)
     check("over its size the oldest goes (1 GB on a server; here one ZIP)", len(left) == 1 and second in left[0] and
           first not in left[0], str(left))
+
+    keep3, port3 = os.path.join(tmp, "keep3"), 20954     # an upload trickled one byte at a time, past its deadline
+    procs.append(inbox(port3, keep3, os.path.join(tmp, "inbox3.txt"), WCCF_INBOX_UPLOAD=2))
+    s = socket.create_connection(("127.0.0.1", port3), timeout=10)
+    closed, end = False, time.time() + 10
+    try:
+        s.sendall(b"WCCFLOGS1 4000 5.5\n")             # one byte every half second: no recv ever idles 60 s
+        while time.time() < end and not closed:
+            try:
+                s.sendall(b"x")
+                s.settimeout(0.2)
+                closed = s.recv(100) == b""             # the inbox hung up, no answer
+            except socket.timeout:
+                pass
+            except OSError:
+                closed = True
+            time.sleep(0.3)
+    finally:
+        s.close()
+    left = os.listdir(keep3) if os.path.isdir(keep3) else []
+    check("an upload trickled past its deadline: cut, nothing kept", closed and not left, "%s %s" % (closed, left))
+
+    keep4, port4 = os.path.join(tmp, "keep4"), 20955     # 4 uploads from one address at once, 2 an hour allowed
+    procs.append(inbox(port4, keep4, os.path.join(tmp, "inbox4.txt"), WCCF_INBOX_PER_HOUR=2))
+    one, socks = a_zip(), []
+    for _i in range(4):
+        s = socket.create_connection(("127.0.0.1", port4), timeout=10)
+        s.sendall(b"WCCFLOGS1 %d 5.5\n" % len(one))    # the header only: all 4 are past the check before a body lands
+        socks.append(s)
+    time.sleep(1)
+    answers = []
+    for s in socks:
+        try:
+            s.sendall(one)
+            s.shutdown(socket.SHUT_WR)
+            answers.append(s.recv(200))
+        except OSError:
+            answers.append(b"")
+        s.close()
+    names = os.listdir(keep4) if os.path.isdir(keep4) else []
+    check("4 uploads from one address at the same moment: at most the 2 its hour allows are kept",
+          len(names) == 2 and sum(a.startswith(b"OK") for a in answers) == 2, "%d kept, %r" % (len(names), answers))
+
+    keep5, port5 = os.path.join(tmp, "keep5"), 20956     # a header trickled one byte at a time, past its deadline
+    procs.append(inbox(port5, keep5, os.path.join(tmp, "inbox5.txt"), WCCF_INBOX_UPLOAD=2))
+    s = socket.create_connection(("127.0.0.1", port5), timeout=10)
+    s.settimeout(0.2)
+    closed, end = False, time.time() + 10
+    try:
+        while time.time() < end and not closed:        # no header line ever ends: one byte every third of a second
+            try:
+                s.sendall(b"W")
+                closed = s.recv(100) == b""            # the inbox hung up, no answer
+            except socket.timeout:
+                pass
+            except OSError:
+                closed = True
+            time.sleep(0.3)
+    finally:
+        s.close()
+    left = os.listdir(keep5) if os.path.isdir(keep5) else []
+    check("a header trickled past its deadline: cut, nothing kept", closed and not left, "%s %s" % (closed, left))
 finally:
     for p in procs:
         p.kill()

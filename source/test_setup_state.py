@@ -74,7 +74,27 @@ try:
     answer[0] = 1
     check(play.ensure_hook(game, seat) is False, "setup failing: the start stops, saying SETUP.exe")
 
-    n = 9
+    # undo (SETUP.exe > UNDO): the kit's two settings files go, also after a start wrote its own lines into them
+    # (play.py sets WAIT_PROJECTOR and the seat there); a file the player edited is kept
+    import setup as S
+    S.K.load_settings = lambda: {}
+    S.K.save_settings = lambda s: None
+    S.K.game_processes = lambda g: []
+    S.K.seat_dir = lambda g: os.path.join(t, "noseat")
+    S.ENGLISH_BACKUP = os.path.join(t, "english_backup")
+    loc = os.path.join(game, "local")
+    os.makedirs(loc, exist_ok=True)
+    proj, ctrl = os.path.join(loc, "client_user_option.conf"), os.path.join(loc, "ctrl_user_option.conf")
+    put(proj, S.CONF_PROJECTOR.encode("ascii"))
+    put(ctrl, S.CONF_CONTROL.encode("ascii") + b"WAIT_PROJECTOR=0\r\n")
+    S.undo(game)
+    check(not os.path.exists(proj) and not os.path.exists(ctrl),
+          "undo removes the kit's settings files after a start set its own lines in them")
+    put(ctrl, S.CONF_CONTROL.encode("ascii") + b"SOMETHING=1\r\n")
+    S.undo(game)
+    check(os.path.isfile(ctrl), "undo keeps a settings file the player edited")
+
+    n = 11
     print("setup_state: %d of %d checks passed" % (n - len(fails), n))
 finally:
     import shutil

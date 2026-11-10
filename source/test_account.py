@@ -30,7 +30,7 @@ from online import account as A  # noqa: E402
 from online import seat as S  # noqa: E402
 
 fails = []
-site = {"starts": 0, "polls": 0, "mode": "approve", "issued": [], "good": set()}
+site = {"starts": 0, "polls": 0, "mode": "approve", "issued": [], "good": set(), "url": ""}
 
 
 def check(cond, what):
@@ -61,8 +61,9 @@ class Site(BaseHTTPRequestHandler):
         if action == "wccf_link_start":
             site["starts"] += 1
             site["polls"] = 0
+            url = site["url"] or "http://127.0.0.1:%d/misc.php?action=wccf_link&code=ABCD-EFGH" % PORT
             return self.answer(200, {"code": "ABCD-EFGH", "poll": "poll%d" % site["starts"], "interval": 1,
-                                     "expires_in": 600, "url": "http://x/misc.php?action=wccf_link&code=ABCD-EFGH"})
+                                     "expires_in": 600, "url": url})
         if action == "wccf_link_poll":
             site["polls"] += 1
             if site["mode"] == "expire":
@@ -167,6 +168,27 @@ check(A.load() is None and "could not be reached" in said, "sign out with the we
 site["mode"] = "approve"
 check(run(A.signout)[0] == "this PC was not signed in", "sign out when not signed in: said, nothing else")
 
+# 11. the link-start answer names the page opened: only the bank's own page reaches the shell (2026-11-10)
+opened = []
+A.webbrowser.open = lambda u: opened.append(u) or True
+site["url"] = "file:///C:/Windows/System32/calc.exe"
+run(A.sign_in, True, no_wait)
+check(opened[-1:] == [A.WEBSITE], "a page off the bank's own origin is not opened - the site signed in to is")
+site["url"] = 7
+run(A.sign_in, True, no_wait)
+check(opened[-1:] == [A.WEBSITE], "a url field that is not a string: the site signed in to, and no crash")
+site["url"] = "http://127.0.0.1:%d/misc.php?action=wccf_link&code=ABCD-EFGH" % PORT
+run(A.sign_in, True, no_wait)
+check(opened[-1:] == [site["url"]], "the bank's own page is opened as it says")
+keep = A.WEBSITE
+A.WEBSITE = "http://localhost:%d" % PORT               # a host with letters, so its case can differ
+try:
+    site["url"] = "HTTP://LOCALHOST:%d/misc.php?action=wccf_link&code=ABCD-EFGH" % PORT
+    run(A.sign_in, True, no_wait)
+    check(opened[-1:] == [site["url"]], "a bank page named in another case: still its own page, opened as it says")
+finally:
+    A.WEBSITE = keep
+
 srv.shutdown()
-print("account: %d failed" % len(fails) if fails else "account: all 19 checks passed")
+print("account: %d failed" % len(fails) if fails else "account: all 23 checks passed")
 sys.exit(1 if fails else 0)
