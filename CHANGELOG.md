@@ -4,6 +4,13 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
+## Unreleased
+
+### Added
+- SETTINGS > CONTROLLER IN THE BACKGROUND: the controllers keep working while another window is in front - a match
+  watched on another screen - and the keys still need the game window. It applies at once; off (the default) both
+  count only while the game is in front, as before. `data\panel.txt` keeps it as `pad_background=on`.
+
 ## Kit 9 - 2026-11-07
 
 ### Changed

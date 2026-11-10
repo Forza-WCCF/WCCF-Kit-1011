@@ -449,6 +449,11 @@ static UINT  g_gw = 0, g_gh = 0;         // the game's own frame size (its back-
 static int   g_compact = 0;
 static int   g_auto_off = 0;      // auto_logs=0 in data\panel.txt (play.py's automatic report off): kept through a save
 static int   g_proj_off = 0;      // projector=off: online, no projector on this PC (2026-10-17; ON unless said)
+// CONTROLLER IN THE BACKGROUND (2026-11-10): pad_background=on - the key driver (code\hardware\keyboard.py) counts
+// the controllers even while no game window is in front, so a match on another screen keeps them; the keys still need
+// the game window.  At once: the driver reads panel.txt again every 0.5 s.  Off (the default, and no line at all) =
+// both count only while the game is in front, as before
+static int   g_pad_bg = 0;
 
 static RECT strip_rect(float x0, float y0, float x1, float y1)    // sheet px in the right strip -> canvas (pinned right)
 {
@@ -3345,7 +3350,7 @@ static void set_load_locked(void)
 {
     FILE *f = fopen(g_panel_path, "rb"); char line[256];
     g_on_online = 0; g_server[0] = 0; g_eng_req = -1; g_card_req[0] = 0; g_fix_req = 0; g_compact = 0; g_auto_off = 0;
-    g_signout_req = 0; g_dream = 0; g_proj_off = 0; g_aniso = 0; g_fps_on = 0;
+    g_signout_req = 0; g_dream = 0; g_proj_off = 0; g_aniso = 0; g_fps_on = 0; g_pad_bg = 0;
     g_msaa_req = 0; g_shadow_req = 0; g_blur_req = 0;
     if (!f) return;
     while (fgets(line, sizeof line, f)) {
@@ -3365,6 +3370,7 @@ static void set_load_locked(void)
         else if (!_stricmp(name, "layout")) g_compact = !_stricmp(val, "compact");
         else if (!_stricmp(name, "auto_logs")) g_auto_off = !strcmp(val, "0");
         else if (!_stricmp(name, "projector")) g_proj_off = !_stricmp(val, "off");
+        else if (!_stricmp(name, "pad_background")) g_pad_bg = !_stricmp(val, "on");
         else if (!_stricmp(name, "textures")) g_aniso = pick(ANISO + 1, 3, val);          // GRAPHICS
         else if (!_stricmp(name, "fps")) g_fps_on = !_stricmp(val, "on");
         else if (!_stricmp(name, "msaa")) g_msaa_req = !_stricmp(val, "off") ? 1 : pick(MSAA + 2, 3, val);
@@ -3393,6 +3399,7 @@ static int set_save_locked(void)
     if (g_compact) n += _snprintf(text + n, sizeof text - n, "layout=compact\n");     // the VIEW: kept, not a request
     if (g_auto_off) n += _snprintf(text + n, sizeof text - n, "auto_logs=0\n");       // the player's choice: kept
     if (g_proj_off) n += _snprintf(text + n, sizeof text - n, "projector=off\n");     // SHOW PROJECTOR off: kept
+    if (g_pad_bg) n += _snprintf(text + n, sizeof text - n, "pad_background=on\n");   // the key driver's: kept
     if (g_aniso) n += _snprintf(text + n, sizeof text - n, "textures=%ld\n", (long)g_aniso);   // GRAPHICS: kept
     if (g_fps_on) n += _snprintf(text + n, sizeof text - n, "fps=on\n");
     if (g_msaa_req == 1) n += _snprintf(text + n, sizeof text - n, "msaa=off\n");
@@ -3542,6 +3549,34 @@ static void set_selftest(void)
     if ((f = fopen(g_panel_path, "rb")) != NULL) { got = fread(buf, 1, sizeof buf - 1, f); fclose(f); }
     buf[got] = 0;
     logline("settings test: %s  SHOW PROJECTOR on writes no line", ok && !strstr(buf, "projector=") ? "PASS" : "FAIL");
+    // CONTROLLER IN THE BACKGROUND (2026-11-10): saved as pad_background=on, kept through another setting's save,
+    // read back, and off writes no line (the key driver reads no line as off)
+    if ((f = fopen(g_panel_path, "wb")) != NULL) { fputs("play_on=online\nserver=1.2.3.4\n", f); fclose(f); }
+    EnterCriticalSection(&g_board_cs);
+    set_load_locked();
+    ok = !g_pad_bg;
+    g_pad_bg = 1;
+    ok = ok && set_save_locked();
+    LeaveCriticalSection(&g_board_cs);
+    got = 0;
+    if ((f = fopen(g_panel_path, "rb")) != NULL) { got = fread(buf, 1, sizeof buf - 1, f); fclose(f); }
+    buf[got] = 0;
+    logline("settings test: %s  a save writes CONTROLLER IN THE BACKGROUND on",
+            ok && strstr(buf, "\npad_background=on\n") ? "PASS" : "FAIL");
+    EnterCriticalSection(&g_board_cs);
+    g_compact = 1;                                       // another setting's save, then the file read again
+    ok = set_save_locked();
+    g_pad_bg = 0; g_compact = 0;
+    set_load_locked();
+    ok = ok && g_pad_bg && g_compact;
+    g_pad_bg = 0; g_compact = 0;
+    ok = ok && set_save_locked();
+    LeaveCriticalSection(&g_board_cs);
+    got = 0;
+    if ((f = fopen(g_panel_path, "rb")) != NULL) { got = fread(buf, 1, sizeof buf - 1, f); fclose(f); }
+    buf[got] = 0;
+    logline("settings test: %s  it survives a layout save, reads back, and off writes no line",
+            ok && !strstr(buf, "pad_background=") && !strstr(buf, "layout=") ? "PASS" : "FAIL");
     logline("settings test: %s  OPEN / CLOSE PROJECTOR only for an online run with a projector",
             run_has_projector("{\n \"mode\": \"remote\",\n \"processes\": {\n  \"12\": \"projector launcher\"}}") &&
             !run_has_projector("{\n \"mode\": \"local\",\n \"processes\": {\n  \"12\": \"projector launcher\"}}") &&
@@ -4103,9 +4138,10 @@ static void fmt_when(char *out, size_t cap, ULONGLONG t)   // a file time as the
 // the panel's parts, in canvas pixels over the middle column: title + help + X; "NOW" with seven rows (the last,
 // ACCOUNT, with SIGN OUT at its right end); "NEXT START" with two rows of choices (THIS PC / ONLINE / DREAM TEAM + the
 // address box, ENGLISH / ITALIANO / JAPANESE) and RESTART NOW; "VIEW" with the LAYOUT (CABINET / COMPACT, 2026-10-06), at once,
-// SHOW PROJECTOR beside LAYOUT (next online start), GRAPHICS beside the VIEW heading
+// SHOW PROJECTOR beside LAYOUT (next online start), GRAPHICS beside the VIEW heading, CONTROLLER IN THE BACKGROUND
+// under LOGS (at once, the key driver's)
 #define SET_ROWS 7
-struct SGeo { float x0, x1, lx, vx, rowh, ynow, ynext, yview; RECT close, pc, online, dream, addr, eng, ita, jap, restart, projrs, cab, cmp, proj, gfx, logs, signout; };
+struct SGeo { float x0, x1, lx, vx, rowh, ynow, ynext, yview; RECT close, pc, online, dream, addr, eng, ita, jap, restart, projrs, cab, cmp, proj, padbg[2], gfx, logs, signout; };
 
 static void set_geo(struct SGeo *g)
 {
@@ -4138,6 +4174,9 @@ static void set_geo(struct SGeo *g)
                 g->x1 - 36.0f * s, g->yview + 26.0f * s);  // GRAPHICS beside the VIEW heading
     y += 36.0f * s + 30.0f * s;                            // under LAYOUT's note: LOGS - SEND LOGS (2026-10-09)
     g->logs = RC(g->vx, y, g->vx + 270.0f * s, y + 38.0f * s);
+    y += 66.0f * s;                                        // CONTROLLER IN THE BACKGROUND (2026-11-10): under LOGS
+    g->padbg[0] = RC(g->vx, y, g->vx + 70.0f * s, y + 36.0f * s);
+    g->padbg[1] = RC(g->vx + 80.0f * s, y, g->vx + 150.0f * s, y + 36.0f * s);
 }
 
 static void set_chip(IDirect3DDevice9 *dev, RECT r, const char *label, int on, float s)
@@ -4374,6 +4413,8 @@ static void set_draw(IDirect3DDevice9 *dev)
     set_chip(dev, g.cab, "CABINET", !g_compact, s);
     set_chip(dev, g.cmp, "COMPACT", g_compact, s);
     set_chip(dev, g.proj, "SHOW PROJECTOR", !g_proj_off, s);
+    set_chip(dev, g.padbg[0], "OFF", !g_pad_bg, s);
+    set_chip(dev, g.padbg[1], "ON", g_pad_bg, s);
     set_chip(dev, g.gfx, "GRAPHICS >", 0, s);
     {
         int armed = g_lg_armed && (LONG)(g_lg_armed - now) > 0, busy = g_lg_sent || !strcmp(g_lg_res, "sending");
@@ -4498,6 +4539,12 @@ static void set_draw(IDirect3DDevice9 *dev)
     else { _snprintf(v, sizeof v, "this game's logs (never your club card) go to the server at %s", g_server); col = grey; }
     v[sizeof v - 1] = 0;
     put_str(dev, (float)g.logs.left, (float)g.logs.bottom + 8.0f * s, 0.40f * s, col, v);
+    y = (float)g.padbg[0].top + ((float)(g.padbg[0].bottom - g.padbg[0].top) - (float)g_cellh * 0.44f * s) * 0.5f;
+    put_str(dev, g.lx + 12.0f * s, y, 0.44f * s, grey, "CONTROLLER IN THE BACKGROUND");
+    put_fit(dev, (float)g.padbg[1].right + 18.0f * s, y + 1.0f * s, 0.40f * s, grey, g_pad_bg
+            ? "counts when another window is in front; the keys need the game window"
+            : "counts only while a game window is in front, as the keys",
+            g.x1 - (float)g.padbg[1].right - 42.0f * s);
     if (g_bmsg[0] && (LONG)(g_bmsg_until - now) > 0) {                                          // the last change
         RECT nr = RC(g.x0 + (g.x1 - g.x0) * 0.2f, g_ch - 70.0f * s, g.x1 - (g.x1 - g.x0) * 0.2f, g_ch - 22.0f * s);
         set_flat(dev);
@@ -4621,6 +4668,18 @@ static void set_click(HWND h, int x, int y)                     // a press insid
         } else if (in_rect(&g.gfx, x, y)) {                   // GRAPHICS: its own page in this one's place
             g_gfx = 1; g_bmsg[0] = 0;
             logline("settings: the GRAPHICS page");
+        } else if (in_rect(&g.padbg[0], x, y) || in_rect(&g.padbg[1], x, y)) {   // CONTROLLER IN THE BACKGROUND
+            int want = in_rect(&g.padbg[1], x, y);
+            if (want == g_pad_bg) note_locked(D3DCOLOR_ARGB(255, 255, 214, 40), "the controller is %s already",
+                                              want ? "on in the background" : "off in the background");
+            else {
+                g_pad_bg = want;
+                if (!set_save_locked()) { g_pad_bg = !g_pad_bg; note_locked(red, "could not save data\\panel.txt - try again"); }
+                else note_locked(green, want
+                                 ? "the controller counts in the background too; the keyboard still needs the game window"
+                                 : "the controller counts only while a game window is in front, as the keyboard");
+                logline("settings: controller in the background %s", g_pad_bg ? "on" : "off");
+            }
         } else if (in_rect(&g.signout, x, y) && g_account[0]) {   // SIGN OUT: click twice; once more undoes it
             DWORD now = GetTickCount(), yellow = D3DCOLOR_ARGB(255, 255, 214, 40);
             if (g_signout_req) {

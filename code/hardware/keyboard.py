@@ -16,7 +16,9 @@ changed in the panel works at once.
 Controllers (2026-10-06): each action can also have one control on a game controller - a USB encoder under a real
 cabinet's buttons, an arcade stick, a PC pad - read with Windows' standard joystick calls (CONTROLLERS below).
 keys.txt lines "PAD START=B3"; the KEYS panel catches the control pressed.  Controllers are looked for only once
-keys.txt has such a line, and like the keys they count only while a game window is in front.
+keys.txt has such a line.  Like the keys they count only while a game window is in front, unless the player turned
+on SETTINGS' "Controller in the background" (panel.txt pad_background=on, read again whenever it changes): then the
+controllers count always - a match watched on another screen - and the keys still need the game window.
 
 Free play (FREE_PLAY below, the player 2026-10-04): every START press first puts in a coin, and START itself reaches
 the game a moment later, so the credit is counted before START is seen.  This is the driver paying for you,
@@ -138,6 +140,29 @@ def keys_path():
     return os.path.join(data, "keys.txt") if os.path.isdir(data) else os.path.join(HERE, "keys.txt")
 
 
+def panel_path():
+    """data\\panel.txt (the SETTINGS panel's own file, play.py PANEL): in the kit, data\\ beside code\\;
+    otherwise beside this script"""
+    data = K.DATA
+    return os.path.join(data, "panel.txt") if os.path.isdir(data) else os.path.join(HERE, "panel.txt")
+
+
+def load_pad_background(path):
+    """SETTINGS' "Controller in the background" as panel.txt has it: True for pad_background=on, else False (no
+    file, no line, a garbled one).  play.py read_panel's rules: "name=value", "#" starts a note, the last line counts.
+    Never raises: the panel may be writing it."""
+    on = False
+    try:
+        with open(path, encoding="ascii", errors="replace") as f:
+            for line in f:
+                name, eq, val = line.split("#", 1)[0].partition("=")
+                if eq and name.strip().lower() == "pad_background":
+                    on = val.strip().lower() == "on"
+    except OSError:
+        pass
+    return on
+
+
 def load_keys(path):
     """-> ({action: vk}, [notes]).  A missing file = the defaults.  Lines "NAME=0x58"; a bad, unknown or forbidden
     line is skipped (that action keeps its default); a key given twice stays with the first action, and the later one
@@ -240,6 +265,12 @@ def apply_keys(keys, pads=None):
 def held_actions(down):
     """the actions held by these inputs: key codes and controller controls (controls are above 0xFF: never a key)"""
     return {n for n, ins in INPUTS.items() if ins & down}
+
+
+def gates(front, background):
+    """(the keys count, the controllers count) - a game window in front, and SETTINGS' "Controller in the
+    background" for the controllers alone"""
+    return bool(front), bool(front or background)
 
 
 def key_label(vk):
@@ -633,6 +664,25 @@ def selftest():
     with open(op, "w") as f:
         f.write("# garbled\nzz 08\n")
     check("outputs: garbled -> None", read_outputs(op), None)
+    # ---- the gate: SETTINGS' "Controller in the background" (an on/off row in the panel, panel.txt pad_background=)
+    check("gate: nothing in front, the setting off - neither counts", gates(False, False), (False, False))
+    check("gate: a game window in front - the keys and the controllers count", gates(True, False), (True, True))
+    check("gate: the setting on, nothing in front - the controllers alone count", gates(False, True), (False, True))
+    check("gate: the setting on, a game window in front - both count", gates(True, True), (True, True))
+    pd = os.path.join(tempfile.mkdtemp(), "panel.txt")
+    check("panel: no file -> off", load_pad_background(pd), False)
+    with open(pd, "w") as f:
+        f.write("# the SETTINGS panel's choices\nplay_on=this_pc\n\n")
+    check("panel: other choices only -> off", load_pad_background(pd), False)
+    with open(pd, "w") as f:
+        f.write("PLAY_ON=this_pc\nPad_Background = ON\n")
+    check("panel: pad_background = ON (any case, spaces)", load_pad_background(pd), True)
+    with open(pd, "w") as f:
+        f.write("pad_background=on\npad_background=off # the player turned it off again\n")
+    check("panel: the last line counts, a note after it is no value", load_pad_background(pd), False)
+    with open(pd, "wb") as f:
+        f.write(b"\xff\xfe pad_background=on\x00\n")
+    check("panel: a garbled file -> off, no exception", load_pad_background(pd), False)
     check("button events", step({x}, set(), False, 0)[2], ["PRESS (decide) down"])
     check("release events", step(set(), {x}, False, 0)[2], ["PRESS (decide) up"])
     # ---- keys.txt (the KEYS panel's file)
@@ -917,9 +967,13 @@ def main(argv):
     keys, notes = load_keys(kpath)
     pmap, pnotes = load_pads(kpath)
     apply_keys(keys, pmap)
+    ppath = panel_path()
+    pad_bg = load_pad_background(ppath)
     pads = None                                          # the controllers' reader once needed (start_pads)
     kstamp, next_keys_check = file_stamp(kpath), 0.0
-    print("WCCF 2010-11 seat 1 - keyboard and controller (both count only while a game window is in front)")
+    pstamp, next_panel_check = file_stamp(ppath), 0.0
+    print("WCCF 2010-11 seat 1 - keyboard and controller (the keys count only while a game window is in front; the "
+          "controllers too, unless SETTINGS' \"Controller in the background\" is on)")
     for name, _d, _bits, what in ACTIONS:
         print("  %-9s %-12s %s" % (key_label(KEYS[name]), pad_label(PADS[name]) if name in PADS else "", what))
     print("keys from %s%s" % (kpath, "" if os.path.exists(kpath) else " (not there yet: the defaults)"))
@@ -955,11 +1009,20 @@ def main(argv):
                               ", ".join("%s = %s" % (n, pad_label(pmap.get(n, 0))) for n in pchanged))
                     for n in notes + pnotes:
                         print(time.strftime("%H:%M:%S"), "  keys.txt: " + n)
+            if now >= next_panel_check:              # SETTINGS saved: "Controller in the background" at once
+                next_panel_check = now + 0.5
+                st = file_stamp(ppath)
+                if st != pstamp:
+                    pstamp, was_bg = st, pad_bg
+                    pad_bg = load_pad_background(ppath)
+                    if pad_bg != was_bg:
+                        stamped("controllers: " + ("count in the background too (SETTINGS: Controller in the background)"
+                                                   if pad_bg else "count only while a game window is in front"))
             if PADS and pads is None:
                 pads = start_pads()
-            front = game_in_front()
-            down = {vk for vk in ALL_VKS if front and (u.GetAsyncKeyState(vk) & 0x8000)}
-            if front and pads and PADS:
+            keys_on, pads_on = gates(game_in_front(), pad_bg)
+            down = {vk for vk in ALL_VKS if keys_on and (u.GetAsyncKeyState(vk) & 0x8000)}
+            if pads_on and pads and PADS:
                 down |= pads.poll()                      # controller controls: numbers above every key code
             was_in = card
             card, coin, events = step(down, prev, card, coin)
