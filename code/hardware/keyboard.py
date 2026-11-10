@@ -18,7 +18,8 @@ cabinet's buttons, an arcade stick, a PC pad - read with Windows' standard joyst
 keys.txt lines "PAD START=B3"; the KEYS panel catches the control pressed.  Controllers are looked for only once
 keys.txt has such a line.  Like the keys they count only while a game window is in front, unless the player turned
 on SETTINGS' "Controller in the background" (panel.txt pad_background=on, read again whenever it changes): then the
-controllers count always - a match watched on another screen - and the keys still need the game window.
+controllers count with another window in front too - a match watched on another screen - and the keys still need
+the game window.  Neither counts while a panel page or the card search box takes the typed keys (WCCF_TYPING).
 
 Free play (FREE_PLAY below, the player 2026-10-04): every START press first puts in a coin, and START itself reaches
 the game a moment later, so the credit is counted before START is seen.  This is the driver paying for you,
@@ -267,10 +268,11 @@ def held_actions(down):
     return {n for n, ins in INPUTS.items() if ins & down}
 
 
-def gates(front, background):
-    """(the keys count, the controllers count) - a game window in front, and SETTINGS' "Controller in the
-    background" for the controllers alone"""
-    return bool(front), bool(front or background)
+def gates(front, background, typing=False):
+    """(the keys count, the controllers count) - the keys while a game window is in front, the controllers as the keys
+    or with SETTINGS' "Controller in the background"; neither while a game window is taking typed keys (a panel page
+    or the card search box is open)"""
+    return bool(front), bool((front or background) and not typing)
 
 
 def key_label(vk):
@@ -669,6 +671,10 @@ def selftest():
     check("gate: a game window in front - the keys and the controllers count", gates(True, False), (True, True))
     check("gate: the setting on, nothing in front - the controllers alone count", gates(False, True), (False, True))
     check("gate: the setting on, a game window in front - both count", gates(True, True), (True, True))
+    check("gate: a game window taking typed keys, nothing in front - neither counts", gates(False, False, True),
+          (False, False))
+    check("gate: the setting on, a game window taking typed keys - neither counts", gates(False, True, True),
+          (False, False))
     pd = os.path.join(tempfile.mkdtemp(), "panel.txt")
     check("panel: no file -> off", load_pad_background(pd), False)
     with open(pd, "w") as f:
@@ -930,24 +936,42 @@ def main(argv):
     u.WindowFromPoint.argtypes = [w.POINT]
     u.WindowFromPoint.restype = w.HWND
 
-    def game_in_front():
-        """a game window in front - or the combined window of fpr_panel.py (it marks itself WCCF_GAME_HOST),
-        unless its card search box has the keyboard (it sets WCCF_TYPING) and the mouse is not over the game:
-        typing a player's name presses no buttons.  The in-game card browser (wccfpanel.dll) sets WCCF_TYPING on
-        the GAME window itself while it is open - no buttons then either."""
+    enum_proc = ctypes.WINFUNCTYPE(w.BOOL, w.HWND, w.LPARAM)
+    u.EnumWindows.argtypes = [enum_proc, w.LPARAM]
+
+    def typing_behind():
+        """a game window that is not the one in front still has WCCF_TYPING up: the panel or the card browser is open
+        there, so the controllers press nothing either"""
+        found = []
+
+        def cb(hwnd, _lp):
+            if is_game(hwnd) and u.GetPropW(hwnd, "WCCF_TYPING"):
+                found.append(hwnd)
+                return False
+            return True
+        u.EnumWindows(enum_proc(cb), 0)
+        return bool(found)
+
+    def game_in_front(background):
+        """(a game window in front, a game window is taking typed keys) - a game window in front, or the combined
+        window of fpr_panel.py (it marks itself WCCF_GAME_HOST), unless its card search box has the keyboard (it sets
+        WCCF_TYPING) and the mouse is not over the game: typing a player's name presses no buttons.  The in-game card
+        browser and the panel's own pages (wccfpanel.dll) set WCCF_TYPING on the GAME window itself while they are
+        open - no buttons then either, also once another window is in front (looked for only while `background`, the
+        setting that can use it, is on)"""
         fg = u.GetForegroundWindow()
-        if not fg:
-            return False
-        if is_game(fg):
-            return not u.GetPropW(fg, "WCCF_TYPING")
-        if not u.GetPropW(fg, "WCCF_GAME_HOST"):
-            return False
-        pt = w.POINT()
-        if u.GetCursorPos(ctypes.byref(pt)):
-            under = u.WindowFromPoint(pt)
-            if under and is_game(under):
-                return True
-        return not u.GetPropW(fg, "WCCF_TYPING")
+        if fg and is_game(fg):
+            typing = bool(u.GetPropW(fg, "WCCF_TYPING"))
+            return not typing, typing
+        if fg and u.GetPropW(fg, "WCCF_GAME_HOST"):
+            pt = w.POINT()
+            if u.GetCursorPos(ctypes.byref(pt)):
+                under = u.WindowFromPoint(pt)
+                if under and is_game(under):
+                    return True, False
+            typing = bool(u.GetPropW(fg, "WCCF_TYPING"))
+            return not typing, typing
+        return False, background and typing_behind()
 
     def stamped(msg):
         print(time.strftime("%H:%M:%S"), " ", msg, flush=True)
@@ -1020,7 +1044,8 @@ def main(argv):
                                                    if pad_bg else "count only while a game window is in front"))
             if PADS and pads is None:
                 pads = start_pads()
-            keys_on, pads_on = gates(game_in_front(), pad_bg)
+            front, typing = game_in_front(pad_bg)
+            keys_on, pads_on = gates(front, pad_bg, typing)
             down = {vk for vk in ALL_VKS if keys_on and (u.GetAsyncKeyState(vk) & 0x8000)}
             if pads_on and pads and PADS:
                 down |= pads.poll()                      # controller controls: numbers above every key code
