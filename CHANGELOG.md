@@ -4,7 +4,7 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
-## Unreleased
+## Kit 9.1 - 2026-11-11
 
 ### Added
 - SETTINGS > CONTROLLER IN THE BACKGROUND: the controllers keep working while another window is in front - a match
@@ -15,6 +15,16 @@ game is not included. Newest first; each date is the day that kit was built.
 - After a manager transfer, the FORMATION board drew the OLD club's lines between your players, and the CLUB CARD
   panel showed the old club (with "transferred"), until the next start - while the game, rightly, drew the new club's
   (a new club has none yet). The panel now follows the new club's card from its first save (`code\helpers\panel.py`).
+- UNDO SETUP left the kit's files in the game folder once a start had written its own lines (the seat, the server's
+  address) into the two settings files; it now compares them without those lines and takes them back
+  (`code\setup.py`).
+- Signing in opens only the sign-in page of the server this PC was told to use: an answer naming any other address
+  or kind of link opens that server's own page instead (`code\online\account.py`).
+- The game hook refuses a message batch whose record runs past the batch's own size, before reading it
+  (`source\hook\wholemsg.h`).
+- For hosts, SEND LOGS' inbox: an address's hourly limit counts only the uploads it keeps (a refused or cut-off one
+  costs nothing, and uploads sent at once from one address cannot pass the limit together), and an upload that
+  trickles is cut after 40 minutes, so slow senders cannot hold every slot (`code\server\log_inbox.py`).
 
 ## Kit 9 - 2026-11-07
 

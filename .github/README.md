@@ -19,6 +19,12 @@ Community-developed launcher, hardware compatibility tools and an in-game panel 
 
 > **The game is not included, and the kit holds none of Sega's files.** It works with your own copy: what it needs from the game, SETUP makes from that copy, on your PC.
 
+## New in Kit 9.1
+
+- **Controller in the background** - a new SETTINGS switch: your controller keeps playing while another window is in front.
+- **A manager transfer shows your new club at once** - the FORMATION board and CLUB CARD no longer show the old club's lines until the next start.
+- **Fixes** - UNDO SETUP takes all the kit's files back out again, and safety fixes for signing in and for servers that take SEND LOGS.
+
 ## New in Kit 9
 
 - **More English** - the mode select screen, the team entry badge, the club house title (TEAM MANAGEMENT), ABILITY and SPECIAL in the Meeting Room, the radar's labels on the starting line-up, the placing after a league match (1ST to 8TH), WRITING beside IC while your club card is written, and GF in Title Data.

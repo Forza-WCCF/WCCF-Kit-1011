@@ -14,6 +14,14 @@ WHAT IT IS
   or a game controller's buttons, SETTINGS, and CLUB CARD, your club card and your other clubs.
   The kit holds none of Sega's files. Everything that comes from the game is made by setup from YOUR copy.
 
+NEW IN KIT 9.1
+  - SETTINGS > CONTROLLER IN THE BACKGROUND: your controller keeps playing while another window is in front.
+  - After a manager transfer, the FORMATION board and CLUB CARD show your new club at once (they showed the old
+    club's lines until the next start).
+  - UNDO SETUP takes all the kit's files back out of the game folder again, and a few safety fixes for signing in
+    and for servers that take SEND LOGS.
+  - Updating from kit 9: SETUP's UPDATE, then yes to set up the game. Your clubs, keys, settings and sign-in stay.
+
 NEW IN KIT 9
   - More of the game in English: the mode select screen (MODE SELECT, ARCADE, NATIONWIDE, ENTER), the team entry
     badge (ENTRY / NO, ENTRY / OK), the club house title (TEAM MANAGEMENT), ABILITY and SPECIAL in the Meeting
