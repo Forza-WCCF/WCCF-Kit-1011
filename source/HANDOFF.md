@@ -50,6 +50,7 @@ The source of every compiled program the kit ships, the scripts that build, chec
 | `test_take_seat.py` | the seat an online PC takes from the seat desk's answer, and where its projector connects (control, the server's projector relay, or none) |
 | `test_wallet_transferred.py` | after a manager transfer the old card shows as transferred |
 | `test_club_links.py` | the club card's links reach the CLUB CARD view (from 151, the game's pair order), for the FORMATION board's lines |
+| `test_club_view_transfer.py` | after a manager transfer, until the next start swaps the files, the CLUB CARD view and the board's lines are the new club's (NAME.new.bin), not the used-up card's |
 
 | Folder | What is in it |
 |---|---|
