@@ -9,6 +9,7 @@
 #   the run before last zipped into data\logs\archive, the archive kept to its size (source\test_log_archive.py)
 #   a transferred card is listed as such and never played again (source\test_wallet_transferred.py: scratch cards)
 #   the club card's links reach the view the FORMATION board draws (source\test_club_links.py: a scratch card)
+#   after a manager transfer the view is the new club's, not the used-up card's (source\test_club_view_transfer.py)
 #   the seat desk never gives a seat that is in the game (source\test_seat_desk_game.py: a scratch control log, the
 #   desk on 127.0.0.1:20932)
 #   the projector relay: a fake control and fake projectors (source\test_projector_relay.py: 127.0.0.1:20960-1)
@@ -125,6 +126,9 @@ if ($LASTEXITCODE) { $failed += 'a transferred card: listed as such, never playe
 
 & $py -I (Join-Path $PSScriptRoot 'test_club_links.py')
 if ($LASTEXITCODE) { $failed += 'the club card''s links in the view: from 151, the game''s pair order, no empty slot' }
+
+& $py -I (Join-Path $PSScriptRoot 'test_club_view_transfer.py')
+if ($LASTEXITCODE) { $failed += 'after a manager transfer: the view and the board''s lines are the new club''s' }
 
 # The checks that wait on their own servers (the seat desk, SEND LOGS) run side by side, beside the panel's
 # self-tests below (each on its own ports); their last line and exit code are read once they end (2026-10-10: one

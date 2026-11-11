@@ -68,9 +68,19 @@ class ClubView:
         if online_card:      # online and signed in (play.py WCCF_CLUB_CARD): the account's club, no other cards
             folder = os.path.dirname(online_card)
             self.card, self.backups, self.cards = online_card, os.path.join(folder, "backup"), os.path.join(folder, "cards")
+        self.new = os.path.splitext(self.card)[0] + ".new.bin"         # a manager transfer's new card (card_reader.py)
         self.running, self.out = os.path.join(data, "running.json"), os.path.join(data, "club_view.txt")
         self.catalogue = os.path.join(data, "cache", "catalogue.tsv")     # made by SETUP (was overlay\)
         self.seen, self.since, self.done, self.mod, self.said, self.retry_at = None, 0.0, None, None, False, 0.0
+
+    def shown(self):
+        """the card the game plays now.  After Sega's manager transfer the new club is in NAME.new.bin until the next
+        start swaps the files (wallet.finish_transfer), and the slot's card is used up - its links are the OLD club's
+        (2026-11-11, the owner's picture: the FORMATION board drew the old club's 21 lines over the new club, which had
+        none, while the game drew none).  finish_transfer's own test: the slot's card used up, the new one not blank"""
+        from cards import wallet as W
+        c = W.counter(self.new)
+        return self.new if c is not None and c != 0xFFFF and W.used_up(self.card) else self.card
 
     def signature(self):
         def st(p):
@@ -84,7 +94,7 @@ class ClubView:
                 return tuple(sorted((n, st(os.path.join(folder, n))) for n in os.listdir(folder)))
             except OSError:
                 return ()
-        return st(self.card), listing(self.backups), st(self.running), listing(self.cards)
+        return st(self.card), st(self.new), listing(self.backups), st(self.running), listing(self.cards)
 
     def tick(self, now):
         sig = self.signature()
@@ -97,7 +107,7 @@ class ClubView:
             if self.mod is None:
                 from cards import view
                 self.mod = view
-            lines = self.mod.build(card=self.card, catalogue=self.catalogue, backups=self.backups,
+            lines = self.mod.build(card=self.shown(), catalogue=self.catalogue, backups=self.backups,
                                    running=self.running, cards=self.cards)
             self.mod.write(lines, self.out)
             self.done = sig                     # only once written: a failed write is tried again

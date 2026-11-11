@@ -11,6 +11,11 @@ game is not included. Newest first; each date is the day that kit was built.
   watched on another screen - and the keys still need the game window. It applies at once; off (the default) both
   count only while the game is in front, as before. `data\panel.txt` keeps it as `pad_background=on`.
 
+### Fixed
+- After a manager transfer, the FORMATION board drew the OLD club's lines between your players, and the CLUB CARD
+  panel showed the old club (with "transferred"), until the next start - while the game, rightly, drew the new club's
+  (a new club has none yet). The panel now follows the new club's card from its first save (`code\helpers\panel.py`).
+
 ## Kit 9 - 2026-11-07
 
 ### Changed
