@@ -4,7 +4,7 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
-## Kit 9.1 - 2026-11-11
+## Kit 9.1 - 2026-11-12
 
 ### Added
 - SETTINGS > CONTROLLER IN THE BACKGROUND: the controllers keep working while another window is in front - a match
