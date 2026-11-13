@@ -4,6 +4,15 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
+## Unreleased
+
+### Fixed
+- The FORMATION board: a card on the far goal line went over the FORMATION title, one on a touchline under the
+  bench, and a card's position tag (above it) or name (below it) hid the name of the player in front or behind when two
+  lines stood close. Each card is now drawn inside the lines, with its tag and name on the card itself. Only the
+  drawing moves: the table keeps the spot you chose, so the game plays the same formation
+  (`source\panel\wccfpanel.c`).
+
 ## Kit 9.1 - 2026-11-12
 
 ### Added

@@ -908,6 +908,25 @@ static void table_to_canvas(float x, float y, float *cx, float *cy)
     *cx = g_cw - (DES_W - dx) * g_s; *cy = g_py + dy * g_s;                 // the right strip, pinned right
 }
 
+// where a card is DRAWN: its spot (table_to_canvas), moved in just enough that the card stays inside the touchlines,
+// below the far goal line and inside the picture - a striker on the far line went over the FORMATION title, a
+// full-back on the touchline under the bench (2026-11-11, the owner's picture).  Only the drawing moves: the table
+// keeps the spot the player chose, so the game reads the same formation.  Its tag and name sit on the card itself.
+static void card_centre(float x, float y, float *cx, float *cy)
+{
+    float lo, hi;
+    table_to_canvas(x, y, cx, cy);
+    if (x > 1.16f) return;                                                  // the bench: its own boxes
+    lo = g_cw - (DES_W - (PITCH_X + (FIELD_L + CARD_PW * 0.5f) * PITCH_SX)) * g_s;
+    hi = g_cw - (DES_W - (PITCH_X + (FIELD_R - CARD_PW * 0.5f) * PITCH_SX)) * g_s;
+    if (*cx < lo) *cx = lo;
+    if (*cx > hi) *cx = hi;
+    lo = g_py + (PITCH_Y + (FIELD_T + CARD_PH * 0.5f) * PITCH_SY) * g_s;
+    hi = g_py + (PITCH_Y + (512.0f - CARD_PH * 0.5f) * PITCH_SY) * g_s;
+    if (*cy < lo) *cy = lo;
+    if (*cy > hi) *cy = hi;
+}
+
 // canvas pixels -> table units, already where the game takes it: past the touchline = the nearest bench box's spot;
 // on the pitch = inside the lines, to 3 decimals (the file's precision)
 static void canvas_to_table(float cx, float cy, float *x, float *y)
@@ -1093,7 +1112,7 @@ static RECT draw_card(IDirect3DDevice9 *dev, int i, float grow, int lifted)
     struct Card *c = &g_cards[i];
     struct CardPic *p = pic_for(c->no);
     float cx, cy, w, h, x0, y0, e = g_s > 1.0f ? g_s : 1.0f;
-    table_to_canvas(c->x, c->y, &cx, &cy);
+    card_centre(c->x, c->y, &cx, &cy);
     w = CARD_PW * PITCH_SX * g_s * grow; h = CARD_PH * PITCH_SY * g_s * grow;
     x0 = cx - w * 0.5f; y0 = cy - h * 0.5f;
     if (grow > 1.01f) {                                        // a big card stays on the canvas
@@ -1154,7 +1173,7 @@ static void board_draw(IDirect3DDevice9 *dev)
     EnterCriticalSection(&g_board_cs);
     board_upload(dev);
     for (int i = 0; i < g_ncards; i++) {
-        table_to_canvas(g_cards[i].x, g_cards[i].y, &cx, &cy);
+        card_centre(g_cards[i].x, g_cards[i].y, &cx, &cy);
         g_cards[i].px = RC(cx - w * 0.5f, cy - h * 0.5f, cx + w * 0.5f, cy + h * 0.5f);
     }
     board_heat(dev);                                           // where the card pointed at plays well, under the cards
@@ -1189,8 +1208,8 @@ static int board_press(HWND h, int x, int y)
     EnterCriticalSection(&g_board_cs);
     i = card_at_locked(x, y, -1);
     if (i >= 0) {
-        table_to_canvas(g_cards[i].x, g_cards[i].y, &cx, &cy);
-        g_drag = i; g_drag_dx = cx - (float)x; g_drag_dy = cy - (float)y; g_hover = -1; g_drop_on = -1;
+        table_to_canvas(g_cards[i].x, g_cards[i].y, &cx, &cy);  // the SPOT, not where it is drawn: a press alone must
+        g_drag = i; g_drag_dx = cx - (float)x;                  // not move a card that is drawn moved in (card_centre) g_drag_dy = cy - (float)y; g_hover = -1; g_drop_on = -1;
         g_from_x = g_cards[i].x; g_from_y = g_cards[i].y;
         no = g_cards[i].no;
     }
@@ -1208,7 +1227,7 @@ static void board_move(int x, int y)
         struct Card *c = &g_cards[g_drag];
         canvas_to_table((float)x + g_drag_dx, (float)y + g_drag_dy, &tx, &ty);
         if (tx != c->x || ty != c->y) { c->x = tx; c->y = ty; write_table_locked(); }
-        table_to_canvas(c->x, c->y, &cx, &cy);                 // its centre over another card = a swap on drop
+        card_centre(c->x, c->y, &cx, &cy);                     // its centre (as drawn) over another card = a swap on drop
         g_drop_on = card_at_locked((int)cx, (int)cy, g_drag);
     }
     LeaveCriticalSection(&g_board_cs);
@@ -1669,7 +1688,8 @@ static void board_fit_tag(IDirect3DDevice9 *dev, RECT card, int no, float x, flo
     _snprintf(r, sizeof r, "%s ", ROLE_NAME[k]); r[sizeof r - 1] = 0;
     _snprintf(n, sizeof n, "%d", v); n[sizeof n - 1] = 0;
     w = str_w(r, sc) + str_w(n, sc) + 2.0f * pad;
-    tx = (float)card.left - 5.0f * s; ty = (float)card.top - 8.0f * s;
+    tx = (float)card.left; ty = (float)card.top;    // on the card's own top edge: above it, it hid the name of the
+                                                    // player in front (2026-11-13: SS over IBRAHIMOVIC)
     set_flat(dev);
     fill_rect(dev, tx, ty, w, h, D3DCOLOR_ARGB(235, 12, 9, 7));
     outline(dev, tx, ty, w, h, 1.0f, D3DCOLOR_ARGB(70, 255, 255, 255));
@@ -1692,7 +1712,9 @@ static void board_name(IDirect3DDevice9 *dev, RECT card, int no)
     w = str_w(t, sc) + 8.0f * s;
     if (w < cw) w = cw;
     if (w > cw * 1.6f) w = cw * 1.6f;
-    x = (float)(card.left + card.right) * 0.5f - w * 0.5f; y = (float)card.bottom + 1.0f * s;
+    x = (float)(card.left + card.right) * 0.5f - w * 0.5f;
+    y = (float)card.bottom - h;     // on the card's own bottom edge: under it, it ran into the card of the player
+                                    // behind when a line stood close (2026-11-13, IBRAHIMOVIC under ARSHAVIN)
     set_flat(dev);
     fill_rect(dev, x, y, w, h, D3DCOLOR_ARGB(225, 12, 9, 7));
     set_picture(dev, g_font_tex, 1);
