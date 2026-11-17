@@ -43,6 +43,7 @@ The source of every compiled program the kit ships, the scripts that build, chec
 | `test_online_club.py` | the online club: the owned cards make the CATALOGUE (only those, each once), the list kept for when the website is down, refused / unknown / empty answers play with the slot card, a new club's cards laid out on the table, formation finds the online board, play.py's run record and environment carry it |
 | `test_seat_desk_signin.py` | the seat desk with the wccf.online sign-in: optional or needed (data\require_signin.txt), a good / refused token, the website down, seat.py signed in, an older desk that does not know TOKEN (seat.py asks again without it), no token in the log |
 | `test_seat_lease.py` | the seat lease reconnects and asks for the same seat after a break |
+| `test_accept_no_address.py` | a connection with no address (Wine gives none for one reset before it is taken) never stops the seat desk, projector relay or log inbox: each real main() with a fake socket, no network |
 | `test_send_logs.py` | SEND LOGS packs and sends, the inbox keeps, and both refuse what they must |
 | `test_setup_state.py` | what a start needs; a game an older kit set up is set up once |
 | `test_setup_kit_english.py` | SETUP on a game another copy of the kit made English: the kit's English or Italian found in client_Release.exe, so SETUP says so instead of "not Rev D" |
