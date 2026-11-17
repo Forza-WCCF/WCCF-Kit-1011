@@ -4,6 +4,14 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
+## Unreleased
+
+### Fixed
+- A server's own card bank could put one footballer in a new account's starter 11 twice, when his cards carry two
+  full names ("BELLETTI" and "Juliano BELLETTI"): the game then plays him once, so the club starts with 10. A card is
+  now skipped when its full name or its short name is in the 11 already (`code\server\card_bank.py`). wccf.online
+  had the same fault and is fixed on the website.
+
 ## Kit 9.2 - 2026-11-17
 
 ### Fixed

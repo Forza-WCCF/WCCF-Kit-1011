@@ -337,5 +337,16 @@ check(account.post("wccf_signout", {"token": token})[1].get("signed_out") is Tru
       account.check(token)[0] == "refused", "SIGN OUT: the token is refused from then on")
 check(B.admin(["password", "Nobody", "abcdef"]) == 1 and B.admin(["nonsense"]) == 2, "the host's commands: wrong ones said")
 
+kept_cards, odd = B.cards, []              # one footballer under two full names (2026-11-18): never both in a starter
+B.cards = {1: (1, "DF", "BELLETTI", "BELLETTI"), 2: (1, "DF", "Juliano BELLETTI", "BELLETTI"),
+           3: (1, "DF", "Other ONE", "ONE"), 4: (1, "DF", "", "")}
+for uid in range(900001, 900031):
+    got = B.starter(uid, {"starter": {"DF": 2}})
+    owned = sorted(no for (no,) in B.db.execute("SELECT card_no FROM owned WHERE uid=?", (uid,)))
+    if got != "granted" or len(owned) != 2 or 3 not in owned or 4 in owned:
+        odd.append((got, owned))
+B.cards = kept_cards
+check(not odd, "a starter never holds BELLETTI and Juliano BELLETTI together, nor a nameless card (30 draws)", odd[:3])
+
 print("card bank: %s" % ("all %d checks passed" % checks[0] if not fails else "%d of %d FAILED" % (len(fails), checks[0])))
 sys.exit(1 if fails else 0)

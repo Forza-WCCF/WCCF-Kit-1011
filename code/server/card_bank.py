@@ -161,7 +161,8 @@ def load_rules(path=None):
 
 
 def load_cards(path=None):
-    """{card number: (rarity, position, full name)} of the real cards in the kit's catalogue ({} when there is none)"""
+    """{card number: (rarity, position, full name, short name)} of the real cards in the kit's catalogue ({} when there
+    is none)"""
     import csv
     out = {}
     try:
@@ -169,7 +170,8 @@ def load_cards(path=None):
             for r in csv.DictReader(f, delimiter="\t"):
                 if r.get("is_placeholder") == "0" and (r.get("card_no") or "").isdigit() and \
                         r.get("rarity") in ("1", "2", "3", "4", "5") and r.get("position_name") in LINES:
-                    out[int(r["card_no"])] = (int(r["rarity"]), r["position_name"], (r.get("name_full_latin") or "").strip())
+                    out[int(r["card_no"])] = (int(r["rarity"]), r["position_name"], (r.get("name_full_latin") or "").strip(),
+                                              (r.get("name_short_latin") or "").strip())
     except OSError:
         pass
     return out
@@ -253,15 +255,17 @@ def pw_ok(password, stored):
 
 def starter(uid, rules):
     """the starter 11 for an account that has none yet: white cards in the rules' shape, never two cards of one
-    footballer - given once (the accounts row claimed first) -> "granted", "had" or "no cards"""
-    pool = [(no, pos, name.lower()) for no, (rarity, pos, name) in cards.items() if rarity == 1]
+    footballer - given once (the accounts row claimed first) -> "granted", "had" or "no cards".  One footballer can
+    have cards under two full names ("BELLETTI" and "Juliano BELLETTI", 2026-11-18: an account got both and played
+    with 10), so a card whose full OR short name was picked already is skipped; a card with no name is never given."""
+    pool = [(no, pos, {n.lower() for n in names if n}) for no, (rarity, pos, *names) in cards.items() if rarity == 1]
     secrets.SystemRandom().shuffle(pool)
     need, names, pick = dict(rules["starter"]), set(), []
-    for no, pos, name in pool:
-        if need.get(pos, 0) < 1 or name in names:
+    for no, pos, keys in pool:
+        if need.get(pos, 0) < 1 or not keys or keys & names:
             continue
         need[pos] -= 1
-        names.add(name)
+        names |= keys
         pick.append(no)
     if len(pick) != sum(rules["starter"].values()):
         return "no cards"
