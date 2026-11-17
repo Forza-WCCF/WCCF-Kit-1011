@@ -2,7 +2,8 @@
 # PowerShell 5.1 like the Azure machine, with a scratch folder (its own kit\ too), made-up process and task names and
 # -NoStop - it never touches the real server, a real task or play.py. "Up" is this test's own TCP listener on
 # 127.0.0.1:20977 plus the powershell process the keeper runs in; "deaf" is that process with a port nobody listens on.
-# Sections 1-13 are the community server's rules (-Always); 14 a host's kit (only while it hosts). build.ps1 makes
+# Sections 1-13 are the community server's rules (-Always); 14 a host's kit (only while it hosts); 15 a helper gone
+# (running.json's pids: this test's own process stands in for a live helper, a process it stops for a dead one). build.ps1 makes
 # build\zz_spin.exe (spin.c), the hung control's stand-in. -BootWindowMin 0: a machine started under 10 minutes ago
 # (CI's, 2026-10-24) is not "at start-up" here - section 8 asks for that with -Boot.
 #   powershell -NoProfile -ExecutionPolicy Bypass -File source\test_keeper.ps1
@@ -362,6 +363,63 @@ try {
     Set-Content -LiteralPath $running -Value 'not json {'
     $o = Run-Host $gone
     Check 'a broken running.json: not hosting, no error' (((Host-Restarts) -eq 2) -and ($LASTEXITCODE -eq 0)) $o
+
+    '== 15 a helper gone while control is fine: restarted only with no one connected, at most once in 30 min =='
+    $helpRoot = Join-Path $root 'helpers'
+    New-Item -ItemType Directory -Path $helpRoot | Out-Null
+    $helpLog = Join-Path $helpRoot 'keeper_log.txt'
+    $helpStamp = Join-Path $helpRoot 'keeper_helpers.txt'
+    $helpRestarted = Join-Path $helpRoot 'keeper_restarted.txt'
+    $connH = Join-Path $root 'conns_helpers.txt'
+    function Run-Help([string[]]$extra) {
+        $out = & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $keeper -Root $helpRoot -NoStop `
+            -Kit (Join-Path $root 'kit') -ServerTask 'WCCF keeper test - no such task' -Always -BootWindowMin 0 `
+            -ProcessName powershell -Port 20977 -ConnFile $connH @extra 2>&1
+        return ($out | Out-String).Trim()
+    }
+    function Help-Text { if (Test-Path -LiteralPath $helpLog) { return (Get-Content -LiteralPath $helpLog -Raw) } return '' }
+    function Help-Restarts { return [regex]::Matches((Help-Text), '(?m) - restarting\r?$').Count }
+    function Set-Run([string]$procs, [string]$born) {
+        Set-Content -LiteralPath $running -Value ('{"mode": "server", "processes": {' + $procs + '}' +
+            $(if ($born) { ', "born": {' + $born + '}' } else { '' }) + '}')
+    }
+    $mine = (Get-Process -Id $PID).StartTime.ToFileTime()
+    Set-Content -LiteralPath $connH -Value ''
+    Set-Run ('"' + $PID + '": "seat desk", "52": "server launcher"') ('"' + $PID + '": ' + $mine)
+    $o = Run-Help '-DryRun'
+    Check 'every helper there (its pid runs, the same start): server up' ($o -match 'server up') $o
+    Set-Run ('"' + $PID + '": "seat desk"') ('"' + $PID + '": ' + ($mine + 1))
+    Set-Content -LiteralPath $connH -Value 'Established 10.0.0.5:40000'
+    $o = Run-Help @()
+    $null = Run-Help @()                         # the next minute: still waiting, no second line
+    Check 'its pid now another program''s (another start) + a player connected: waits, one line, no restart' (
+        ((Help-Restarts) -eq 0) -and ([regex]::Matches((Help-Text), 'a helper is gone: seat desk .*waiting until no one is connected').Count -eq 1)) (Help-Text).Trim()
+    Set-Content -LiteralPath $connH -Value 'TimeWait 10.0.0.5:40000'
+    $o = Run-Help @()
+    $ev = @(if (Test-Path (Join-Path $helpRoot 'crash_evidence')) { Get-ChildItem (Join-Path $helpRoot 'crash_evidence') -Directory -Filter '*_helper_gone' })
+    Check 'no one connected (a TimeWait link is no one): restarted, logs saved, the helper stamp written' (((Help-Restarts) -eq 1) -and
+        ((Help-Text) -match 'a helper is gone: seat desk .* - nobody connected - restarting') -and ($ev.Count -eq 1) -and
+        (Test-Path $helpStamp) -and ((Get-Content -LiteralPath $helpStamp -Raw).Trim() -eq 'seat desk')) (Help-Text).Trim()
+    Make-Old $helpRestarted 4
+    $o = Run-Help @()
+    Check 'still gone, 4 min later: not again within 30 min, said once' (((Help-Restarts) -eq 1) -and
+        ((Help-Text) -match 'restarted for a helper under 30 min ago: not again yet')) $o
+    Make-Old $helpStamp 31
+    Make-Old $helpRestarted 31
+    $o = Run-Help @()
+    Check '31 min later, still gone: restarted again' ((Help-Restarts) -eq 2) (Help-Text).Trim()
+    $dead = Start-Process -FilePath powershell.exe -ArgumentList '-NoProfile', '-Command', 'Start-Sleep 60' -PassThru -WindowStyle Hidden
+    $deadBorn = $dead.StartTime.ToFileTime()
+    Stop-Process -Id $dead.Id -Force
+    $dead.WaitForExit()
+    Set-Run ('"' + $PID + '": "seat desk", "' + $dead.Id + '": "witness"') ('"' + $PID + '": ' + $mine + ', "' + $dead.Id + '": ' + $deadBorn)
+    Make-Old $helpStamp 31
+    Make-Old $helpRestarted 31
+    $o = Run-Help '-DryRun'
+    Check 'a helper that ended (the witness): dry run would restart, names only it' ($o -match 'would restart now: a helper is gone: witness \(') $o
+    Set-Run ('"' + $dead.Id + '": "scene service", "' + $PID + '": "log inbox"') ''
+    $o = Run-Help '-DryRun'
+    Check 'a gone program that is no helper, and a running.json without "born" (older kits): server up' ($o -match 'server up') $o
     '--- the scratch log ---'
     (Log-Text).Trim()
 } finally {

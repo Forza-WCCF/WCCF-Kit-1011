@@ -11,6 +11,12 @@ game is not included. Newest first; each date is the day that kit was built.
   full names ("BELLETTI" and "Juliano BELLETTI"): the game then plays him once, so the club starts with 10. A card is
   now skipped when its full name or its short name is in the 11 already (`code\server\card_bank.py`). wccf.online
   had the same fault and is fixed on the website.
+- For hosts: the keeper (`PLAY.exe keeper on`) now also restarts your server when one of its helpers has stopped -
+  the seat desk (without it no finished match earns a card), the relays, the SEND LOGS inbox, the witness or the card
+  bank - but only while no player is connected, so no match is cut, and at most once in 30 minutes
+  (`code\server\keeper.ps1`). Before, it watched only Sega's server program.
+- `source\website\wccfgame.php`, the copy of wccf.online's card code, is the website's again (the manager-transfer
+  fix, the starter 11 fix and the current list of trusted servers).
 
 ## Kit 9.2 - 2026-11-17
 

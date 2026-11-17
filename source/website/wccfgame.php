@@ -55,8 +55,11 @@ const WCCFGAME_TABLES = ['wccf_link', 'wccf_tokens', 'wccf_cards', 'wccf_account
 // name => the SHA-256 of its secret (the secret itself only on that server, data\server_secret.txt; never here)
 const WCCFGAME_SERVERS = [
     'this-pc-test' => '3d43e6d542b326f197459dae58c1785462439c186e077c91a0269b6bd9ff7b28',   // Ali's PC: the test kit's server
-    'azure-paris' => 'd4f2e860df894945b1d1d580c71dd08a8caafd5b062036ae5f057675389dccb6',    // the Azure server (Paris,
-    // 20.111.35.46): its secret made there and never sent (.work\release1011\_vast\az_kit7_secret.ps1, 2026-10-14)
+    // 'azure-paris' (the Azure server, Paris, 20.111.35.46) was removed 2026-11-02 when that server was deleted
+    // 'netherlands-room-1' (SwissRDP Netherlands, 31.56.209.52) was removed 2026-11-18: that box died 2026-11-05/06
+    // with its secret on it (its last message 2026-11-04); its 108 messages stay in wccf_witness
+    'london-room-1' => '13b382c667de65abcfa7c684495de538bf7cebb7ae28e0e640395470c09d7c1c',   // the box since SwissRDP's
+    // died (SpeedyPage London, 45.139.227.186), room 1 there: its secret made there and never sent (2026-11-07)
 ];
 const WCCFGAME_ODDS_BETTER = 500;       // per 10000: a card better than black (RARE, LEGEND, ALL TIME LEGEND) - the
                                         // owner raised it from 2.5% to 5% ("more rares, gently", Discord feedback)
@@ -277,11 +280,33 @@ function wccfgame_install()
  * claimed first (INSERT IGNORE inside a transaction), so two asks at the same moment give one starter 11.
  * Returns 'granted', 'had' (given before), or 'no cards' (the card list is not loaded).
  */
+/**
+ * The starter 11 from a shuffled pool of white cards: $need cards per position, never one footballer twice. One
+ * footballer has cards under more than one full name (2026-11-18: "BELLETTI" 2004-05 and "Juliano BELLETTI" 2007-08,
+ * both short name BELLETTI, given to one account - the game plays one of them), so a card is skipped when its full
+ * name OR its short name was picked already. Two footballers sharing a short name only means one is skipped.
+ */
+function wccfgame_starter_pick(array $pool, array $need): array
+{
+    $seen = [];
+    $pick = [];
+    foreach ($pool as $r) {
+        $keys = array_filter([strtolower(trim($r['name_full'] ?? '')), strtolower(trim($r['name_short'] ?? ''))]);
+        if (empty($need[$r['position']]) || !$keys || array_intersect_key(array_flip($keys), $seen)) {
+            continue;
+        }
+        $need[$r['position']]--;
+        $seen += array_flip($keys);
+        $pick[] = (int) $r['card_no'];
+    }
+    return $pick;
+}
+
 function wccfgame_starter(int $uid): string
 {
     global $db;
     $pool = [];
-    $q = $db->simple_select('wccf_cards', 'card_no, position, name_full', 'rarity=1');
+    $q = $db->simple_select('wccf_cards', 'card_no, position, name_full, name_short', 'rarity=1');
     while ($r = $db->fetch_array($q)) {
         $pool[] = $r;
     }
@@ -289,18 +314,7 @@ function wccfgame_starter(int $uid): string
         $j = random_int(0, $i);
         [$pool[$i], $pool[$j]] = [$pool[$j], $pool[$i]];
     }
-    $need = WCCFGAME_STARTER;
-    $names = [];
-    $pick = [];
-    foreach ($pool as $r) {
-        $name = strtolower(trim($r['name_full']));
-        if (empty($need[$r['position']]) || isset($names[$name])) {
-            continue;
-        }
-        $need[$r['position']]--;
-        $names[$name] = true;
-        $pick[] = (int) $r['card_no'];
-    }
+    $pick = wccfgame_starter_pick($pool, WCCFGAME_STARTER);
     if (count($pick) !== array_sum(WCCFGAME_STARTER)) {
         return 'no cards';
     }
@@ -599,8 +613,33 @@ function wccfgame_verdict(int $uid, string $kind, string $body): string
     }
     $rows = wccfgame_rows($uid);
     $prev = $rows ? wccfgame_card_state($rows, 0) : null;
-    return $prev === null ? '' : wccfgame_chain($prev, wccfgame_msg_data($kind, $body),
-        $kind === 'entry' && $rows[0]['kind'] !== 'rslt');
+    $next = wccfgame_msg_data($kind, $body);
+    if ($prev !== null && wccfgame_transfer_start($rows, $next)) {
+        return '';                                    // a manager transfer's new card: its own chain starts here
+    }
+    return $prev === null ? '' : wccfgame_chain($prev, $next, $kind === 'entry' && $rows[0]['kind'] !== 'rslt');
+}
+
+/**
+ * A manager transfer (2026-11-01, MussreiHero): when the old card's contract ends the game moves the club onto a new
+ * card in a session that may end with no match - our servers then see that card's start and no end. Its next start
+ * shows the transferred club (TITLE_TOTAL_CHAMPIONSHIP_NUM[29] 4 -> 94) with no bad ending; read as a cut with growth it
+ * broke the chain, every later message followed it out of line and every save was refused. True when the newest message
+ * in the chain is a session's start and the first seen on its card (what came before it is another card), and $next is
+ * on that same card: the next message starts the new card's chain. (A player who played on in that first session -
+ * asa's three transfers - never reached this.)
+ */
+function wccfgame_transfer_start(array $rows, string $next): bool
+{
+    [$b, $w] = WCCFGAME_CARD_ID;
+    if (count($rows) < 2 || $rows[0]['kind'] !== 'entry' || strlen($next) !== WCCFGAME_PAYLOAD_BYTES
+            || strlen($rows[0]['data']) !== WCCFGAME_PAYLOAD_BYTES) {
+        return false;
+    }
+    $before = wccfgame_card_state($rows, 1);
+    return $before !== null && strlen($before) === WCCFGAME_PAYLOAD_BYTES
+        && wccfgame_bits($rows[0]['data'], $b, $w) !== wccfgame_bits($before, $b, $w)
+        && wccfgame_bits($next, $b, $w) === wccfgame_bits($rows[0]['data'], $b, $w);
 }
 
 /**

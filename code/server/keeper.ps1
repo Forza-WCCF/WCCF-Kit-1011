@@ -40,6 +40,12 @@
 #   The projector box in kit\data\hold_projector.txt (2026-10-09): the seat desk keeps it off the game's port until a
 #   player is in, so its seat is never counted as "not taken in"; and before every restart the keeper sets that hold
 #   itself (firewall rule "WCCF hold projector box"), so a new run never starts with the box first.
+#   A HELPER GONE while control is fine (2026-11-18: on the community server the seat desk, projector relay and log
+#   inbox each died from one bad connection and stayed dead for four days - no seat desk, no card for any finished
+#   match): every helper PLAY.exe server started is in running.json (pid -> "seat desk", "match relay", "projector
+#   relay", "log inbox", "witness", "card bank"; "born" = its start, so a number Windows gave to another program since
+#   is not taken for it). One that no longer runs -> a restart, but only while no player is connected to the game port
+#   (never cut a match: it waits, noted once) and at most once in 30 minutes (keeper_helpers.txt), evidence "helper_gone".
 #   -DryRun: say what it would do, write and start nothing.   -NoStop, and the names below: the tests only.
 param([switch]$Boot, [switch]$DryRun, [switch]$NoStop, [switch]$Always, [string]$Root = '', [string]$Kit = '',
       [string]$ServerTask = 'WCCF 2010-11 server', [string]$ProcessName = 'control_Release', [int]$Port = 20002,
@@ -63,6 +69,9 @@ $noAcceptPath = Join-Path $Root 'keeper_noaccept.txt'  # the addresses of its la
 $acceptWaitSec = 150        # a seat this old with no one let in since: control takes no one in
 $seatHeldSec = 60           # ... counted only when the PC held that seat this long (or still holds it)
 $playerWaitMax = 1200       # ... but a session of a player it did take in is waited for this long first
+$helpersPath = Join-Path $Root 'keeper_helpers.txt'     # its last restart for a helper gone, and which
+$helperGapSec = 1800        # at most one restart for a helper gone in this many seconds
+$helperRoles = @('seat desk', 'match relay', 'projector relay', 'log inbox', 'witness', 'card bank')   # play.py's names
 
 function Write-Note([string]$msg) {
     if ($DryRun) { return ('dry run: ' + $msg) }
@@ -177,6 +186,24 @@ function Test-Hosting {
         return @($run.processes.PSObject.Properties | Where-Object { $_.Value -eq 'server launcher' }).Count -gt 0
     } catch { return $false }
 }
+function Get-GoneHelpers {
+    # the helpers PLAY.exe server started (running.json: pid -> role; "born": each one's start, Windows' FILETIME) that
+    # no longer run - sorted names, none = all there (or no running.json: nothing to say)
+    try { $run = Get-Content -LiteralPath $runningPath -Raw -ErrorAction Stop | ConvertFrom-Json } catch { return @() }
+    if (-not $run -or -not $run.processes) { return @() }
+    $gone = @()
+    foreach ($p in @($run.processes.PSObject.Properties)) {
+        if ($helperRoles -notcontains [string]$p.Value) { continue }
+        $id = 0
+        if (-not [int]::TryParse($p.Name, [ref]$id)) { $gone += [string]$p.Value; continue }
+        $proc = Get-Process -Id $id -ErrorAction SilentlyContinue
+        $born = if ($run.born) { $run.born.($p.Name) } else { $null }
+        $same = $true
+        if ($proc -and $born) { try { $same = $proc.StartTime.ToFileTime() -eq [int64]$born } catch { $same = $true } }
+        if (-not $proc -or -not $same) { $gone += [string]$p.Value }
+    }
+    return @($gone | Sort-Object -Unique)
+}
 function Get-AgeSeconds([string]$path) {         # how old a file is; a missing one counts as endlessly old
     if (-not (Test-Path -LiteralPath $path)) { return [double]::MaxValue }
     return ((Get-Date) - (Get-Item -LiteralPath $path).LastWriteTime).TotalSeconds
@@ -209,7 +236,8 @@ $busy = if ($procUp -and $portUp) { Get-BusyThreads $ProcessName } else { 0 }
 $hung = $busy -ge 2
 $miss = if ($procUp -and $portUp -and -not $hung) { Get-NotTakenIn } else { $null }
 $deaf = [bool]($miss -and $miss.ips.Count)
-if ($procUp -and $portUp -and -not $hung -and -not $deaf) {
+$lost = @(if ($procUp -and $portUp -and -not $hung -and -not $deaf) { Get-GoneHelpers })
+if ($procUp -and $portUp -and -not $hung -and -not $deaf -and -not $lost.Count) {
     if (Test-Path -LiteralPath $markPath) {
         if (-not $DryRun) { Remove-Item -LiteralPath $markPath -Force -ErrorAction SilentlyContinue }
         Write-Note 'server up again - nothing done'
@@ -240,6 +268,24 @@ if ($deaf) {
         exit 0
     }
 }
+if ($lost.Count) {                               # control is fine, a helper is gone (the header)
+    $why = 'a helper is gone: ' + ($lost -join ', ') + ' (' + $ProcessName + ' runs, TCP ' + $Port + ' listens)'
+    $links = @(Get-GameConns | Where-Object { $_ -like 'Established *' }).Count
+    $hold = ''
+    if ($links -gt 0) {
+        $hold = ' - ' + $links + ' link(s) to the game: waiting until no one is connected'
+    } elseif ((Get-AgeSeconds $helpersPath) -lt $helperGapSec) {
+        $hold = ' - restarted for a helper under ' + [int]($helperGapSec / 60) + ' min ago: not again yet'
+    }
+    if ($hold) {
+        if (-not (Test-Path -LiteralPath $markPath)) {
+            if (-not $DryRun) { Set-Content -LiteralPath $markPath -Value (Get-Date -Format 'o') }
+            Write-Note ($why + $hold)
+        }
+        if ($DryRun) { 'waiting: ' + $why + $hold }
+        exit 0
+    }
+}
 $sinceRestart = Get-AgeSeconds $restartPath
 if ($sinceRestart -lt $restartGapSec) {          # it restarted the server a moment ago: that start gets its time
     if (-not (Test-Path -LiteralPath $markPath)) {
@@ -258,6 +304,8 @@ if ($Boot -or ($upMin -lt $BootWindowMin)) {
     $reason = ' - ' + $ProcessName + ' is gone (it never comes back by itself)'
 } elseif ($deaf) {
     $reason = ''                                 # its 150 s wait is behind it already: at once
+} elseif ($lost.Count) {
+    $reason = ' - nobody connected'
 } else {
     $markAge = Get-AgeSeconds $markPath
     if ($markAge -eq [double]::MaxValue) {
@@ -275,10 +323,12 @@ if ($DryRun) { 'would restart now: ' + $why + $reason; exit 0 }
 
 Write-Note ($why + $reason + ' - restarting')
 if ($reason -ne ' at start-up') {               # a real mid-life failure: keep its logs before the restart rotates them
-    $tag = if (-not $procUp) { 'control_gone' } elseif ($hung) { 'hung' } elseif ($deaf) { 'noaccept' } else { 'port_closed' }
+    $tag = if (-not $procUp) { 'control_gone' } elseif ($hung) { 'hung' } elseif ($deaf) { 'noaccept' }
+           elseif ($lost.Count) { 'helper_gone' } else { 'port_closed' }
     Write-Note ('  ' + (Save-Evidence $tag))
 }
 if ($deaf) { Set-Content -LiteralPath $noAcceptPath -Value $miss.ips }
+if ($lost.Count) { Set-Content -LiteralPath $helpersPath -Value ($lost -join ', ') }
 $box = Get-HoldIp
 if ($box) {
     if ($NoStop) { Write-Note ('  would hold the projector box ' + $box + ' (tests: no firewall change)') }
