@@ -14,6 +14,13 @@ WHAT IT IS
   or a game controller's buttons, SETTINGS, and CLUB CARD, your club card and your other clubs.
   The kit holds none of Sega's files. Everything that comes from the game is made by setup from YOUR copy.
 
+NEW IN KIT 9.2
+  - The FORMATION board keeps every card inside the lines, with its position tag and name on the card itself, so
+    cards on close lines no longer hide each other's names. The game plays the spots you chose, as before.
+  - For hosts (PLAY.exe server on Linux with Wine): the seat desk, the projector relay and the SEND LOGS inbox no
+    longer stop at a stray connection, so finished matches keep earning their players a card.
+  - Updating from kit 9.1: SETUP's UPDATE, then yes to set up the game. Your clubs, keys, settings and sign-in stay.
+
 NEW IN KIT 9.1
   - SETTINGS > CONTROLLER IN THE BACKGROUND: your controller keeps playing while another window is in front.
   - After a manager transfer, the FORMATION board and CLUB CARD show your new club at once (they showed the old

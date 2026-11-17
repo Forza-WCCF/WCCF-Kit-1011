@@ -4,7 +4,7 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
-## Unreleased
+## Kit 9.2 - 2026-11-17
 
 ### Fixed
 - The FORMATION board: a card on the far goal line went over the FORMATION title, one on a touchline under the

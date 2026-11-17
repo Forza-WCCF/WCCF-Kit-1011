@@ -19,6 +19,11 @@ Community-developed launcher, hardware compatibility tools and an in-game panel 
 
 > **The game is not included, and the kit holds none of Sega's files.** It works with your own copy: what it needs from the game, SETUP makes from that copy, on your PC.
 
+## New in Kit 9.2
+
+- **The FORMATION board stays on the pitch** - every card is drawn inside the lines, with its position tag and name on the card, so close lines no longer hide each other's names. The game plays the spots you chose, as before.
+- **Hosts keep giving cards** - on a Linux + Wine server, the seat desk, projector relay and SEND LOGS inbox no longer stop at a stray connection.
+
 ## New in Kit 9.1
 
 - **Controller in the background** - a new SETTINGS switch: your controller keeps playing while another window is in front.
