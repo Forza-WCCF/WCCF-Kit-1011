@@ -174,6 +174,9 @@ def main(argv):
             conn, addr = srv.accept()
         except (socket.timeout, OSError):
             continue
+        if not addr:    # Wine: a connection reset before it was taken comes with no address (2026-11-17: it killed
+            conn.close()    # this inbox on the live server) - skip it, serve on
+            continue
         if not slots.acquire(blocking=False):
             try:
                 conn.sendall(b"NO busy - try again in a minute\n")

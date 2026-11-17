@@ -559,6 +559,9 @@ def main(argv):
             conn, addr = srv.accept()
         except OSError:                                 # socket.timeout too
             continue
+        if not addr:    # Wine: a connection reset before it was taken comes with no address (2026-11-17: it killed
+            conn.close()    # this relay on the live server) - skip it, serve on
+            continue
         threading.Thread(target=serve, args=(hub, conn, "%s:%d" % addr), daemon=True).start()
     log("projector relay: its time is up - stopping")
     hub.close_up("the relay stops")

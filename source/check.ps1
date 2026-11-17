@@ -12,6 +12,8 @@
 #   after a manager transfer the view is the new club's, not the used-up card's (source\test_club_view_transfer.py)
 #   the seat desk never gives a seat that is in the game (source\test_seat_desk_game.py: a scratch control log, the
 #   desk on 127.0.0.1:20932)
+#   a connection with no address never stops the seat desk, projector relay or log inbox (test_accept_no_address.py:
+#   a fake listening socket, no network)
 #   the projector relay: a fake control and fake projectors (source\test_projector_relay.py: 127.0.0.1:20960-1)
 #   the projector box held off the game until a player is in (source\test_hold_projector.py: the desk on 127.0.0.1:20933-6,
 #   the firewall rule written to a scratch file)
@@ -91,6 +93,9 @@ if ($LASTEXITCODE) { $failed += 'DREAM TEAM: chosen by the panel or "remote ADDR
 
 & $py -I (Join-Path $PSScriptRoot 'test_seat_lease.py') | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'the seat lease reconnects and re-claims its seat after a break' }
+
+& $py -I (Join-Path $PSScriptRoot 'test_accept_no_address.py') | Select-Object -Last 1
+if ($LASTEXITCODE) { $failed += 'a connection with no address stops a server helper (seat desk, projector relay, log inbox)' }
 
 & $py -I (Join-Path $PSScriptRoot 'test_relay.py') | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'the match relay: a live seat cannot be taken over by another address' }

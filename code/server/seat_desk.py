@@ -407,6 +407,9 @@ def main(argv):
             continue
         except OSError:
             continue
+        if not addr:    # Wine: a connection reset before it was taken comes with no address (2026-11-17: one killed
+            conn.close()    # this desk four days earlier, and no finished match earned a card) - skip it, serve on
+            continue
         threading.Thread(target=serve, args=(conn, "%s:%d" % addr), daemon=True).start()
     log("seat broker: its time is up - stopping")
     return 0

@@ -12,6 +12,12 @@ game is not included. Newest first; each date is the day that kit was built.
   lines stood close. Each card is now drawn inside the lines, with its tag and name on the card itself. Only the
   drawing moves: the table keeps the spot you chose, so the game plays the same formation
   (`source\panel\wccfpanel.c`).
+- A server for others (`PLAY.exe server`) on Linux with Wine: the seat desk, the projector relay and the log inbox
+  each stopped for good at the first connection that arrived with no address (Wine gives none for a connection reset
+  before it is taken - the internet's port scanners do this all day). With the seat desk gone, no finished match
+  earned its player a card and club saves were refused; with the relay gone, no projector; with the inbox gone, SEND
+  LOGS reached nobody. Each now drops that one connection and serves on (`code\server\seat_desk.py`,
+  `projector_relay.py`, `log_inbox.py`; test: `source\test_accept_no_address.py`).
 
 ## Kit 9.1 - 2026-11-12
 
