@@ -94,7 +94,34 @@ try:
     S.undo(game)
     check(os.path.isfile(ctrl), "undo keeps a settings file the player edited")
 
-    n = 11
+    # "setup.py GAME server" (2026-11-19): a hosting-only machine - seat 1's own files, none of its links (under Wine
+    # the links failed: "seat1\AI is in the way (not a link)" in every room install)
+    calls = []
+    S.link_seat = lambda seat_, game_: calls.append("links")
+    S.seat_files = lambda seat_, game_: calls.append("files")
+    S.K.seat_dir = lambda g: os.path.join(t, "serverseat")
+    S.setup_seat(game, links=False)
+    check(calls == ["files"], "server mode: seat 1's own files, no links (got %s)" % calls)
+    calls.clear()
+    S.setup_seat(game)
+    check(calls == ["links", "files"], "a player's PC: links, then seat 1's files (got %s)" % calls)
+    seen, saved = [], []
+    real_seat = S.setup_seat
+    S.setup_seat = lambda g, links=True: seen.append(links)
+    for name in ("check_game", "setup_extracted", "tidy_old_layout"):
+        setattr(S, name, lambda *a, **k: None)
+    S.setup_cards = lambda g, force=False: None
+    S.D.ensure = lambda g, ok_, note_: "none"
+    S.K.find_game = lambda cfg: game
+    S.K.load_settings = lambda: {}
+    S.K.save_settings = lambda s: saved.append(s)
+    S.K.LOGS, S.K.SAVE = os.path.join(t, "logs"), os.path.join(t, "save")
+    rc_server, rc_player = S.main([game, "server"]), S.main([game])
+    check(seen == [False, True] and rc_server == 0 and rc_player == 0,
+          "main: \"server\" -> no links, a plain setup -> links; both finish (got %s, %s, %s)" % (seen, rc_server, rc_player))
+    S.setup_seat = real_seat
+
+    n = 14
     print("setup_state: %d of %d checks passed" % (n - len(fails), n))
 finally:
     import shutil

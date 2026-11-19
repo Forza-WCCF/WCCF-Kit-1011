@@ -6,6 +6,12 @@ game is not included. Newest first; each date is the day that kit was built.
 
 ## Unreleased
 
+### Added
+- For hosts on a machine that only hosts (a Linux server under Wine): `python code\setup.py GAME server` sets the
+  game up for `PLAY.exe server` - seat 1 gets its own program, hook and settings but not the folder and file links a
+  player cabinet runs from, which Wine cannot make. Setup used to stop there with "seat1\AI is in the way (not a link)"
+  before its last steps (the game folder in the settings, the card catalogue); now it finishes (`code\setup.py`).
+
 ### Fixed
 - With English on, SETUP warned "control_Release.exe is not the Rev D file this kit was tested with - it may not
   work": English puts the kit's shop name into the server's program, and setup compared it with Sega's. It now

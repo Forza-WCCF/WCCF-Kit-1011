@@ -5,6 +5,8 @@ Run it once (SETUP.exe); running it again checks everything and repairs what is 
     python setup.py [GAME]     GAME = the game folder, the one that holds client_Release.exe (or the folder above
                                it); asked for if not given, then remembered in data\settings.json
     python setup.py undo       put the game folder back the way it was before setup
+    python setup.py GAME server   a machine that only hosts (PLAY.exe server; a Linux server under Wine): seat 1 gets
+                               its own files but not the folder and file links a player cabinet runs from
 
 What it changes, and nothing else on the PC:
   in extracted\   + wccfk.dll (the kit's hook) and the game's import of WINMM.dll renamed to it, so the hook loads
@@ -333,7 +335,7 @@ def setup_extracted(game):
     write_text(os.path.join(game, "local", "ctrl_user_option.conf"), CONF_CONTROL, "server settings")
 
 
-def setup_seat(game):
+def setup_seat(game, links=True):
     seat = K.seat_dir(game)
     print("in %s:" % seat)
     if os.path.isdir(seat) and not os.path.isfile(os.path.join(seat, MARKER)):
@@ -341,6 +343,15 @@ def setup_seat(game):
     os.makedirs(os.path.join(seat, "local"), exist_ok=True)
     with open(os.path.join(seat, MARKER), "w", encoding="ascii") as f:
         f.write("made by the WCCF 2010-11 kit's setup.py; \"setup.py undo\" removes this folder\n")
+    if links:
+        link_seat(seat, game)
+    else:       # setup.py GAME server: a machine that only hosts - no player cabinet runs there (2026-11-19: under
+        ok("folder and file links skipped: this machine only hosts (setup.py GAME server)")   # Wine they failed)
+    seat_files(seat, game)
+
+
+def link_seat(seat, game):
+    """seat 1's folder and file links to extracted\\ - what the player cabinet runs from"""
     made = 0
     for n in JUNCTIONS:
         link, target = os.path.join(seat, n), os.path.join(game, n)
@@ -371,6 +382,10 @@ def setup_seat(game):
         linked += 1
         new += 1
     ok("%d file links to extracted\\ (%d new)" % (linked, new))
+
+
+def seat_files(seat, game):
+    """seat 1's own files: its patched client_Release.exe, the hook, its settings - and the card-table helper"""
     exe = os.path.join(seat, "client_Release.exe")
     have = norm_sha(exe) if os.path.isfile(exe) else None
     if have == PATCHED_CLIENT:
@@ -552,8 +567,8 @@ def main(argv):
         pass
     mode = "undo" if argv[:1] == ["undo"] else "setup"
     rest = argv[1:] if mode == "undo" else argv
-    force_cards = "cards" in rest
-    rest = [a for a in rest if a != "cards"]
+    force_cards, server = "cards" in rest, "server" in rest
+    rest = [a for a in rest if a not in ("cards", "server")]
     game = K.find_game(rest[0]) if rest else K.find_game(K.load_settings().get("game"))
     if rest and not game:
         print("no WCCF 2010-11 game files in %s (client_Release.exe, control_Release.exe, match_Release.exe)" % rest[0])
@@ -580,7 +595,7 @@ def main(argv):
         print("Windows Defender:")              # before any changed program is written (helpers\defender.py)
         D.ensure(game, ok, note)
         setup_extracted(game)
-        setup_seat(game)
+        setup_seat(game, links=not server)
         for d in (K.LOGS, K.SAVE):
             os.makedirs(d, exist_ok=True)
         s = K.load_settings()
