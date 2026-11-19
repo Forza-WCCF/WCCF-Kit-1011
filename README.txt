@@ -14,6 +14,17 @@ WHAT IT IS
   or a game controller's buttons, SETTINGS, and CLUB CARD, your club card and your other clubs.
   The kit holds none of Sega's files. Everything that comes from the game is made by setup from YOUR copy.
 
+NEW IN KIT 9.3
+  - Windows Defender can no longer delete your game. It had started calling the kit's changes to the game a trojan
+    and deleted seat 1's program, so the game did not start ("seat 1 did not come up"). SETUP now asks once, with
+    Windows' own "Do you want to allow this app to make changes?": Yes leaves only the game's folders (extracted,
+    seat1 and misc) out of Defender's scans. UNDO SETUP puts them back.
+  - For hosts: the keeper also restarts your server when one of its helpers has stopped (the seat desk - without it
+    no match earns a card -, the relays, the SEND LOGS inbox), only while nobody is connected; and a new account's
+    11 starter cards never hold the same footballer twice.
+  - Updating from kit 9.2: SETUP's UPDATE, then yes to set up the game, and Yes to Windows' question. Your clubs,
+    keys, settings and sign-in stay.
+
 NEW IN KIT 9.2
   - The FORMATION board keeps every card inside the lines, with its position tag and name on the card itself, so
     cards on close lines no longer hide each other's names. The game plays the spots you chose, as before.

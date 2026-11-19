@@ -19,6 +19,11 @@ Community-developed launcher, hardware compatibility tools and an in-game panel 
 
 > **The game is not included, and the kit holds none of Sega's files.** It works with your own copy: what it needs from the game, SETUP makes from that copy, on your PC.
 
+## New in Kit 9.3
+
+- **Windows Defender can no longer delete your game** - Defender had started calling the kit's changes to the game a trojan and deleted seat 1's program. SETUP now asks once (Windows' own prompt) to leave only the game's folders out of its scans; UNDO SETUP puts them back.
+- **For hosts** - the keeper also restarts your server when one of its helpers stopped (only while nobody is connected), and a new account's starter 11 never holds the same footballer twice.
+
 ## New in Kit 9.2
 
 - **The FORMATION board stays on the pitch** - every card is drawn inside the lines, with its position tag and name on the card, so close lines no longer hide each other's names. The game plays the spots you chose, as before.
