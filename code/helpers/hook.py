@@ -25,8 +25,21 @@ class PatchError(Exception):
 
 
 def _import_name_offset(data, dll):
-    """file offset of the import-descriptor name string equal to `dll` (case-insensitive), or -1."""
+    """file offset of the import-descriptor name string equal to `dll` (case-insensitive), or -1 - also for data that is
+    not a whole PE program (2026-11-19: a short or damaged file raised struct.error out of setup's norm_sha, whose
+    promise is that such a file hashes as-is)"""
+    if bytes(data[:2]) != b"MZ":
+        return -1
+    try:
+        return _scan_imports(data, dll)
+    except (struct.error, ValueError):           # an offset past the end; a name without its closing zero
+        return -1
+
+
+def _scan_imports(data, dll):
     pe = struct.unpack_from("<I", data, 0x3C)[0]
+    if bytes(data[pe:pe + 4]) != b"PE\0\0":
+        return -1
     opt = pe + 24
     nsec = struct.unpack_from("<H", data, pe + 6)[0]
     sec0 = opt + struct.unpack_from("<H", data, pe + 20)[0]

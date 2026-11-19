@@ -242,6 +242,19 @@ def english_copy(rel):
         return None
 
 
+def sega_other(game, name, want):
+    r""""sega" when GAME's program `name` is Sega's Rev D file, "english" when it is english.py's copy of it (English
+    on: it is the manifest's English file AND Sega's own is in data\english_backup), else None.  2026-11-19: with
+    English on, the server's control_Release.exe carries the kit's shop name, and setup said it "may not work"."""
+    have = norm_sha(os.path.join(game, name))
+    if have == want:
+        return "sega"
+    kept = os.path.join(ENGLISH_BACKUP, name)
+    if have == english_copy(name) and os.path.isfile(kept) and norm_sha(kept) == want:
+        return "english"
+    return None
+
+
 def patched_client(game):
     """Sega's client exe with the 15 changes, checked before and after (the base is normalized to WINMM.dll first, so
     an already-renamed Sega client still patches to the tested bytes)"""
@@ -276,7 +289,10 @@ def check_game(game):
                      % h[:16])
     ok("client_Release.exe is Sega's Rev D")
     for n, want in SEGA_OTHERS.items():
-        if norm_sha(os.path.join(game, n)) != want:
+        got = sega_other(game, n, want)
+        if got == "english":
+            ok("%s: English is on - Sega's Rev D file is checked in data\\english_backup" % n)
+        elif not got:
             note("%s is not the Rev D file this kit was tested with - it may not work" % n)
     if not os.path.isfile(WINMM):
         raise Failed("no %s - this needs 64-bit Windows 10 or 11" % WINMM)

@@ -76,6 +76,18 @@ for bad, why in [(lambda: P.rename_import(orig, to=b"toolongname.dll"), "a too-l
     except P.PatchError:
         pass
 
-n = 12
+# not a whole program (2026-11-19: struct.error escaped setup's norm_sha): never an exception, simply "no hook"
+junk = [b"", b"MZ", b"not a program at all" * 30, b"MZ" + b"\0" * 58 + b"\xff\xff\xff\x7f" + b"\0" * 100,
+        orig[:300], b"MZ" + b"\x00" * 58 + b"\x40\x00\x00\x00" + b"PE\0\0" + b"\xff" * 30]
+odd = []
+for data in junk:
+    try:
+        if P.imports_hook(data) or P.normalized(data) != data:
+            odd.append(data[:8])
+    except Exception as ex:         # noqa: BLE001 - any exception is the failure
+        odd.append("%r: %s" % (data[:8], type(ex).__name__))
+check(not odd, "a short, damaged or non-program file: no hook, unchanged, no exception (%s)" % odd)
+
+n = 13
 print("patch_hook_import: %d of %d checks passed" % (n - len(fails), n))
 sys.exit(1 if fails else 0)

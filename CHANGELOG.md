@@ -4,6 +4,16 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
+## Unreleased
+
+### Fixed
+- With English on, SETUP warned "control_Release.exe is not the Rev D file this kit was tested with - it may not
+  work": English puts the kit's shop name into the server's program, and setup compared it with Sega's. It now
+  accepts the server's program when it is exactly English's copy and Sega's own is kept in `data\english_backup`,
+  and says so; any other changed file still gets the warning (`code\setup.py`).
+- A short or damaged file where a game program should be made SETUP stop with a Python error instead of a message:
+  reading its import table now treats anything that is not a whole program as "no hook" (`code\helpers\hook.py`).
+
 ## Kit 9.3 - 2026-11-19
 
 ### Added
