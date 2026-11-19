@@ -14,6 +14,14 @@ WHAT IT IS
   or a game controller's buttons, SETTINGS, and CLUB CARD, your club card and your other clubs.
   The kit holds none of Sega's files. Everything that comes from the game is made by setup from YOUR copy.
 
+NEW IN KIT 9.4
+  - SETUP with English on no longer warns "control_Release.exe is not the Rev D file this kit was tested with": that
+    was the kit's own English in the server's program, and SETUP now says so.
+  - A damaged file where a game program should be gets a message in SETUP, not a Python error.
+  - For hosts on a Linux server: "python code\setup.py GAME server" sets the game up for PLAY.exe server and finishes
+    (seat 1 without the folder links a player cabinet needs, which Wine cannot make).
+  - Updating from kit 9.3: SETUP's UPDATE, then yes to set up the game. Your clubs, keys, settings and sign-in stay.
+
 NEW IN KIT 9.3
   - Windows Defender can no longer delete your game. It had started calling the kit's changes to the game a trojan
     and deleted seat 1's program, so the game did not start ("seat 1 did not come up"). SETUP now asks once, with

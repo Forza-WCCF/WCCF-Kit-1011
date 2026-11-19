@@ -19,6 +19,11 @@ Community-developed launcher, hardware compatibility tools and an in-game panel 
 
 > **The game is not included, and the kit holds none of Sega's files.** It works with your own copy: what it needs from the game, SETUP makes from that copy, on your PC.
 
+## New in Kit 9.4
+
+- **No false warning in SETUP** - with English on it said the server's program "may not work"; that was the kit's own English, and SETUP now says so. A damaged game file gets a message, not a Python error.
+- **For hosts on Linux** - `python code\setup.py GAME server` sets the game up for `PLAY.exe server` and finishes, without the player-seat links Wine cannot make.
+
 ## New in Kit 9.3
 
 - **Windows Defender can no longer delete your game** - Defender had started calling the kit's changes to the game a trojan and deleted seat 1's program. SETUP now asks once (Windows' own prompt) to leave only the game's folders out of its scans; UNDO SETUP puts them back.
