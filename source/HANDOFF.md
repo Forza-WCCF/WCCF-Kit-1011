@@ -46,6 +46,7 @@ The source of every compiled program the kit ships, the scripts that build, chec
 | `test_accept_no_address.py` | a connection with no address (Wine gives none for one reset before it is taken) never stops the seat desk, projector relay or log inbox: each real main() with a fake socket, no network |
 | `test_send_logs.py` | SEND LOGS packs and sends, the inbox keeps, and both refuse what they must |
 | `test_setup_state.py` | what a start needs; a game an older kit set up is set up once |
+| `test_defender.py` | setup's Windows Defender step: only extracted\, seat1\ and misc\ (never a folder above), asked through Windows' prompt with the paths base64-encoded, remembered after Yes, asked again after No, nothing asked without Defender or PowerShell (Wine), undo removes only that game's folders; a stand-in answers for PowerShell |
 | `test_setup_kit_english.py` | SETUP on a game another copy of the kit made English: the kit's English or Italian found in client_Release.exe, so SETUP says so instead of "not Rev D" |
 | `test_witness.py` | the server's witness (a card per finished match): who sat where (leases.json, a seat freed a moment ago, one address with two accounts), what goes to the website (a session's start, each match's start, its end), refusals, out of reach and tried again, files to done\ and never sent twice, the secret in no line, no secret = not started |
 | `test_take_seat.py` | the seat an online PC takes from the seat desk's answer, and where its projector connects (control, the server's projector relay, or none) |

@@ -6,6 +6,14 @@ game is not included. Newest first; each date is the day that kit was built.
 
 ## Unreleased
 
+### Added
+- Windows Defender can no longer delete your game. Its machine learning took the kit's changes to Sega's program for
+  a trojan ("Trojan:Win32/Bearfoos.A!ml") and quarantined seat 1's `client_Release.exe`, so PLAY stopped with "seat 1
+  did not come up". SETUP now asks once, with Windows' own "Do you want to allow this app to make changes?" prompt,
+  to leave only the game's folders - `extracted\`, `seat1\` and `misc\` - out of Defender's scans; Yes is remembered
+  (`data\defender.json`), No asks again at the next setup, and UNDO SETUP puts them back. Nothing is asked where
+  Defender is not your antivirus (`code\helpers\defender.py`; test: `source\test_defender.py`).
+
 ### Fixed
 - A server's own card bank could put one footballer in a new account's starter 11 twice, when his cards carry two
   full names ("BELLETTI" and "Juliano BELLETTI"): the game then plays him once, so the club starts with 10. A card is

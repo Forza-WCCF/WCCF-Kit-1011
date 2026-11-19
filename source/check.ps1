@@ -14,6 +14,8 @@
 #   desk on 127.0.0.1:20932)
 #   a connection with no address never stops the seat desk, projector relay or log inbox (test_accept_no_address.py:
 #   a fake listening socket, no network)
+#   setup's Windows Defender step: only the game's folders, with the player's Yes, undo puts them back
+#   (test_defender.py: a stand-in answers for PowerShell, nothing is asked of Windows)
 #   the projector relay: a fake control and fake projectors (source\test_projector_relay.py: 127.0.0.1:20960-1)
 #   the projector box held off the game until a player is in (source\test_hold_projector.py: the desk on 127.0.0.1:20933-6,
 #   the firewall rule written to a scratch file)
@@ -114,6 +116,9 @@ if ($LASTEXITCODE) { $failed += 'log rotation never stops a start when a log fil
 
 & $py -I (Join-Path $PSScriptRoot 'test_setup_state.py') | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'a missing card catalogue does not stop a start' }
+
+& $py -I (Join-Path $PSScriptRoot 'test_defender.py') | Select-Object -Last 1
+if ($LASTEXITCODE) { $failed += 'setup leaves only the game''s folders out of Windows Defender, with the player''s Yes; undo puts them back' }
 & $py -I (Join-Path $PSScriptRoot 'test_setup_kit_english.py') | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'SETUP tells a game another copy of the kit made English from a foreign file' }
 

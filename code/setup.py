@@ -15,6 +15,9 @@ What it changes, and nothing else on the PC:
   beside it       seat1\   the player cabinet: links to extracted\'s folders and files, its own patched
                            client_Release.exe (15 changes, checked byte for byte) and its own local\ settings
                   misc\FlatPanelReader_Emulator\exe\FPR_Emu.exe   the card-table helper the game starts
+  Windows Defender  with your Yes to Windows' own prompt: extracted\, seat1\ and misc\ (only those) left out of its
+                  scans, so it cannot delete the changed game program as a "trojan" (2026-11-18); undo puts them
+                  back.  Asked only where Defender is the antivirus (helpers\defender.py, data\defender.json)
   in the kit      data\cache\catalogue.tsv, data\cache\cards\   the catalogue and card pictures, made from YOUR files
                   data\   settings, your club card (data\save), logs
                   an older kit's scripts\, english\, bin\ and overlay\ (before kit 6): its own files removed, its catalogue and
@@ -31,6 +34,7 @@ import sys
 
 from cards import catalogue
 import kit_common as K
+from helpers import defender as D
 from helpers import hook as H
 
 SEGA_CLIENT = "AEF9998D8A77B4DD7A0CFF3753A11FC8689A6700E133265D6681EF28D3E9CEA4"
@@ -520,6 +524,7 @@ def undo(game):
     s = K.load_settings()
     s.pop("game", None)
     K.save_settings(s)
+    D.undo(game, ok, note)                      # only this game's folders, and only if setup left them out
     print("Undone. The game folder is as it was before setup, apart from the files the game itself writes when it "
           "runs (busram*.bin, eeprom*.bin). Your club card stays in data\\save.")
 
@@ -556,6 +561,8 @@ def main(argv):
             undo(game)
             return 0
         check_game(game)
+        print("Windows Defender:")              # before any changed program is written (helpers\defender.py)
+        D.ensure(game, ok, note)
         setup_extracted(game)
         setup_seat(game)
         for d in (K.LOGS, K.SAVE):
