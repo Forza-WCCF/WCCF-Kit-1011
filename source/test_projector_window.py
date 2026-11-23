@@ -7,6 +7,7 @@ import ctypes as c
 from ctypes import wintypes as w
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -60,7 +61,11 @@ def await_log(needle, seconds=8):
     return False
 
 env = {k: v for k, v in os.environ.items() if not k.upper().startswith(("WCCF", "MXHOOK"))}
-env.update(WCCFPANEL_ROLE="projector", WCCFPANEL_DRYKEYS="1", WCCF_LOGS=str(out))
+# a pretend work area smaller than fakegame's window anywhere (a tablet's 1536x912 at half size), off every monitor:
+# the projector's window must open fitted to it, shape kept, its whole picture letterboxed (2026-11-23)
+WORK = (-30000, -30000, 768, 456)
+env.update(WCCFPANEL_ROLE="projector", WCCFPANEL_DRYKEYS="1", WCCF_LOGS=str(out),
+           WCCFPANEL_FS_RECT="%d,%d,%d,%d" % WORK)
 with (out / "stdout.txt").open("w") as log:
     p = subprocess.Popen([str(out / "fakegame.exe"), str(repo / "programs/wccfpanel.dll"), "wait:60000"],
                          cwd=out, env=env, stdout=log, stderr=subprocess.STDOUT,
@@ -82,10 +87,25 @@ with (out / "stdout.txt").open("w") as log:
         u.EnumWindows(each, 0)
         hwnd = max(wins, key=lambda h: (rect(h)[2] - rect(h)[0]) * (rect(h)[3] - rect(h)[1]))
         u.ShowWindow(hwnd, 0)
+        await_log("projector: resizable window")
+        fit = rect(hwnd)
+        check("the window's frame fits the work area",
+              [fit[0] >= WORK[0], fit[1] >= WORK[1], fit[2] <= WORK[0] + WORK[2], fit[3] <= WORK[1] + WORK[3]], [True] * 4)
+        cl = rect(hwnd, True)
+        m = re.search(r"the game's (\d+)x(\d+) fitted", log_text())
+        gw, gh = (int(m.group(1)), int(m.group(2))) if m else (0, 1)
+        check("the fitted client keeps the game's shape (1 px)", abs(cl[3] - cl[2] * gh / gw) <= 1 if gw else False, True)
+        check("the fitted window letterboxes the whole picture", await_log("own swap chain %dx%d " % (cl[2], cl[3])), True)
         # SetWindowPlacement deliberately clamps fully offscreen saved rectangles.
         # Test restore from an ordinary monitor position while keeping it hidden.
         u.SetWindowPos(hwnd, None, 70, 80, 0, 0, 0x15)
         initial = rect(hwnd)
+        def size(r):
+            return [r[2] - r[0], r[3] - r[1]]
+        u.SendMessageW(hwnd, 0x100, 0x7A, 1)
+        u.SendMessageW(hwnd, 0x100, 0x1B, 1)
+        time.sleep(.15)
+        check("Esc after F11 comes back to the fitted window", size(rect(hwnd)), size(fit))
         check("resizable frame", bool(u.GetWindowLongW(hwnd, -16) & 0x40000), True)
         # AdjustWindowRect with the actual style preserves the requested client area.
         r = w.RECT(0, 0, 640, 400)

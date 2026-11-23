@@ -4,7 +4,9 @@
  * program that is not DPI aware - Windows cut the window to the screen, the game's frame to ~1284x600, and the picture
  * lost its right part.  Here the window asks for 320 more than this screen allows (1600 - 1280), so the cut happens on
  * any screen; the device is made the game's way (windowed, back-buffer 0 x 0 = the client's size, 0x760E89).
- *   test_winsize.exe <path to wccfk.dll>     (named client_Release.exe) */
+ * With "seat" (WCCFPANEL_ROLE=seat1) the hook must leave the window as Windows made it: a seat is DPI aware, and its
+ * F11 restore would come back wider than the screen.
+ *   test_winsize.exe <path to wccfk.dll> [seat]     (named client_Release.exe) */
 #define COBJMACROS
 #include <windows.h>
 #include <d3d9.h>
@@ -16,7 +18,7 @@ static int g_fail = 0, g_n = 0;
 
 int main(int argc, char **argv)
 {
-    const DWORD style = WS_CAPTION | WS_SYSMENU;             /* the game's windowed style (0x91D430) */
+    const DWORD style = WS_CAPTION | WS_SYSMENU;             /* the game's windowed style 0x00C80000 (0x91D4F4) */
     const int ch = 600, pw = 990, ph = 592;                  /* the player's projector window: 990x592 client */
     int cw = GetSystemMetrics(SM_CXMAXTRACK) + 320, fw, fh;
     float a, gw, gh;
@@ -46,6 +48,11 @@ int main(int argc, char **argv)
         goto done;
     GetClientRect(h, &c);
     printf("asked %dx%d, client %ldx%ld\n", cw, ch, c.right, c.bottom);
+    if (argc > 2 && !lstrcmpA(argv[2], "seat")) {
+        CHECK(c.right < cw, "a seat's window left as Windows made it, no wider than the screen");
+        DestroyWindow(h);
+        goto done;
+    }
     CHECK(c.right == cw && c.bottom == ch, "the client is the size the game asked for, wider than the screen");
     fw = c.right; fh = c.bottom;
 

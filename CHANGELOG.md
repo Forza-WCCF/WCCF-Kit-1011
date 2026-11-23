@@ -9,9 +9,10 @@ game is not included. Newest first; each date is the day that kit was built.
 ### Fixed
 - The projector showed only part of its picture on a screen narrower than its 1600x600 window, such as a 1920x1200
   tablet at 150 % scaling (1280 wide for the projector): Windows cut the window to the screen, the game drew its
-  picture at that cut size and the right part was lost, so no resize brought it back. The hook now keeps the game's
-  window at the size the game asked for, and the projector window shows the whole picture at any size
-  (`source\hook\wccfk.c`).
+  picture at that cut size and the right part was lost, so no resize brought it back. The hook now keeps the
+  projector's window at the size the game asked for until its picture is made, and the projector window then opens
+  fitted to the screen with the whole picture in it, black bars kept to its shape (`source\hook\wccfk.c`,
+  `source\panel\wccfpanel.c`). The seats are unchanged.
 
 ## Kit 9.4 - 2026-11-19
 

@@ -5929,7 +5929,7 @@ static LRESULT CALLBACK wndproc(HWND h, UINT m, WPARAM wp, LPARAM lp)
 }
 
 // ---------------------------------------------------------------- the projector's window (2026-10-20, the owner)
-// For a second monitor, the game on the other: the window opens as before, at the game's own size, and can now be
+// For a second monitor, the game on the other: the window opens at the game's own size (fitted to a smaller screen), and can be
 // resized (the picture keeps its shape, black bars around it) and put fullscreen - borderless, over the whole monitor
 // it is on.  F11 or a double-click toggles fullscreen, Esc leaves it; drag the window onto the other monitor first.
 #define WM_WCCF_PROJ (WM_APP + 0x58)            // ours: give the window its resizable frame, on the window's own thread
@@ -5939,17 +5939,36 @@ static DWORD g_proj_click = 0;                  // the last left click (the game
 static POINT g_proj_click_pos;
 static int   g_proj_click_pending = 0;
 
-static void proj_frame(HWND h)                  // a resizable frame; the client stays at the game's own size
+// a resizable frame; the client stays at the game's own size, or, when that frame is bigger than the monitor's work
+// area (a 1920x1200 tablet at 150 %: 1280x800 for the game, 2026-11-23), shrinks, shape kept, until the frame fits it -
+// the back-buffer stays the game's, so the whole picture is letterboxed (hook_present).  WCCFPANEL_FS_RECT: the tests'
+// pretend work area
+static void proj_frame(HWND h)
 {
-    RECT cr, wr, fr; LONG st = GetWindowLongA(h, GWL_STYLE), ex = GetWindowLongA(h, GWL_EXSTYLE);
+    RECT cr, wr, fr, wa = {0, 0, 0, 0}; MONITORINFO mi; LONG st = GetWindowLongA(h, GWL_STYLE), ex = GetWindowLongA(h, GWL_EXSTYLE);
     LONG want = (st & ~(LONG)WS_POPUP) | (LONG)(WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
-    if (want == st || !GetClientRect(h, &cr) || !GetWindowRect(h, &wr)) return;
-    SetWindowLongA(h, GWL_STYLE, want);
+    int cw, ch, bw, bh, aw, ah, x, y;
+    if (!GetClientRect(h, &cr) || !GetWindowRect(h, &wr)) return;
+    if (want != st) SetWindowLongA(h, GWL_STYLE, want);
     fr = cr;
     AdjustWindowRectEx(&fr, (DWORD)want, FALSE, (DWORD)ex);
-    SetWindowPos(h, NULL, wr.left, wr.top, fr.right - fr.left, fr.bottom - fr.top,
-                 SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
-    logline("projector: resizable window, client %ldx%ld", cr.right, cr.bottom);
+    cw = cr.right; ch = cr.bottom; x = wr.left; y = wr.top;
+    bw = (fr.right - fr.left) - cw; bh = (fr.bottom - fr.top) - ch;
+    mi.cbSize = sizeof mi;
+    if (!test_rect(&wa) && GetMonitorInfoA(MonitorFromWindow(h, MONITOR_DEFAULTTONEAREST), &mi)) wa = mi.rcWork;
+    aw = wa.right - wa.left - bw; ah = wa.bottom - wa.top - bh;   // the room for the client
+    if (cw > 0 && ch > 0 && aw > 0 && ah > 0 && (cw > aw || ch > ah)) {
+        if ((LONGLONG)aw * ch <= (LONGLONG)ah * cw) { ch = MulDiv(ch, aw, cw); cw = aw; }
+        else { cw = MulDiv(cw, ah, ch); ch = ah; }
+        x = max(wa.left, min(x, wa.right - (cw + bw)));
+        y = max(wa.top, min(y, wa.bottom - (ch + bh)));
+    }
+    SetWindowPos(h, NULL, x, y, cw + bw, ch + bh, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    if (cw != cr.right || ch != cr.bottom)
+        logline("projector: resizable window, client %dx%d (the game's %ldx%ld fitted to the screen's %ldx%ld work area)",
+                cw, ch, cr.right, cr.bottom, wa.right - wa.left, wa.bottom - wa.top);
+    else
+        logline("projector: resizable window, client %ldx%ld", cr.right, cr.bottom);
 }
 
 static void proj_fullscreen(HWND h)             // fullscreen on the window's monitor <-> the window as it was

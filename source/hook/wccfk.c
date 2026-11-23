@@ -1653,8 +1653,27 @@ static void install_graphics(HMODULE exe)
  * with a title bar no bigger than the screen.  The projector is not DPI aware (play.py), so on a 1920x1200 tablet at
  * 150 % its screen is 1280x800: the 1600x600 window came out ~1284x600, and the game, laying out its 1600-wide
  * picture, drew only its left part ("it seems half projector, I've tried to resize").  So the window is put back at
- * the size asked, past Windows' cut (SWP_NOSENDCHANGING), before the game makes its device; the panel shows the
- * whole frame letterboxed in whatever window the player picks.  A window Windows left alone is not touched. */
+ * the size asked, past Windows' cut (SWP_NOSENDCHANGING), before the game makes its device; once the device exists
+ * the panel fits the window to the screen (proj_frame) and letterboxes the whole frame in it.  The projector only: a
+ * seat is DPI aware (play.py) and its F11 restore would come back wider than the screen.  A window Windows left
+ * alone is not touched. */
+static int is_projector(void)            /* wccfpanel.c's is_projector: WCCFPANEL_ROLE, else the game's folder */
+{
+    char e[16], exe[MAX_PATH], game[MAX_PATH], full[MAX_PATH], *sl, *dir;
+    DWORD n;
+    size_t k;
+    if (GetEnvironmentVariableA("WCCFPANEL_ROLE", e, sizeof e) > 0) return !lstrcmpiA(e, "projector");
+    if (!GetModuleFileNameA(NULL, exe, MAX_PATH) || !(sl = strrchr(exe, '\\'))) return 0;
+    *sl = 0;
+    dir = strrchr(exe, '\\');
+    if (!lstrcmpiA(dir ? dir + 1 : exe, "extracted")) return 1;
+    n = GetEnvironmentVariableA("WCCF_GAME", game, MAX_PATH);
+    if (n == 0 || n >= MAX_PATH || !GetFullPathNameA(game, MAX_PATH, full, NULL)) return 0;
+    k = strlen(full);
+    while (k > 3 && full[k - 1] == '\\') full[--k] = 0;
+    return !lstrcmpiA(full, exe);
+}
+
 typedef HWND (WINAPI *pfn_CreateWindowExA)(DWORD, LPCSTR, LPCSTR, DWORD, int, int, int, int, HWND, HMENU, HINSTANCE, LPVOID);
 static pfn_CreateWindowExA real_CreateWindowExA;
 
@@ -1665,9 +1684,12 @@ static HWND WINAPI hook_CreateWindowExA(DWORD ex, LPCSTR cls, LPCSTR name, DWORD
     RECT r;
     if (wnd && !parent && !(style & WS_CHILD) && w > 0 && h > 0 && GetWindowRect(wnd, &r) &&
         (r.right - r.left < w || r.bottom - r.top < h)) {
-        SetWindowPos(wnd, NULL, 0, 0, w, h, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOSENDCHANGING);
-        logline("window size: Windows made the game's window %ldx%ld, smaller than the screen allows for its %dx%d - "
-                "put back, so the game draws its whole picture", r.right - r.left, r.bottom - r.top, w, h);
+        RECT a;
+        BOOL ok = SetWindowPos(wnd, NULL, 0, 0, w, h, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOSENDCHANGING) &&
+                  GetWindowRect(wnd, &a) && a.right - a.left == w && a.bottom - a.top == h;
+        logline("window size: Windows made the game's window %ldx%ld, smaller than the screen allows for its %dx%d - %s",
+                r.right - r.left, r.bottom - r.top, w, h,
+                ok ? "put back, so the game draws its whole picture" : "NOT put back (the game draws a cut picture)");
     }
     return wnd;
 }
@@ -1695,8 +1717,10 @@ static void install_hooks(void)
     install_jvs_unlatch(exe);
     install_pictures(exe);
     install_graphics(exe);
-    if (is_client())             /* a seat or the projector: its window kept at its size (window size, above) */
+    if (is_client() && is_projector()) {     /* the projector's window kept at its size (window size, above) */
         real_CreateWindowExA = (pfn_CreateWindowExA)patch_iat(exe, "user32.dll", "CreateWindowExA", hook_CreateWindowExA);
+        logline("window size: CreateWindowExA hook %s", real_CreateWindowExA ? "installed (the projector)" : "NOT installed - import not found");
+    }
     if (g_ringedge && !real_CloseHandle) {
         int n = 0;
         real_CloseHandle = (pfn_CloseHandle)hook_k32(exe, "CloseHandle", hook_CloseHandle, &n);
