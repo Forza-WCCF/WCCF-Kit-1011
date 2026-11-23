@@ -4,6 +4,15 @@ Community tools for WCCF 2010-11 (Rev D): a launcher, stand-ins for the cabinet'
 your own copy's server, projector and player cabinet run on one Windows PC - and online play on a shared server. The
 game is not included. Newest first; each date is the day that kit was built.
 
+## Unreleased
+
+### Fixed
+- The projector showed only part of its picture on a screen narrower than its 1600x600 window, such as a 1920x1200
+  tablet at 150 % scaling (1280 wide for the projector): Windows cut the window to the screen, the game drew its
+  picture at that cut size and the right part was lost, so no resize brought it back. The hook now keeps the game's
+  window at the size the game asked for, and the projector window shows the whole picture at any size
+  (`source\hook\wccfk.c`).
+
 ## Kit 9.4 - 2026-11-19
 
 ### Added

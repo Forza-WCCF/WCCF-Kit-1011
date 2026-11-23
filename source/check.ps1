@@ -27,6 +27,8 @@
 #   a crash leaves a lean and a full memory snapshot (source\test_crash_dump.py: build\crashme.exe under the real
 #   debugger.py, from a scratch folder)
 #   SETTINGS > GRAPHICS' NEXT START rows reach the game's hook, valid values only (source\test_graphics_env.py)
+#   the game's window kept at the size it asked for on a smaller screen, its frame whole (hook\test_winsize.c as
+#   client_Release.exe in a scratch folder, with programs\wccfk.dll)
 #   the panel's money, relay, dealt-card, settings and TEXTURES self-tests (wccfpanel.dll loaded by source\build\fakegame.exe, in a
 #   scratch folder; the relay test plays two seats through code\server\relay.py on 127.0.0.1:20941 - the C side and
 #   the Python side of the match relay checked against each other)
@@ -178,6 +180,14 @@ if ($LASTEXITCODE) { $failed += 'the I/O board: the error mark off only on Sega'
 if ($LASTEXITCODE) { $failed += 'the English pictures: only Sega''s exact picture swapped, the fingerprint as english.py''s' }
 & (Join-Path $PSScriptRoot 'build\test_patience.exe')
 if ($LASTEXITCODE) { $failed += 'patience: Sega''s link limits raised only on their bytes, Windows takes the waiting time' }
+# the game's window at the size it asked for, wider than the screen (a tablet's projector): the test runs as
+# client_Release.exe in a scratch folder, so the real wccfk.dll hooks it as the game
+$t = Join-Path ([IO.Path]::GetTempPath()) "wccfk-winsize-$PID"
+New-Item -ItemType Directory -Force $t | Out-Null
+Copy-Item (Join-Path $PSScriptRoot 'build\test_winsize.exe') (Join-Path $t 'client_Release.exe')
+& (Join-Path $t 'client_Release.exe') (Join-Path $kit 'programs\wccfk.dll')
+if ($LASTEXITCODE) { $failed += 'the game''s window: the size it asked for, its frame whole (the tablet''s projector)' }
+Remove-Item -Recurse -Force $t -ErrorAction SilentlyContinue
 & $py -I (Join-Path $PSScriptRoot 'test_crash_dump.py')
 if ($LASTEXITCODE) { $failed += 'a crash leaves its memory snapshots (lean + full) in data\dumps' }
 

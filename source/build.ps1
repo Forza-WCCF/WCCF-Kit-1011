@@ -80,6 +80,7 @@ Build-C 'hook\test_wholemsg.c' "$obj\test_wholemsg.exe" ''
 Build-C 'hook\test_jvs.c' "$obj\test_jvs.exe" ''
 Build-C 'hook\test_pictures.c' "$obj\test_pictures.exe" ''
 Build-C 'hook\test_patience.c' "$obj\test_patience.exe" ''
+Build-C 'hook\test_winsize.c' "$obj\test_winsize.exe" '' @() @('d3d9.lib', 'user32.lib')
 Build-C 'crashme.c' "$obj\crashme.exe" ''
 Build-C 'spin.c' "$obj\zz_spin.exe" ''
 

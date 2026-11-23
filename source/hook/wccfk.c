@@ -35,7 +35,9 @@
  *    instead of ending in Error 3000: see "patience";
  *  - SETTINGS > GRAPHICS' NEXT START rows (2026-10-18): anti-aliasing, the
  *    shadow maps and motion blur, patched in the game before
- *    it draws - see "graphics".
+ *    it draws - see "graphics";
+ *  - keeps the game's window at the size it asked for when Windows cut it
+ *    to a smaller screen (2026-11-23): see "window size".
  *
  * Load method : the game's renamed import (wccfk.dll in its folder; no process injection).
  * Hook method : IAT patch of the game module's imports (in-process), by name
@@ -1645,6 +1647,31 @@ static void install_graphics(HMODULE exe)
     }
 }
 
+/* ---- window size (2026-11-23): the game's window at the size it asked for --------------------------------------
+ * The game makes its window (0x91D430: CreateWindowExA, its client framed by AdjustWindowRect) and, windowed, lets
+ * Direct3D take the back-buffer's size from that client (BackBufferWidth/Height 0, 0x760E89).  Windows makes a window
+ * with a title bar no bigger than the screen.  The projector is not DPI aware (play.py), so on a 1920x1200 tablet at
+ * 150 % its screen is 1280x800: the 1600x600 window came out ~1284x600, and the game, laying out its 1600-wide
+ * picture, drew only its left part ("it seems half projector, I've tried to resize").  So the window is put back at
+ * the size asked, past Windows' cut (SWP_NOSENDCHANGING), before the game makes its device; the panel shows the
+ * whole frame letterboxed in whatever window the player picks.  A window Windows left alone is not touched. */
+typedef HWND (WINAPI *pfn_CreateWindowExA)(DWORD, LPCSTR, LPCSTR, DWORD, int, int, int, int, HWND, HMENU, HINSTANCE, LPVOID);
+static pfn_CreateWindowExA real_CreateWindowExA;
+
+static HWND WINAPI hook_CreateWindowExA(DWORD ex, LPCSTR cls, LPCSTR name, DWORD style, int x, int y, int w, int h,
+                                        HWND parent, HMENU menu, HINSTANCE inst, LPVOID param)
+{
+    HWND wnd = real_CreateWindowExA(ex, cls, name, style, x, y, w, h, parent, menu, inst, param);
+    RECT r;
+    if (wnd && !parent && !(style & WS_CHILD) && w > 0 && h > 0 && GetWindowRect(wnd, &r) &&
+        (r.right - r.left < w || r.bottom - r.top < h)) {
+        SetWindowPos(wnd, NULL, 0, 0, w, h, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOSENDCHANGING);
+        logline("window size: Windows made the game's window %ldx%ld, smaller than the screen allows for its %dx%d - "
+                "put back, so the game draws its whole picture", r.right - r.left, r.bottom - r.top, w, h);
+    }
+    return wnd;
+}
+
 static void install_hooks(void)
 {
     HMODULE exe = GetModuleHandleW(NULL);
@@ -1668,6 +1695,8 @@ static void install_hooks(void)
     install_jvs_unlatch(exe);
     install_pictures(exe);
     install_graphics(exe);
+    if (is_client())             /* a seat or the projector: its window kept at its size (window size, above) */
+        real_CreateWindowExA = (pfn_CreateWindowExA)patch_iat(exe, "user32.dll", "CreateWindowExA", hook_CreateWindowExA);
     if (g_ringedge && !real_CloseHandle) {
         int n = 0;
         real_CloseHandle = (pfn_CloseHandle)hook_k32(exe, "CloseHandle", hook_CloseHandle, &n);
