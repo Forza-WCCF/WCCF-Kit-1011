@@ -27,6 +27,7 @@
 #   a crash leaves a lean and a full memory snapshot (source\test_crash_dump.py: build\crashme.exe under the real
 #   debugger.py, from a scratch folder)
 #   SETTINGS > GRAPHICS' NEXT START rows reach the game's hook, valid values only (source\test_graphics_env.py)
+#   the run log's graphics-card line never raises on a PC's ANSI code page (source\test_graphics_card_log.py)
 #   the panel's money, relay, dealt-card, settings and TEXTURES self-tests (wccfpanel.dll loaded by source\build\fakegame.exe, in a
 #   scratch folder; the relay test plays two seats through code\server\relay.py on 127.0.0.1:20941 - the C side and
 #   the Python side of the match relay checked against each other)
@@ -65,6 +66,8 @@ if ($LASTEXITCODE) { $failed += 'play.py PANEL' }
 
 & $py -I (Join-Path $PSScriptRoot 'test_graphics_env.py') | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'GRAPHICS: panel.txt''s msaa= shadows= motion_blur= reach the hook, valid values only' }
+& $py -I (Join-Path $PSScriptRoot 'test_graphics_card_log.py') | Select-Object -Last 1
+if ($LASTEXITCODE) { $failed += 'the run log''s graphics-card line never raises on an ANSI code page' }
 
 & $py -I (Join-Path $kit 'code\hardware\keyboard.py') --selftest | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'key driver self-test' }

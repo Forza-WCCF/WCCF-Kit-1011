@@ -145,10 +145,13 @@ def graphics_cards():
             # every adapter, not only the desktop's: a virtual display (a streaming app's) can be the only one
             cards[d.DeviceString] = cards.get(d.DeviceString, False) or bool(d.StateFlags & 0x4)  # PRIMARY_DEVICE
             i += 1
-        return ", ".join(n + (" (primary)" if p else "") for n, p in sorted(cards.items(), key=lambda c: not c[1])) \
+        text = ", ".join(n + (" (primary)" if p else "") for n, p in sorted(cards.items(), key=lambda c: not c[1])) \
             or "none named"
     except Exception as e:                       # a log line never stops a start
-        return "not read (%s)" % e
+        text = "not read (%s)" % e
+    # ASCII only: stdout is the run log in the PC's ANSI code page, where a card's Japanese name could not be
+    # written - the print would raise and stop the game's start
+    return text.encode("ascii", "backslashreplace").decode("ascii")
 
 
 def mosuppl_bytes():
