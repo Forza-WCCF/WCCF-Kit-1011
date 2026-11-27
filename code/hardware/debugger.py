@@ -130,6 +130,27 @@ MOSUPPL = ["game_motion_table_moai.bin", "game_actionsetup_table_moai.bin",
            "game_movepack_table_moai.bin", "game_request_table_moai.bin"]
 
 
+class _DisplayDevice(ctypes.Structure):
+    _fields_ = [("cb", w.DWORD), ("DeviceName", w.WCHAR * 32), ("DeviceString", w.WCHAR * 128),
+                ("StateFlags", w.DWORD), ("DeviceID", w.WCHAR * 128), ("DeviceKey", w.WCHAR * 128)]
+
+
+def graphics_cards():
+    """the PC's graphics cards as Windows names them, the primary display's first
+    (2026-11-27: a player's report of dark 3D or a crash at the main menu needs the card, #87 / #89)"""
+    try:
+        cards, i, d = {}, 0, _DisplayDevice()
+        d.cb = ctypes.sizeof(d)
+        while ctypes.windll.user32.EnumDisplayDevicesW(None, i, ctypes.byref(d), 0):
+            # every adapter, not only the desktop's: a virtual display (a streaming app's) can be the only one
+            cards[d.DeviceString] = cards.get(d.DeviceString, False) or bool(d.StateFlags & 0x4)  # PRIMARY_DEVICE
+            i += 1
+        return ", ".join(n + (" (primary)" if p else "") for n, p in sorted(cards.items(), key=lambda c: not c[1])) \
+            or "none named"
+    except Exception as e:                       # a log line never stops a start
+        return "not read (%s)" % e
+
+
 def mosuppl_bytes():
     """SBWG_moSuppl exactly as the launcher builds it."""
     header, body, off = [], [], 16
@@ -745,6 +766,7 @@ def main(argv):
     me = k.GetCurrentProcess()                   # every event freezes the game until we answer: answer fast
     print("  this debugger: high priority %s, Windows' throttling off: %s" % (
         "yes" if k.SetPriorityClass(me, HIGH_PRIORITY_CLASS) else "NO", full_speed(me) or "NO"))
+    print("  graphics: %s" % graphics_cards())
 
     si = None
     if "hide" in lower:
