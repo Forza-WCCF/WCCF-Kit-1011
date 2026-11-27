@@ -4,6 +4,7 @@ runs it; nothing of the game runs).  A scratch kit; inboxes on 127.0.0.1:20952-2
     python source\\test_send_logs.py"""
 import io
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -196,6 +197,36 @@ try:
         s.close()
     left = os.listdir(keep5) if os.path.isdir(keep5) else []
     check("a header trickled past its deadline: cut, nothing kept", closed and not left, "%s %s" % (closed, left))
+
+    # SAVE LOGS (2026-11-27): the same ZIP into a folder, whole; the panel helper's "save" request, nothing sent
+    down = os.path.join(tmp, "Downloads")
+    os.makedirs(down)
+    path = S.save(blob, "9.4", down)
+    with open(path, "rb") as f:
+        same = f.read() == blob
+    check("save: the ZIP whole in the folder, named WCCF-2010-11-logs-VERSION-DATE-TIME.zip, no temporary file left",
+          same and re.fullmatch(r"WCCF-2010-11-logs-9\.4-\d{8}-\d{6}\.zip", os.path.basename(path)) and
+          os.listdir(down) == [os.path.basename(path)], ", ".join(os.listdir(down)))
+    check("downloads: a folder that is there", os.path.isdir(S.downloads()), S.downloads())
+    from helpers import panel as P
+    down2 = os.path.join(tmp, "Downloads2")
+    os.makedirs(down2)
+    S.downloads = lambda: down2                        # the helper's save goes here, not to this PC's Downloads
+    data = os.path.join(kit, "data")
+    with open(os.path.join(data, "sendlogs.request"), "w", encoding="ascii") as f:
+        f.write("save\n")
+    h = P.SendLogs.__new__(P.SendLogs)                 # no __init__: it removes a request left by an earlier run
+    h.req, h.res = os.path.join(data, "sendlogs.request"), os.path.join(data, "sendlogs.result")
+    h.kit, h.job = kit, None
+    h.tick()
+    if h.job:
+        h.job.join(30)
+    with open(h.res, encoding="ascii") as f:
+        res = f.read().strip()
+    got = os.listdir(down2)
+    check("the panel's SAVE LOGS (request \"save\"): the ZIP in Downloads, \"saved NAME\" for the panel, the request taken",
+          got and res == "saved " + got[0] and not os.path.exists(h.req) and
+          "logs/run_seat1.txt" in zipfile.ZipFile(os.path.join(down2, got[0])).namelist(), "%s %r" % (res, got))
 finally:
     for p in procs:
         p.kill()

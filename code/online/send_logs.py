@@ -12,12 +12,16 @@ Also the newest DUMPS_SENT lean memory snapshots of a crash (data\dumps\*_lean.d
 there the same names are blanked with as many underscores (also in UTF-16), so the file keeps its layout and opens.
 A note (why it was sent: play.py's report after a run that went wrong) goes in as report.txt.
     python code\online\send_logs.py ADDRESS [--note TEXT]
+SAVE LOGS (2026-11-27, as Forza-WCCF's): the same ZIP saved in the player's Downloads folder (save()), nothing sent, for
+a player with no server or a game that ends before its SETTINGS - the panel (data\sendlogs.request "save"),
+"PLAY.exe logs" and play.py after a run that went wrong.
 """
 import io
 import os
 import re
 import socket
 import sys
+import time
 import zipfile
 
 import kit_common as K
@@ -151,6 +155,38 @@ def pack(kit=KIT, game=None, tail=TAIL, note=None):
     if len(blob) > LIMIT and tail > 64 * 1024:
         return pack(kit, game, tail // 4, note)
     return blob, n
+
+
+def downloads():
+    """the user's Downloads folder: Windows' known folder, else %USERPROFILE%\\Downloads, else the kit's data folder"""
+    try:
+        import ctypes
+        import uuid
+        p = ctypes.c_wchar_p()
+        guid = ctypes.create_string_buffer(uuid.UUID("374DE290-123F-4565-9164-39C4925E467B").bytes_le)  # FOLDERID_Downloads
+        if ctypes.windll.shell32.SHGetKnownFolderPath(guid, 0, None, ctypes.byref(p)) == 0:
+            folder = p.value
+            ctypes.windll.ole32.CoTaskMemFree(p)
+            if folder and os.path.isdir(folder):
+                return folder
+    except (AttributeError, OSError):
+        pass
+    folder = os.path.join(os.environ.get("USERPROFILE") or os.path.expanduser("~"), "Downloads")
+    return folder if os.path.isdir(folder) else K.DATA
+
+
+def zip_name(ver, now=None):
+    return "WCCF-2010-11-logs-%s-%s.zip" % (ver, time.strftime("%Y%m%d-%H%M%S", time.localtime(now)))
+
+
+def save(blob, ver, folder=None):
+    """SAVE LOGS: the ZIP written whole (a temporary file, then one swap) into folder (downloads()); its path"""
+    folder = folder or downloads()
+    path = os.path.join(folder, zip_name(ver))
+    with open(path + ".tmp", "wb") as f:
+        f.write(blob)
+    os.replace(path + ".tmp", path)
+    return path
 
 
 def send(address, blob, ver, port=PORT, timeout=60.0):

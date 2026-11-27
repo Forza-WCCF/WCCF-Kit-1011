@@ -17,6 +17,8 @@ stops the helper: RESTART NOW does not depend on it.
 SEND LOGS (the SETTINGS panel, 2026-10-09): the panel writes data\sendlogs.request with the server's address; this
 helper takes it away, packs and sends the logs (online\send_logs.py) in a thread of its own, and writes data\sendlogs.result
 for the panel: "sending", then "ok CODE" or "fail WHY".  An old request at the start is removed, never sent.
+SAVE LOGS (2026-11-27): the request "save" instead of an address - the same ZIP into the Downloads folder, nothing
+sent: "saving", then "saved NAME" or "fail WHY".
 
 THE ONLINE CLUB CARD (2026-10-14): online and signed in (play.py WCCF_CLUB_CARD), each save of the account's club
 card goes to wccf.online (online\club.py upload) once the card has held still for 2 s and its last save was the
@@ -144,13 +146,19 @@ class SendLogs:
         try:
             from online import send_logs
             blob, n = send_logs.pack(self.kit)
+            if address == "save":           # SAVE LOGS: into the Downloads folder, nothing sent
+                path = send_logs.save(blob, send_logs.version(self.kit))
+                say("SAVE LOGS: %d files, %d KB - %s" % (n, len(blob) // 1024, path))
+                self.result("saved %s" % os.path.basename(path))
+                return
             ok, what = send_logs.send(address, blob, send_logs.version(self.kit))
             say("SEND LOGS to %s: %d files, %d KB - %s" % (address, n, len(blob) // 1024,
                                                           "code " + what if ok else "not sent: " + what))
             self.result(("ok %s" if ok else "fail %s") % what)
         except Exception as ex:             # never stops the helper: the panel is told
-            say("SEND LOGS failed: %r" % ex)
-            self.result("fail could not pack the logs (%s)" % ex.__class__.__name__)
+            say("%s failed: %r" % ("SAVE LOGS" if address == "save" else "SEND LOGS", ex))
+            self.result("fail could not %s the logs (%s)" % ("save" if address == "save" else "pack",
+                                                             ex.__class__.__name__))
 
     def tick(self):
         if not os.path.exists(self.req) or (self.job and self.job.is_alive()):
@@ -161,11 +169,11 @@ class SendLogs:
             os.remove(self.req)             # taken first: one request, one upload
         except OSError:
             return
-        if not re.fullmatch(r"\d{1,3}(\.\d{1,3}){3}", address):
+        if address != "save" and not re.fullmatch(r"\d{1,3}(\.\d{1,3}){3}", address):
             self.result("fail no server address - type it under PLAY ON first")
             return
-        self.result("sending")
-        say("SEND LOGS asked - packing and sending to %s" % address)
+        self.result("saving" if address == "save" else "sending")
+        say("SAVE LOGS asked - packing" if address == "save" else "SEND LOGS asked - packing and sending to %s" % address)
         self.job = threading.Thread(target=self.run, args=(address,), daemon=True)
         self.job.start()
 

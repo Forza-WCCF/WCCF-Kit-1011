@@ -3347,7 +3347,10 @@ static int run_has_projector(const char *running)   // running.json: an online r
 // address); panel.py packs the logs (send_logs.py, never the club card) and sends them to that server's log
 // inbox, and writes data\sendlogs.result: "sending", then "ok CODE" or "fail WHY" - shown under the button.  Not taken
 // in 5 s = no helper: removed, and said.
+// SAVE LOGS (2026-11-27, as Forza-WCCF's): beside it, one click writes the request "save": the same ZIP goes into the
+// Downloads folder, nothing sent (no server needed) - "saving", then "saved NAME" or "fail WHY" on the same line.
 static DWORD g_lg_armed = 0;             // armed until this tick
+static int   g_lg_save = 0;              // the last request was SAVE LOGS (the line under the chips says saved / not saved)
 static DWORD g_lg_sent = 0;              // when the request was written (0 = none waiting)
 static char  g_lg_res[96] = "";          // the helper's last answer this run ("" = none)
 static ULONGLONG g_lg_stamp = 0;         // the answer file's time when it was last read (an older run's is not shown)
@@ -3452,6 +3455,8 @@ static int set_save_locked(void)
 
 // the tests only (check.ps1: WCCFPANEL_SETTEST, a scratch data\): a save keeps what the panel does not show -
 // auto_logs=0, the player's "no automatic report" (play.py, 2026-10-11) - and the choices it does show
+static void logs_row_selftest(void);   // (below set_geo)
+
 static void set_selftest(void)
 {
     char buf[1024]; FILE *f; size_t got = 0; int ok, i;
@@ -3627,6 +3632,7 @@ static void set_selftest(void)
     LeaveCriticalSection(&g_board_cs);
     logline("settings test: %s  graphics presets keep SHOW PROJECTOR and auto_logs; a projector change keeps LOW",
             ok ? "PASS" : "FAIL");
+    logs_row_selftest();
 }
 
 static void set_init(void)               // the init thread: where data\ is, and what the file says
@@ -4162,9 +4168,9 @@ static void fmt_when(char *out, size_t cap, ULONGLONG t)   // a file time as the
 // ACCOUNT, with SIGN OUT at its right end); "NEXT START" with two rows of choices (THIS PC / ONLINE / DREAM TEAM + the
 // address box, ENGLISH / ITALIANO / JAPANESE) and RESTART NOW; "VIEW" with the LAYOUT (CABINET / COMPACT, 2026-10-06), at once,
 // SHOW PROJECTOR beside LAYOUT (next online start), GRAPHICS beside the VIEW heading, CONTROLLER IN THE BACKGROUND
-// right of SEND LOGS on the LOGS row (at once, the key driver's)
+// right of SEND LOGS and SAVE LOGS on the LOGS row (at once, the key driver's)
 #define SET_ROWS 7
-struct SGeo { float x0, x1, lx, vx, rowh, ynow, ynext, yview; RECT close, pc, online, dream, addr, eng, ita, jap, restart, projrs, cab, cmp, proj, padbg[2], gfx, logs, signout; };
+struct SGeo { float x0, x1, lx, vx, rowh, ynow, ynext, yview; RECT close, pc, online, dream, addr, eng, ita, jap, restart, projrs, cab, cmp, proj, padbg[2], gfx, logs, savelg, signout; };
 
 static void set_geo(struct SGeo *g)
 {
@@ -4196,11 +4202,24 @@ static void set_geo(struct SGeo *g)
     g->gfx = RC(g->x1 - 206.0f * s, g->yview - 8.0f * s,
                 g->x1 - 36.0f * s, g->yview + 26.0f * s);  // GRAPHICS beside the VIEW heading
     y += 36.0f * s + 30.0f * s;                            // under LAYOUT's note: LOGS - SEND LOGS (2026-10-09)
-    g->logs = RC(g->vx, y, g->vx + 270.0f * s, y + 38.0f * s);
+    g->logs = RC(g->vx, y, g->vx + 135.0f * s, y + 38.0f * s);
+    g->savelg = RC(g->vx + 145.0f * s, y, g->vx + 270.0f * s, y + 38.0f * s);   // SAVE LOGS (2026-11-27)
     // CONTROLLER IN THE BACKGROUND (2026-11-10): on the LOGS row, right of SEND LOGS - the page's note toast (the
     // bottom 70..22) painted over a row of its own and a click still tested the rect it hid
     g->padbg[1] = RC(g->x1 - 88.0f * s, y, g->x1 - 18.0f * s, y + 36.0f * s);
     g->padbg[0] = RC(g->padbg[1].left - 80.0f * s, y, g->padbg[1].left - 10.0f * s, y + 36.0f * s);
+}
+
+static void logs_row_selftest(void)      // the LOGS row at the design size, CABINET (the narrow one):
+{                                        // SEND LOGS | SAVE LOGS | CONTROLLER IN THE BACKGROUND | OFF ON
+    struct SGeo g; float s0 = g_s, l0 = g_mx0, r0 = g_mx1;
+    float adv = g_advw > 0 ? (float)g_advw : 14.0f;              // no font yet: Consolas at -26 moves 14 px a letter
+    g_s = 1.0f; g_mx0 = DES_L; g_mx1 = DES_R;
+    set_geo(&g);
+    g_s = s0; g_mx0 = l0; g_mx1 = r0;
+    logline("settings test: %s  SEND LOGS, SAVE LOGS, CONTROLLER IN THE BACKGROUND and its OFF / ON never overlap",
+            g.logs.right < g.savelg.left && g.savelg.top == g.logs.top &&
+            (float)g.savelg.right + 18.0f + 28.0f * adv * 0.44f < (float)g.padbg[0].left ? "PASS" : "FAIL");
 }
 
 static void set_chip(IDirect3DDevice9 *dev, RECT r, const char *label, int on, float s)
@@ -4441,8 +4460,11 @@ static void set_draw(IDirect3DDevice9 *dev)
     set_chip(dev, g.padbg[1], "ON", g_pad_bg, s);
     set_chip(dev, g.gfx, "GRAPHICS >", 0, s);
     {
-        int armed = g_lg_armed && (LONG)(g_lg_armed - now) > 0, busy = g_lg_sent || !strcmp(g_lg_res, "sending");
-        set_chip(dev, g.logs, busy ? "SENDING ..." : armed ? "CLICK AGAIN TO SEND" : "SEND LOGS", armed || busy, s);
+        int armed = g_lg_armed && (LONG)(g_lg_armed - now) > 0, busy = g_lg_sent || !strcmp(g_lg_res, "sending") ||
+                                                                       !strcmp(g_lg_res, "saving");
+        set_chip(dev, g.logs, busy && !g_lg_save ? "SENDING ..." : armed ? "CLICK AGAIN TO SEND" : "SEND LOGS",
+                 armed || (busy && !g_lg_save), s);
+        set_chip(dev, g.savelg, busy && g_lg_save ? "SAVING ..." : "SAVE LOGS", busy && g_lg_save, s);
     }
     if (g_account[0]) {
         int armed = g_so_armed && (LONG)(g_so_armed - now) > 0;
@@ -4552,14 +4574,21 @@ static void set_draw(IDirect3DDevice9 *dev)
             : "CABINET: the cabinet's buttons around the game.  COMPACT: the game larger, without them");
     y = (float)g.logs.top + ((float)(g.logs.bottom - g.logs.top) - (float)g_cellh * 0.44f * s) * 0.5f;
     put_str(dev, g.lx + 12.0f * s, y, 0.44f * s, grey, "LOGS");
-    put_str(dev, (float)g.logs.right + 18.0f * s, y, 0.44f * s, grey, "CONTROLLER IN THE BACKGROUND");
+    put_str(dev, (float)g.savelg.right + 18.0f * s, y, 0.44f * s, grey, "CONTROLLER IN THE BACKGROUND");
     if (!strncmp(g_lg_res, "ok ", 3)) {                                      // the code, green: the player tells us it
         _snprintf(v, sizeof v, "CODE %s sent - post it in Discord with what went wrong", g_lg_res + 3);
         col = green;
-    } else if (!strncmp(g_lg_res, "fail ", 5)) { _snprintf(v, sizeof v, "not sent: %s", g_lg_res + 5); col = red; }
-    else if (g_lg_sent || !strcmp(g_lg_res, "sending")) { _snprintf(v, sizeof v, "packing and sending - a few seconds"); col = yellow; }
-    else if (!valid_ipv4(g_server)) { _snprintf(v, sizeof v, "they go to the server you play on - type its address under PLAY ON first"); col = grey; }
-    else { _snprintf(v, sizeof v, "this game's logs (never your club card) go to the server at %s", g_server); col = grey; }
+    } else if (!strncmp(g_lg_res, "saved ", 6)) {                         // SAVE LOGS: the file, for the player to send
+        _snprintf(v, sizeof v, "saved in your Downloads folder: %s", g_lg_res + 6);
+        col = green;
+    } else if (!strncmp(g_lg_res, "fail ", 5)) {
+        _snprintf(v, sizeof v, "%s: %s", g_lg_save ? "not saved" : "not sent", g_lg_res + 5); col = red;
+    } else if (g_lg_sent || !strcmp(g_lg_res, "sending") || !strcmp(g_lg_res, "saving")) {
+        _snprintf(v, sizeof v, "%s", g_lg_save ? "packing - a few seconds" : "packing and sending - a few seconds");
+        col = yellow;
+    }
+    else if (!valid_ipv4(g_server)) { _snprintf(v, sizeof v, "SAVE: in your Downloads folder.  SEND: to the server under PLAY ON"); col = grey; }
+    else { _snprintf(v, sizeof v, "never your club card - SAVE: in Downloads, SEND: to the server at %s", g_server); col = grey; }
     v[sizeof v - 1] = 0;
     put_str(dev, (float)g.logs.left, (float)g.logs.bottom + 8.0f * s, 0.40f * s, col, v);
     put_fit(dev, (float)g.logs.left, (float)g.logs.bottom + 28.0f * s, 0.40f * s, grey, g_pad_bg
@@ -4716,10 +4745,19 @@ static void set_click(HWND h, int x, int y)                     // a press insid
                 else { g_signout_req = 0; note_locked(red, "could not save data\\panel.txt - try again"); }
             }
             logline("settings: sign out %s", g_signout_req ? "asked" : g_so_armed ? "armed" : "not asked");
+        } else if (in_rect(&g.savelg, x, y)) {                // SAVE LOGS: one click, nothing leaves this PC
+            DWORD yellow = D3DCOLOR_ARGB(255, 255, 214, 40);
+            if (g_lg_sent || !strcmp(g_lg_res, "sending") || !strcmp(g_lg_res, "saving")) {
+                note_locked(yellow, "already packing - a few seconds");
+            } else if (sendlogs_request("save")) {
+                g_lg_armed = 0; g_lg_save = 1; g_lg_sent = GetTickCount(); g_lg_res[0] = 0;
+                note_locked(green, "saving this game's logs in your Downloads folder");
+                logline("settings: save logs asked");
+            } else note_locked(red, "could not ask for it - try again");
         } else if (in_rect(&g.logs, x, y)) {                  // SEND LOGS: click twice
             DWORD now = GetTickCount(), yellow = D3DCOLOR_ARGB(255, 255, 214, 40);
-            if (g_lg_sent || !strcmp(g_lg_res, "sending")) {
-                note_locked(yellow, "already sending - a few seconds");
+            if (g_lg_sent || !strcmp(g_lg_res, "sending") || !strcmp(g_lg_res, "saving")) {
+                note_locked(yellow, "already packing - a few seconds");
             } else if (!valid_ipv4(g_server)) {
                 note_locked(red, "type the server's address under PLAY ON first - the logs go there");
             } else if (!g_lg_armed || (LONG)(g_lg_armed - now) <= 0) {
@@ -4729,7 +4767,7 @@ static void set_click(HWND h, int x, int y)                     // a press insid
             } else {
                 g_lg_armed = 0;
                 if (sendlogs_request(g_server)) {
-                    g_lg_sent = now; g_lg_res[0] = 0;
+                    g_lg_save = 0; g_lg_sent = now; g_lg_res[0] = 0;
                     note_locked(green, "sending this game's logs to %s", g_server);
                     logline("settings: send logs asked (to %s)", g_server);
                 } else note_locked(red, "could not ask for it - try again");
