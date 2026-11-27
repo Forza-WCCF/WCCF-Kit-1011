@@ -145,7 +145,7 @@ LIFE = SERVER_LIFE                # the player side: a BACKSTOP only (A3, 2026-1
                                   # its game window is closed (source\launcher\src\watch.rs ends the whole run then);
                                   # the old 12-hour limit killed a long session mid-match, costing the card a bad
                                   # ending - so there is no short limit any more, only this far-off safety net
-PY = sys.executable
+PY = os.path.realpath(sys.executable)   # as Windows names the kit's pythons (kit_common.find_game)
 ICC_PIPE, JVS_PIPE = r"\\.\pipe\wccf_icc_seat1", r"\\.\pipe\wccf_jvs_seat1"
 KEYS_INPUT = os.path.join(K.DATA, "_jvs_seat1_input.txt")        # = hardware\keyboard.LIVE; the board's outputs beside it
 CARD = os.path.join(K.SAVE, "seat1_club.bin")
@@ -176,8 +176,10 @@ def kit_pythons():
     run the kit's own python\\python.exe, whichever Python runs this (2026-10-06: "stop" run with the system's Python
     matched THAT one - it found 0 and left 6 stand-ins running, and would have stopped any other program of it)"""
     kit_py = os.path.join(K.KIT, "python", "python.exe")
-    me = os.path.normcase(kit_py if os.path.isfile(kit_py) else PY)
-    return [p for p in K.processes() if os.path.normcase(p[3]) == me and p[0] != os.getpid()]
+    me = os.path.normcase(os.path.realpath(kit_py if os.path.isfile(kit_py) else PY))
+    # realpath: Windows keeps a short ~1 name in a program's path as given (kit_common.game_processes)
+    return [p for p in K.processes() if os.path.normcase(p[2]) == os.path.basename(me) and p[3]
+            and os.path.normcase(os.path.realpath(p[3])) == me and p[0] != os.getpid()]
 
 
 def card_in():
