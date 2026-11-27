@@ -148,7 +148,8 @@ class SendLogs:
             blob, n = send_logs.pack(self.kit)
             if address == "save":           # SAVE LOGS: into the Downloads folder, nothing sent
                 path = send_logs.save(blob, send_logs.version(self.kit))
-                say("SAVE LOGS: %d files, %d KB - %s" % (n, len(blob) // 1024, path))
+                # the name only: the folder can hold the user's name, and the next SEND LOGS sends this log
+                say("SAVE LOGS: %d files, %d KB - %s" % (n, len(blob) // 1024, os.path.basename(path)))
                 self.result("saved %s" % os.path.basename(path))
                 return
             ok, what = send_logs.send(address, blob, send_logs.version(self.kit))
@@ -156,7 +157,7 @@ class SendLogs:
                                                           "code " + what if ok else "not sent: " + what))
             self.result(("ok %s" if ok else "fail %s") % what)
         except Exception as ex:             # never stops the helper: the panel is told
-            say("%s failed: %r" % ("SAVE LOGS" if address == "save" else "SEND LOGS", ex))
+            say("%s failed: %s" % ("SAVE LOGS" if address == "save" else "SEND LOGS", ascii(ex)))  # ascii: never raises
             self.result("fail could not %s the logs (%s)" % ("save" if address == "save" else "pack",
                                                              ex.__class__.__name__))
 

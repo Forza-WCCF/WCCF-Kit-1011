@@ -158,7 +158,8 @@ def pack(kit=KIT, game=None, tail=TAIL, note=None):
 
 
 def downloads():
-    """the user's Downloads folder: Windows' known folder, else %USERPROFILE%\\Downloads, else the kit's data folder"""
+    """the user's Downloads folder: Windows' known folder, else %USERPROFILE%\\Downloads (made if missing: the panel
+    and the message box say "your Downloads folder"), else - that cannot be made either - the kit's data folder"""
     try:
         import ctypes
         import uuid
@@ -172,7 +173,11 @@ def downloads():
     except (AttributeError, OSError):
         pass
     folder = os.path.join(os.environ.get("USERPROFILE") or os.path.expanduser("~"), "Downloads")
-    return folder if os.path.isdir(folder) else K.DATA
+    try:
+        os.makedirs(folder, exist_ok=True)
+        return folder
+    except OSError:
+        return K.DATA
 
 
 def zip_name(ver, now=None):

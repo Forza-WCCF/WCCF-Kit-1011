@@ -413,7 +413,7 @@ ONLINE (play with others on one server)
   found (data\dumps keeps the newest 5 on your PC). If the server cannot be reached then, the next start sends it.
   To switch this off: a line auto_logs=0 in data\panel.txt.
   A game that ends badly, online or on this PC, also leaves the same ZIP in your Downloads folder, and a message
-  says its name.
+  says its name - at most once in 30 minutes, and not with auto_logs=0.
 
 ENGLISH (optional)
   ENGLISH (in SETUP.exe, GAME LANGUAGE) puts the game into English: about 7,200 lines of screen text, the players'

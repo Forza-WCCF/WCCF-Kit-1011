@@ -1383,11 +1383,30 @@ def tell_player(text):
         pass
 
 
+AUTO_SAVED = os.path.join(K.DATA, "logs_saved.txt")   # its time: the last SAVE LOGS logs_saved_after() made
+AUTO_SAVE_GAP = 30 * 60                                # a game that crashes at every start: one ZIP and box per 30 min
+
+
 def logs_saved_after(why, game):
-    """after a run that went wrong, on this PC or online: the logs saved by themselves, and the player told where"""
+    """after a run that went wrong, on this PC or online: the logs saved by themselves, and the player told where;
+    not with auto_logs=0 (report_bad_run's switch), nor again within AUTO_SAVE_GAP of the last one"""
+    if read_panel().get("auto_logs") == "0":
+        return
+    try:
+        if time.time() - os.path.getmtime(AUTO_SAVED) < AUTO_SAVE_GAP:
+            say("This run went wrong (%s) - logs were saved by themselves less than %d minutes ago: not again "
+                "(PLAY.exe logs saves them now)." % (why[0], AUTO_SAVE_GAP // 60))
+            return
+    except OSError:
+        pass                                         # never saved: save
     path = save_logs(game, "saved by itself at the end of a run that went wrong:\n" + "\n".join(why) + "\n")
     if path:
-        say("This run went wrong (%s) - its logs are saved in %s." % (why[0], path))
+        try:
+            open(AUTO_SAVED, "w").close()
+        except OSError:
+            pass
+        # the name only: the folder can hold the user's name, and the next SEND LOGS sends this log
+        say("This run went wrong (%s) - its logs are saved as %s." % (why[0], os.path.basename(path)))
         tell_player("The game ended by itself (%s).\n\nIts logs are saved in your Downloads folder:\n%s\n\n"
                     "Send that file to whoever helps you (it never holds your club card)." % (why[0], path))
 

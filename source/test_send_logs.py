@@ -227,6 +227,45 @@ try:
     check("the panel's SAVE LOGS (request \"save\"): the ZIP in Downloads, \"saved NAME\" for the panel, the request taken",
           got and res == "saved " + got[0] and not os.path.exists(h.req) and
           "logs/run_seat1.txt" in zipfile.ZipFile(os.path.join(down2, got[0])).namelist(), "%s %r" % (res, got))
+    # a Downloads folder outside the PC's code page (a Japanese user name) and the helper's log a strict cp1252 file:
+    # the save still ends "saved NAME", and the log names the ZIP, never the folder (it holds the user's name)
+    down3 = os.path.join(tmp, "\u30c0\u30a6\u30f3\u30ed\u30fc\u30c9")
+    os.makedirs(down3)
+    S.downloads = lambda: down3
+    with open(h.req, "w", encoding="ascii") as f:
+        f.write("save\n")
+    log, real_out = io.BytesIO(), sys.stdout
+    sys.stdout = out = io.TextIOWrapper(log, encoding="cp1252", errors="strict")   # out: kept, or it closes log
+    try:
+        h.tick()
+        if h.job:
+            h.job.join(30)
+        sys.stdout.flush()
+    finally:
+        sys.stdout = real_out
+    with open(h.res, encoding="ascii") as f:
+        res = f.read().strip()
+    got = os.listdir(down3)
+    check("SAVE LOGS to a Downloads folder outside the code page: \"saved NAME\", the log has the name, not the folder",
+          got and res == "saved " + got[0] and got[0].encode() in log.getvalue() and
+          os.path.basename(tmp).encode() not in log.getvalue(), "%s %r %r" % (res, got, log.getvalue()))
+    # no Downloads known folder and none in the profile: one is made there, so "your Downloads folder" holds
+    import ctypes
+    import importlib
+    S2 = importlib.reload(S)                           # the real downloads(), not the stand-in above
+    shell32, profile = ctypes.windll.shell32, os.environ.get("USERPROFILE")
+    real_known = shell32.SHGetKnownFolderPath
+    shell32.SHGetKnownFolderPath, os.environ["USERPROFILE"] = (lambda *a: 1), os.path.join(tmp, "home")
+    try:
+        made = S2.downloads()
+    finally:
+        shell32.SHGetKnownFolderPath = real_known
+        if profile is None:
+            del os.environ["USERPROFILE"]
+        else:
+            os.environ["USERPROFILE"] = profile
+    check("downloads: no known folder - %USERPROFILE%\\Downloads made, never the kit's data folder",
+          made == os.path.join(tmp, "home", "Downloads") and os.path.isdir(made), made)
 finally:
     for p in procs:
         p.kill()
