@@ -210,7 +210,8 @@ def processes():
 
 def game_processes(game):
     """the WCCF 2010-11 programs running from this game's folders (extracted, seat1, misc)"""
-    root = os.path.normcase(os.path.dirname(os.path.realpath(game))) + os.sep
+    # join(.., ""): one separator at the end, also for a game at a drive root's child (D:\extracted -> D:\, not D:\\)
+    root = os.path.join(os.path.normcase(os.path.dirname(os.path.realpath(game))), "")
     # realpath on both sides: Windows resolves a junction in a program's path but keeps a short ~1 name as given
     return [p for p in processes() if p[2].lower() in GAME_EXES and p[3]
             and os.path.normcase(os.path.realpath(p[3])).startswith(root)]
