@@ -177,7 +177,9 @@ def kit_pythons():
     matched THAT one - it found 0 and left 6 stand-ins running, and would have stopped any other program of it)"""
     kit_py = os.path.join(K.KIT, "python", "python.exe")
     me = os.path.normcase(kit_py if os.path.isfile(kit_py) else PY)
-    return [p for p in K.processes() if os.path.normcase(p[3]) == me and p[0] != os.getpid()]
+    # realpath: Windows keeps a short ~1 name in a program's path as given (kit_common.game_processes)
+    return [p for p in K.processes() if os.path.normcase(p[2]) == os.path.basename(me) and p[3]
+            and os.path.normcase(os.path.realpath(p[3])) == me and p[0] != os.getpid()]
 
 
 def card_in():
