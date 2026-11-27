@@ -145,7 +145,7 @@ LIFE = SERVER_LIFE                # the player side: a BACKSTOP only (A3, 2026-1
                                   # its game window is closed (source\launcher\src\watch.rs ends the whole run then);
                                   # the old 12-hour limit killed a long session mid-match, costing the card a bad
                                   # ending - so there is no short limit any more, only this far-off safety net
-PY = sys.executable
+PY = os.path.realpath(sys.executable)   # as Windows names the kit's pythons (kit_common.find_game)
 ICC_PIPE, JVS_PIPE = r"\\.\pipe\wccf_icc_seat1", r"\\.\pipe\wccf_jvs_seat1"
 KEYS_INPUT = os.path.join(K.DATA, "_jvs_seat1_input.txt")        # = hardware\keyboard.LIVE; the board's outputs beside it
 CARD = os.path.join(K.SAVE, "seat1_club.bin")

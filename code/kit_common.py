@@ -7,7 +7,7 @@ import hashlib
 import json
 import os
 
-SCRIPTS = os.path.dirname(os.path.abspath(__file__))
+SCRIPTS = os.path.dirname(os.path.realpath(__file__))     # real path: Windows names a process by it (find_game)
 KIT = os.path.dirname(SCRIPTS)
 PROGRAMS = os.path.join(KIT, "programs")   # the kit's compiled programs (was bin\): the hook, the panel, card-table
 ART = os.path.join(KIT, "art")             # shipped art: skin.tex (was overlay\)
@@ -65,7 +65,10 @@ def find_game(path):
     """the game folder (the one with the three game programs) from a path to it or to the folder above it, else None"""
     if not path:
         return None
-    path = os.path.abspath(path.strip().strip('"'))
+    # real path (2026-11-27): Windows names each running program by its real path, never by a junction, a subst
+    # drive or a short ~1 name - with the game reached through one, game_processes() saw none of its programs and
+    # PLAY stopped at 1/6 ("the server did not come up") on a game that ran
+    path = os.path.realpath(path.strip().strip('"'))
     for p in (path, os.path.join(path, "extracted")):
         if all(os.path.isfile(os.path.join(p, n)) for n in ("client_Release.exe", "control_Release.exe",
                                                              "match_Release.exe")):

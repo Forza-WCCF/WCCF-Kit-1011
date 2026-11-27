@@ -33,6 +33,8 @@
 #   the server link watch: a link lost while the game runs is written LOST, the player's own close is not
 #   (source\test_link_close.py: fakegame.exe linked to a listener on 127.0.0.1:20002)
 #   the projector window, resized: its picture composed at the new size (fakegame.exe as the projector)
+#   a game folder reached through a junction: PLAY still finds its running programs (source\test_game_junction.py:
+#   a scratch folder, ping.exe on 127.0.0.1 as a match engine)
 # The panel's frame-wait test (WCCFPANEL_LIMITERTEST) measures milliseconds and stays out: a busy machine fails it.
 #
 #   powershell -ExecutionPolicy Bypass -File source\check.ps1
@@ -124,6 +126,8 @@ if ($LASTEXITCODE) { $failed += 'SETUP tells a game another copy of the kit made
 
 & $py -I (Join-Path $PSScriptRoot 'test_old_layout.py') | Select-Object -Last 1
 if ($LASTEXITCODE) { $failed += 'an older kit''s scripts\ bin\ overlay\ tidied, the catalogue moved to data\cache\' }
+& $py -I (Join-Path $PSScriptRoot 'test_game_junction.py') | Select-Object -Last 1
+if ($LASTEXITCODE) { $failed += 'a game folder reached through a junction: PLAY still finds its running programs' }
 
 & $py -I (Join-Path $PSScriptRoot 'test_patch_hook_import.py')
 if ($LASTEXITCODE) { $failed += 'the hook-import patcher: winmm -> wccfk, valid checksum, reversible' }
