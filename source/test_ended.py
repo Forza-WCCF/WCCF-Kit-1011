@@ -66,4 +66,30 @@ for sign in play.CRASH_SIGNS:                                    # the words mus
     assert sign in dbg, "debugger.py no longer prints %r" % sign
 with open(os.path.join(KIT, "source", "panel", "wccfpanel.c"), encoding="utf-8") as f:
     assert " LOST (it was up " in f.read(), "wccfpanel.c no longer writes the LOST line play.py looks for"
-print("ended: 27 checks passed")
+
+# SAVE LOGS after a run that went wrong (2026-11-27): the ZIP in Downloads and the player told where, no window here
+import shutil  # noqa: E402
+import tempfile  # noqa: E402
+from online import send_logs  # noqa: E402
+down, told, said = tempfile.mkdtemp(prefix="wccf_saved_"), [], []
+scratch = tempfile.mkdtemp(prefix="wccf_saved_data_")
+send_logs.downloads, play.tell_player, play.say = (lambda: down), told.append, said.append
+play.AUTO_SAVED, play.PANEL = os.path.join(scratch, "logs_saved.txt"), os.path.join(scratch, "panel.txt")
+WHY = ["run_seat1.txt: the game window went by itself, not closed"]
+try:
+    play.logs_saved_after(WHY, None)
+    got = os.listdir(down)
+    assert len(got) == 1 and got[0].startswith("WCCF-2010-11-logs-") and len(told) == 1 and got[0] in told[0] \
+        and "went by itself" in told[0], (got, told)
+    assert said and got[0] in said[-1] and down not in said[-1], "the log names the ZIP, never its folder: %r" % said
+    play.logs_saved_after(WHY, None)                 # a game that crashes at every start: no second ZIP or box
+    assert len(os.listdir(down)) == 1 and len(told) == 1, "saved again within AUTO_SAVE_GAP"
+    os.utime(play.AUTO_SAVED, (0, 0))                # the last one long ago, but auto_logs=0: nothing either
+    with open(play.PANEL, "w", encoding="ascii") as f:
+        f.write("auto_logs=0\n")
+    play.logs_saved_after(WHY, None)
+    assert len(os.listdir(down)) == 1 and len(told) == 1, "auto_logs=0 still saved the logs"
+finally:
+    shutil.rmtree(down, ignore_errors=True)
+    shutil.rmtree(scratch, ignore_errors=True)
+print("ended: 31 checks passed")

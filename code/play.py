@@ -35,6 +35,9 @@ player cabinet (seat 1) with the overlay and your keyboard.  PLAY.exe runs it; r
                               rest (a server started on this PC with "server" stays, for the other players); the
                               projector's alone - nothing
     python play.py status     what is running
+    python play.py logs       SAVE LOGS: this game's logs in one ZIP in the Downloads folder (what SEND LOGS sends:
+                              never the club card, names on this PC replaced), for a game that ends before its SETTINGS;
+                              a run that went wrong saves one by itself and says where in a message box
     python play.py keeper on|off|status
                               a host's keeper (2026-10-24, server\keeper.ps1 - the community server's): every minute
                               while this Windows user is logged on, it starts this PC's server again when Sega's server
@@ -1354,6 +1357,60 @@ def report_bad_run(server, why, game=None):
     say("This run went wrong (%s) - its logs could not reach the server (%s); the next start sends them." % (why[0], what))
 
 
+def save_logs(game=None, note=None):
+    """SAVE LOGS ("PLAY.exe logs", and by itself after a run that went wrong, 2026-11-27): the ZIP SEND LOGS makes (never
+    the club card, names on this PC replaced, the crash snapshots) into the Downloads folder; its path, None if it
+    could not be made (said).  Never raises: the end of a run must go on"""
+    try:
+        from online import send_logs
+        blob, _n = send_logs.pack(game=game, note=note)
+        return send_logs.save(blob, send_logs.version())
+    except Exception as ex:                          # noqa: BLE001
+        say("This game's logs could not be saved: %r" % ex)
+        return None
+
+
+def tell_player(text):
+    """a message box from Windows PowerShell, a process of its own: `ended` and PLAY.exe's watcher never wait on it,
+    and it is no kit python, which a start would take for a run still going.  No PowerShell (Wine): nothing"""
+    try:
+        subprocess.Popen(["powershell.exe", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command",
+                          "Add-Type -AssemblyName PresentationFramework; "
+                          "[void][System.Windows.MessageBox]::Show($env:WCCF_MESSAGE, 'WCCF 2010-11')"],
+                         env=dict(os.environ, WCCF_MESSAGE=text), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL, creationflags=0x00000008 | 0x00000200)  # DETACHED, NEW_PROCESS_GROUP
+    except OSError:
+        pass
+
+
+AUTO_SAVED = os.path.join(K.DATA, "logs_saved.txt")   # its time: the last SAVE LOGS logs_saved_after() made
+AUTO_SAVE_GAP = 30 * 60                                # a game that crashes at every start: one ZIP and box per 30 min
+
+
+def logs_saved_after(why, game):
+    """after a run that went wrong, on this PC or online: the logs saved by themselves, and the player told where;
+    not with auto_logs=0 (report_bad_run's switch), nor again within AUTO_SAVE_GAP of the last one"""
+    if read_panel().get("auto_logs") == "0":
+        return
+    try:
+        if time.time() - os.path.getmtime(AUTO_SAVED) < AUTO_SAVE_GAP:
+            say("This run went wrong (%s) - logs were saved by themselves less than %d minutes ago: not again "
+                "(PLAY.exe logs saves them now)." % (why[0], AUTO_SAVE_GAP // 60))
+            return
+    except OSError:
+        pass                                         # never saved: save
+    path = save_logs(game, "saved by itself at the end of a run that went wrong:\n" + "\n".join(why) + "\n")
+    if path:
+        try:
+            open(AUTO_SAVED, "w").close()
+        except OSError:
+            pass
+        # the name only: the folder can hold the user's name, and the next SEND LOGS sends this log
+        say("This run went wrong (%s) - its logs are saved as %s." % (why[0], os.path.basename(path)))
+        tell_player("The game ended by itself (%s).\n\nIts logs are saved in your Downloads folder:\n%s\n\n"
+                    "Send that file to whoever helps you (it never holds your club card)." % (why[0], path))
+
+
 def send_pending_report(env):
     """a report a run could not send (report_bad_run): tried again in the background while the start goes on;
     send_logs.py removes data\\report.pending only once the server took it, so a failed try leaves it for the next"""
@@ -1401,6 +1458,8 @@ def _ended(game):
     r = stop(False, keep_server=server_here)
     if info.get("mode") == "remote":                 # online: the server's people get this PC's side of it
         report_bad_run(info.get("server"), why, game)
+    if why:
+        logs_saved_after(why, game)
     return r
 
 
@@ -1723,6 +1782,13 @@ def main(argv):
             return keeper((a[1:] or ["status"])[0])
         if a == ["show"]:
             return show()
+        if a == ["logs"]:                     # SAVE LOGS without the game: one that ends before its SETTINGS too
+            game = K.find_game(K.load_settings().get("game"))
+            path = save_logs(game)
+            if path:
+                say("This game's logs (never your club card, names on this PC replaced) are saved in:\n  %s\n"
+                    "Send that file to whoever helps you." % path)
+            return 0 if path else 1
         if a[:1] == ["projector"]:            # the panel helper: lost for good, or SETTINGS' OPEN / CLOSE PROJECTOR;
             words = [x for x in a[1:] if not x.startswith("run=")]       # run=ID: the run it saw
             if words in ([], ["open"], ["close"]):
